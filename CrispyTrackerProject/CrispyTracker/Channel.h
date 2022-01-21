@@ -13,5 +13,5 @@ public:
 	bool IsActive;
 
 	void SetUp();
-	void Tick();
+	void TickCheck();
 };

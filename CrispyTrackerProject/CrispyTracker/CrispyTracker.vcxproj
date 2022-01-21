@@ -140,12 +140,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Channel.cpp" />
+    <ClCompile Include="PulseWaveSMS.cpp" />
     <ClCompile Include="SoundGenerator.cpp" />
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="Tracker.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Channel.h" />
+    <ClInclude Include="PulseWaveSMS.h" />
     <ClInclude Include="SoundGenerator.h" />
+    <ClInclude Include="Tracker.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

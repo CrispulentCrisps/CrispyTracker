@@ -1,7 +1,8 @@
 #include "Tracker.h"
 
-using namespace std;
-
-int main() {
-
+int main()
+{
+    Tracker tracker;
+    tracker.Run();
+    return 0;
 }
