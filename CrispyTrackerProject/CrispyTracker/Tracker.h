@@ -1,7 +1,7 @@
 #pragma once
 #include <ImgUtil.h>
 #include "Channel.h"
-#include <iostream> 
+#include <iostream>
 class Tracker
 {
 public:

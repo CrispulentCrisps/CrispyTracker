@@ -1,7 +1,4 @@
 ﻿  Tracker.cpp
 C:\Users\finla\OneDrive\Desktop\Trackers\CrispyTrackerProject\CrispyTracker\Tracker.h(12,20): warning C4200: nonstandard extension used: zero-sized array in struct/union
 C:\Users\finla\OneDrive\Desktop\Trackers\CrispyTrackerProject\CrispyTracker\Tracker.h(12,20): message : This member will be ignored by a defaulted constructor or copy/move assignment operator
-C:\Users\finla\OneDrive\Desktop\Trackers\CrispyTrackerProject\CrispyTracker\Tracker.cpp(23,22): warning C4305: 'initializing': truncation from 'double' to 'float'
-C:\Users\finla\OneDrive\Desktop\Trackers\CrispyTrackerProject\CrispyTracker\Tracker.cpp(31,23): warning C4018: '<': signed/unsigned mismatch
-C:\Users\finla\OneDrive\Desktop\Trackers\CrispyTrackerProject\CrispyTracker\Tracker.cpp(110,26): warning C4244: '=': conversion from 'double' to 'REFERENCE_TIME', possible loss of data
   CrispyTracker.vcxproj -> C:\Users\finla\OneDrive\Desktop\Trackers\CrispyTrackerProject\CrispyTracker\Debug\CrispyTracker.exe
