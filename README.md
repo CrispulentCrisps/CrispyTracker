@@ -12,3 +12,5 @@ Instruments planned are:
 
 Libraries:
 	DearImGui
+
+uses MIT license
