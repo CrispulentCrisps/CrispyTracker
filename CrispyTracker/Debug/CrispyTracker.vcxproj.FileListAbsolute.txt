@@ -1,0 +1,2 @@
+C:\Users\finla\OneDrive\Desktop\Trackers\CrispyTrackerProject\CrispyTracker\Debug\CrispyTracker.exe
+C:\Users\finla\OneDrive\Desktop\Trackers\CrispyTrackerProject\CrispyTracker\Debug\CrispyTracker.pdb
