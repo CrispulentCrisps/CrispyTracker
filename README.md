@@ -12,3 +12,5 @@ Instruments planned are:
 
 Libraries:
 	DearImGui
+IDE:
+	Visual Studio 2019
