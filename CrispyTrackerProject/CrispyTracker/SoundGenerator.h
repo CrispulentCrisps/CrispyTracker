@@ -1,9 +1,12 @@
 #include <stdio.h>
+#include <conio.h>
+#include <ctype.h>
 #include <iostream>
 #include <windows.h>
 #include <mmdeviceapi.h>
 #include <Audioclient.h>
 #include <math.h>
+
 
 #pragma once
 using namespace std;
@@ -17,7 +20,7 @@ public:
 	float Tuning;
 
 	float NVT[111];
-
+	
 	bool IsPlaying;
 
 	BYTE* Totalbuffer;

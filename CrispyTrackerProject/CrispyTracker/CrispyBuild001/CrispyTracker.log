@@ -1,0 +1,8 @@
+﻿  Source.cpp
+C:\Users\finla\OneDrive\Desktop\Trackers\CrispyTrackerProject\CrispyTracker\Tracker.h(13,20): warning C4200: nonstandard extension used: zero-sized array in struct/union
+C:\Users\finla\OneDrive\Desktop\Trackers\CrispyTrackerProject\CrispyTracker\Tracker.h(13,20): message : This member will be ignored by a defaulted constructor or copy/move assignment operator
+  Tracker.cpp
+C:\Users\finla\OneDrive\Desktop\Trackers\CrispyTrackerProject\CrispyTracker\Tracker.h(13,20): warning C4200: nonstandard extension used: zero-sized array in struct/union
+C:\Users\finla\OneDrive\Desktop\Trackers\CrispyTrackerProject\CrispyTracker\Tracker.h(13,20): message : This member will be ignored by a defaulted constructor or copy/move assignment operator
+  Generating Code...
+  CrispyTracker.vcxproj -> C:\Users\finla\OneDrive\Desktop\Trackers\CrispyTrackerProject\CrispyTracker\Debug\CrispyTracker.exe

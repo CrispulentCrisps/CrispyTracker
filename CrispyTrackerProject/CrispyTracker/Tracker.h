@@ -9,8 +9,8 @@ public:
 	int Length;
 	int YPos;
 	bool PlayingTrack;
+	int Input;
 	Channel Channels[];
 	void Run();
-	void CheckNotes(Channel Channels[]);
-	void TickAlong(Channel Channels[], int tick);
+	HANDLE CheckInput();
 };
