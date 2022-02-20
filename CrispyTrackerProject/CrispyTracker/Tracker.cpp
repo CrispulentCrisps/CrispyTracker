@@ -33,7 +33,7 @@ void Tracker::Run()
 	else
 	{
 		//Create window
-		window = SDL_CreateWindow("CrispyTracker :]", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		window = SDL_CreateWindow("CrispyTracker", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 		if (window == NULL)
 		{
 			printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
@@ -46,17 +46,17 @@ void Tracker::Run()
 	}
 
 	while (running) {
-		CheckInput();
 		if (WindowIsGood) {
 			//Get window surface
 			screenSurface = SDL_GetWindowSurface(window);
 
 			//Fill the surface white
-			SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 0xFF, 0xFF, 0xFF));
+			SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 22, 22, 22));
 
 			//Update the surface
 			SDL_UpdateWindowSurface(window);
 		}
+		CheckInput();
 	}
 	//Destroy window
 	SDL_DestroyWindow(window);
@@ -70,63 +70,65 @@ void Tracker::CheckInput()
 	int TuninOff = 48;
 	SDL_Event event;
 	const Uint8* keystates = SDL_GetKeyboardState(NULL);
-	if (SDL_PollEvent(&event))
+	while (SDL_PollEvent(&event))
 	{
-		if (event.type == SDL_KEYDOWN)
+		switch (event.type)
 		{
-			if (keystates[SDL_SCANCODE_Q])
+		case SDL_KEYDOWN:
+			switch (event.key.keysym.sym)
 			{
+			default:
+				break;
+			case SDL_QUIT:
+				running = false;
+				break;
+			case SDLK_q:
 				SG.NoteIndex = TuninOff;
-			}
-			else if (keystates[SDL_SCANCODE_2])
-			{
+				break;
+			case SDLK_2:
 				SG.NoteIndex = TuninOff + 1;
-			}
-			else if (keystates[SDL_SCANCODE_W])
-			{
+				break;
+			case SDLK_w:
 				SG.NoteIndex = TuninOff + 2;
-			}
-			else if (keystates[SDL_SCANCODE_3])
-			{
+				break;
+			case SDLK_3:
 				SG.NoteIndex = TuninOff + 3;
-			}
-			else if (keystates[SDL_SCANCODE_E])
-			{
+				break;
+			case SDLK_e:
 				SG.NoteIndex = TuninOff + 4;
-			}
-			else if (keystates[SDL_SCANCODE_R])
-			{
+				break;
+			case SDLK_r:
 				SG.NoteIndex = TuninOff + 5;
-			}
-			else if (keystates[SDL_SCANCODE_5])
-			{
+				break;
+			case SDLK_5:
 				SG.NoteIndex = TuninOff + 6;
-			}
-			else if (keystates[SDL_SCANCODE_T])
-			{
+				break;
+			case SDLK_t:
 				SG.NoteIndex = TuninOff + 7;
-			}
-			else if (keystates[SDL_SCANCODE_6])
-			{
+				break;
+			case SDLK_6:
 				SG.NoteIndex = TuninOff + 8;
-			}
-			else if (keystates[SDL_SCANCODE_Y])
-			{
+				break;
+			case SDLK_y:
 				SG.NoteIndex = TuninOff + 9;
-			}
-			else if (keystates[SDL_SCANCODE_7])
-			{
+				break;
+			case SDLK_7:
 				SG.NoteIndex = TuninOff + 10;
-			}
-			else if (keystates[SDL_SCANCODE_U])
-			{
+				break;
+			case SDLK_u:
 				SG.NoteIndex = TuninOff + 11;
-			}
-			else if (keystates[SDL_SCANCODE_I])
-			{
+				break;
+			case SDLK_i:
 				SG.NoteIndex = TuninOff + 12;
+				break;
 			}
 			SG.PlayAudioStream();
+			SDL_Delay(1);
+			break;
+		case SDL_QUIT:
+			// shut down
+			running = false;
+			break;
 		}
 	}
 }
