@@ -2,11 +2,14 @@
 #include <conio.h>
 #include <ctype.h>
 #include <iostream>
+
 #include <windows.h>
 #include <mmdeviceapi.h>
 #include <Audioclient.h>
-#include <math.h>
 
+#include <SDL.h>
+#include <SDL_keycode.h>
+#include <math.h>
 
 #pragma once
 using namespace std;

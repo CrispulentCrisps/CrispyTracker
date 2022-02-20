@@ -2,6 +2,7 @@
 #include <ImgUtil.h>
 #include "Channel.h"
 #include <iostream>
+#include <SDL_keyboard.h>
 class Tracker
 {
 public:
@@ -12,5 +13,5 @@ public:
 	int Input;
 	Channel Channels[];
 	void Run();
-	HANDLE CheckInput();
+	void CheckInput();
 };

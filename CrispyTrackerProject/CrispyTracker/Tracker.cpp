@@ -1,77 +1,132 @@
 #include "Tracker.h"
 #include "SoundGenerator.h"
+
 #include <windows.h>
 #include <mmdeviceapi.h>
 #include <Audioclient.h>
 #include <math.h>
 
+//Universal variables here
+SoundGenerator SG(1, 56, 1);
+bool running = true;
+
+//Screen dimension constants
+const int SCREEN_WIDTH = 1280;
+const int SCREEN_HEIGHT = 720;
+
+//The window we'll be rendering to
+SDL_Window* window = NULL;
+
+//The surface contained by the window
+SDL_Surface* screenSurface = NULL;
+
 void Tracker::Run()
 {
-    CoInitializeEx(NULL, COINIT_MULTITHREADED);
-	SoundGenerator SG(1, 56, 1);
-	bool running = true;
-	PlayingTrack = false;
-	while (running)
+	bool PlayingTrack = false;
+	bool WindowIsGood = true;
+	//Initialize SDL
+	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
-		CheckInput();
-		if (Input == 'Q')
-		{
-			SG.NoteIndex = 64;
-		}
-		else if (Input == '2')
-		{
-			SG.NoteIndex = 65;
-		}
-		else if (Input == 'W')
-		{
-			SG.NoteIndex = 66;
-		}
-		else if (Input == '3')
-		{
-			SG.NoteIndex = 67;
-		}
-		else if (Input == 'E')
-		{
-			SG.NoteIndex = 68;
-		}
-		else if (Input == 'R')
-		{
-			SG.NoteIndex = 69;
-		}
-		else if (Input == '5')
-		{
-			SG.NoteIndex = 70;
-		}
-		else if (Input == 'T')
-		{
-			SG.NoteIndex = 71;
-		}
-		else if (Input == '6')
-		{
-			SG.NoteIndex = 72;
-		}
-		else if (Input == 'Y')
-		{
-			SG.NoteIndex = 73;
-		}
-		else if (Input == '7')
-		{
-			SG.NoteIndex = 74;
-		}
-		else if (Input == 'U')
-		{
-			SG.NoteIndex = 75;
-		}
-		else if (Input == 'I')
-		{
-			SG.NoteIndex = 76;
-		}
-		SG.PlayAudioStream();
+		printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
+		WindowIsGood = false;
 	}
+	else
+	{
+		//Create window
+		window = SDL_CreateWindow("CrispyTracker :]", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		if (window == NULL)
+		{
+			printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
+			WindowIsGood = false;
+		}
+		else
+		{
+			WindowIsGood = true;
+		}
+	}
+
+	while (running) {
+		CheckInput();
+		if (WindowIsGood) {
+			//Get window surface
+			screenSurface = SDL_GetWindowSurface(window);
+
+			//Fill the surface white
+			SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 0xFF, 0xFF, 0xFF));
+
+			//Update the surface
+			SDL_UpdateWindowSurface(window);
+		}
+	}
+	//Destroy window
+	SDL_DestroyWindow(window);
+
+	//Quit SDL subsystems
+	SDL_Quit();
 }
 
-HANDLE Tracker::CheckInput()
+void Tracker::CheckInput()
 {
-	Input = _getche_nolock();
-	return HANDLE();
+	int TuninOff = 48;
+	SDL_Event event;
+	const Uint8* keystates = SDL_GetKeyboardState(NULL);
+	if (SDL_PollEvent(&event))
+	{
+		if (event.type == SDL_KEYDOWN)
+		{
+			if (keystates[SDL_SCANCODE_Q])
+			{
+				SG.NoteIndex = TuninOff;
+			}
+			else if (keystates[SDL_SCANCODE_2])
+			{
+				SG.NoteIndex = TuninOff + 1;
+			}
+			else if (keystates[SDL_SCANCODE_W])
+			{
+				SG.NoteIndex = TuninOff + 2;
+			}
+			else if (keystates[SDL_SCANCODE_3])
+			{
+				SG.NoteIndex = TuninOff + 3;
+			}
+			else if (keystates[SDL_SCANCODE_E])
+			{
+				SG.NoteIndex = TuninOff + 4;
+			}
+			else if (keystates[SDL_SCANCODE_R])
+			{
+				SG.NoteIndex = TuninOff + 5;
+			}
+			else if (keystates[SDL_SCANCODE_5])
+			{
+				SG.NoteIndex = TuninOff + 6;
+			}
+			else if (keystates[SDL_SCANCODE_T])
+			{
+				SG.NoteIndex = TuninOff + 7;
+			}
+			else if (keystates[SDL_SCANCODE_6])
+			{
+				SG.NoteIndex = TuninOff + 8;
+			}
+			else if (keystates[SDL_SCANCODE_Y])
+			{
+				SG.NoteIndex = TuninOff + 9;
+			}
+			else if (keystates[SDL_SCANCODE_7])
+			{
+				SG.NoteIndex = TuninOff + 10;
+			}
+			else if (keystates[SDL_SCANCODE_U])
+			{
+				SG.NoteIndex = TuninOff + 11;
+			}
+			else if (keystates[SDL_SCANCODE_I])
+			{
+				SG.NoteIndex = TuninOff + 12;
+			}
+			SG.PlayAudioStream();
+		}
+	}
 }

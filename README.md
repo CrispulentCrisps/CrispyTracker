@@ -7,10 +7,10 @@ Instruments planned are:
 	NES
 	PCE
 	YM2612
-	OPL2
-	OPL3
+	OPL2/OPL3
 
 Libraries:
 	DearImGui
+	SDL2
 IDE:
 	Visual Studio 2019
