@@ -12,5 +12,6 @@ Instruments planned are:
 
 Libraries:
 	DearImGui
+	SDL2
 
 uses MIT license
