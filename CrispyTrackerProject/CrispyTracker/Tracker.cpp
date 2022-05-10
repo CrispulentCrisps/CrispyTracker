@@ -19,12 +19,32 @@ SDL_Window* window = NULL;
 //The surface contained by the window
 SDL_Surface* screenSurface = NULL;
 
+SDL_AudioSpec want, have;
+SDL_AudioDeviceID dev;
+
+
+void MyAudioCallback(void* userdata, Uint8* stream, int len)
+{
+	DWORD    flags;
+	static_cast<SoundGenerator*>(userdata)->LoadData(len / 8, stream, &flags);
+}
+
 void Tracker::Run()
 {
+	SDL_memset(&want, 0, sizeof(want)); /* or SDL_zero(want) */
+	want.freq = 48000;
+	want.format = AUDIO_F32;
+	want.channels = 2;
+	want.samples = 4096;
+	want.callback = MyAudioCallback;  // you wrote this function elsewhere.
+	want.userdata = &SG;
+	dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+	const char* err = SDL_GetError();
+
 	bool PlayingTrack = false;
 	bool WindowIsGood = true;
 	//Initialize SDL
-	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
 	{
 		printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
 		WindowIsGood = false;
@@ -149,13 +169,18 @@ void Tracker::CheckInput()
 				SG.PlayingNoise == true;
 				break;
 			}
-			SDL_AudioSpec(this->SoundGenerator);
-			SG.PlayAudioStream();
+
+			{
+				SDL_PauseAudioDevice(dev, 0);
+				SDL_Delay(1000);
+				SDL_CloseAudioDevice(dev);
+			}
+
 			break;
 		case SDL_QUIT:
 			running = false;
 			break;
 		}
-		SG.PlayingNoise == false;
+		SG.PlayingNoise = false;
 	}
 }

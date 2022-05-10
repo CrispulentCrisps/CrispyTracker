@@ -46,5 +46,5 @@ HRESULT SoundGenerator::LoadData(UINT count, BYTE* data, DWORD* flags)
 
 HRESULT SoundGenerator::PlayAudioStream(void)
 {
-	SDL_AudioCallback(LoadData());
+	return S_OK;
 }
