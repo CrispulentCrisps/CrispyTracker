@@ -1,184 +1,161 @@
 #include "Tracker.h"
-#include <windows.h>
+#include "SoundGenerator.h"
+
 #include <mmdeviceapi.h>
 #include <Audioclient.h>
 #include <math.h>
 
-// REFERENCE_TIME time units per second and per millisecond
-#define REFTIMES_PER_SEC  10000000
-#define REFTIMES_PER_MILLISEC  10000
+//Universal variables here
+SoundGenerator SG(1, 56, 1);
+bool running = true;
 
-#define EXIT_ON_ERROR(hres)  \
-              if (FAILED(hres)) { goto Exit; }
-#define SAFE_RELEASE(punk)  \
-              if ((punk) != NULL)  \
-                { (punk)->Release(); (punk) = NULL; }
+//Screen dimension constants
+const int SCREEN_WIDTH = 1280;
+const int SCREEN_HEIGHT = 720;
 
-const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
-const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
-const IID IID_IAudioClient = __uuidof(IAudioClient);
-const IID IID_IAudioRenderClient = __uuidof(IAudioRenderClient);
+//The window we'll be rendering to
+SDL_Window* window = NULL;
 
-int pos = 0; //Time value
-const float pi = 3.14;
-const float SampleRate = 44100;
-HRESULT LoadData(UINT count, BYTE* data, DWORD* flags)
-{
-    float* dp = (float*)data;
-    float Volume = 0.25f;
-    float Freq = 440;
-
-    for (int i = 0; i < count; i++)
-    {
-        dp[2 * i + 0] = Volume * sin(pos * (2 * pi) * Freq * (1/ SampleRate));
-        dp[2 * i + 1] = Volume * sin(pos * (2 * pi) * Freq * (1 / SampleRate));
-        pos++;
-    }
-
-    return S_OK;
-}
-
-HRESULT PlayAudioStream(void)
-{
-    HRESULT hr;
-    REFERENCE_TIME hnsRequestedDuration = REFTIMES_PER_SEC;
-    REFERENCE_TIME hnsActualDuration;
-    IMMDeviceEnumerator* pEnumerator = NULL;
-    IMMDevice* pDevice = NULL;
-    IAudioClient* pAudioClient = NULL;
-    IAudioRenderClient* pRenderClient = NULL;
-    WAVEFORMATEX* pwfx = NULL;
-    UINT32 bufferFrameCount;
-    UINT32 numFramesAvailable;
-    UINT32 numFramesPadding;
-    BYTE* pData;
-    DWORD flags = 0;
-    WAVEFORMATEXTENSIBLE* epwfx;
-
-    hr = CoCreateInstance(
-        CLSID_MMDeviceEnumerator, NULL,
-        CLSCTX_ALL, IID_IMMDeviceEnumerator,
-        (void**)&pEnumerator);
-    EXIT_ON_ERROR(hr)
-
-        hr = pEnumerator->GetDefaultAudioEndpoint(
-            eRender, eConsole, &pDevice);
-    EXIT_ON_ERROR(hr)
-
-        hr = pDevice->Activate(
-            IID_IAudioClient, CLSCTX_ALL,
-            NULL, (void**)&pAudioClient);
-    EXIT_ON_ERROR(hr)
-
-        hr = pAudioClient->GetMixFormat(&pwfx);
-    EXIT_ON_ERROR(hr)
-
-        epwfx = (WAVEFORMATEXTENSIBLE*)pwfx;
-
-    hr = pAudioClient->Initialize(
-        AUDCLNT_SHAREMODE_SHARED,
-        0,
-        hnsRequestedDuration,
-        0,
-        pwfx,
-        NULL);
-    EXIT_ON_ERROR(hr)
-
-        // Get the actual size of the allocated buffer.
-        hr = pAudioClient->GetBufferSize(&bufferFrameCount);
-    EXIT_ON_ERROR(hr)
-
-        hr = pAudioClient->GetService(
-            IID_IAudioRenderClient,
-            (void**)&pRenderClient);
-    EXIT_ON_ERROR(hr)
-
-        // Grab the entire buffer for the initial fill operation.
-        hr = pRenderClient->GetBuffer(bufferFrameCount, &pData);
-    EXIT_ON_ERROR(hr)
-
-        // Load the initial data into the shared buffer.
-
-        hr = LoadData(bufferFrameCount, pData, &flags);
-    EXIT_ON_ERROR(hr)
-
-        hr = pRenderClient->ReleaseBuffer(bufferFrameCount, flags);
-    EXIT_ON_ERROR(hr)
-
-        // Calculate the actual duration of the allocated buffer.
-        hnsActualDuration = (double)REFTIMES_PER_SEC *
-        bufferFrameCount / pwfx->nSamplesPerSec;
-
-    hr = pAudioClient->Start();  // Start playing.
-    EXIT_ON_ERROR(hr)
-
-        // Each loop fills about half of the shared buffer.
-        while (flags != AUDCLNT_BUFFERFLAGS_SILENT)
-        {
-            // Sleep for half the buffer duration.
-            Sleep((DWORD)(hnsActualDuration / REFTIMES_PER_MILLISEC / 2));
-
-            // See how much buffer space is available.
-            hr = pAudioClient->GetCurrentPadding(&numFramesPadding);
-            EXIT_ON_ERROR(hr)
-
-                numFramesAvailable = bufferFrameCount - numFramesPadding;
-
-            // Grab all the available space in the shared buffer.
-            hr = pRenderClient->GetBuffer(numFramesAvailable, &pData);
-            EXIT_ON_ERROR(hr)
-
-                // Get next 1/2-second of data from the audio source.
-                hr = LoadData(numFramesAvailable, pData, &flags);
-            EXIT_ON_ERROR(hr)
-
-                hr = pRenderClient->ReleaseBuffer(numFramesAvailable, flags);
-            EXIT_ON_ERROR(hr)
-        }
-
-    // Wait for last data in buffer to play before stopping.
-    Sleep((DWORD)(hnsActualDuration / REFTIMES_PER_MILLISEC / 2));
-
-    hr = pAudioClient->Stop();  // Stop playing.
-    EXIT_ON_ERROR(hr)
-
-        Exit:
-    CoTaskMemFree(pwfx);
-    SAFE_RELEASE(pEnumerator)
-        SAFE_RELEASE(pDevice)
-        SAFE_RELEASE(pAudioClient)
-        SAFE_RELEASE(pRenderClient)
-
-        return hr;
-}
-
+//The surface contained by the window
+SDL_Surface* screenSurface = NULL;
 
 void Tracker::Run()
 {
-    CoInitializeEx(NULL, COINIT_MULTITHREADED);
-	bool running = true;
-	while (running)
+	bool PlayingTrack = false;
+	bool WindowIsGood = true;
+	//Initialize SDL
+	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
-        PlayAudioStream();
-        if (PlayingTrack)
-        {
-
-        }
-        CoUninitialize();
+		printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
+		WindowIsGood = false;
 	}
-}
-
-void Tracker::CheckNotes(Channel Channels[])
-{
-}
-
-void Tracker::TickAlong(Channel Channels[], int tick)
-{
-	if (tick > TickLimit)
+	else
 	{
-		for (int i = 0; i < sizeof(Channels); i++)
+		//Create window
+		window = SDL_CreateWindow("CrispyTracker", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		if (window == NULL)
 		{
-
+			printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
+			WindowIsGood = false;
 		}
+		else
+		{
+			WindowIsGood = true;
+		}
+	}
+
+	while (running) {
+		if (WindowIsGood) {
+			//Get window surface
+			screenSurface = SDL_GetWindowSurface(window);
+
+			//Fill the surface white
+			SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 22, 22, 22));
+
+			//Update the surface
+			SDL_UpdateWindowSurface(window);
+			printf("WINDOW UPDATING \n");
+		}
+		CheckInput();
+	}
+	//Destroy window
+	SDL_DestroyWindow(window);
+
+	//Quit SDL subsystems
+	SDL_Quit();
+}
+
+void Tracker::CheckInput()
+{
+	int TuninOff = 48;
+	SDL_Event event;
+	const Uint8* keystates = SDL_GetKeyboardState(NULL);
+	while (SDL_PollEvent(&event))
+	{
+		switch (event.type)
+		{
+		case SDL_KEYDOWN:
+			switch (event.key.keysym.sym)
+			{
+			default:
+				return;
+				break;
+			case SDL_QUIT:
+				running = false;
+				break;
+			case SDLK_q:
+				SG.NoteIndex = TuninOff;
+				printf("PRESSED Q");
+				SG.PlayingNoise == true;
+				break;
+			case SDLK_2:
+				SG.NoteIndex = TuninOff + 1;
+				printf("PRESSED 1");
+				SG.PlayingNoise == true;
+				break;
+			case SDLK_w:
+				SG.NoteIndex = TuninOff + 2;
+				printf("PRESSED W");
+				SG.PlayingNoise == true;
+				break;
+			case SDLK_3:
+				SG.NoteIndex = TuninOff + 3;
+				printf("PRESSED 3");
+				SG.PlayingNoise == true;
+				break;
+			case SDLK_e:
+				SG.NoteIndex = TuninOff + 4;
+				printf("PRESSED E");
+				SG.PlayingNoise == true;
+				break;
+			case SDLK_r:
+				SG.NoteIndex = TuninOff + 5;
+				printf("PRESSED R");
+				SG.PlayingNoise == true;
+				break;
+			case SDLK_5:
+				SG.NoteIndex = TuninOff + 6;
+				printf("PRESSED 5");
+				SG.PlayingNoise == true;
+				break;
+			case SDLK_t:
+				SG.NoteIndex = TuninOff + 7;
+				printf("PRESSED T");
+				SG.PlayingNoise == true;
+				break;
+			case SDLK_6:
+				SG.NoteIndex = TuninOff + 8;
+				printf("PRESSED 6");
+				SG.PlayingNoise == true;
+				break;
+			case SDLK_y:
+				SG.NoteIndex = TuninOff + 9;
+				printf("PRESSED Y");
+				SG.PlayingNoise == true;
+				break;
+			case SDLK_7:
+				SG.NoteIndex = TuninOff + 10;
+				printf("PRESSED 7");
+				SG.PlayingNoise == true;
+				break;
+			case SDLK_u:
+				SG.NoteIndex = TuninOff + 11;
+				printf("PRESSED U");
+				SG.PlayingNoise == true;
+				break;
+			case SDLK_i:
+				SG.NoteIndex = TuninOff + 12;
+				printf("PRESSED I");
+				SG.PlayingNoise == true;
+				break;
+			}
+			SDL_AudioSpec(this->SoundGenerator);
+			SG.PlayAudioStream();
+			break;
+		case SDL_QUIT:
+			running = false;
+			break;
+		}
+		SG.PlayingNoise == false;
 	}
 }
