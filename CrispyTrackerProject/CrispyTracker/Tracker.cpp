@@ -14,11 +14,12 @@ SDL_Surface* screenSurface = NULL;
 
 SDL_AudioSpec want, have;
 SDL_AudioDeviceID dev;
-
+cont = ImGui::CreateContext();
 ImGuiIO& io = ImGui::GetIO();
 
 Tracker::Tracker()
 {
+	Run();
 }
 
 Tracker::~Tracker()
