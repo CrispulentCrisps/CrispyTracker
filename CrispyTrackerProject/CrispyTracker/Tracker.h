@@ -18,18 +18,21 @@ using namespace std;
 class Tracker
 {
 public:
+	Tracker();
+	~Tracker();
 
 	SDL_Renderer* rend = NULL;
 	SDL_Window* window = NULL;
 	ImGuiContext* cont = NULL;
-	vector<Channel> Channels;
+	Channel Channels[8];
 	int TickLimit;
 	int Length;
 	int YPos;
 	int Input;
 	bool PlayingTrack;
-	
-	void Initialise(int StartAmount, int StartLength);
+	bool ShowMain = true;
+
+	void Initialise(int StartLength);
 	void Run();
 	void CheckInput();
 	void Render();

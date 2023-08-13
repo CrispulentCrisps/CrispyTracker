@@ -32,13 +32,13 @@ SoundGenerator::SoundGenerator(int TV, int NI, int POS) {
 	}
 }
 
-void SoundGenerator::CheckSound(SDL_AudioSpec want, SDL_AudioSpec have, SDL_AudioDeviceID dev, vector<Channel> AudioData)
+void SoundGenerator::CheckSound(SDL_AudioSpec want, SDL_AudioSpec have, SDL_AudioDeviceID dev, Channel AudioData[])
 {
 	//Last step is to take all the channel bytes and then output the audio
 	int16_t Result = 0;
-	for (size_t i = 0; i < AudioData.size(); i++)
+	for (size_t i = 0; i < 8; i++)
 	{
 		Result += AudioData[i].AudioData;
 	}
-	SDL_QueueAudio(dev, &Result, AudioData.size());
+	SDL_QueueAudio(dev, &Result, sizeof(AudioData)/sizeof(AudioData[0]));
 }

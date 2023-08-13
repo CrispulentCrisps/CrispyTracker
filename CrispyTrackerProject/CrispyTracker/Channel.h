@@ -1,4 +1,6 @@
 #pragma once
+#ifndef Channel
+
 #include <vector>
 #include <string>
 #include <SDL.h>
@@ -47,3 +49,5 @@ May or may not keep hexidecimal
 
 Audio bytes should be sent to an accumulator to then play every channels sound
 */
+
+#endif // !Channel

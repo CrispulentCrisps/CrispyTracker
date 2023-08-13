@@ -1,3 +1,5 @@
+#ifndef SoundGenerator
+
 #include <stdio.h>
 #include <conio.h>
 #include <ctype.h>
@@ -28,5 +30,7 @@ public:
 
 	BYTE* Totalbuffer;
 	SoundGenerator(int TV, int NI, int POS);
-	void CheckSound(SDL_AudioSpec want, SDL_AudioSpec have, SDL_AudioDeviceID dev, vector<Channel> AudioData);
+	void CheckSound(SDL_AudioSpec want, SDL_AudioSpec have, SDL_AudioDeviceID dev, Channel AudioData[]);
 };
+
+#endif // !SoundGenerator

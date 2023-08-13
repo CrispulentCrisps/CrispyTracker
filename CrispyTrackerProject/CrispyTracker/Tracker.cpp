@@ -15,15 +15,24 @@ SDL_Surface* screenSurface = NULL;
 SDL_AudioSpec want, have;
 SDL_AudioDeviceID dev;
 
-void Tracker::Initialise(int StartAmount, int StartLength)
+ImGuiIO& io = ImGui::GetIO();
+
+Tracker::Tracker()
 {
-	Channels = {Channel()};
+}
+
+Tracker::~Tracker()
+{
+}
+
+void Tracker::Initialise(int StartLength)
+{
 	//initialise all the channels
-	for (size_t i = 0; i < StartAmount; i++)
+	for (size_t i = 0; i < 8; i++)
 	{
 		Channel channel = Channel();
 		channel.SetUp(StartLength);
-		Channels.push_back(channel);
+		Channels[i] = channel;
 	}
 }
 
@@ -32,14 +41,19 @@ void Tracker::Run()
 	bool PlayingTrack = false;
 	bool WindowIsGood = true;
 
+	//ImGUI setup
 	IMGUI_CHECKVERSION();
 	cont = ImGui::CreateContext();
 	ImGui::SetCurrentContext(cont);
-	ImGuiIO& io = ImGui::GetIO();
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+	ImGui::StyleColorsDark();
+
+	io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;// Enable Keyboard Controls
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
 	io.DisplaySize.x = SCREEN_WIDTH;
 	io.DisplaySize.y = SCREEN_HEIGHT;
+	io.DeltaTime = 1.f / 60.f;
+	
 	//Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
 	{
@@ -48,13 +62,12 @@ void Tracker::Run()
 	}
 	else
 	{
-
 		//Create window
 		window = SDL_CreateWindow("CrispyTracker", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_RESIZABLE);
 		rend = SDL_CreateRenderer(window, 0, SDL_RENDERER_PRESENTVSYNC);
-
 		// Setup Platform/Renderer backends
 		ImGui_ImplSDL2_InitForSDLRenderer(window, rend);
+		
 		if (window == NULL)
 		{
 			printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
@@ -62,17 +75,22 @@ void Tracker::Run()
 		}
 		else
 		{
+			//Load fonts
+			io.Fonts->AddFontDefault();
+			io.Fonts->Build();
 			WindowIsGood = true;
 		}
 	}
+
 	//Initialise the tracker
-	Initialise(8, 64);
+	Initialise(8);
 	while (running) {
 		if (WindowIsGood) {
 			Render();
 		}
 		CheckInput();
 	}
+
 	//Destroy window
 	SDL_DestroyWindow(window);
 	ImGui::DestroyContext();
@@ -185,9 +203,22 @@ void Tracker::CheckInput()
 
 void Tracker::Render()
 {
+	ImGui_ImplSDL2_NewFrame();
 	ImGui::NewFrame();
+
+	ImGui::ShowDemoWindow();
+	{
+		ImGui::Begin("Main Window", &ShowMain);
+
+		ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+		ImGui::Checkbox("Demo Window", &ShowMain);      // Edit bools storing our window open/close state
+		ImGui::Checkbox("Another Window", &ShowMain);
+
+		ImGui::End();
+	}
+	ImGui::Render();
+	SDL_RenderSetScale(rend, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
 	SDL_SetRenderDrawColor(rend,22, 22, 22, 255);
 	SDL_RenderClear(rend);
-	SDL_RenderPresent(rend);
-
+	ImGui::EndFrame();
 }
