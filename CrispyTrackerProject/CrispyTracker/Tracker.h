@@ -23,7 +23,8 @@ public:
 
 	SDL_Renderer* rend = NULL;
 	SDL_Window* window = NULL;
-	ImGuiContext* cont = NULL;
+	ImGuiContext* cont = NULL;	
+	ImGuiIO io;
 	Channel Channels[8];
 	int TickLimit;
 	int Length;
@@ -33,7 +34,7 @@ public:
 	bool ShowMain = true;
 
 	void Initialise(int StartLength);
-	void Run();
+	void Run(void);
 	void CheckInput();
 	void Render();
 };

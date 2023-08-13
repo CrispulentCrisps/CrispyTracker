@@ -14,8 +14,6 @@ SDL_Surface* screenSurface = NULL;
 
 SDL_AudioSpec want, have;
 SDL_AudioDeviceID dev;
-cont = ImGui::CreateContext();
-ImGuiIO& io = ImGui::GetIO();
 
 Tracker::Tracker()
 {
@@ -37,7 +35,7 @@ void Tracker::Initialise(int StartLength)
 	}
 }
 
-void Tracker::Run()
+void Tracker::Run(void)
 {
 	bool PlayingTrack = false;
 	bool WindowIsGood = true;
@@ -48,7 +46,8 @@ void Tracker::Run()
 	ImGui::SetCurrentContext(cont);
 	ImGui::StyleColorsDark();
 
-	io = ImGui::GetIO();
+	ImGuiIO IO = ImGui::GetIO();
+	io = IO;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;// Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
 	io.DisplaySize.x = SCREEN_WIDTH;
