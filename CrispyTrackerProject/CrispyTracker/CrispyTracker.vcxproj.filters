@@ -51,6 +51,9 @@
     <ClCompile Include="..\..\..\..\..\..\Downloads\imgui-1.89.8\imgui-1.89.8\backends\imgui_impl_sdl2.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
+    <ClCompile Include="Libraries\imgui\backends\imgui_impl_sdlrenderer2.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Channel.h">
@@ -84,6 +87,9 @@
       <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\..\Downloads\imgui-1.89.8\imgui-1.89.8\backends\imgui_impl_sdl2.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\imgui\backends\imgui_impl_sdlrenderer2.h">
       <Filter>imgui</Filter>
     </ClInclude>
   </ItemGroup>

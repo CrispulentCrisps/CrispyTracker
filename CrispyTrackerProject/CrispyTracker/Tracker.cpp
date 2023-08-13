@@ -17,11 +17,11 @@ SDL_AudioDeviceID dev;
 
 Tracker::Tracker()
 {
-	Run();
 }
 
 Tracker::~Tracker()
 {
+
 }
 
 void Tracker::Initialise(int StartLength)
@@ -43,9 +43,8 @@ void Tracker::Run(void)
 	//ImGUI setup
 	IMGUI_CHECKVERSION();
 	cont = ImGui::CreateContext();
-	ImGui::SetCurrentContext(cont);
-	ImGui::StyleColorsDark();
-
+	SetCurrentContext(cont);
+	StyleColorsDark();
 	ImGuiIO IO = ImGui::GetIO();
 	io = IO;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;// Enable Keyboard Controls
@@ -53,7 +52,6 @@ void Tracker::Run(void)
 	io.DisplaySize.x = SCREEN_WIDTH;
 	io.DisplaySize.y = SCREEN_HEIGHT;
 	io.DeltaTime = 1.f / 60.f;
-	
 	//Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
 	{
@@ -67,7 +65,7 @@ void Tracker::Run(void)
 		rend = SDL_CreateRenderer(window, 0, SDL_RENDERER_PRESENTVSYNC);
 		// Setup Platform/Renderer backends
 		ImGui_ImplSDL2_InitForSDLRenderer(window, rend);
-		
+		ImGui_ImplSDLRenderer2_Init(rend);
 		if (window == NULL)
 		{
 			printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
@@ -76,7 +74,7 @@ void Tracker::Run(void)
 		else
 		{
 			//Load fonts
-			io.Fonts->AddFontDefault();
+			ImFont* font = io.Fonts->AddFontFromFileTTF("fonts/Inconsolata.ttf", 18.0f, NULL, NULL);
 			io.Fonts->Build();
 			WindowIsGood = true;
 		}
@@ -93,7 +91,7 @@ void Tracker::Run(void)
 
 	//Destroy window
 	SDL_DestroyWindow(window);
-	ImGui::DestroyContext();
+	DestroyContext();
 	//Quit SDL subsystems
 	SDL_Quit();
 }
@@ -204,21 +202,23 @@ void Tracker::CheckInput()
 void Tracker::Render()
 {
 	ImGui_ImplSDL2_NewFrame();
-	ImGui::NewFrame();
+	NewFrame();
 
 	ImGui::ShowDemoWindow();
 	{
-		ImGui::Begin("Main Window", &ShowMain);
+		Begin("Main Window", &ShowMain);
 
-		ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-		ImGui::Checkbox("Demo Window", &ShowMain);      // Edit bools storing our window open/close state
-		ImGui::Checkbox("Another Window", &ShowMain);
+		Text("This is some useful text.");               // Display some text (you can use a format strings too)
+		Checkbox("Demo Window", &ShowMain);      // Edit bools storing our window open/close state
+		Checkbox("Another Window", &ShowMain);
 
-		ImGui::End();
+		End();
 	}
-	ImGui::Render();
 	SDL_RenderSetScale(rend, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
 	SDL_SetRenderDrawColor(rend,22, 22, 22, 255);
+	ImGui::Render();
 	SDL_RenderClear(rend);
-	ImGui::EndFrame();
+	ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
+	SDL_RenderPresent(rend);
+	EndFrame();
 }

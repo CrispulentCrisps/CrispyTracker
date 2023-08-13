@@ -6,6 +6,7 @@
 
 #include "imgui.h"
 #include "Libraries/imgui/backends/imgui_impl_sdl2.h"
+#include "Libraries/imgui/backends/imgui_impl_sdlrenderer2.h"
 
 #include <iostream>
 #include <vector>
@@ -14,6 +15,7 @@
 #include <math.h>
 
 using namespace std;
+using namespace ImGui;
 
 class Tracker
 {

@@ -162,6 +162,7 @@
     <ClCompile Include="..\..\..\..\..\..\Downloads\imgui-1.89.8\imgui-1.89.8\backends\imgui_impl_sdl2.cpp" />
     <ClCompile Include="Channel.cpp" />
     <ClCompile Include="Instrument.cpp" />
+    <ClCompile Include="Libraries\imgui\backends\imgui_impl_sdlrenderer2.cpp" />
     <ClCompile Include="Libraries\imgui\imgui.cpp" />
     <ClCompile Include="Libraries\imgui\imgui_demo.cpp" />
     <ClCompile Include="Libraries\imgui\imgui_draw.cpp" />
@@ -175,6 +176,7 @@
     <ClInclude Include="..\..\..\..\..\..\Downloads\imgui-1.89.8\imgui-1.89.8\backends\imgui_impl_sdl2.h" />
     <ClInclude Include="Channel.h" />
     <ClInclude Include="Instrument.h" />
+    <ClInclude Include="Libraries\imgui\backends\imgui_impl_sdlrenderer2.h" />
     <ClInclude Include="Libraries\imgui\imconfig.h" />
     <ClInclude Include="Libraries\imgui\imgui.h" />
     <ClInclude Include="Libraries\imgui\imgui_internal.h" />
