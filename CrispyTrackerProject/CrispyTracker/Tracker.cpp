@@ -1,20 +1,13 @@
 #include "Tracker.h"
 #include "SoundGenerator.h"
 
-#include <mmdeviceapi.h>
-#include <Audioclient.h>
-#include <math.h>
-
 //Universal variables here
 SoundGenerator SG(1, 56, 1);
 bool running = true;
 
 //Screen dimension constants
-const int SCREEN_WIDTH = 1280;
-const int SCREEN_HEIGHT = 720;
-
-//The window we'll be rendering to
-SDL_Window* window = NULL;
+int SCREEN_WIDTH = 1920;
+int SCREEN_HEIGHT = 1080;
 
 //The surface contained by the window
 SDL_Surface* screenSurface = NULL;
@@ -22,17 +15,31 @@ SDL_Surface* screenSurface = NULL;
 SDL_AudioSpec want, have;
 SDL_AudioDeviceID dev;
 
-
-void MyAudioCallback(void* userdata, Uint8* stream, int len)
+void Tracker::Initialise(int StartAmount, int StartLength)
 {
-	DWORD    flags;
-	static_cast<SoundGenerator*>(userdata)->LoadData(len / 8, stream, &flags);
+	Channels = {Channel()};
+	//initialise all the channels
+	for (size_t i = 0; i < StartAmount; i++)
+	{
+		Channel channel = Channel();
+		channel.SetUp(StartLength);
+		Channels.push_back(channel);
+	}
 }
 
 void Tracker::Run()
 {
 	bool PlayingTrack = false;
 	bool WindowIsGood = true;
+
+	IMGUI_CHECKVERSION();
+	cont = ImGui::CreateContext();
+	ImGui::SetCurrentContext(cont);
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+	io.DisplaySize.x = SCREEN_WIDTH;
+	io.DisplaySize.y = SCREEN_HEIGHT;
 	//Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
 	{
@@ -41,8 +48,13 @@ void Tracker::Run()
 	}
 	else
 	{
+
 		//Create window
 		window = SDL_CreateWindow("CrispyTracker", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_RESIZABLE);
+		rend = SDL_CreateRenderer(window, 0, SDL_RENDERER_PRESENTVSYNC);
+
+		// Setup Platform/Renderer backends
+		ImGui_ImplSDL2_InitForSDLRenderer(window, rend);
 		if (window == NULL)
 		{
 			printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
@@ -53,34 +65,17 @@ void Tracker::Run()
 			WindowIsGood = true;
 		}
 	}
-
-	SDL_memset(&want, 0, sizeof(want)); /* or SDL_zero(want) */
-	want.freq = 48000;
-	want.format = AUDIO_F32;
-	want.channels = 2;
-	want.samples = 4096;
-	want.callback = MyAudioCallback;  // you wrote this function elsewhere.
-	want.userdata = &SG;
-	dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
-	const char* err = SDL_GetError();
-
-
+	//Initialise the tracker
+	Initialise(8, 64);
 	while (running) {
 		if (WindowIsGood) {
-			//Get window surface
-			screenSurface = SDL_GetWindowSurface(window);
-
-			//Fill the surface white
-			SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 22, 22, 22));
-
-			//Update the surface
-			SDL_UpdateWindowSurface(window);
+			Render();
 		}
 		CheckInput();
 	}
 	//Destroy window
 	SDL_DestroyWindow(window);
-
+	ImGui::DestroyContext();
 	//Quit SDL subsystems
 	SDL_Quit();
 }
@@ -90,8 +85,9 @@ void Tracker::CheckInput()
 	int TuninOff = 48;
 	SDL_Event event;
 	const Uint8* keystates = SDL_GetKeyboardState(NULL);
-	while (SDL_PollEvent(&event))
+	if (SDL_PollEvent(&event))
 	{
+		ImGui_ImplSDL2_ProcessEvent(&event);
 		switch (event.type)
 		{
 		case SDL_KEYDOWN:
@@ -170,7 +166,7 @@ void Tracker::CheckInput()
 				SG.PlayingNoise = true;
 				break;
 			}
-
+			SG.CheckSound(want, have, dev, Channels);
 			SDL_PauseAudioDevice(dev, 0);
 			SDL_Delay(1);
 
@@ -185,4 +181,13 @@ void Tracker::CheckInput()
 			break;
 		}
 	}
+}
+
+void Tracker::Render()
+{
+	ImGui::NewFrame();
+	SDL_SetRenderDrawColor(rend,22, 22, 22, 255);
+	SDL_RenderClear(rend);
+	SDL_RenderPresent(rend);
+
 }

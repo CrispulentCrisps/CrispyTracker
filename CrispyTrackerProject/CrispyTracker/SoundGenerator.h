@@ -2,14 +2,13 @@
 #include <conio.h>
 #include <ctype.h>
 #include <iostream>
+#include "Channel.h"
 
 #include <mmdeviceapi.h>
 #include <Audioclient.h>
 
-#include <SDL.h>
-#include <SDL_keycode.h>
-#include <SDL_audio.h>
 #include <math.h>
+#include <vector>
 
 #pragma once
 using namespace std;
@@ -29,6 +28,5 @@ public:
 
 	BYTE* Totalbuffer;
 	SoundGenerator(int TV, int NI, int POS);
-	HRESULT LoadData(UINT count, BYTE* data, DWORD* flags);
-	HRESULT PlayAudioStream(void);
+	void CheckSound(SDL_AudioSpec want, SDL_AudioSpec have, SDL_AudioDeviceID dev, vector<Channel> AudioData);
 };
