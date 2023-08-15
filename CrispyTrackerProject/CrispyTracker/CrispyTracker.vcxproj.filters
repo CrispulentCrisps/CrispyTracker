@@ -33,6 +33,12 @@
     <ClCompile Include="Instrument.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\..\..\Downloads\imgui-1.89.8\imgui-1.89.8\backends\imgui_impl_sdl2.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Libraries\imgui\backends\imgui_impl_sdlrenderer2.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
     <ClCompile Include="Libraries\imgui\imgui.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
@@ -46,12 +52,6 @@
       <Filter>imgui</Filter>
     </ClCompile>
     <ClCompile Include="Libraries\imgui\imgui_widgets.cpp">
-      <Filter>imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\..\..\Downloads\imgui-1.89.8\imgui-1.89.8\backends\imgui_impl_sdl2.cpp">
-      <Filter>imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="Libraries\imgui\backends\imgui_impl_sdlrenderer2.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
   </ItemGroup>
@@ -68,8 +68,14 @@
     <ClInclude Include="Instrument.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Libraries\imgui\imconfig.h">
+    <ClInclude Include="..\..\..\..\..\..\Downloads\imgui-1.89.8\imgui-1.89.8\backends\imgui_impl_sdl2.h">
       <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\imgui\backends\imgui_impl_sdlrenderer2.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Patterns.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Libraries\imgui\imgui.h">
       <Filter>imgui</Filter>
@@ -86,11 +92,11 @@
     <ClInclude Include="Libraries\imgui\imstb_truetype.h">
       <Filter>imgui</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\..\..\Downloads\imgui-1.89.8\imgui-1.89.8\backends\imgui_impl_sdl2.h">
+    <ClInclude Include="Libraries\imgui\imconfig.h">
       <Filter>imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Libraries\imgui\backends\imgui_impl_sdlrenderer2.h">
-      <Filter>imgui</Filter>
+    <ClInclude Include="Sample.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

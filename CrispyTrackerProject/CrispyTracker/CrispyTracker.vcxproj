@@ -183,6 +183,8 @@
     <ClInclude Include="Libraries\imgui\imstb_rectpack.h" />
     <ClInclude Include="Libraries\imgui\imstb_textedit.h" />
     <ClInclude Include="Libraries\imgui\imstb_truetype.h" />
+    <ClInclude Include="Patterns.h" />
+    <ClInclude Include="Sample.h" />
     <ClInclude Include="SoundGenerator.h" />
     <ClInclude Include="Tracker.h" />
   </ItemGroup>
