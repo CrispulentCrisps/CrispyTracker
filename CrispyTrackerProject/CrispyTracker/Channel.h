@@ -12,16 +12,29 @@ using namespace std;
 class Channel
 {
 public:
-	vector<string> Rows;
+	string NoteNames[12] = {
+	"C-", "C#", "D-", "D#",
+	"E-", "F-", "F#", "G-",
+	"G#", "A-", "A#", "B-",
+	};
+
+	struct Row {
+		int note = 255;
+		int octave = 0;
+		int instrument = 0;
+		int volume = 0;
+		int effect = 0;
+		int effectvalue = 0;
+	};
+	
+	vector<Row> Rows;
 
 	Sint16 AudioData;
-	
 	int MarginLeft, MarginRight, MarginTop, MarginBottom;
 	int Index;
 	int Tick;
 	int ChannelLength;
 	int WaveType;
-	int EffectsSize;
 	int Volume;
 	int ChannelPatternIndex;
 
@@ -29,6 +42,13 @@ public:
 
 	void SetUp(int Length);
 	void TickCheck();
+
+	string Row_View(int index);
+	string NoteView(int index);
+	string VolumeView(int index);
+	string InstrumentView(int index);
+	string EffectView(int index);
+	string Effectvalue(int index);
 };
 
 /*
@@ -39,7 +59,7 @@ rows should be done like this
 3 chars for each effect command line
 
 visual example
-C-4 7F 30A
+C-4 7F 04 30A
 
 Empty parts can be represented with -
 

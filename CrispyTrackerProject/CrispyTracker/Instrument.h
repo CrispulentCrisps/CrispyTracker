@@ -1,7 +1,11 @@
 #pragma once
 #include <string>
 #include <vector>
-	
+
+//	
+//	Multi channel instrument
+//	
+
 #ifndef Instrument
 
 class Instrument

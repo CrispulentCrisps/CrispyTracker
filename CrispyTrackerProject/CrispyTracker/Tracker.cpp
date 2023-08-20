@@ -39,6 +39,10 @@ void Tracker::Run(void)
 {
 	SetupInstr();
 
+	Authbuf.reserve(64);
+	Descbuf.reserve(1024);
+	Output.reserve(1024);
+
 	bool PlayingTrack = false;
 	bool WindowIsGood = true;
 
@@ -206,7 +210,7 @@ void Tracker::Render()
 	ImGui_ImplSDL2_NewFrame();
 	NewFrame();
 
-	MenuBar();
+	MenuBar();	
 	Patterns();
 	Channel_View();
 	Instruments();
@@ -214,6 +218,10 @@ void Tracker::Render()
 	Samples();
 	Sample_View();
 	Settings_View();
+	Misc_View();
+	Author_View();
+	EchoSettings();
+	
 	SDL_RenderSetScale(rend, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
 	SDL_SetRenderDrawColor(rend,22, 22, 22, 255);
 	ImGui::Render();
@@ -243,7 +251,10 @@ void Tracker::MenuBar()
 
 	if (BeginMenu("Settings"))
 	{
-		Text("Settings :3");
+		if (Selectable("Echo Settings"))
+		{
+			ShowEcho = true;
+		}
 		ImGui::EndMenu();
 	}
 
@@ -265,7 +276,7 @@ void Tracker::Patterns()
 		Columns(8);
 		for (char i = 0; i < 8; i++)
 		{
-			Text(to_string(i).data());
+			Selectable(to_string(i).data());
 			NextColumn();
 		}
 		End();
@@ -346,13 +357,13 @@ void Tracker::Instruments()
 void Tracker::Instrument_View()
 {
 	if (ShowInstrument)
-	{
+	{	
 		if (Begin("Instrument Editor"), true, UNIVERSAL_WINDOW_FLAGS)
 		{
 			if (SelectedInst <= inst.size())
 			{
 				ImGui::PushItemWidth(ImGui::GetWindowWidth() * .75);
-				InputText("InstName", (char*)inst[SelectedInst].Name.data(), 2048);
+				InputText("InstName", (char*)2048, 2048);
 
 				SliderInt("Volume", &inst[SelectedInst].Volume, 0, 127);
 				SliderInt("Gain", &inst[SelectedInst].Gain, 0, 255);
@@ -415,7 +426,7 @@ void Tracker::Channel_View()
 {
 	if (Begin("Channels"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*0.85, TextSize)));
+		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*0.95, TextSize)));
 		{
 			TableNextColumn();
 			//Index
@@ -439,10 +450,24 @@ void Tracker::Channel_View()
 			{
 				for (char j = 0; j < TrackLength; j++)
 				{
-					Selectable(Channels[i].Rows[j].data(), false, 0, ImVec2(GetWindowWidth()/8, TextSize));
-					//TableNextRow();
+					if (BeginTable("RowView", 5)) {
+
+						Output = Channels[i].NoteView(i) +
+							Channels[i].VolumeView(i) +
+							Channels[i].InstrumentView(i) +
+							Channels[i].EffectView(i) +
+							Channels[i].Effectvalue(i);
+						//Selectable(Output.c_str(), false, 0, ImVec2((GetWindowWidth() / 8)/5, TextSize));
+						//Selectable(Channels[i].Row_View(i).c_str(), true, 0, ImVec2((GetWindowWidth() / 8), TextSize));
+						Text(Channels[i].Row_View(i).c_str());
+						EndTable();
+					}
+					else
+					{
+						EndTable();
+					}
 				}
-				TableNextColumn();
+				TableNextColumn(); 
 			}
 			EndTable();
 			End();
@@ -476,7 +501,7 @@ void Tracker::Samples()
 		if (inst.size() > 0)
 		{
 			BeginChild("SampleList", ImVec2(GetWindowWidth() - InstXPadding, GetWindowHeight() - InstYPadding), true, UNIVERSAL_WINDOW_FLAGS);
-			BeginTable("SampleTable", 1, TABLE_FLAGS, ImVec2(128, 24), 24);
+			BeginTable("SampleTable", 1, TABLE_FLAGS, ImVec2(GetWindowWidth() * 0.75, 24), 24);
 			for (char i = 0; i < samples.size(); i++)
 			{
 				Text(to_string(i).data());
@@ -515,16 +540,76 @@ void Tracker::Settings_View()
 {
 	if (ShowSettings)
 	{
+		if (Begin("SettingsView"),true, UNIVERSAL_WINDOW_FLAGS)
+		{
+			End();
+		}
+		else
+		{
+			End();
+		}
+	}
+}
 
+void Tracker::Misc_View()
+{
+	if (Begin("MiscView"), true, UNIVERSAL_WINDOW_FLAGS)
+	{
+		InputInt("Step", &Step, 1, 8);
+		InputInt("Octave", &Octave, 1, 8);
+		SliderInt("Volume Scale Left", &VolumeScaleL, 0, 127);
+		SliderInt("Volume Scale Right", &VolumeScaleR, 0, 127);
+		End();
 	}
 	else
 	{
+		End();
+	}
+}
 
+void Tracker::Author_View()
+{
+	if (Begin("Author"), true, UNIVERSAL_WINDOW_FLAGS)
+	{
+		InputText("Author", (char*)Authbuf.data(), 1024);
+		InputTextMultiline("Desc", (char*)Descbuf.data(), 1024,ImVec2(GetWindowWidth() * 0.5, GetWindowHeight() * 0.9));
+		End();
+	}
+	else
+	{
+		End();
+	}
+}
+
+void Tracker::EchoSettings()
+{
+	if (ShowEcho)
+	{
+		if (Begin("EchoSettings"),true, UNIVERSAL_WINDOW_FLAGS)
+		{
+			SliderInt("Delay", &Delay, 0, 15);
+			SliderInt("Feedback", &Feedback, 0, 127);
+
+			SliderInt("Echo Volume Left", &EchoVolL, -128, 127);
+			SliderInt("Echo Volume Right", &EchoVolR, -128, 127);
+
+			Text("Echo filter");
+			for (int i = 0; i < 8; i++)
+			{
+				SliderInt(to_string(i).data(), &EchoFilter[i], -128, 127);
+			}
+			End();
+		}
+		else
+		{
+
+		}
 	}
 }
 
 void Tracker::Credits()
 {
+
 }
 
 void Tracker::SetupInstr()
@@ -552,6 +637,7 @@ void Tracker::SetupInstr()
 	DefaultSample.Loop = false;
 	DefaultSample.LoopStart = 0;
 	DefaultSample.LoopEnd = 0;
+	samples.push_back(DefaultSample);
 }
 
 
