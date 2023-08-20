@@ -41,7 +41,7 @@ void Tracker::Run(void)
 
 	Authbuf.reserve(64);
 	Descbuf.reserve(1024);
-	Output.reserve(1024);
+	Output.reserve(2048);
 
 	bool PlayingTrack = false;
 	bool WindowIsGood = true;
@@ -363,7 +363,7 @@ void Tracker::Instrument_View()
 			if (SelectedInst <= inst.size())
 			{
 				ImGui::PushItemWidth(ImGui::GetWindowWidth() * .75);
-				InputText("InstName", (char*)2048, 2048);
+				InputText("InstName", (char*)inst[SelectedInst].Name.data(), 2048);
 
 				SliderInt("Volume", &inst[SelectedInst].Volume, 0, 127);
 				SliderInt("Gain", &inst[SelectedInst].Gain, 0, 255);
@@ -409,7 +409,7 @@ void Tracker::Instrument_View()
 			}
 			else
 			{
-				SelectedInst--;
+				//SelectedInst--;
 			}
 			End();
 		}
@@ -614,7 +614,6 @@ void Tracker::Credits()
 
 void Tracker::SetupInstr()
 {
-
 	DefaultInst.Index = 1;
 	DefaultInst.Name = "Instrument: ";
 	DefaultInst.SampleIndex = 0;

@@ -96,6 +96,6 @@ public:
 
 	string Authbuf;
 	string Descbuf;
-	string Output = "";
+	string Output = " ";
 };
 #endif // DEBUG

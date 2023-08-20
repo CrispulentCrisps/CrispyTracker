@@ -64,7 +64,7 @@ string Channel::Effectvalue(int index)
 {
 	if (Rows[index].effectvalue == 255)
 	{
-		return "---";
+		return "--";
 	}
 	else
 	{
@@ -77,12 +77,8 @@ void Channel::SetUp(int Length)
 	for (char i = 0; i < Length; i++)
 	{
 		Row row;
-		row.note = 255;
-		row.instrument = 255;
-		row.effect = 255;
-		row.effectvalue = 255;
-		row.octave = 4;
 		Rows.push_back(row);
+		Rows[i].note = 255;
 	}
 }
 

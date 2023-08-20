@@ -11,7 +11,6 @@
 class Instrument
 {
 public:
-
 	//Instrument index
 	int Index;
 	//Instrument name
