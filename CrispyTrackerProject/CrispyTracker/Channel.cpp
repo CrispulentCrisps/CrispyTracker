@@ -16,7 +16,7 @@ string Channel::NoteView(int index)
 {
 	if (Rows[index].note == 255)
 	{
-		return "--- ";
+		return "---";
 	}
 	else
 	{
@@ -79,6 +79,7 @@ void Channel::SetUp(int Length)
 		Row row;
 		Rows.push_back(row);
 		Rows[i].note = 255;
+		Rows[i].instrument = 255;
 	}
 }
 

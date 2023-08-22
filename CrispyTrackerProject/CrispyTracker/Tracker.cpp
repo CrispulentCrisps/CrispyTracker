@@ -426,9 +426,9 @@ void Tracker::Channel_View()
 {
 	if (Begin("Channels"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*0.95, TextSize)));
+		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*0.97 + (TextSize*8), TextSize)));
 		{
-			TableNextColumn();
+			//SetColumnWidth(1, (TextSize * 8));
 			//Index
 			for (char j = 0; j < TrackLength; j++)
 			{
@@ -452,14 +452,19 @@ void Tracker::Channel_View()
 				{
 					if (BeginTable("RowView", 5)) {
 
-						Output = Channels[i].NoteView(i) +
-							Channels[i].VolumeView(i) +
-							Channels[i].InstrumentView(i) +
-							Channels[i].EffectView(i) +
-							Channels[i].Effectvalue(i);
-						//Selectable(Output.c_str(), false, 0, ImVec2((GetWindowWidth() / 8)/5, TextSize));
-						//Selectable(Channels[i].Row_View(i).c_str(), true, 0, ImVec2((GetWindowWidth() / 8), TextSize));
-						Text(Channels[i].Row_View(i).c_str());
+						Selectable(" ");
+						TableNextColumn();
+						Selectable(Channels[i].NoteView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 8) / 5, TextSize));
+						//SameLine();
+						TableNextColumn();
+						Selectable(Channels[i].InstrumentView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 8) / 5, TextSize));
+						TableNextColumn();
+						Selectable(Channels[i].VolumeView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 8) / 5, TextSize));
+						TableNextColumn();
+						Selectable(Channels[i].EffectView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 8) / 5, TextSize));
+						TableNextColumn();
+						Selectable(Channels[i].Effectvalue(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 8) / 5, TextSize));
+						//TableNextColumn();
 						EndTable();
 					}
 					else

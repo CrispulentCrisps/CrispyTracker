@@ -44,7 +44,7 @@ public:
 	int Step = 1;
 	int Octave = 4;
 	bool PlayingTrack;
-	int TextSize = 16;
+	int TextSize = 14;
 
 	bool ShowSettings = false;
 	
