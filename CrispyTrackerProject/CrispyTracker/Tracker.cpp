@@ -42,6 +42,7 @@ void Tracker::Run(void)
 	Authbuf.reserve(64);
 	Descbuf.reserve(1024);
 	Output.reserve(2048);
+	FilePath.reserve(4096);
 
 	bool PlayingTrack = false;
 	bool WindowIsGood = true;
@@ -222,6 +223,11 @@ void Tracker::Render()
 	Author_View();
 	EchoSettings();
 	
+	if (LoadingSample)
+	{
+		LoadSample();
+	}
+
 	SDL_RenderSetScale(rend, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
 	SDL_SetRenderDrawColor(rend,22, 22, 22, 255);
 	ImGui::Render();
@@ -265,6 +271,7 @@ void Tracker::MenuBar()
 		ImGui::MenuItem("Credits");
 		ImGui::EndMenu();
 	}
+	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",	1000.0 / (ImGui::GetIO().Framerate), (ImGui::GetIO().Framerate));
 	EndMainMenuBar();
 
 }
@@ -303,8 +310,8 @@ void Tracker::Instruments()
 		{
 			if (SelectedInst >= inst.size())
 			{
-				inst.pop_back();
 				SelectedInst--;
+				inst.pop_back();
 			}
 			else
 			{
@@ -360,7 +367,7 @@ void Tracker::Instrument_View()
 	{	
 		if (Begin("Instrument Editor"), true, UNIVERSAL_WINDOW_FLAGS)
 		{
-			if (SelectedInst <= inst.size())
+			if (SelectedInst <= inst.size() - 1)
 			{
 				ImGui::PushItemWidth(ImGui::GetWindowWidth() * .75);
 				InputText("InstName", (char*)inst[SelectedInst].Name.data(), 2048);
@@ -426,50 +433,48 @@ void Tracker::Channel_View()
 {
 	if (Begin("Channels"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*0.97 + (TextSize*8), TextSize)));
+		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*.8 + (TextSize*8), TextSize)));
 		{
-			//SetColumnWidth(1, (TextSize * 8));
-			//Index
-			for (char j = 0; j < TrackLength; j++)
-			{
-				Text(to_string(j).data());
-				if (j < 10)
-				{
-					SameLine();
-					Text("  ");
-				}
-				else if (j >= 10 && j < 100)
-				{
-					SameLine();
-					Text(" ");
-				}
-			}
 			//Actual pattern data
 			TableNextColumn();
 			for (char i = 0; i < 8; i++)
 			{
 				for (char j = 0; j < TrackLength; j++)
 				{
-					if (BeginTable("RowView", 5)) {
-
-						Selectable(" ");
-						TableNextColumn();
-						Selectable(Channels[i].NoteView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 8) / 5, TextSize));
-						//SameLine();
-						TableNextColumn();
-						Selectable(Channels[i].InstrumentView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 8) / 5, TextSize));
-						TableNextColumn();
-						Selectable(Channels[i].VolumeView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 8) / 5, TextSize));
-						TableNextColumn();
-						Selectable(Channels[i].EffectView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 8) / 5, TextSize));
-						TableNextColumn();
-						Selectable(Channels[i].Effectvalue(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 8) / 5, TextSize));
-						//TableNextColumn();
-						EndTable();
+					if (i == 0)
+					{
+						Selectable(to_string(j).data());
+						if (j < 10)
+						{
+							SameLine();
+							Text("  ");
+						}
+						else if (j >= 10 && j < 100)
+						{
+							SameLine();
+							Text(" ");
+						}
 					}
 					else
 					{
-						EndTable();
+						if (BeginTable("RowView", 5, 0)) {
+
+							TableNextColumn();
+							Selectable(Channels[i].NoteView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize-4));
+							TableNextColumn();
+							Selectable(Channels[i].InstrumentView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4));
+							TableNextColumn();
+							Selectable(Channels[i].VolumeView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4));
+							TableNextColumn();
+							Selectable(Channels[i].EffectView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4));
+							TableNextColumn();
+							Selectable(Channels[i].Effectvalue(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4));
+							EndTable();
+						}
+						else
+						{
+							EndTable();
+						}
 					}
 				}
 				TableNextColumn(); 
@@ -490,7 +495,7 @@ void Tracker::Samples()
 	{
 		if (Button("Add", ImVec2(GetWindowWidth() * 0.33, 24)))
 		{
-
+			LoadingSample = true;
 		}
 		SameLine();
 		if (Button("Delete", ImVec2(GetWindowWidth() * 0.33, 24)) && inst.size() > 1)
@@ -503,7 +508,7 @@ void Tracker::Samples()
 
 		}
 
-		if (inst.size() > 0)
+		if (inst.size() > 0)	
 		{
 			BeginChild("SampleList", ImVec2(GetWindowWidth() - InstXPadding, GetWindowHeight() - InstYPadding), true, UNIVERSAL_WINDOW_FLAGS);
 			BeginTable("SampleTable", 1, TABLE_FLAGS, ImVec2(GetWindowWidth() * 0.75, 24), 24);
@@ -576,6 +581,9 @@ void Tracker::Author_View()
 {
 	if (Begin("Author"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
+		InputInt("Base tempo", &BaseTempo,1, 1);
+		InputInt("Tempo divider", &TempoDivider,1,1);
+		NewLine();
 		InputText("Author", (char*)Authbuf.data(), 1024);
 		InputTextMultiline("Desc", (char*)Descbuf.data(), 1024,ImVec2(GetWindowWidth() * 0.5, GetWindowHeight() * 0.9));
 		End();
@@ -643,8 +651,42 @@ void Tracker::SetupInstr()
 	DefaultSample.LoopEnd = 0;
 	samples.push_back(DefaultSample);
 }
+void Tracker::LoadSample()
+{
+	ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".wav", ".");
+	if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
+	{
+		// action if OK
+		if (ImGuiFileDialog::Instance()->IsOk())
+		{
+			FileName = ImGuiFileDialog::Instance()->GetFilePathName();
+			FilePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+			Sample cur;
+			SDL_RWops* file = SDL_RWFromFile(FilePath.data(), "r");
+			if (file)//Loaded right
+			{
+				for (size_t i = 0; i < file->size(file); i++)
+				{
+					FileBuffer[i] = 0;
+					cur.SampleData.push_back(SDL_RWread(file, &FileBuffer[i], sizeof(Sint32), 1));
+				}
+				cur.SampleName = FileName;
+				samples.push_back(cur);
+				SDL_RWclose(file);
+			}
+			else//fucked the file
+			{
+				SDL_RWclose(file);
+			}
 
+		}
 
+		cout << FileName + "\n" + FilePath;
+		// close
+		ImGuiFileDialog::Instance()->Close();
+		LoadingSample = false;
+	}
+}
 /*
 if (Begin("Main"), true, UNIVERSAL_WINDOW_FLAGS)
 {

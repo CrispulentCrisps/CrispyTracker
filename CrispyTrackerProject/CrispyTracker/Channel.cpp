@@ -4,7 +4,7 @@ string Channel::Row_View(int index)
 {
 	if (Rows[index].note == 255)
 	{
-		return "--- " + to_string(Rows[index].instrument) + " " + to_string(Rows[index].volume) + " " + to_string(Rows[index].effect);
+		return "---" + to_string(Rows[index].instrument) + " " + to_string(Rows[index].volume) + " " + to_string(Rows[index].effect);
 	}
 	else
 	{
@@ -28,7 +28,7 @@ string Channel::VolumeView(int index)
 {
 	if (Rows[index].volume == 255)
 	{
-		return "-- ";
+		return "--";
 	}
 	else
 	{
@@ -40,7 +40,7 @@ string Channel::InstrumentView(int index)
 {
 	if (Rows[index].instrument == 255)
 	{
-		return "-- ";
+		return "--";
 	}
 	else
 	{
@@ -52,7 +52,7 @@ string Channel::EffectView(int index)
 {
 	if (Rows[index].effect == 255)
 	{
-		return "-- ";
+		return "--";
 	}
 	else
 	{

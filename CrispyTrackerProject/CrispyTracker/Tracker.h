@@ -1,7 +1,8 @@
 #pragma once
-#ifndef DEBUG	 
+#ifndef DEBUG
 
 #include <SDL_keyboard.h>
+
 #include "Channel.h"
 #include "Sample.h"
 #include "Instrument.h"
@@ -10,6 +11,7 @@
 #include "imgui.h"
 #include "Libraries/imgui/backends/imgui_impl_sdl2.h"
 #include "Libraries/imgui/backends/imgui_impl_sdlrenderer2.h"
+#include "ImGuiFileDialog.h"
 
 #include <iostream>
 #include <vector>
@@ -45,6 +47,8 @@ public:
 	int Octave = 4;
 	bool PlayingTrack;
 	int TextSize = 14;
+	int BaseTempo = 150;
+	int TempoDivider = 6;
 
 	bool ShowSettings = false;
 	
@@ -54,6 +58,7 @@ public:
 	bool ShowInstrument = false;
 	bool ShowSample = false;
 	bool ShowEcho = false;
+	bool LoadingSample = false;
 
 	int InstXPadding = 32;
 	int InstYPadding = 72;
@@ -94,8 +99,16 @@ public:
 	void Credits();
 	void SetupInstr();
 
+	void LoadSample();
+
+	Sint32 FileBuffer[0xFFFFFF];
+
 	string Authbuf;
 	string Descbuf;
 	string Output = " ";
+	string FilePath = " ";
+	string FileName = " ";
+
+	size_t Wavbuf = 4294967295;
 };
 #endif // DEBUG
