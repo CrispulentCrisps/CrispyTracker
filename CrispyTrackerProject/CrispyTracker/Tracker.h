@@ -29,7 +29,10 @@ public:
 	~Tracker();
 
 	int UNIVERSAL_WINDOW_FLAGS = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar;
-	int TABLE_FLAGS = ImGuiTableFlags_Borders;
+	int TABLE_FLAGS = ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp;
+	int TRACKER_AUDIO_BUFFER = 1024;
+	int SPS = 41000;
+	string VERSION = "version: 0.1";
 
 	SDL_Renderer* rend = NULL;
 	SDL_Window* window = NULL;
@@ -101,14 +104,10 @@ public:
 
 	void LoadSample();
 
-	Sint32 FileBuffer[0xFFFFFF];
-
 	string Authbuf;
 	string Descbuf;
 	string Output = " ";
 	string FilePath = " ";
 	string FileName = " ";
-
-	size_t Wavbuf = 4294967295;
 };
 #endif // DEBUG

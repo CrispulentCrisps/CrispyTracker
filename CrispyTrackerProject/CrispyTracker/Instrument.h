@@ -17,8 +17,6 @@ public:
 	std::string Name;
 	//Sample pointer
 	int SampleIndex;
-	//Note Offset
-	std::vector<int> NoteOffset;
 
 	//Total volume (will only go from 0 to 127)
 	int Volume;

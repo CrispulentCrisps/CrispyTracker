@@ -39,7 +39,7 @@ void Tracker::Run(void)
 {
 	SetupInstr();
 
-	Authbuf.reserve(64);
+	Authbuf.reserve(128);
 	Descbuf.reserve(1024);
 	Output.reserve(2048);
 	FilePath.reserve(4096);
@@ -47,6 +47,16 @@ void Tracker::Run(void)
 	bool PlayingTrack = false;
 	bool WindowIsGood = true;
 
+	SDL_INIT_AUDIO;
+
+	have.channels = 1;
+	have.size = TRACKER_AUDIO_BUFFER;
+	have.freq = SPS;
+	have.samples = SPS / have.channels;
+	have.silence = 1024;
+	have.padding = 512;
+
+	have.format = AUDIO_S8 | AUDIO_U8 | AUDIO_S16;
 	//ImGUI setup
 	IMGUI_CHECKVERSION();
 	cont = ImGui::CreateContext();
@@ -272,6 +282,7 @@ void Tracker::MenuBar()
 		ImGui::EndMenu();
 	}
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",	1000.0 / (ImGui::GetIO().Framerate), (ImGui::GetIO().Framerate));
+	Text(VERSION.data());
 	EndMainMenuBar();
 
 }
@@ -327,13 +338,14 @@ void Tracker::Instruments()
 			inst.push_back(newinst);
 			cout << inst.size();
 		}
-
+		//Instrument side bar
 		if (inst.size() > 0)
 		{
 			BeginChild("List", ImVec2(GetWindowWidth() - InstXPadding, GetWindowHeight() - InstYPadding), true, UNIVERSAL_WINDOW_FLAGS);
 			BeginTable("InstList", 1, TABLE_FLAGS, ImVec2(GetWindowWidth()*0.75, 24), 24);
 			for (char i = 0; i < inst.size(); i++)
 			{
+				//Show instruments
 				Text(to_string(i).data());
 				SameLine();
 				if (SelectedInst <= inst.size() - 1)
@@ -433,7 +445,7 @@ void Tracker::Channel_View()
 {
 	if (Begin("Channels"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*.8 + (TextSize*8), TextSize)));
+		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*.85 + (TextSize*8), TextSize)));
 		{
 			//Actual pattern data
 			TableNextColumn();
@@ -500,15 +512,27 @@ void Tracker::Samples()
 		SameLine();
 		if (Button("Delete", ImVec2(GetWindowWidth() * 0.33, 24)) && inst.size() > 1)
 		{
-
+			if (SelectedSample >= samples.size())
+			{
+				SelectedSample--;
+				samples.pop_back();
+			}
+			else
+			{
+				samples.pop_back();
+			}
 		}
 		SameLine();
 		if (Button("Copy", ImVec2(GetWindowWidth() * 0.33, 24)) && inst.size() > 1)
 		{
-
+			int index = samples.size();
+			Sample newsamp = samples[SelectedInst];
+			newsamp.SampleName += to_string(index);
+			samples.push_back(newsamp);
+			cout << samples.size();
 		}
 
-		if (inst.size() > 0)	
+		if (samples.size() > 0)	
 		{
 			BeginChild("SampleList", ImVec2(GetWindowWidth() - InstXPadding, GetWindowHeight() - InstYPadding), true, UNIVERSAL_WINDOW_FLAGS);
 			BeginTable("SampleTable", 1, TABLE_FLAGS, ImVec2(GetWindowWidth() * 0.75, 24), 24);
@@ -543,7 +567,27 @@ void Tracker::Samples()
 
 void Tracker::Sample_View()
 {
-
+	if (ShowSample)
+	{
+		if (Begin("Sample view"), true, UNIVERSAL_WINDOW_FLAGS)
+		{
+			BeginChild("SampleTable",ImVec2(GetWindowWidth()*0.95, GetWindowHeight() * 0.85),UNIVERSAL_WINDOW_FLAGS);
+			NextColumn();
+			InputText("Sample N	ame", (char*)samples[SelectedSample].SampleName.data(), 2048);
+			InputInt("Playing HZ", &samples[SelectedSample].SampleRate);
+			InputInt("Fine Tune", (int*) &samples[SelectedSample].FineTune, 1,1);
+			InputInt("Loop Start", (int*)&samples[SelectedSample].LoopStart,16, 0);
+			InputInt("Loop End", (int*)&samples[SelectedSample].LoopEnd, 16, 0);
+			SliderInt("Note offset", &samples[SelectedSample].NoteOffset, -12, 12);
+			PlotLines("Waveform", (float*)&samples[SelectedSample].SampleData, (int)samples[SelectedSample].SampleData.size(), 0, "Waveform", -127, 127, ImVec2(GetWindowWidth() * 0.9, GetWindowHeight() * 0.25));
+			EndChild();
+			End();
+		}
+		else
+		{
+			End();
+		}
+	}
 }
 
 void Tracker::Settings_View()
@@ -651,6 +695,7 @@ void Tracker::SetupInstr()
 	DefaultSample.LoopEnd = 0;
 	samples.push_back(DefaultSample);
 }
+
 void Tracker::LoadSample()
 {
 	ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".wav", ".");
@@ -661,22 +706,25 @@ void Tracker::LoadSample()
 		{
 			FileName = ImGuiFileDialog::Instance()->GetFilePathName();
 			FilePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+			cout << FileName + "\n" + FilePath;
 			Sample cur;
-			SDL_RWops* file = SDL_RWFromFile(FilePath.data(), "r");
+			auto file = SDL_RWFromFile(FileName.data(), "rb");
 			if (file)//Loaded right
 			{
-				for (size_t i = 0; i < file->size(file); i++)
+				vector<Sint32> FileBuffer;
+				FileBuffer.resize(file->size(file));
+				SDL_LoadWAV(FilePath.data(), &have, (Uint8**)FileBuffer.size(), (Uint32*)FileBuffer.size());
+				cur = DefaultSample;
+				for (size_t i = 0; i < FileBuffer.size(); i++)
 				{
-					FileBuffer[i] = 0;
-					cur.SampleData.push_back(SDL_RWread(file, &FileBuffer[i], sizeof(Sint32), 1));
+					cur.SampleData.push_back(FileBuffer[i]);
 				}
-				cur.SampleName = FileName;
 				samples.push_back(cur);
 				SDL_RWclose(file);
+				SelectedSample = samples.size() - 1;
 			}
 			else//fucked the file
 			{
-				SDL_RWclose(file);
 			}
 
 		}

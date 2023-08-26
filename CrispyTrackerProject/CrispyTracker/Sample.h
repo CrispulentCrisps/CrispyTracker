@@ -7,9 +7,12 @@ class Sample
 {
 public:
 	int SampleIndex;
-	std::string SampleName;
-	std::vector<int16_t> SampleData;
-	std::vector<int16_t> BRRSampleData;
+	long PlayingHZ;
+	int NoteOffset;
+	
+	std::string SampleName = "Sample: ";
+	std::vector<Uint8> SampleData;
+	std::vector<Sint8> BRRSampleData;
 	int32_t SampleRate;
 	int16_t FineTune;
 	bool Loop;

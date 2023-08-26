@@ -58,7 +58,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Libraries\ImGuiFileDialog-0.6.5\ImGuiFileDialog.cpp">
-      <Filter>Header Files</Filter>
+      <Filter>imgui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -104,11 +104,11 @@
     <ClInclude Include="Sample.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Libraries\ImGuiFileDialog-0.6.5\ImGuiFileDialog.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Libraries\ImGuiFileDialog-0.6.5\ImGuiFileDialogConfig.h">
-      <Filter>Header Files</Filter>
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\ImGuiFileDialog-0.6.5\ImGuiFileDialog.h">
+      <Filter>imgui</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
