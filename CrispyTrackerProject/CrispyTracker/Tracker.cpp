@@ -56,7 +56,7 @@ void Tracker::Run(void)
 	have.silence = 1024;
 	have.padding = 512;
 
-	have.format = AUDIO_S8 | AUDIO_U8 | AUDIO_S16;
+	have.format = AUDIO_S8 | AUDIO_U8 | AUDIO_S16 | AUDIO_U16;
 	//ImGUI setup
 	IMGUI_CHECKVERSION();
 	cont = ImGui::CreateContext();
@@ -711,14 +711,16 @@ void Tracker::LoadSample()
 			auto file = SDL_RWFromFile(FileName.data(), "rb");
 			if (file)//Loaded right
 			{
-				vector<Sint32> FileBuffer;
-				FileBuffer.resize(file->size(file));
-				SDL_LoadWAV(FilePath.data(), &have, (Uint8**)FileBuffer.size(), (Uint32*)FileBuffer.size());
+				Sint32 FileBuffer = 1;
+				Uint32 AudioLen = 0;
+				SDL_LoadWAV(FileName.data(), &have, (Uint8**)FileBuffer, &AudioLen);
 				cur = DefaultSample;
-				for (size_t i = 0; i < FileBuffer.size(); i++)
+				cout << "\n" << FileBuffer << "\n" << AudioLen;
+				for (size_t i = 0; i < AudioLen; i++)
 				{
-					cur.SampleData.push_back(FileBuffer[i]);
+					cur.SampleData.push_back(FileBuffer);
 				}
+				
 				samples.push_back(cur);
 				SDL_RWclose(file);
 				SelectedSample = samples.size() - 1;
