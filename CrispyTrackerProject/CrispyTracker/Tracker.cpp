@@ -706,23 +706,23 @@ void Tracker::LoadSample()
 		{
 			FileName = ImGuiFileDialog::Instance()->GetFilePathName();
 			FilePath = ImGuiFileDialog::Instance()->GetCurrentPath();
-			cout << FileName + "\n" + FilePath;
+			cout << "\n" + FileName + "\n" + FilePath;
 			Sample cur;
 			auto file = SDL_RWFromFile(FileName.data(), "rb");
 			if (file)//Loaded right
 			{
-				Sint32 FileBuffer = 1;
+				Uint8* FileBuffer = 0;
 				Uint32 AudioLen = 0;
-				SDL_LoadWAV(FileName.data(), &have, (Uint8**)FileBuffer, &AudioLen);
+				SDL_LoadWAV(FileName.data(), &have, &FileBuffer, &AudioLen);
 				cur = DefaultSample;
-				cout << "\n" << FileBuffer << "\n" << AudioLen;
 				for (size_t i = 0; i < AudioLen; i++)
 				{
-					cur.SampleData.push_back(FileBuffer);
+					cur.SampleData.push_back(FileBuffer[i]);
+					cout << "\n" << FileBuffer[i];
 				}
-				
 				samples.push_back(cur);
 				SDL_RWclose(file);
+				SDL_FreeWAV(FileBuffer);
 				SelectedSample = samples.size() - 1;
 			}
 			else//fucked the file
