@@ -48,7 +48,7 @@ void Tracker::Run(void)
 	bool WindowIsGood = true;
 
 	SDL_INIT_AUDIO;
-
+	soundinfo.format = AUDIO_FORMATS;
 	have.channels = 1;
 	have.size = TRACKER_AUDIO_BUFFER;
 	have.freq = SPS;
@@ -56,7 +56,7 @@ void Tracker::Run(void)
 	have.silence = 1024;
 	have.padding = 512;
 
-	have.format = AUDIO_S8 | AUDIO_U8 | AUDIO_S16 | AUDIO_U16;
+	have.format = AUDIO_S8 | AUDIO_U8 | AUDIO_S16 | AUDIO_U16 | SF_FORMAT_PCM_16 | SF_FORMAT_PCM_S8 | SF_FORMAT_PCM_U8 | SF_FORMAT_PCM_24 | SF_FORMAT_PCM_32;
 	//ImGUI setup
 	IMGUI_CHECKVERSION();
 	cont = ImGui::CreateContext();
@@ -579,7 +579,12 @@ void Tracker::Sample_View()
 			InputInt("Loop Start", (int*)&samples[SelectedSample].LoopStart,16, 0);
 			InputInt("Loop End", (int*)&samples[SelectedSample].LoopEnd, 16, 0);
 			SliderInt("Note offset", &samples[SelectedSample].NoteOffset, -12, 12);
-			PlotLines("Waveform", (float*)&samples[SelectedSample].SampleData, (int)samples[SelectedSample].SampleData.size(), 0, "Waveform", -127, 127, ImVec2(GetWindowWidth() * 0.9, GetWindowHeight() * 0.25));
+			vector<float> SampleView;
+			for (size_t i = 0; i < samples[SelectedSample].SampleData.size(); i++)
+			{
+				SampleView.push_back(samples[SelectedSample].SampleData[i]);
+			}
+			PlotLines("Waveform", SampleView.data(), (int)samples[SelectedSample].SampleData.size(), 0, "Waveform", 0, 127, ImVec2(GetWindowWidth() * 0.9, GetWindowHeight() * 0.25));
 			EndChild();
 			End();
 		}
@@ -687,12 +692,14 @@ void Tracker::SetupInstr()
 	inst.push_back(DefaultInst);
 
 	DefaultSample.SampleIndex = 0;
-	DefaultSample.SampleName = "Sample: ";
+	DefaultSample.SampleName = "Sample: 0";
 	DefaultSample.FineTune = 0;
 	DefaultSample.SampleRate = 0;
 	DefaultSample.Loop = false;
 	DefaultSample.LoopStart = 0;
 	DefaultSample.LoopEnd = 0;
+	DefaultSample.SampleData.clear();
+	DefaultSample.BRRSampleData.clear();
 	samples.push_back(DefaultSample);
 }
 
@@ -708,22 +715,29 @@ void Tracker::LoadSample()
 			FilePath = ImGuiFileDialog::Instance()->GetCurrentPath();
 			cout << "\n" + FileName + "\n" + FilePath;
 			Sample cur;
-			auto file = SDL_RWFromFile(FileName.data(), "rb");
+			//auto file = SDL_RWFromFile(FileName.data(), "rb");
+			SNDFILE* file = sf_open(FileName.data(), SFM_READ, &soundinfo);
 			if (file)//Loaded right
 			{
-				Uint8* FileBuffer = 0;
+				
+				int FileBuffer = 0;
 				Uint32 AudioLen = 0;
-				SDL_LoadWAV(FileName.data(), &have, &FileBuffer, &AudioLen);
-				cur = DefaultSample;
-				for (size_t i = 0; i < AudioLen; i++)
+				sf_read_int(file, &FileBuffer, 1);
+				if (FileBuffer != 0)
 				{
-					cur.SampleData.push_back(FileBuffer[i]);
-					cout << "\n" << FileBuffer[i];
+					cur = DefaultSample;
+					cur.SampleData.push_back(FileBuffer);
+					cur.SampleName = "Sample: 0";
+					samples.push_back(cur);
+					sf_close(file);
+					//SDL_FreeWAV(FileBuffer);
+					SelectedSample = samples.size() - 1;
+
 				}
-				samples.push_back(cur);
-				SDL_RWclose(file);
-				SDL_FreeWAV(FileBuffer);
-				SelectedSample = samples.size() - 1;
+				else
+				{
+					cout << "\n ERROR: FILE IS EITHER EMPTY OR IS OTHERWISE UNABLE TO LOAD \n ";
+				}
 			}
 			else//fucked the file
 			{

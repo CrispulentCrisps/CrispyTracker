@@ -12,6 +12,7 @@
 #include "Libraries/imgui/backends/imgui_impl_sdl2.h"
 #include "Libraries/imgui/backends/imgui_impl_sdlrenderer2.h"
 #include "ImGuiFileDialog.h"
+#include <sndfile.h>
 
 #include <iostream>
 #include <vector>
@@ -33,6 +34,8 @@ public:
 	int TRACKER_AUDIO_BUFFER = 1024;
 	int SPS = 41000;
 	string VERSION = "version: 0.1";
+	SF_INFO soundinfo;
+	int AUDIO_FORMATS = SF_FORMAT_WAV;
 
 	SDL_Renderer* rend = NULL;
 	SDL_Window* window = NULL;

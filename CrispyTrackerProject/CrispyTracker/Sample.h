@@ -10,9 +10,9 @@ public:
 	long PlayingHZ;
 	int NoteOffset;
 	
-	std::string SampleName = "Sample: ";
-	std::vector<Uint8> SampleData;
-	std::vector<Sint8> BRRSampleData;
+	std::string SampleName = "Sample: 0";
+	std::vector<Uint16> SampleData;
+	std::vector<Sint16> BRRSampleData;
 	int32_t SampleRate;
 	int16_t FineTune;
 	bool Loop;
