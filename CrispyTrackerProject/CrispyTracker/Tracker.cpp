@@ -49,6 +49,9 @@ void Tracker::Run(void)
 
 	SDL_INIT_AUDIO;
 	soundinfo.format = AUDIO_FORMATS;
+	soundinfo.samplerate = SPS;
+	soundinfo.channels = 1;
+	soundinfo.frames = TRACKER_AUDIO_BUFFER;
 	have.channels = 1;
 	have.size = TRACKER_AUDIO_BUFFER;
 	have.freq = SPS;
@@ -56,7 +59,7 @@ void Tracker::Run(void)
 	have.silence = 1024;
 	have.padding = 512;
 
-	have.format = AUDIO_S8 | AUDIO_U8 | AUDIO_S16 | AUDIO_U16 | SF_FORMAT_PCM_16 | SF_FORMAT_PCM_S8 | SF_FORMAT_PCM_U8 | SF_FORMAT_PCM_24 | SF_FORMAT_PCM_32;
+	have.format = AUDIO_S16;
 	//ImGUI setup
 	IMGUI_CHECKVERSION();
 	cont = ImGui::CreateContext();
@@ -722,7 +725,7 @@ void Tracker::LoadSample()
 				
 				int FileBuffer = 0;
 				Uint32 AudioLen = 0;
-				sf_read_int(file, &FileBuffer, 1);
+				sf_read_int(file, &FileBuffer, 0);
 				if (FileBuffer != 0)
 				{
 					cur = DefaultSample;
