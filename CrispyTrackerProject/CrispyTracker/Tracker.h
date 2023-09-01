@@ -33,8 +33,7 @@ public:
 	int TABLE_FLAGS = ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp;
 	int TRACKER_AUDIO_BUFFER = 1024;
 	int SPS = 41000;
-	string VERSION = "version: 0.1";
-	SF_INFO soundinfo;
+	string VERSION = "version: 0.2";
 	int AUDIO_FORMATS = SF_FORMAT_WAV;
 
 	SDL_Renderer* rend = NULL;
@@ -106,6 +105,7 @@ public:
 	void SetupInstr();
 
 	void LoadSample();
+	void DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[]);
 
 	string Authbuf;
 	string Descbuf;

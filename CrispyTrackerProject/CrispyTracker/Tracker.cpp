@@ -48,10 +48,6 @@ void Tracker::Run(void)
 	bool WindowIsGood = true;
 
 	SDL_INIT_AUDIO;
-	soundinfo.format = AUDIO_FORMATS;
-	soundinfo.samplerate = SPS;
-	soundinfo.channels = 1;
-	soundinfo.frames = TRACKER_AUDIO_BUFFER;
 	have.channels = 1;
 	have.size = TRACKER_AUDIO_BUFFER;
 	have.freq = SPS;
@@ -73,31 +69,31 @@ void Tracker::Run(void)
 	io.DeltaTime = 1.f / 60.f;
 	//Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
-	{
-		printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
-		WindowIsGood = false;
-	}
-	else
-	{
-		//Create window
-		window = SDL_CreateWindow("CrispyTracker", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_RESIZABLE);
-		rend = SDL_CreateRenderer(window, 0, SDL_RENDERER_PRESENTVSYNC);
-		// Setup Platform/Renderer backends
-		ImGui_ImplSDL2_InitForSDLRenderer(window, rend);
-		ImGui_ImplSDLRenderer2_Init(rend);
-		if (window == NULL)
 		{
-			printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
+			printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
 			WindowIsGood = false;
 		}
 		else
 		{
-			//Load fonts
-			ImFont* font = io.Fonts->AddFontFromFileTTF("fonts/Inconsolata.ttf", TextSize, NULL, NULL);
-			io.Fonts->Build();
-			ImGui_ImplSDLRenderer2_CreateFontsTexture();
-			WindowIsGood = true;
-		}
+			//Create window
+			window = SDL_CreateWindow("CrispyTracker", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_RESIZABLE);
+			rend = SDL_CreateRenderer(window, 0, SDL_RENDERER_PRESENTVSYNC);
+			// Setup Platform/Renderer backends
+			ImGui_ImplSDL2_InitForSDLRenderer(window, rend);
+			ImGui_ImplSDLRenderer2_Init(rend);
+			if (window == NULL)
+			{
+				printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
+				WindowIsGood = false;
+			}
+			else
+			{
+				//Load fonts
+				ImFont* font = io.Fonts->AddFontFromFileTTF("fonts/Inconsolata.ttf", TextSize, NULL, NULL);
+				io.Fonts->Build();
+				ImGui_ImplSDLRenderer2_CreateFontsTexture();
+				WindowIsGood = true;
+			}
 	}
 
 	//Initialise the tracker
@@ -576,7 +572,7 @@ void Tracker::Sample_View()
 		{
 			BeginChild("SampleTable",ImVec2(GetWindowWidth()*0.95, GetWindowHeight() * 0.85),UNIVERSAL_WINDOW_FLAGS);
 			NextColumn();
-			InputText("Sample N	ame", (char*)samples[SelectedSample].SampleName.data(), 2048);
+			InputText("Sample Name", (char*)samples[SelectedSample].SampleName.data(), 2048);
 			InputInt("Playing HZ", &samples[SelectedSample].SampleRate);
 			InputInt("Fine Tune", (int*) &samples[SelectedSample].FineTune, 1,1);
 			InputInt("Loop Start", (int*)&samples[SelectedSample].LoopStart,16, 0);
@@ -587,7 +583,7 @@ void Tracker::Sample_View()
 			{
 				SampleView.push_back(samples[SelectedSample].SampleData[i]);
 			}
-			PlotLines("Waveform", SampleView.data(), (int)samples[SelectedSample].SampleData.size(), 0, "Waveform", 0, 127, ImVec2(GetWindowWidth() * 0.9, GetWindowHeight() * 0.25));
+			PlotLines("Waveform", SampleView.data(), (size_t)samples[SelectedSample].SampleData.size(), 0, "Waveform", -32768, 32767, ImVec2(GetWindowWidth() * 0.9, GetWindowHeight() * 0.5));
 			EndChild();
 			End();
 		}
@@ -717,28 +713,56 @@ void Tracker::LoadSample()
 			FileName = ImGuiFileDialog::Instance()->GetFilePathName();
 			FilePath = ImGuiFileDialog::Instance()->GetCurrentPath();
 			cout << "\n" + FileName + "\n" + FilePath;
-			Sample cur;
 			//auto file = SDL_RWFromFile(FileName.data(), "rb");
+
+			SF_INFO soundinfo;
+			soundinfo.format = AUDIO_FORMATS;
+			soundinfo.samplerate = SPS;
+			soundinfo.channels = 1;
+			soundinfo.frames = TRACKER_AUDIO_BUFFER;
+
 			SNDFILE* file = sf_open(FileName.data(), SFM_READ, &soundinfo);
 			if (file)//Loaded right
 			{
+				short FileBuffer[8192];
+				Uint32 AudioLen = soundinfo.frames * soundinfo.channels;
+				if (soundinfo.channels == 1)
+				{
+					sf_read_short(file, FileBuffer, AudioLen);
+				}
+				else if (soundinfo.channels > 1)
+				{
+					DownMix(file, soundinfo, FileBuffer);
+				}
 				
-				int FileBuffer = 0;
-				Uint32 AudioLen = 0;
-				sf_read_int(file, &FileBuffer, 0);
 				if (FileBuffer != 0)
 				{
+					Sample cur;
 					cur = DefaultSample;
-					cur.SampleData.push_back(FileBuffer);
+					for (size_t i = 0; i < AudioLen/soundinfo.channels; i++)
+					{
+						cout << "\n" << i;
+						/*
+						cout << " " << FileBuffer[i];
+						if (i % 8 == 1)
+						{
+							cout << "\n";
+						}
+						*/
+						cur.SampleData.push_back(FileBuffer[i]);
+					}
+					cur.SampleIndex = SelectedSample;
 					cur.SampleName = "Sample: 0";
+					cur.SampleRate = soundinfo.samplerate;
+
 					samples.push_back(cur);
 					sf_close(file);
-					//SDL_FreeWAV(FileBuffer);
 					SelectedSample = samples.size() - 1;
 
 				}
 				else
 				{
+					sf_close(file);
 					cout << "\n ERROR: FILE IS EITHER EMPTY OR IS OTHERWISE UNABLE TO LOAD \n ";
 				}
 			}
@@ -753,6 +777,25 @@ void Tracker::LoadSample()
 		ImGuiFileDialog::Instance()->Close();
 		LoadingSample = false;
 	}
+}
+
+void Tracker::DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[])
+{
+	Sint16 constexpr sampleBufferSize = 8192;
+	int sampleLength = sfinfo.frames / sfinfo.channels;
+	vector<Sint16> sampleBuffer;
+	sampleBuffer.reserve(sampleBufferSize * sfinfo.channels);
+	Sint64 sum;
+	for (int a = 0; a < sampleLength; a += sampleBufferSize) {
+		sf_read_short(sndfile, sampleBuffer.data(), sampleBufferSize);
+		for (int i = 0; i < sampleBufferSize; i++) {
+			sum = 0;
+			for (int j = 0; j < sfinfo.channels; j++)
+				sum += sampleBuffer.data()[i * sfinfo.channels + j];
+			outputBuffer[i] = (Sint16)(sum / (double)sfinfo.channels);
+		}
+	}
+
 }
 /*
 if (Begin("Main"), true, UNIVERSAL_WINDOW_FLAGS)

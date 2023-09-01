@@ -11,7 +11,7 @@ public:
 	int NoteOffset;
 	
 	std::string SampleName = "Sample: 0";
-	std::vector<Uint16> SampleData;
+	std::vector<Sint16> SampleData;
 	std::vector<Sint16> BRRSampleData;
 	int32_t SampleRate;
 	int16_t FineTune;
