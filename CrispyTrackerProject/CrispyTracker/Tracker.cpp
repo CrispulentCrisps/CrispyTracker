@@ -544,6 +544,7 @@ void Tracker::Samples()
 					if (Selectable(samples[i].SampleName.data()))
 					{
 						SelectedSample = i;
+						cout << i;
 						ShowSample = true;
 					}
 				}
@@ -754,10 +755,14 @@ void Tracker::LoadSample()
 					cur.SampleIndex = SelectedSample;
 					cur.SampleName = "Sample: 0";
 					cur.SampleRate = soundinfo.samplerate;
-
+					cur.Loop = false;
+					cur.LoopStart = 0;
+					cur.LoopEnd = 0;
+					cur.FineTune = 0;
+					SelectedSample = samples.size();
+					cur.SampleIndex = SelectedSample;
 					samples.push_back(cur);
 					sf_close(file);
-					SelectedSample = samples.size() - 1;
 
 				}
 				else
