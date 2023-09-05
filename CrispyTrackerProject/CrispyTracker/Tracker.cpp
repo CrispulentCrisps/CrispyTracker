@@ -51,7 +51,7 @@ void Tracker::Run(void)
 	have.channels = 1;
 	have.size = TRACKER_AUDIO_BUFFER;
 	have.freq = SPS;
-	have.samples = SPS / have.channels;
+	have.samples = have.freq / have.channels;
 	have.silence = 1024;
 	have.padding = 512;
 
@@ -60,7 +60,9 @@ void Tracker::Run(void)
 	IMGUI_CHECKVERSION();
 	cont = ImGui::CreateContext();
 	SetCurrentContext(cont);
+
 	StyleColorsDark();
+	
 	ImGuiIO IO = ImGui::GetIO();	
 	io = IO;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
@@ -231,6 +233,7 @@ void Tracker::Render()
 	Misc_View();
 	Author_View();
 	EchoSettings();
+	Credits();
 	
 	if (LoadingSample)
 	{
@@ -268,7 +271,7 @@ void Tracker::MenuBar()
 	{
 		if (Selectable("Echo Settings"))
 		{
-			ShowEcho = true;
+			ShowEcho = !ShowEcho;
 		}
 		ImGui::EndMenu();
 	}
@@ -277,10 +280,13 @@ void Tracker::MenuBar()
 	{
 		ImGui::MenuItem("Effects List");
 		ImGui::MenuItem("Manual");
-		ImGui::MenuItem("Credits");
+		if (Selectable("Credits"))
+		{
+			ShowCredits = !ShowCredits;
+		}
 		ImGui::EndMenu();
 	}
-	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",	1000.0 / (ImGui::GetIO().Framerate), (ImGui::GetIO().Framerate));
+	ImGui::Text("	|	%.3f ms/frame (%.1f FPS)",	1000.0 / (ImGui::GetIO().Framerate), (ImGui::GetIO().Framerate));
 	Text(VERSION.data());
 	EndMainMenuBar();
 
@@ -468,8 +474,26 @@ void Tracker::Channel_View()
 					}
 					else
 					{
-						if (BeginTable("RowView", 5, 0)) {
+						if (BeginTable("RowView", 5, 0)) 
+						{
 
+							ImGuiStyle* style = &ImGui::GetStyle();
+							ImVec4 col;
+							if (i % Highlight2 == 1)
+							{
+								col = H2Col;
+
+							}
+							else if (i % Highlight1 == 1)
+							{
+								col = H1Col;
+
+							}
+							else
+							{
+								col = Default;
+							}
+							PushStyleColor(ImGuiCol_TableRowBg, col);
 							TableNextColumn();
 							Selectable(Channels[i].NoteView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize-4));
 							TableNextColumn();
@@ -480,6 +504,7 @@ void Tracker::Channel_View()
 							Selectable(Channels[i].EffectView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4));
 							TableNextColumn();
 							Selectable(Channels[i].Effectvalue(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4));
+							PopStyleColor();
 							EndTable();
 						}
 						else
@@ -509,9 +534,10 @@ void Tracker::Samples()
 			LoadingSample = true;
 		}
 		SameLine();
-		if (Button("Delete", ImVec2(GetWindowWidth() * 0.33, 24)) && inst.size() > 1)
+		if (Button("Delete", ImVec2(GetWindowWidth() * 0.33, 24)) && samples.size() > 1)
 		{
-			if (SelectedSample >= samples.size())
+			cout << "SAMPLE LIST SIZE: " << samples.size();
+			if (SelectedSample > samples.size())
 			{
 				SelectedSample--;
 				samples.pop_back();
@@ -522,10 +548,10 @@ void Tracker::Samples()
 			}
 		}
 		SameLine();
-		if (Button("Copy", ImVec2(GetWindowWidth() * 0.33, 24)) && inst.size() > 1)
+		if (Button("Copy", ImVec2(GetWindowWidth() * 0.33, 24)) && samples.size() > 1)
 		{
 			int index = samples.size();
-			Sample newsamp = samples[SelectedInst];
+			Sample newsamp = samples[SelectedSample];
 			newsamp.SampleName += to_string(index);
 			samples.push_back(newsamp);
 			cout << samples.size();
@@ -550,7 +576,7 @@ void Tracker::Samples()
 				}
 				else
 				{
-					SelectedSample = samples.size();
+					SelectedSample = samples.size() - 1;
 				}
 				TableNextColumn();
 			}
@@ -571,6 +597,10 @@ void Tracker::Sample_View()
 	{
 		if (Begin("Sample view"), true, UNIVERSAL_WINDOW_FLAGS)
 		{
+			if (SelectedSample > samples.size() - 1)
+			{
+				SelectedSample = samples.size() - 1;
+			}
 			BeginChild("SampleTable",ImVec2(GetWindowWidth()*0.95, GetWindowHeight() * 0.85),UNIVERSAL_WINDOW_FLAGS);
 			NextColumn();
 			InputText("Sample Name", (char*)samples[SelectedSample].SampleName.data(), 2048);
@@ -671,7 +701,16 @@ void Tracker::EchoSettings()
 
 void Tracker::Credits()
 {
-
+	if (ShowCredits)
+	{
+		if (Begin("Credits1"), true, UNIVERSAL_WINDOW_FLAGS)
+		{
+			Text("Tracker Code: Crisps");
+			Text("Emulator Code: SPC Player");
+			Text("Driver Code: Nobody yet!!!");
+			End();
+		}
+	}
 }
 
 void Tracker::SetupInstr()
@@ -753,7 +792,7 @@ void Tracker::LoadSample()
 						cur.SampleData.push_back(FileBuffer[i]);
 					}
 					cur.SampleIndex = SelectedSample;
-					cur.SampleName = "Sample: 0";
+					cur.SampleName = "Sample: ";
 					cur.SampleRate = soundinfo.samplerate;
 					cur.Loop = false;
 					cur.LoopStart = 0;

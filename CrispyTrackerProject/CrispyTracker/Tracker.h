@@ -29,13 +29,15 @@ public:
 	Tracker();
 	~Tracker();
 
-	int UNIVERSAL_WINDOW_FLAGS = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar;
+	int UNIVERSAL_WINDOW_FLAGS = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
 	int TABLE_FLAGS = ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp;
 	int TRACKER_AUDIO_BUFFER = 1024;
 	int SPS = 41000;
 	string VERSION = "version: 0.2";
 	int AUDIO_FORMATS = SF_FORMAT_WAV;
-
+	const Uint8* keystates = 0;
+	SDL_Event event;
+	bool IsPressed = false;
 	SDL_Renderer* rend = NULL;
 	SDL_Window* window = NULL;
 	ImGuiContext* cont = NULL;
@@ -44,15 +46,22 @@ public:
 	Channel Channels[8];
 	vector<Patterns> pattern;
 
+	ImVec4 Default = ImVec4(0, 0, 0, 1);
+	ImVec4 H2Col = ImVec4(.4, .4, .4, 1);
+	ImVec4 H1Col = ImVec4(.2, .2, .2, 1);
+
 	int TickLimit;
 	int TrackLength = 64;
 	int YPos;
 	int Input;
 	int Step = 1;
 	int Octave = 4;
+	int ChannelColumn = 0, ChannelRow = 0;
 	bool PlayingTrack;
 	int TextSize = 14;
 	int BaseTempo = 150;
+	int Highlight1 = 4;
+	int Highlight2 = 16;
 	int TempoDivider = 6;
 
 	bool ShowSettings = false;
@@ -107,7 +116,8 @@ public:
 
 	void LoadSample();
 	void DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[]);
-
+	void UpdateRows();
+	void BRRConverter();
 	string Authbuf;
 	string Descbuf;
 	string Output = " ";
