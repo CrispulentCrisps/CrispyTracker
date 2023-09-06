@@ -1,11 +1,9 @@
 #pragma once
-#include <vector>
-#include <string>
+#include "Channel.h"
 
 using namespace std;
 
 class Patterns
 {
 	int Index;
-	vector<string> Data;
 };

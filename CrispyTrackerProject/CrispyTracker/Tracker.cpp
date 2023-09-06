@@ -60,10 +60,14 @@ void Tracker::Run(void)
 	IMGUI_CHECKVERSION();
 	cont = ImGui::CreateContext();
 	SetCurrentContext(cont);
+	StyleColorsClassic();
+	ImGuiStyle& style = ImGui::GetStyle();
+	style.FrameBorderSize = 0.4f;
+	style.WindowRounding = 1.5f;
+	style.FrameRounding = 1.5f;
+	style.Colors[ImGuiCol_WindowBg] = Default;
 
-	StyleColorsDark();
-	
-	ImGuiIO IO = ImGui::GetIO();	
+	ImGuiIO IO = ImGui::GetIO();
 	io = IO;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.DisplaySize.x = SCREEN_WIDTH;
@@ -221,27 +225,31 @@ void Tracker::Render()
 {
 	ImGui_ImplSDL2_NewFrame();
 	NewFrame();
-
-	MenuBar();	
-	Patterns();
-	Channel_View();
-	Instruments();
-	Instrument_View();
-	Samples();
-	Sample_View();
-	Settings_View();
-	Misc_View();
-	Author_View();
-	EchoSettings();
-	Credits();
-	
-	if (LoadingSample)
+	MenuBar();
+	if (!ShowCredits)
 	{
-		LoadSample();
+		ShowDemoWindow();
+		Patterns();
+		Channel_View();
+		Instruments();
+		Instrument_View();
+		Samples();
+		Sample_View();
+		Settings_View();
+		Misc_View();
+		Author_View();
+		EchoSettings();
+		if (LoadingSample)
+		{
+			LoadSample();
+		}
 	}
-
+	else
+	{
+		Credits();
+	}
 	SDL_RenderSetScale(rend, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
-	SDL_SetRenderDrawColor(rend,22, 22, 22, 255);
+	SDL_SetRenderDrawColor(rend,22, 22, 55, 255);
 	ImGui::Render();
 	SDL_RenderClear(rend);
 	ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
@@ -450,7 +458,7 @@ void Tracker::Channel_View()
 {
 	if (Begin("Channels"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*.85 + (TextSize*8), TextSize)));
+		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*.85 + (TextSize*8), 0)));
 		{
 			//Actual pattern data
 			TableNextColumn();
@@ -476,15 +484,15 @@ void Tracker::Channel_View()
 					{
 						if (BeginTable("RowView", 5, 0)) 
 						{
-
 							ImGuiStyle* style = &ImGui::GetStyle();
-							ImVec4 col;
-							if (i % Highlight2 == 1)
+							//PushStyleVar
+							ImU32 col;
+							if (j % Highlight2 == 0)
 							{
 								col = H2Col;
 
 							}
-							else if (i % Highlight1 == 1)
+							else if (j % Highlight1 == 0)
 							{
 								col = H1Col;
 
@@ -493,8 +501,10 @@ void Tracker::Channel_View()
 							{
 								col = Default;
 							}
-							PushStyleColor(ImGuiCol_TableRowBg, col);
 							TableNextColumn();
+							TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+							Channels[i].Rows[i].note = i;
+							Channels[i].Rows[i].octave = i;
 							Selectable(Channels[i].NoteView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize-4));
 							TableNextColumn();
 							Selectable(Channels[i].InstrumentView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4));
@@ -504,7 +514,6 @@ void Tracker::Channel_View()
 							Selectable(Channels[i].EffectView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4));
 							TableNextColumn();
 							Selectable(Channels[i].Effectvalue(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4));
-							PopStyleColor();
 							EndTable();
 						}
 						else
@@ -662,6 +671,27 @@ void Tracker::Author_View()
 	{
 		InputInt("Base tempo", &BaseTempo,1, 1);
 		InputInt("Tempo divider", &TempoDivider,1,1);
+		if (BaseTempo < 1)
+		{
+			BaseTempo = 1;
+		}
+		if (TempoDivider < 1)
+		{
+			TempoDivider = 1;
+		}
+		string temp = "Tempo: ";
+		temp += to_string(BaseTempo / TempoDivider);
+		Text(temp.data());
+		InputInt("Highlight 1", &Highlight1, 1, 1);
+		InputInt("Highlight 2", &Highlight2, 1, 1);
+		if (Highlight1 < 1)
+		{
+			Highlight1 = 1;
+		}
+		if (Highlight2 < 1)
+		{
+			Highlight2 = 1;
+		}
 		NewLine();
 		InputText("Author", (char*)Authbuf.data(), 1024);
 		InputTextMultiline("Desc", (char*)Descbuf.data(), 1024,ImVec2(GetWindowWidth() * 0.5, GetWindowHeight() * 0.9));
@@ -703,7 +733,7 @@ void Tracker::Credits()
 {
 	if (ShowCredits)
 	{
-		if (Begin("Credits1"), true, UNIVERSAL_WINDOW_FLAGS)
+		if (Begin("Credits"), true, UNIVERSAL_WINDOW_FLAGS)
 		{
 			Text("Tracker Code: Crisps");
 			Text("Emulator Code: SPC Player");
@@ -854,9 +884,7 @@ else
 {
 	End();
 }
-*/
 
-/*
 //ImGui::ShowDemoWindow();
 {
 	Begin("Main Window", &ShowMain);

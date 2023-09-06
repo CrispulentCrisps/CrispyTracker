@@ -27,6 +27,7 @@ public:
 		int effectvalue = 0;
 	};
 	
+	//Visible rows
 	vector<Row> Rows;
 
 	Sint16 AudioData;

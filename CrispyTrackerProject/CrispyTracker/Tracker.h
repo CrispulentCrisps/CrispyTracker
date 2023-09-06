@@ -11,8 +11,8 @@
 #include "imgui.h"
 #include "Libraries/imgui/backends/imgui_impl_sdl2.h"
 #include "Libraries/imgui/backends/imgui_impl_sdlrenderer2.h"
-#include "ImGuiFileDialog.h"
-#include <sndfile.h>
+#include "Libraries/ImGuiFileDialog-0.6.5/ImGuiFileDialog.h"
+#include "Libraries/libsndfile/include/sndfile.h"
 
 #include <iostream>
 #include <vector>
@@ -46,9 +46,10 @@ public:
 	Channel Channels[8];
 	vector<Patterns> pattern;
 
-	ImVec4 Default = ImVec4(0, 0, 0, 1);
-	ImVec4 H2Col = ImVec4(.4, .4, .4, 1);
-	ImVec4 H1Col = ImVec4(.2, .2, .2, 1);
+	ImColor Default = IM_COL32(22, 22, 33, 255);
+	ImColor H2Col = IM_COL32(66, 66, 88, 255);
+	ImColor H1Col = IM_COL32(33, 33, 66, 255);
+	ImColor CursorCol = IM_COL32(99, 99, 122, 255);
 
 	int TickLimit;
 	int TrackLength = 64;
