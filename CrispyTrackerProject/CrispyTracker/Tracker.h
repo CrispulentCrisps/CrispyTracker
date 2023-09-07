@@ -29,12 +29,13 @@ public:
 	Tracker();
 	~Tracker();
 
-	int UNIVERSAL_WINDOW_FLAGS = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
+	int UNIVERSAL_WINDOW_FLAGS = ImGuiWindowFlags_AlwaysAutoResize;
 	int TABLE_FLAGS = ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp;
 	int TRACKER_AUDIO_BUFFER = 1024;
 	int SPS = 41000;
 	string VERSION = "version: 0.2";
 	int AUDIO_FORMATS = SF_FORMAT_WAV;
+	int FrameCount = 0;
 	const Uint8* keystates = 0;
 	SDL_Event event;
 	bool IsPressed = false;
@@ -42,7 +43,6 @@ public:
 	SDL_Window* window = NULL;
 	ImGuiContext* cont = NULL;
 	ImGuiIO io;
-	ImGuiViewport* view;
 	Channel Channels[8];
 	vector<Patterns> pattern;
 
@@ -65,8 +65,8 @@ public:
 	int Highlight2 = 16;
 	int TempoDivider = 6;
 	
-	int CursorX = 1;
-	int CursorY = 0;
+	int CursorX = 1;			//Xpos of the channel cursor, not the mouse cursor
+	int CursorY = 0;			//Ypos of the channel cursor, not the mouse cursor
 	int CursorPos = 0;			//This is specifically for the individual elements in the effects chain
 	bool HoverNote = false;
 	bool HoverInst = false;

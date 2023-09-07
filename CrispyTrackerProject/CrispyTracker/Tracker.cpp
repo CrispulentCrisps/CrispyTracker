@@ -66,13 +66,11 @@ void Tracker::Run(void)
 	style.WindowRounding = 1.5f;
 	style.FrameRounding = 1.5f;
 	style.Colors[ImGuiCol_WindowBg] = Default;
-	ImGuiIO IO = ImGui::GetIO();
-	io = IO;
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
+	io = GetIO();
 	io.DisplaySize.x = SCREEN_WIDTH;
 	io.DisplaySize.y = SCREEN_HEIGHT;
 	io.DeltaTime = 1.f / 60.f;
-	view = GetMainViewport();
+	GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	//Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
 		{
@@ -101,7 +99,7 @@ void Tracker::Run(void)
 				WindowIsGood = true;
 			}
 	}
-
+	io.ConfigDockingAlwaysTabBar = true;
 	//Initialise the tracker
 	Initialise(TrackLength);
 	while (running) {
@@ -206,7 +204,7 @@ void Tracker::CheckInput()
 			}
 			SG.CheckSound(want, have, dev, Channels);
 			SDL_PauseAudioDevice(dev, 0);
-			SDL_Delay(1);
+			SDL_Delay(io.DeltaTime);
 
 			break;
 		case SDL_KEYUP:
@@ -223,13 +221,14 @@ void Tracker::CheckInput()
 
 void Tracker::Render()
 {
+	FrameCount++;
 	ImGui_ImplSDL2_NewFrame();
 	NewFrame();
 	MenuBar();
-	DockSpaceOverViewport(NULL/*, ImGuiDockNodeFlags_AutoHideTabBar*/);
+	DockSpaceOverViewport(NULL);
 	if (!ShowCredits)
 	{
-		ShowDemoWindow();
+		//ShowDemoWindow();
 		Patterns();
 		Channel_View();
 		Instruments();
@@ -250,7 +249,6 @@ void Tracker::Render()
 		Credits();
 	}
 	SDL_RenderSetScale(rend, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
-	SDL_SetRenderDrawColor(rend,22, 22, 55, 255);
 	ImGui::Render();
 	SDL_RenderClear(rend);
 	ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
@@ -439,6 +437,10 @@ void Tracker::Instrument_View()
 					SameLine();
 					SliderInt("Noise Freq ", &inst[SelectedInst].NoiseFreq, 0, 31);
 				}
+
+				if (Button("Close", ImVec2(64, TextSize*1.5))) {
+					ShowInstrument = false;
+				}
 			}
 			else
 			{
@@ -503,18 +505,12 @@ void Tracker::Channel_View()
 								col = Default;
 							}
 							TableNextColumn();
+							
 							TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 							if (CursorX == i && CursorY == j)//i = x, j = y
 							{
 								switch (CursorPos)
 								{
-								default:
-									HoverNote = false;
-									HoverInst = false;
-									HoverVolume = false;
-									HoverEffect = false;
-									HoverValue = false;
-									break;
 								case 0:
 									HoverNote = true;
 									HoverInst = false;
@@ -560,6 +556,22 @@ void Tracker::Channel_View()
 								HoverEffect = false;
 								HoverValue = false;
 							}
+							
+							if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+							{
+								string str;
+								str = "i: ";
+								str += to_string(i);
+								str += "| J: ";
+								str += to_string(j);
+								str += "| CurPos: ";
+								str += to_string(CursorPos);
+								str += "\nCursorX: ";
+								str += to_string(CursorX);
+								str += "| CursorY: ";
+								str += to_string(CursorY);
+								SetTooltip(str.data());
+							}
 							if (Selectable(Channels[i].NoteView(i).c_str(), HoverNote, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
 							{
 								CursorPos = 0;
@@ -567,34 +579,33 @@ void Tracker::Channel_View()
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].InstrumentView(i).c_str(), HoverInst, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4))) 
+							if (Selectable(Channels[i].InstrumentView(i).c_str(), HoverInst, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
 							{
 								CursorPos = 1;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].VolumeView(i).c_str(), HoverVolume, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4))) 
+							if (Selectable(Channels[i].VolumeView(i).c_str(), HoverVolume, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
 							{
 								CursorPos = 2;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].EffectView(i).c_str(), HoverEffect, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4))) 
+							if (Selectable(Channels[i].EffectView(i).c_str(), HoverEffect, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
 							{
 								CursorPos = 3;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].Effectvalue(i).c_str(), HoverValue, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4))) 
+							if (Selectable(Channels[i].Effectvalue(i).c_str(), HoverValue, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
 							{
 								CursorPos = 4;
 								CursorX = i;
 								CursorY = j;
 							}
-							
 							EndTable();
 						}
 						else
@@ -705,6 +716,9 @@ void Tracker::Sample_View()
 				SampleView.push_back(samples[SelectedSample].SampleData[i]);
 			}
 			PlotLines("Waveform", SampleView.data(), (size_t)samples[SelectedSample].SampleData.size(), 0, "Waveform", -32768, 32767, ImVec2(GetWindowWidth() * 0.9, GetWindowHeight() * 0.5));
+			if (Button("Close", ImVec2(64, TextSize * 1.5))) {
+				ShowSample = false;
+			}
 			EndChild();
 			End();
 		}
