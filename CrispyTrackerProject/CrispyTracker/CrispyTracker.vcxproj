@@ -159,11 +159,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\..\Downloads\imgui-1.89.8\imgui-1.89.8\backends\imgui_impl_sdl2.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdl2.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdlrenderer2.cpp" />
     <ClCompile Include="Channel.cpp" />
     <ClCompile Include="Instrument.cpp" />
     <ClCompile Include="Libraries\ImGuiFileDialog-0.6.5\ImGuiFileDialog.cpp" />
-    <ClCompile Include="Libraries\imgui\backends\imgui_impl_sdlrenderer2.cpp" />
     <ClCompile Include="Libraries\imgui\imgui.cpp" />
     <ClCompile Include="Libraries\imgui\imgui_demo.cpp" />
     <ClCompile Include="Libraries\imgui\imgui_draw.cpp" />
@@ -175,12 +175,12 @@
     <ClCompile Include="Tracker.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\..\..\Downloads\imgui-1.89.8\imgui-1.89.8\backends\imgui_impl_sdl2.h" />
+    <ClInclude Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdl2.h" />
+    <ClInclude Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdlrenderer2.h" />
     <ClInclude Include="Channel.h" />
     <ClInclude Include="Instrument.h" />
     <ClInclude Include="Libraries\ImGuiFileDialog-0.6.5\ImGuiFileDialog.h" />
     <ClInclude Include="Libraries\ImGuiFileDialog-0.6.5\ImGuiFileDialogConfig.h" />
-    <ClInclude Include="Libraries\imgui\backends\imgui_impl_sdlrenderer2.h" />
     <ClInclude Include="Libraries\imgui\imconfig.h" />
     <ClInclude Include="Libraries\imgui\imgui.h" />
     <ClInclude Include="Libraries\imgui\imgui_internal.h" />
@@ -191,6 +191,9 @@
     <ClInclude Include="Sample.h" />
     <ClInclude Include="SoundGenerator.h" />
     <ClInclude Include="Tracker.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Libraries\imgui\LICENSE.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

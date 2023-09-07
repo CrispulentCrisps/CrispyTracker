@@ -66,13 +66,13 @@ void Tracker::Run(void)
 	style.WindowRounding = 1.5f;
 	style.FrameRounding = 1.5f;
 	style.Colors[ImGuiCol_WindowBg] = Default;
-
 	ImGuiIO IO = ImGui::GetIO();
 	io = IO;
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
 	io.DisplaySize.x = SCREEN_WIDTH;
 	io.DisplaySize.y = SCREEN_HEIGHT;
 	io.DeltaTime = 1.f / 60.f;
+	view = GetMainViewport();
 	//Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
 		{
@@ -226,6 +226,7 @@ void Tracker::Render()
 	ImGui_ImplSDL2_NewFrame();
 	NewFrame();
 	MenuBar();
+	DockSpaceOverViewport(NULL/*, ImGuiDockNodeFlags_AutoHideTabBar*/);
 	if (!ShowCredits)
 	{
 		ShowDemoWindow();
@@ -503,17 +504,97 @@ void Tracker::Channel_View()
 							}
 							TableNextColumn();
 							TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
-							Channels[i].Rows[i].note = i;
-							Channels[i].Rows[i].octave = i;
-							Selectable(Channels[i].NoteView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize-4));
+							if (CursorX == i && CursorY == j)//i = x, j = y
+							{
+								switch (CursorPos)
+								{
+								default:
+									HoverNote = false;
+									HoverInst = false;
+									HoverVolume = false;
+									HoverEffect = false;
+									HoverValue = false;
+									break;
+								case 0:
+									HoverNote = true;
+									HoverInst = false;
+									HoverVolume = false;
+									HoverEffect = false;
+									HoverValue = false;
+									break;
+								case 1:
+									HoverNote = false;
+									HoverInst = true;
+									HoverVolume = false;
+									HoverEffect = false;
+									HoverValue = false;
+									break;
+								case 2:
+									HoverNote = false;
+									HoverInst = false;
+									HoverVolume = true;
+									HoverEffect = false;
+									HoverValue = false;
+									break;
+								case 3:
+									HoverNote = false;
+									HoverInst = false;
+									HoverVolume = false;
+									HoverEffect = true;
+									HoverValue = false;
+									break;
+								case 4:
+									HoverNote = false;
+									HoverInst = false;
+									HoverVolume = false;
+									HoverEffect = false;
+									HoverValue = true;
+									break;
+								}
+							}
+							else
+							{
+								HoverNote = false;
+								HoverInst = false;
+								HoverVolume = false;
+								HoverEffect = false;
+								HoverValue = false;
+							}
+							if (Selectable(Channels[i].NoteView(i).c_str(), HoverNote, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
+							{
+								CursorPos = 0;
+								CursorX = i;
+								CursorY = j;
+							}
 							TableNextColumn();
-							Selectable(Channels[i].InstrumentView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4));
+							if (Selectable(Channels[i].InstrumentView(i).c_str(), HoverInst, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4))) 
+							{
+								CursorPos = 1;
+								CursorX = i;
+								CursorY = j;
+							}
 							TableNextColumn();
-							Selectable(Channels[i].VolumeView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4));
+							if (Selectable(Channels[i].VolumeView(i).c_str(), HoverVolume, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4))) 
+							{
+								CursorPos = 2;
+								CursorX = i;
+								CursorY = j;
+							}
 							TableNextColumn();
-							Selectable(Channels[i].EffectView(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4));
+							if (Selectable(Channels[i].EffectView(i).c_str(), HoverEffect, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4))) 
+							{
+								CursorPos = 3;
+								CursorX = i;
+								CursorY = j;
+							}
 							TableNextColumn();
-							Selectable(Channels[i].Effectvalue(i).c_str(), false, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4));
+							if (Selectable(Channels[i].Effectvalue(i).c_str(), HoverValue, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4))) 
+							{
+								CursorPos = 4;
+								CursorX = i;
+								CursorY = j;
+							}
+							
 							EndTable();
 						}
 						else

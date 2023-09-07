@@ -21,10 +21,10 @@ public:
 	struct Row {
 		int note = 255;
 		int octave = 0;
-		int instrument = 0;
-		int volume = 0;
-		int effect = 0;
-		int effectvalue = 0;
+		int instrument = 255;
+		int volume = 255;
+		int effect = 255;
+		int effectvalue = 255;
 	};
 	
 	//Visible rows

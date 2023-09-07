@@ -8,7 +8,7 @@
 #include "Instrument.h"
 #include "Patterns.h"
 
-#include "imgui.h"
+#include "Libraries/imgui/imgui.h"
 #include "Libraries/imgui/backends/imgui_impl_sdl2.h"
 #include "Libraries/imgui/backends/imgui_impl_sdlrenderer2.h"
 #include "Libraries/ImGuiFileDialog-0.6.5/ImGuiFileDialog.h"
@@ -42,7 +42,7 @@ public:
 	SDL_Window* window = NULL;
 	ImGuiContext* cont = NULL;
 	ImGuiIO io;
-	
+	ImGuiViewport* view;
 	Channel Channels[8];
 	vector<Patterns> pattern;
 
@@ -64,6 +64,15 @@ public:
 	int Highlight1 = 4;
 	int Highlight2 = 16;
 	int TempoDivider = 6;
+	
+	int CursorX = 1;
+	int CursorY = 0;
+	int CursorPos = 0;			//This is specifically for the individual elements in the effects chain
+	bool HoverNote = false;
+	bool HoverInst = false;
+	bool HoverVolume = false;
+	bool HoverEffect = false;
+	bool HoverValue = false;	//In regards to effect values
 
 	bool ShowSettings = false;
 	

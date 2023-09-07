@@ -33,10 +33,10 @@
     <ClCompile Include="Instrument.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\..\..\Downloads\imgui-1.89.8\imgui-1.89.8\backends\imgui_impl_sdl2.cpp">
-      <Filter>imgui</Filter>
+    <ClCompile Include="Patterns.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Libraries\imgui\backends\imgui_impl_sdlrenderer2.cpp">
+    <ClCompile Include="Libraries\ImGuiFileDialog-0.6.5\ImGuiFileDialog.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
     <ClCompile Include="Libraries\imgui\imgui.cpp">
@@ -54,10 +54,10 @@
     <ClCompile Include="Libraries\imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Patterns.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdl2.cpp">
+      <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Libraries\ImGuiFileDialog-0.6.5\ImGuiFileDialog.cpp">
+    <ClCompile Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdlrenderer2.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
   </ItemGroup>
@@ -74,14 +74,20 @@
     <ClInclude Include="Instrument.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\..\..\Downloads\imgui-1.89.8\imgui-1.89.8\backends\imgui_impl_sdl2.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="Libraries\imgui\backends\imgui_impl_sdlrenderer2.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
     <ClInclude Include="Patterns.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Sample.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\ImGuiFileDialog-0.6.5\ImGuiFileDialogConfig.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\ImGuiFileDialog-0.6.5\ImGuiFileDialog.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\imgui\imconfig.h">
+      <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="Libraries\imgui\imgui.h">
       <Filter>imgui</Filter>
@@ -98,17 +104,16 @@
     <ClInclude Include="Libraries\imgui\imstb_truetype.h">
       <Filter>imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Libraries\imgui\imconfig.h">
+    <ClInclude Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdl2.h">
       <Filter>imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Sample.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Libraries\ImGuiFileDialog-0.6.5\ImGuiFileDialogConfig.h">
+    <ClInclude Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdlrenderer2.h">
       <Filter>imgui</Filter>
     </ClInclude>
-    <ClInclude Include="Libraries\ImGuiFileDialog-0.6.5\ImGuiFileDialog.h">
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Libraries\imgui\LICENSE.txt">
       <Filter>imgui</Filter>
-    </ClInclude>
+    </Text>
   </ItemGroup>
 </Project>
