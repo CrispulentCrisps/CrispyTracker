@@ -36,9 +36,10 @@ public:
 	string VERSION = "version: 0.2";
 	int AUDIO_FORMATS = SF_FORMAT_WAV;
 	int FrameCount = 0;
-	const Uint8* keystates = 0;
-	SDL_Event event;
+	SDL_Event Event;
+	SDL_Keycode Currentkey;
 	bool IsPressed = false;
+	bool EditingMode = true;
 	SDL_Renderer* rend = NULL;
 	SDL_Window* window = NULL;
 	ImGuiContext* cont = NULL;
@@ -50,7 +51,11 @@ public:
 	ImColor H2Col = IM_COL32(66, 66, 88, 255);
 	ImColor H1Col = IM_COL32(33, 33, 66, 255);
 	ImColor CursorCol = IM_COL32(99, 99, 122, 255);
-
+	SDL_KeyCode NoteInput[12] = {
+									SDLK_q , SDLK_2, SDLK_w, SDLK_3, 
+									SDLK_e, SDLK_r, SDLK_5, SDLK_t, 
+									SDLK_6, SDLK_y, SDLK_7, SDLK_u, 
+								};
 	int TickLimit;
 	int TrackLength = 64;
 	int YPos;
@@ -65,7 +70,7 @@ public:
 	int Highlight2 = 16;
 	int TempoDivider = 6;
 	
-	int CursorX = 1;			//Xpos of the channel cursor, not the mouse cursor
+	int CursorX = 0;			//Xpos of the channel cursor, not the mouse cursor
 	int CursorY = 0;			//Ypos of the channel cursor, not the mouse cursor
 	int CursorPos = 0;			//This is specifically for the individual elements in the effects chain
 	bool HoverNote = false;
@@ -104,6 +109,15 @@ public:
 	int EchoVolR;		//(0-127)
 	int EchoFilter[8];	//(0-127) Must accumulate to 127 at most!!!!
 
+	//Enums
+	enum ChannelEditState {
+		NOTE = 0,
+		VOLUME = 1,
+		INSTR = 2,
+		EFFECT = 3,
+		VALUE = 4,
+	};
+
 	//Functions
 	void Initialise(int StartLength);
 	void Run(void);
@@ -124,6 +138,7 @@ public:
 	void Credits();
 	void SetupInstr();
 
+	void ChannelInput(int CurPos, int x, int y);
 	void LoadSample();
 	void DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[]);
 	void UpdateRows();

@@ -99,7 +99,7 @@ void Tracker::Run(void)
 				WindowIsGood = true;
 			}
 	}
-	io.ConfigDockingAlwaysTabBar = true;
+	ChannelEditState cstate = NOTE;
 	//Initialise the tracker
 	Initialise(TrackLength);
 	while (running) {
@@ -124,9 +124,11 @@ void Tracker::CheckInput()
 	if (SDL_PollEvent(&event))
 	{
 		ImGui_ImplSDL2_ProcessEvent(&event);
+		Event = event;
 		switch (event.type)
 		{
 		case SDL_KEYDOWN:
+			Currentkey = event.key.keysym.sym;
 			switch (event.key.keysym.sym)
 			{
 			default:
@@ -135,6 +137,7 @@ void Tracker::CheckInput()
 			case SDL_QUIT:
 				running = false;
 				break;
+				/*
 				//upper octave
 			case SDLK_q:
 				SG.NoteIndex = TuninOff;
@@ -201,6 +204,7 @@ void Tracker::CheckInput()
 				printf("PRESSED I");
 				SG.PlayingNoise = true;
 				break;
+				*/
 			}
 			SG.CheckSound(want, have, dev, Channels);
 			SDL_PauseAudioDevice(dev, 0);
@@ -208,6 +212,7 @@ void Tracker::CheckInput()
 
 			break;
 		case SDL_KEYUP:
+			Currentkey = 0;
 			SG.PlayingNoise = false;
 			SDL_PauseAudioDevice(dev, 1);
 			break;
@@ -507,8 +512,28 @@ void Tracker::Channel_View()
 							TableNextColumn();
 							
 							TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+
+							if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+							{
+								string str;
+								str = "i: ";
+								str += to_string(i);
+								str += "| j: ";
+								str += to_string(j);
+								str += "| CurPos: ";
+								str += to_string(CursorPos);
+								str += "\nCursorX: ";
+								str += to_string(CursorX);
+								str += "| CursorY: ";
+								str += to_string(CursorY);
+								SetTooltip(str.data());
+							}
 							if (CursorX == i && CursorY == j)//i = x, j = y
 							{
+								if (IsWindowFocused())
+								{
+									ChannelInput(CursorPos, i, j);
+								}
 								switch (CursorPos)
 								{
 								case 0:
@@ -555,22 +580,6 @@ void Tracker::Channel_View()
 								HoverVolume = false;
 								HoverEffect = false;
 								HoverValue = false;
-							}
-							
-							if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-							{
-								string str;
-								str = "i: ";
-								str += to_string(i);
-								str += "| J: ";
-								str += to_string(j);
-								str += "| CurPos: ";
-								str += to_string(CursorPos);
-								str += "\nCursorX: ";
-								str += to_string(CursorX);
-								str += "| CursorY: ";
-								str += to_string(CursorY);
-								SetTooltip(str.data());
 							}
 							if (Selectable(Channels[i].NoteView(i).c_str(), HoverNote, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
 							{
@@ -865,6 +874,82 @@ void Tracker::SetupInstr()
 	DefaultSample.SampleData.clear();
 	DefaultSample.BRRSampleData.clear();
 	samples.push_back(DefaultSample);
+}
+
+void Tracker::ChannelInput(int CurPos, int x, int y)
+{
+	if (Event.type == SDL_KEYDOWN)
+	{
+		if (!IsPressed)
+		{
+			if (Currentkey == SDLK_LEFT)
+			{
+				CursorPos--;
+			}
+			else if (Currentkey == SDLK_RIGHT)
+			{
+				CursorPos++;
+			}
+			if (Currentkey == SDLK_DOWN)
+			{
+				CursorY++;
+			}
+			else if (Currentkey == SDLK_UP)
+			{
+				CursorY--;
+			}
+			IsPressed = true;
+		}
+	}
+	else if (Event.type == SDL_KEYUP)
+	{
+		IsPressed = false;
+	}
+	if (EditingMode)
+	{
+		switch (CurPos)
+		{
+		default:
+			break;
+		case NOTE:
+			for (char i = 0; i < 12; i++)
+			{
+				if (Currentkey == NoteInput[i])
+				{
+					Channels[x].Rows[y].note = i + (12 * Octave);
+					Channels[x].Rows[y].octave = Octave;
+				}
+			}
+			break;
+		case VOLUME:
+
+			break;
+		case INSTR:
+
+			break;
+		case EFFECT:
+
+			break;
+		case VALUE:
+
+			break;
+		}
+	}
+	if (CurPos > VALUE)
+	{
+		CursorPos -= 5 * (CurPos % VALUE);
+		CursorX += (CurPos % VALUE);
+	}
+	else if (CurPos < 0  && CursorX > 1)
+	{
+		CursorPos = VALUE;
+		CursorX--;
+	}
+	if (CursorX <= 1 && CurPos < 0)
+	{
+		CursorX = 1;
+		CurPos = 0;
+	}
 }
 
 void Tracker::LoadSample()

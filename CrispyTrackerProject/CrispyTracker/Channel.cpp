@@ -20,7 +20,7 @@ string Channel::NoteView(int index)
 	}
 	else
 	{
-		return NoteNames[Rows[index].note] + to_string(Rows[index].octave);
+		return NoteNames[Rows[index].note%12] + to_string(Rows[index].octave);
 	}
 }
 
