@@ -18,6 +18,18 @@ public:
 	"G#", "A-", "A#", "B-",
 	};
 
+	string NoteNames_GR[12] = {
+	"C-", "C#", "D-", "D#",	
+	"E-", "F-", "F#", "G-",
+	"G#", "A-", "B", "H-",
+	};
+
+	string NoteNames_FL[12] = {
+	"C-", "Db", "D-", "Eb",
+	"E-", "F-", "Gb", "G-",
+	"Ab", "A-", "Bb", "B-",
+	};
+
 	struct Row {
 		int note = 255;
 		int octave = 0;

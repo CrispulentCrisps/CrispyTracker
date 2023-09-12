@@ -470,10 +470,25 @@ void Tracker::Channel_View()
 		{
 			//Actual pattern data
 			TableNextColumn();
-			for (char i = 0; i < 8; i++)
+			for (char i = 0; i < 8; i++)//X
 			{
-				for (char j = 0; j < TrackLength; j++)
+				for (char j = 0; j < TrackLength; j++)//Y
 				{
+					if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+					{
+						string str;
+						str = "i: ";
+						str += to_string(i);
+						str += "| j: ";
+						str += to_string(j);
+						str += "| CurPos: ";
+						str += to_string(CursorPos);
+						str += "\nCursorX: ";
+						str += to_string(CursorX);
+						str += "| CursorY: ";
+						str += to_string(CursorY);
+						SetTooltip(str.data());
+					}
 					if (i == 0)
 					{
 						Selectable(to_string(j).data());
@@ -490,10 +505,11 @@ void Tracker::Channel_View()
 					}
 					else
 					{
+						//Channel
 						if (BeginTable("RowView", 5, 0)) 
 						{
 							ImGuiStyle* style = &ImGui::GetStyle();
-							//PushStyleVar
+							//Row Highlighting
 							ImU32 col;
 							if (j % Highlight2 == 0)
 							{
@@ -513,21 +529,6 @@ void Tracker::Channel_View()
 							
 							TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 
-							if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-							{
-								string str;
-								str = "i: ";
-								str += to_string(i);
-								str += "| j: ";
-								str += to_string(j);
-								str += "| CurPos: ";
-								str += to_string(CursorPos);
-								str += "\nCursorX: ";
-								str += to_string(CursorX);
-								str += "| CursorY: ";
-								str += to_string(CursorY);
-								SetTooltip(str.data());
-							}
 							if (CursorX == i && CursorY == j)//i = x, j = y
 							{
 								if (IsWindowFocused())
@@ -581,6 +582,7 @@ void Tracker::Channel_View()
 								HoverEffect = false;
 								HoverValue = false;
 							}
+							//Cursor highlighting
 							if (Selectable(Channels[i].NoteView(i).c_str(), HoverNote, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
 							{
 								CursorPos = 0;
@@ -824,11 +826,10 @@ void Tracker::EchoSettings()
 			{
 				SliderInt(to_string(i).data(), &EchoFilter[i], -128, 127);
 			}
+			if (Button("Close", ImVec2(64, TextSize * 1.5))) {
+				ShowEcho = false;
+			}
 			End();
-		}
-		else
-		{
-
 		}
 	}
 }
