@@ -131,8 +131,6 @@ void Tracker::CheckInput()
 			Currentkey = event.key.keysym.sym;
 			switch (event.key.keysym.sym)
 			{
-			default:
-				return;
 				break;
 			case SDL_QUIT:
 				running = false;
@@ -466,7 +464,7 @@ void Tracker::Channel_View()
 {
 	if (Begin("Channels"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*.85 + (TextSize*8), 0)));
+		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*.9 + (TextSize*8), 0)));
 		{
 			//Actual pattern data
 			TableNextColumn();
@@ -508,7 +506,6 @@ void Tracker::Channel_View()
 						//Channel
 						if (BeginTable("RowView", 5, 0)) 
 						{
-							ImGuiStyle* style = &ImGui::GetStyle();
 							//Row Highlighting
 							ImU32 col;
 							if (j % Highlight2 == 0)
@@ -890,8 +887,8 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 			else if (Currentkey == SDLK_RIGHT)
 			{
 				CursorPos++;
-			}
-			if (Currentkey == SDLK_DOWN)
+				}
+				if (Currentkey == SDLK_DOWN)
 			{
 				CursorY++;
 			}
@@ -900,51 +897,58 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 				CursorY--;
 			}
 			IsPressed = true;
+		
+			if (EditingMode)
+			{
+				switch (CurPos)
+				{
+				default:
+					break;
+				case NOTE:
+					for (char i = 0; i < 12; i++)
+					{
+						if (Currentkey == NoteInput[i])
+						{
+							Channels[x].Rows[y].note = i + (12 * Octave);
+							Channels[x].Rows[y].octave = Octave;
+							CursorY += Step;
+							if (CursorY >= TrackLength)
+							{
+								CursorY = TrackLength - 1;
+							}
+							IsPressed = true;
+						}
+					}
+					break;
+				case VOLUME:
+
+					break;
+				case INSTR:
+
+					break;
+				case EFFECT:
+
+					break;
+				case VALUE:
+
+					break;
+				}
+			}
 		}
 	}
 	else if (Event.type == SDL_KEYUP)
 	{
 		IsPressed = false;
 	}
-	if (EditingMode)
-	{
-		switch (CurPos)
-		{
-		default:
-			break;
-		case NOTE:
-			for (char i = 0; i < 12; i++)
-			{
-				if (Currentkey == NoteInput[i])
-				{
-					Channels[x].Rows[y].note = i + (12 * Octave);
-					Channels[x].Rows[y].octave = Octave;
-				}
-			}
-			break;
-		case VOLUME:
-
-			break;
-		case INSTR:
-
-			break;
-		case EFFECT:
-
-			break;
-		case VALUE:
-
-			break;
-		}
-	}
 	if (CurPos > VALUE)
 	{
-		CursorPos -= 5 * (CurPos % VALUE);
 		CursorX += (CurPos % VALUE);
+		CursorPos -= 5 * (CurPos % VALUE);
 	}
 	else if (CurPos < 0  && CursorX > 1)
 	{
-		CursorPos = VALUE;
 		CursorX--;
+		CursorPos = VALUE;
 	}
 	if (CursorX <= 1 && CurPos < 0)
 	{
