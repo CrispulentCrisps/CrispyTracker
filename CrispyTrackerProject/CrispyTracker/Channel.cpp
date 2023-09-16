@@ -8,6 +8,7 @@ string Channel::Row_View(int index)
 	}
 	else
 	{
+		cout << "\n" << index;
 		return NoteNames[Rows[index].note] + to_string(Rows[index].octave) + " " + to_string(Rows[index].instrument) + " " + to_string(Rows[index].volume) + " " + to_string(Rows[index].effect);
 	}
 }
@@ -32,7 +33,10 @@ string Channel::VolumeView(int index)
 	}
 	else
 	{
-		return to_string(Rows[index].volume);
+		char buf[20];
+		std::string s = "  ";
+		sprintf_s(buf, "%X", Rows[index].volume);
+		return buf;
 	}
 }
 

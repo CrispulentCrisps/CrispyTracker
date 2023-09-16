@@ -396,6 +396,9 @@ void Tracker::Instrument_View()
 		{
 			if (SelectedInst <= inst.size() - 1)
 			{
+				//BeginCombo("##Sample","No sample loaded");
+
+				//EndCombo();
 				ImGui::PushItemWidth(ImGui::GetWindowWidth() * .75);
 				InputText("InstName", (char*)inst[SelectedInst].Name.data(), 2048);
 
@@ -580,35 +583,35 @@ void Tracker::Channel_View()
 								HoverValue = false;
 							}
 							//Cursor highlighting
-							if (Selectable(Channels[i].NoteView(i).c_str(), HoverNote, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
+							if (Selectable(Channels[i].NoteView(j).c_str(), HoverNote, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
 							{
 								CursorPos = 0;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].InstrumentView(i).c_str(), HoverInst, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
+							if (Selectable(Channels[i].InstrumentView(j).c_str(), HoverInst, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
 							{
 								CursorPos = 1;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].VolumeView(i).c_str(), HoverVolume, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
+							if (Selectable(Channels[i].VolumeView(j).c_str(), HoverVolume, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
 							{
 								CursorPos = 2;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].EffectView(i).c_str(), HoverEffect, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
+							if (Selectable(Channels[i].EffectView(j).c_str(), HoverEffect, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
 							{
 								CursorPos = 3;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].Effectvalue(i).c_str(), HoverValue, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
+							if (Selectable(Channels[i].Effectvalue(j).c_str(), HoverValue, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
 							{
 								CursorPos = 4;
 								CursorX = i;
@@ -896,7 +899,6 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 			{
 				CursorY--;
 			}
-			IsPressed = true;
 		
 			if (EditingMode)
 			{
@@ -905,23 +907,56 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 				default:
 					break;
 				case NOTE:
-					for (char i = 0; i < 12; i++)
+					for (char i = 0; i < 24; i++)
 					{
 						if (Currentkey == NoteInput[i])
 						{
-							Channels[x].Rows[y].note = i + (12 * Octave);
-							Channels[x].Rows[y].octave = Octave;
-							CursorY += Step;
+							if (i < 13)
+							{
+								Channels[x].Rows[y].note = i + (12 * (Octave-1));
+								Channels[x].Rows[y].octave = (Octave-1);
+							}
+							else
+							{
+								Channels[x].Rows[y].note = i + (12 * Octave);
+								Channels[x].Rows[y].octave = Octave;
+							}
+							//CursorY += Step;
 							if (CursorY >= TrackLength)
 							{
 								CursorY = TrackLength - 1;
 							}
-							IsPressed = true;
+							cout << "\n" << y;
+							break;
+						}
+					}
+
+					cout << "\n" << Channels[x].Rows[y].note;
+					
+					if (Currentkey == SDLK_DELETE)
+					{
+						Channels[x].Rows[y].note = 255;
+						//CursorY += Step;
+						if (CursorY >= TrackLength)
+						{
+							CursorY = TrackLength - 1;
 						}
 					}
 					break;
 				case VOLUME:
-
+					for (char i = 0; i < 16; i++)
+					{
+						if (!IsKeyPressed)
+						{
+							if (Currentkey == VolInput[i])
+							{
+								if (i < 10)
+								{
+									Channels[x].Rows[y].volume;
+								}
+							}
+						}
+					}
 					break;
 				case INSTR:
 
@@ -934,12 +969,14 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 					break;
 				}
 			}
+			IsPressed = true;
 		}
 	}
 	else if (Event.type == SDL_KEYUP)
 	{
 		IsPressed = false;
 	}
+
 	if (CurPos > VALUE)
 	{
 		CursorX += (CurPos % VALUE);
@@ -950,10 +987,16 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 		CursorX--;
 		CursorPos = VALUE;
 	}
+	
 	if (CursorX <= 1 && CurPos < 0)
 	{
 		CursorX = 1;
 		CurPos = 0;
+	}
+
+	if (CursorY < 0)
+	{
+		CursorY = 0;
 	}
 }
 

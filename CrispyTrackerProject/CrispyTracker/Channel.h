@@ -1,6 +1,7 @@
 #pragma once
 #ifndef Channel
 
+#include <iostream>
 #include <vector>
 #include <string>
 #include <SDL.h>

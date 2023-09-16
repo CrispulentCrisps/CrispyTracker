@@ -51,12 +51,27 @@ public:
 	ImColor H2Col = IM_COL32(66, 66, 88, 255);
 	ImColor H1Col = IM_COL32(33, 33, 66, 255);
 	ImColor CursorCol = IM_COL32(99, 99, 122, 255);
-	SDL_KeyCode NoteInput[12] = 
+	
+	SDL_KeyCode NoteInput[24] = 
 	{
+		//Lower octave
+		SDLK_z, SDLK_s, SDLK_x, SDLK_d,
+		SDLK_c, SDLK_v, SDLK_g, SDLK_b,
+		SDLK_h, SDLK_n, SDLK_j, SDLK_m,
+		//Higher octave
 		SDLK_q , SDLK_2, SDLK_w, SDLK_3, 
 		SDLK_e, SDLK_r, SDLK_5, SDLK_t, 
-		SDLK_6, SDLK_y, SDLK_7, SDLK_u, 
+		SDLK_6, SDLK_y, SDLK_7, SDLK_u,
 	};
+
+	SDL_KeyCode VolInput[16] =
+	{
+		SDLK_0, SDLK_1, SDLK_2, SDLK_3, 
+		SDLK_4, SDLK_5, SDLK_6, SDLK_7, 
+		SDLK_8, SDLK_9, SDLK_a, SDLK_b, 
+		SDLK_c, SDLK_d, SDLK_e, SDLK_f,
+	};
+
 	int TickLimit;
 	int TrackLength = 64;
 	int YPos;
