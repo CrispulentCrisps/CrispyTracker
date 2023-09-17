@@ -31,10 +31,17 @@ string Channel::VolumeView(int index)
 	{
 		return "--";
 	}
+	else if (Rows[index].volume < 16)
+	{
+		char buf[10];
+		std::string s = "0";
+		sprintf_s(buf, "%X", Rows[index].volume);
+		return buf;
+	}
 	else
 	{
-		char buf[20];
-		std::string s = "  ";
+		char buf[10];
+		std::string s = "";
 		sprintf_s(buf, "%X", Rows[index].volume);
 		return buf;
 	}
@@ -74,6 +81,20 @@ string Channel::Effectvalue(int index)
 	{
 		return to_string(Rows[index].effectvalue);
 	}
+}
+
+int Channel::EvaluateHexInput(int input, int index)
+{
+	int surrogate = 0;
+	
+	surrogate = ((Rows[index].volume & 0x0f) << 4) + input;
+
+	if (surrogate > 127)
+	{
+		surrogate = (127 & 0x0f) << 4;
+	}
+
+	return surrogate;
 }
 
 void Channel::SetUp(int Length)

@@ -128,8 +128,8 @@ public:
 	//Enums
 	enum ChannelEditState {
 		NOTE = 0,
-		VOLUME = 1,
-		INSTR = 2,
+		INSTR = 1,
+		VOLUME = 2,
 		EFFECT = 3,
 		VALUE = 4,
 	};
@@ -159,6 +159,7 @@ public:
 	void DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[]);
 	void UpdateRows();
 	void BRRConverter();
+
 	string Authbuf;
 	string Descbuf;
 	string Output = " ";

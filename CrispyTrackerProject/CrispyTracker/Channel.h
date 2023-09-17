@@ -31,6 +31,13 @@ public:
 	"Ab", "A-", "Bb", "B-",
 	};
 
+	string HexValues[15] = {
+		"1","2","3","4",
+		"5","6","7","8",
+		"9","A","B","C",
+		"D","E","F",
+	};
+
 	struct Row {
 		int note = 255;
 		int octave = 0;
@@ -63,6 +70,7 @@ public:
 	string InstrumentView(int index);
 	string EffectView(int index);
 	string Effectvalue(int index);
+	int EvaluateHexInput(int input, int index);
 };
 
 /*

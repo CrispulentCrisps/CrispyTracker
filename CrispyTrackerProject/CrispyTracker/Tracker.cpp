@@ -926,12 +926,9 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 							{
 								CursorY = TrackLength - 1;
 							}
-							cout << "\n" << y;
 							break;
 						}
 					}
-
-					cout << "\n" << Channels[x].Rows[y].note;
 					
 					if (Currentkey == SDLK_DELETE)
 					{
@@ -943,23 +940,17 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 						}
 					}
 					break;
+				case INSTR:
+					break;
 				case VOLUME:
 					for (char i = 0; i < 16; i++)
 					{
-						if (!IsKeyPressed)
+						if (Currentkey == VolInput[i])
 						{
-							if (Currentkey == VolInput[i])
-							{
-								if (i < 10)
-								{
-									Channels[x].Rows[y].volume;
-								}
-							}
+							Channels[x].Rows[y].volume = Channels[x].EvaluateHexInput(i, y);
+							break;
 						}
 					}
-					break;
-				case INSTR:
-
 					break;
 				case EFFECT:
 
