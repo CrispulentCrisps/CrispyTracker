@@ -13,6 +13,7 @@ using namespace std;
 class Channel
 {
 public:
+	int MAX_VALUE = 256;
 	string NoteNames[12] = {
 	"C-", "C#", "D-", "D#",
 	"E-", "F-", "F#", "G-",
@@ -39,12 +40,12 @@ public:
 	};
 
 	struct Row {
-		int note = 255;
+		int note = 256;
 		int octave = 0;
-		int instrument = 255;
-		int volume = 255;
-		int effect = 255;
-		int effectvalue = 255;
+		int instrument = 256;
+		int volume = 256;
+		int effect = 256;
+		int effectvalue = 256;
 	};
 	
 	//Visible rows
@@ -70,7 +71,7 @@ public:
 	string InstrumentView(int index);
 	string EffectView(int index);
 	string Effectvalue(int index);
-	int EvaluateHexInput(int input, int index);
+	int EvaluateHexInput(int input, int index, int max, int valuetype);
 };
 
 /*

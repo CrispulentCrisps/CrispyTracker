@@ -396,9 +396,16 @@ void Tracker::Instrument_View()
 		{
 			if (SelectedInst <= inst.size() - 1)
 			{
-				//BeginCombo("##Sample","No sample loaded");
+				if (BeginCombo("##Sample", "No sample loaded")) {
+					if (samples.size() > 0)
+					{
+						for (int s = 0; s < samples.size(); s++)
+						{
 
-				//EndCombo();
+						}
+					}
+					EndCombo();
+				}
 				ImGui::PushItemWidth(ImGui::GetWindowWidth() * .75);
 				InputText("InstName", (char*)inst[SelectedInst].Name.data(), 2048);
 
@@ -585,35 +592,35 @@ void Tracker::Channel_View()
 							//Cursor highlighting
 							if (Selectable(Channels[i].NoteView(j).c_str(), HoverNote, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
 							{
-								CursorPos = 0;
+								CursorPos = NOTE;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
 							if (Selectable(Channels[i].InstrumentView(j).c_str(), HoverInst, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
 							{
-								CursorPos = 1;
+								CursorPos = INSTR;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
 							if (Selectable(Channels[i].VolumeView(j).c_str(), HoverVolume, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
 							{
-								CursorPos = 2;
+								CursorPos = VOLUME;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
 							if (Selectable(Channels[i].EffectView(j).c_str(), HoverEffect, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
 							{
-								CursorPos = 3;
+								CursorPos = EFFECT;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
 							if (Selectable(Channels[i].Effectvalue(j).c_str(), HoverValue, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
 							{
-								CursorPos = 4;
+								CursorPos = VALUE;
 								CursorX = i;
 								CursorY = j;
 							}
@@ -900,66 +907,96 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 				CursorY--;
 			}
 		
-			if (EditingMode)
-			{
-				switch (CurPos)
+				if (EditingMode)
 				{
-				default:
-					break;
-				case NOTE:
-					for (char i = 0; i < 24; i++)
+					switch (CurPos)
 					{
-						if (Currentkey == NoteInput[i])
+					default:
+						break;
+					case NOTE:
+						for (char i = 0; i < 24; i++)
 						{
-							if (i < 13)
+							if (Currentkey == NoteInput[i])
 							{
-								Channels[x].Rows[y].note = i + (12 * (Octave-1));
-								Channels[x].Rows[y].octave = (Octave-1);
+								if (i < 13)
+								{
+									Channels[x].Rows[y].note = i + (12 * (Octave - 1));
+									Channels[x].Rows[y].octave = (Octave - 1);
+								}
+								else
+								{
+									Channels[x].Rows[y].note = i + (12 * Octave);
+									Channels[x].Rows[y].octave = Octave;
+								}
+								CursorY += Step;
+								if (CursorY >= TrackLength)
+								{
+									CursorY = TrackLength - 1;
+								}
+								break;
 							}
-							else
-							{
-								Channels[x].Rows[y].note = i + (12 * Octave);
-								Channels[x].Rows[y].octave = Octave;
-							}
-							//CursorY += Step;
-							if (CursorY >= TrackLength)
-							{
-								CursorY = TrackLength - 1;
-							}
-							break;
 						}
-					}
-					
-					if (Currentkey == SDLK_DELETE)
-					{
-						Channels[x].Rows[y].note = 255;
-						//CursorY += Step;
-						if (CursorY >= TrackLength)
-						{
-							CursorY = TrackLength - 1;
-						}
-					}
-					break;
-				case INSTR:
-					break;
-				case VOLUME:
-					for (char i = 0; i < 16; i++)
-					{
-						if (Currentkey == VolInput[i])
-						{
-							Channels[x].Rows[y].volume = Channels[x].EvaluateHexInput(i, y);
-							break;
-						}
-					}
-					break;
-				case EFFECT:
 
-					break;
-				case VALUE:
-
-					break;
+						if (Currentkey == SDLK_DELETE)
+						{
+							Channels[x].Rows[y].note = MAX_VALUE;
+							CursorY += Step;
+						}
+						break;
+					case INSTR:
+						for (char i = 0; i < 16; i++)
+						{
+							if (Currentkey == VolInput[i])
+							{
+								Channels[x].Rows[y].instrument = Channels[x].EvaluateHexInput(i, y, 127, INSTR);
+								CursorY += Step;
+								break;
+							}
+						}
+						break;
+					case VOLUME:
+						for (char i = 0; i < 16; i++)
+						{
+							if (Currentkey == VolInput[i])
+							{
+								Channels[x].Rows[y].volume = Channels[x].EvaluateHexInput(i, y, 127, VOLUME);
+								CursorY += Step;
+								break;
+							}
+						}
+						break;
+					case EFFECT:
+						for (char i = 0; i < 16; i++)
+						{
+							if (Currentkey == VolInput[i])
+							{
+								Channels[x].Rows[y].effect = Channels[x].EvaluateHexInput(i, y, 255, EFFECT);
+								CursorY += Step;
+								break;
+							}
+						}
+						break;
+					case VALUE:
+						for (char i = 0; i < 16; i++)
+						{
+							if (Currentkey == VolInput[i])
+							{
+								Channels[x].Rows[y].effectvalue = Channels[x].EvaluateHexInput(i, y, 255, VALUE);
+								CursorY += Step;
+								break;
+							}
+						}
+						break;
+					}
+					if (CursorY >= TrackLength)
+					{
+						CursorY = TrackLength - 1;
+					}
+					else if (CursorY < 0)
+					{
+						CursorY = 0;
+					}
 				}
-			}
 			IsPressed = true;
 		}
 	}
@@ -978,8 +1015,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 		CursorX--;
 		CursorPos = VALUE;
 	}
-	
-	if (CursorX <= 1 && CurPos < 0)
+	else if (CursorX <= 1 && CurPos < 0)
 	{
 		CursorX = 1;
 		CurPos = 0;

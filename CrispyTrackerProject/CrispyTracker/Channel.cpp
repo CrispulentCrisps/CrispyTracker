@@ -2,7 +2,7 @@
 
 string Channel::Row_View(int index)
 {
-	if (Rows[index].note == 255)
+	if (Rows[index].note == MAX_VALUE)
 	{
 		return "---" + to_string(Rows[index].instrument) + " " + to_string(Rows[index].volume) + " " + to_string(Rows[index].effect);
 	}
@@ -15,7 +15,7 @@ string Channel::Row_View(int index)
 
 string Channel::NoteView(int index)
 {
-	if (Rows[index].note == 255)
+	if (Rows[index].note == MAX_VALUE)
 	{
 		return "---";
 	}
@@ -27,21 +27,19 @@ string Channel::NoteView(int index)
 
 string Channel::VolumeView(int index)
 {
-	if (Rows[index].volume == 255)
+	if (Rows[index].volume == MAX_VALUE)
 	{
 		return "--";
 	}
 	else if (Rows[index].volume < 16)
 	{
 		char buf[10];
-		std::string s = "0";
 		sprintf_s(buf, "%X", Rows[index].volume);
 		return buf;
 	}
 	else
 	{
 		char buf[10];
-		std::string s = "";
 		sprintf_s(buf, "%X", Rows[index].volume);
 		return buf;
 	}
@@ -49,51 +47,101 @@ string Channel::VolumeView(int index)
 
 string Channel::InstrumentView(int index)
 {
-	if (Rows[index].instrument == 255)
+	if (Rows[index].instrument == MAX_VALUE)
 	{
 		return "--";
 	}
+	else if (Rows[index].instrument < 16)
+	{
+		char buf[10];
+		sprintf_s(buf, "%X", Rows[index].instrument);
+		return buf;
+	}
 	else
 	{
-		return to_string(Rows[index].instrument);
+		char buf[10];
+		sprintf_s(buf, "%X", Rows[index].instrument);
+		return buf;
 	}
 }
 
 string Channel::EffectView(int index)
 {
-	if (Rows[index].effect == 255)
+	if (Rows[index].effect == MAX_VALUE)
 	{
 		return "--";
 	}
+	else if (Rows[index].effect < 16)
+	{
+		char buf[10];
+		sprintf_s(buf, "%X", Rows[index].effect);
+		return buf;
+	}
 	else
 	{
-		return to_string(Rows[index].effect);
+		char buf[10];
+		sprintf_s(buf, "%X", Rows[index].effect);
+		return buf;
 	}
 }
 
 string Channel::Effectvalue(int index)
 {
-	if (Rows[index].effectvalue == 255)
+	if (Rows[index].effectvalue == MAX_VALUE)
 	{
 		return "--";
 	}
+	else if (Rows[index].effectvalue < 16)
+	{
+		char buf[10];
+		sprintf_s(buf, "%X", Rows[index].effectvalue);
+		return buf;
+	}
 	else
 	{
-		return to_string(Rows[index].effectvalue);
+		char buf[10];
+		sprintf_s(buf, "%X", Rows[index].effectvalue);
+		return buf;
 	}
 }
 
-int Channel::EvaluateHexInput(int input, int index)
+int Channel::EvaluateHexInput(int input, int index, int max, int valuetype)
 {
 	int surrogate = 0;
-	
-	surrogate = ((Rows[index].volume & 0x0f) << 4) + input;
+	int ModValue = 0;
 
-	if (surrogate > 127)
+	switch (valuetype)
 	{
-		surrogate = (127 & 0x0f) << 4;
+	case 1:
+		ModValue = Rows[index].instrument;
+		break;
+	case 2:
+		ModValue = Rows[index].volume;
+		break;
+	case 3:
+		ModValue = Rows[index].effect;
+		break;
+	case 4:
+		ModValue = Rows[index].effectvalue;
+		break;
 	}
 
+	if (input == 0 && ModValue > max)
+	{
+		surrogate = 0;
+	}
+	else
+	{
+		surrogate = ((ModValue & 0x0f) << 4) + input;
+	}
+
+	//Clamp input
+	/*
+	if (surrogate > max && surrogate != 256)
+	{
+		surrogate = 127;
+	}
+	*/
 	return surrogate;
 }
 
@@ -103,8 +151,8 @@ void Channel::SetUp(int Length)
 	{
 		Row row;
 		Rows.push_back(row);
-		Rows[i].note = 255;
-		Rows[i].instrument = 255;
+		Rows[i].note = MAX_VALUE;
+		Rows[i].instrument = MAX_VALUE;
 	}
 }
 

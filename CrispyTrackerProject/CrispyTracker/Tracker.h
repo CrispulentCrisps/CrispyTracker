@@ -46,6 +46,7 @@ public:
 	ImGuiIO io;
 	Channel Channels[8];
 	vector<Patterns> pattern;
+	int MAX_VALUE = 256;
 
 	ImColor Default = IM_COL32(22, 22, 33, 255);
 	ImColor H2Col = IM_COL32(66, 66, 88, 255);
