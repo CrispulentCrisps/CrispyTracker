@@ -396,18 +396,32 @@ void Tracker::Instrument_View()
 		{
 			if (SelectedInst <= inst.size() - 1)
 			{
-				if (BeginCombo("##Sample", "No sample loaded")) {
+				ImGui::PushItemWidth(ImGui::GetWindowWidth() * .75);
+				InputText("InstName", (char*)inst[SelectedInst].Name.data(), 2048);
+				string PrevText = "Choose a sample";
+				if (inst[SelectedInst].SampleIndex)
+				{
+					PrevText = samples[inst[SelectedInst].SampleIndex].SampleName;
+				}
+				if (BeginCombo("##Sample", PrevText.data())) {
 					if (samples.size() > 0)
 					{
+						bool Selected = false;
 						for (int s = 0; s < samples.size(); s++)
 						{
-
+							Selected = (inst[SelectedInst].SampleIndex == s);
+							if (Selectable(samples[s].SampleName.data(), Selected, 0, ImVec2(GetWindowWidth() * 0.85, TextSize)))
+							{
+								inst[SelectedInst].SampleIndex = s;
+							}
+							if (Selected)
+							{
+								SetItemDefaultFocus();
+							}
 						}
 					}
 					EndCombo();
 				}
-				ImGui::PushItemWidth(ImGui::GetWindowWidth() * .75);
-				InputText("InstName", (char*)inst[SelectedInst].Name.data(), 2048);
 
 				SliderInt("Volume", &inst[SelectedInst].Volume, 0, 127);
 				SliderInt("Gain", &inst[SelectedInst].Gain, 0, 255);
