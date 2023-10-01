@@ -1,5 +1,16 @@
 #include "Patterns.h"
 
+void Patterns::SetUp(int Length)
+{
+	for (char i = 0; i < Length; i++)
+	{
+		Row row;
+		SavedRows.push_back(row);
+		SavedRows[i].note = 256;
+		SavedRows[i].instrument = 256;
+	}
+}
+
 int Patterns::Pattern_EvaluateHexInput(int input, int index)
 {
 	int surrogate = 0;

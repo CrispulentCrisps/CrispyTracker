@@ -32,7 +32,12 @@ void Tracker::Initialise(int StartLength)
 		Channel channel = Channel();
 		channel.SetUp(StartLength);
 		Channels[i] = channel;
+		Patterns pat = Patterns();
+		pat.SetUp(TrackLength);
+		pat.Index = i;
+		patterns[i].push_back(pat);
 	}
+	cout << patterns->size();
 }
 
 void Tracker::Run(void)
@@ -213,7 +218,7 @@ void Tracker::CheckInput()
 			Currentkey = 0;
 			SG.PlayingNoise = false;
 			SDL_PauseAudioDevice(dev, 1);
-			break;
+break;
 
 		case SDL_QUIT:
 			running = false;
@@ -232,7 +237,7 @@ void Tracker::Render()
 	if (!ShowCredits)
 	{
 		//ShowDemoWindow();
-		Patterns();
+		Patterns_View();
 		Channel_View();
 		Instruments();
 		Instrument_View();
@@ -296,21 +301,30 @@ void Tracker::MenuBar()
 		}
 		ImGui::EndMenu();
 	}
-	ImGui::Text("	|	%.3f ms/frame (%.1f FPS)",	1000.0 / (ImGui::GetIO().Framerate), (ImGui::GetIO().Framerate));
+	ImGui::Text("	|	%.3f ms/frame (%.1f FPS)", 1000.0 / (ImGui::GetIO().Framerate), (ImGui::GetIO().Framerate));
 	Text(VERSION.data());
 	EndMainMenuBar();
 
 }
 
-void Tracker::Patterns()
+void Tracker::Patterns_View()
 {
 	if (Begin("Patterns"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-		Columns(8);
-		for (char i = 0; i < 8; i++)
+		Columns(9);
+		for (char y = 0; y < SongLength; y++)
 		{
-			Selectable(to_string(i).data());
+			Text(to_string(y).data());
 			NextColumn();
+			for (char x = 0; x < 8; x++)
+			{
+				if (Selectable(to_string(patterns[x][y].Index).data())) {
+					patterns[x][y].Index++;
+					UpdatePatternIndex(x, y);
+				}
+
+				NextColumn();
+			}
 		}
 		End();
 	}
@@ -861,7 +875,7 @@ void Tracker::Credits()
 	{
 		if (Begin("Credits"), true, UNIVERSAL_WINDOW_FLAGS)
 		{
-			Text("Tracker Code: Crisps");
+			Text("Tracker Code: Crisps, Alexmush");
 			Text("Emulator Code: SPC Player");
 			Text("Driver Code: Nobody yet!!!");
 			End();
@@ -1124,6 +1138,7 @@ void Tracker::LoadSample()
 
 void Tracker::DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[])
 {
+	//Thank you AlexMush for the downmixing code :]
 	Sint16 constexpr sampleBufferSize = 8192;
 	int sampleLength = sfinfo.frames / sfinfo.channels;
 	vector<Sint16> sampleBuffer;
@@ -1139,6 +1154,25 @@ void Tracker::DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[])
 		}
 	}
 
+}
+
+void Tracker::UpdatePatternIndex(int x, int y)
+{
+	if (patterns[x][y].Index > Maxindex)
+	{
+		Maxindex = patterns[x][y].Index;
+		Patterns pat;
+		pat = DefaultPattern;
+		patterns->push_back(pat);
+
+	}
+	for (char i = 0; i < TrackLength; i++)
+	{
+		Channels[x].Rows[i].note = patterns[x][y].SavedRows[i].note;
+		Channels[x].Rows[i].volume = patterns[x][y].SavedRows[i].volume;
+		Channels[x].Rows[i].effect = patterns[x][y].SavedRows[i].effect;
+		Channels[x].Rows[i].effectvalue = patterns[x][y].SavedRows[i].effectvalue;
+	}
 }
 /*
 if (Begin("Main"), true, UNIVERSAL_WINDOW_FLAGS)

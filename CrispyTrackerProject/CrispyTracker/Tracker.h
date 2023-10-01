@@ -3,7 +3,6 @@
 
 #include <SDL_keyboard.h>
 
-#include "Channel.h"
 #include "Sample.h"
 #include "Instrument.h"
 #include "Patterns.h"
@@ -116,6 +115,9 @@ public:
 	vector<Sample> samples;
 	Sample DefaultSample;
 
+	vector<Patterns> patterns[8];
+	Patterns DefaultPattern;
+
 	int VolumeScaleL = 127;	//(0-127)
 	int VolumeScaleR = 127;	//(0-127)
 
@@ -135,6 +137,9 @@ public:
 		VALUE = 4,
 	};
 
+	int SongLength = 1;
+	int Maxindex = 8;
+
 	//Functions
 	void Initialise(int StartLength);
 	void Run(void);
@@ -142,7 +147,7 @@ public:
 	void Render();
 
 	void MenuBar();
-	void Patterns();
+	void Patterns_View();
 	void Instruments();
 	void Instrument_View();
 	void Channel_View();
@@ -158,6 +163,7 @@ public:
 	void ChannelInput(int CurPos, int x, int y);
 	void LoadSample();
 	void DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[]);
+	void UpdatePatternIndex(int x, int y);
 	void UpdateRows();
 	void BRRConverter();
 

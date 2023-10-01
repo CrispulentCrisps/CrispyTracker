@@ -5,19 +5,20 @@ using namespace std;
 
 class Patterns
 {
+public:
 	int Index;
 	
 	struct Row {
 		int note = 256;
 		int octave = 0;
 		int instrument = 256;
-		int volume = 256;
+		int volume = 127;
 		int effect = 256;
 		int effectvalue = 256;
 	};
 
 	vector<Row> SavedRows;
 
-
+	void SetUp(int Length);
 	int Pattern_EvaluateHexInput(int input, int index);
 };
