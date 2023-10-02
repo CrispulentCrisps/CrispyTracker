@@ -32,7 +32,7 @@ public:
 	int TABLE_FLAGS = ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp;
 	int TRACKER_AUDIO_BUFFER = 1024;
 	int SPS = 41000;
-	string VERSION = "version: 0.2";
+	string VERSION = "version: 0.3";
 	int AUDIO_FORMATS = SF_FORMAT_WAV;
 	int FrameCount = 0;
 	SDL_Event Event;
@@ -80,7 +80,7 @@ public:
 	int Octave = 4;
 	int ChannelColumn = 0, ChannelRow = 0;
 	bool PlayingTrack;
-	int TextSize = 14;
+	int TextSize = 13;
 	int BaseTempo = 150;
 	int Highlight1 = 4;
 	int Highlight2 = 16;

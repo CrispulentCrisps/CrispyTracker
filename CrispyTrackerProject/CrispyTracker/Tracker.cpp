@@ -98,7 +98,7 @@ void Tracker::Run(void)
 			else
 			{
 				//Load fonts
-				ImFont* font = io.Fonts->AddFontFromFileTTF("fonts/Inconsolata.ttf", TextSize, NULL, NULL);
+				ImFont* font = io.Fonts->AddFontFromFileTTF("fonts/Manaspace.ttf", TextSize, NULL, NULL);
 				io.Fonts->Build();
 				ImGui_ImplSDLRenderer2_CreateFontsTexture();
 				WindowIsGood = true;
@@ -270,7 +270,7 @@ void Tracker::Instruments()
 {
 	if (Begin("Instruments"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-		if (Button("Add", ImVec2(GetWindowWidth()*0.33, 24)))
+		if (Button("Add", ImVec2(GetWindowWidth()*0.3, 24)))
 		{
 			Instrument newinst = DefaultInst;
 			int index = inst.size();
@@ -278,7 +278,7 @@ void Tracker::Instruments()
 			inst.push_back(newinst);
 		}
 		SameLine();
-		if (Button("Delete", ImVec2(GetWindowWidth() * 0.33, 24)) && inst.size() > 1)
+		if (Button("Delete", ImVec2(GetWindowWidth() * 0.3, 24)) && inst.size() > 1)
 		{
 			if (SelectedInst >= inst.size())
 			{
@@ -291,7 +291,7 @@ void Tracker::Instruments()
 			}
 		}		
 		SameLine();
-		if (Button("Copy", ImVec2(GetWindowWidth() * 0.33, 24)) && inst.size() > 1)
+		if (Button("Copy", ImVec2(GetWindowWidth() * 0.3, 24)) && inst.size() > 1)
 		{
 			int index = inst.size();
 			Instrument newinst = inst[SelectedInst];
@@ -608,12 +608,12 @@ void Tracker::Samples()
 {
 	if (Begin("Samples"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-		if (Button("Add", ImVec2(GetWindowWidth() * 0.33, 24)))
+		if (Button("Add", ImVec2(GetWindowWidth() * 0.3, 24)))
 		{
 			LoadingSample = true;
 		}
 		SameLine();
-		if (Button("Delete", ImVec2(GetWindowWidth() * 0.33, 24)) && samples.size() > 1)
+		if (Button("Delete", ImVec2(GetWindowWidth() * 0.3, 24)) && samples.size() > 1)
 		{
 			cout << "SAMPLE LIST SIZE: " << samples.size();
 			if (SelectedSample > samples.size())
@@ -627,7 +627,7 @@ void Tracker::Samples()
 			}
 		}
 		SameLine();
-		if (Button("Copy", ImVec2(GetWindowWidth() * 0.33, 24)) && samples.size() > 1)
+		if (Button("Copy", ImVec2(GetWindowWidth() * 0.3, 24)) && samples.size() > 1)
 		{
 			int index = samples.size();
 			Sample newsamp = samples[SelectedSample];
@@ -857,8 +857,8 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 			else if (Currentkey == SDLK_RIGHT)
 			{
 				CursorPos++;
-				}
-				if (Currentkey == SDLK_DOWN)
+			}
+			if (Currentkey == SDLK_DOWN)
 			{
 				CursorY++;
 			}
@@ -866,114 +866,114 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 			{
 				CursorY--;
 			}
-		
-				if (EditingMode)
-				{
-					switch (CurPos)
-					{
-					default:
-						break;
-					case NOTE:
-						for (char i = 0; i < 24; i++)
-						{
-							if (Currentkey == NoteInput[i])
-							{
-								if (i < 12)
-								{
-									Channels[x].Rows[y].note = i + (12 * (Octave - 1));
-									Channels[x].Rows[y].octave = (Octave - 1);
-								}
-								else
-								{
-									Channels[x].Rows[y].note = i + (12 * Octave);
-									Channels[x].Rows[y].octave = Octave;
-								}
-								CursorY += Step;
-								if (CursorY >= TrackLength)
-								{
-									CursorY = TrackLength - 1;
-								}
-								break;
-								ChangePatternData(x, y, i);
-							}
-						}
 
-						if (Currentkey == SDLK_DELETE)
+			if (EditingMode)
+			{
+				switch (CurPos)
+				{
+				default:
+					break;
+				case NOTE:
+					for (char i = 0; i < 24; i++)
+					{
+						if (Currentkey == NoteInput[i])
 						{
-							Channels[x].Rows[y].note = MAX_VALUE;
+							if (i < 12)
+							{
+								Channels[x].Rows[y].note = i + (12 * (Octave - 1));
+								Channels[x].Rows[y].octave = (Octave - 1);
+							}
+							else
+							{
+								Channels[x].Rows[y].note = i + (12 * Octave);
+								Channels[x].Rows[y].octave = Octave;
+							}
 							CursorY += Step;
-						}
-						break;
-					case INSTR:
-						for (char i = 0; i < 16; i++)
-						{
-							if (Currentkey == VolInput[i])
+							if (CursorY >= TrackLength)
 							{
-								Channels[x].Rows[y].instrument = Channels[x].EvaluateHexInput(i, y, 127, INSTR);
-								break;
+								CursorY = TrackLength - 1;
 							}
-							else if (Currentkey == SDLK_DELETE)
-							{
-								Channels[x].Rows[y].instrument = MAX_VALUE;
-							}
+							break;
 							ChangePatternData(x, y, i);
 						}
-						break;
-					case VOLUME:
-						for (char i = 0; i < 16; i++)
-						{
-							if (Currentkey == VolInput[i])
-							{
-								Channels[x].Rows[y].volume = Channels[x].EvaluateHexInput(i, y, 127, VOLUME);
-								break;
-							}
-							else if (Currentkey == SDLK_DELETE)
-							{
-								Channels[x].Rows[y].volume = MAX_VALUE;
-							}
-							ChangePatternData(x, y, i);
-						}
-						break;
-					case EFFECT:
-						for (char i = 0; i < 16; i++)
-						{
-							if (Currentkey == VolInput[i])
-							{
-								Channels[x].Rows[y].effect = Channels[x].EvaluateHexInput(i, y, 255, EFFECT);
-								break;
-							}
-							else if (Currentkey == SDLK_DELETE)
-							{
-								Channels[x].Rows[y].effect = MAX_VALUE;
-							}
-							ChangePatternData(x, y, i);
-						}
-						break;
-					case VALUE:
-						for (char i = 0; i < 16; i++)
-						{
-							if (Currentkey == VolInput[i])
-							{
-								Channels[x].Rows[y].effectvalue = Channels[x].EvaluateHexInput(i, y, 255, VALUE);
-								break;
-							}
-							else if (Currentkey == SDLK_DELETE)
-							{
-								Channels[x].Rows[y].effectvalue = MAX_VALUE;
-							}
-							ChangePatternData(x, y, i);
-						}
-						break;
 					}
-					if (CursorY >= TrackLength)
+
+					if (Currentkey == SDLK_DELETE)
 					{
-						CursorY = TrackLength - 1;
+						Channels[x].Rows[y].note = MAX_VALUE;
+						CursorY += Step;
 					}
-					else if (CursorY < 0)
+					break;
+				case INSTR:
+					for (char i = 0; i < 16; i++)
 					{
-						CursorY = 0;
+						if (Currentkey == VolInput[i])
+						{
+							Channels[x].Rows[y].instrument = Channels[x].EvaluateHexInput(i, y, 127, INSTR);
+							break;
+						}
+						else if (Currentkey == SDLK_DELETE)
+						{
+							Channels[x].Rows[y].instrument = MAX_VALUE;
+						}
+						ChangePatternData(x, y, i);
 					}
+					break;
+				case VOLUME:
+					for (char i = 0; i < 16; i++)
+					{
+						if (Currentkey == VolInput[i])
+						{
+							Channels[x].Rows[y].volume = Channels[x].EvaluateHexInput(i, y, 127, VOLUME);
+							break;
+						}
+						else if (Currentkey == SDLK_DELETE)
+						{
+							Channels[x].Rows[y].volume = MAX_VALUE;
+						}
+						ChangePatternData(x, y, i);
+					}
+					break;
+				case EFFECT:
+					for (char i = 0; i < 16; i++)
+					{
+						if (Currentkey == VolInput[i])
+						{
+							Channels[x].Rows[y].effect = Channels[x].EvaluateHexInput(i, y, 255, EFFECT);
+							break;
+						}
+						else if (Currentkey == SDLK_DELETE)
+						{
+							Channels[x].Rows[y].effect = MAX_VALUE;
+						}
+						ChangePatternData(x, y, i);
+					}
+					break;
+				case VALUE:
+					for (char i = 0; i < 16; i++)
+					{
+						if (Currentkey == VolInput[i])
+						{
+							Channels[x].Rows[y].effectvalue = Channels[x].EvaluateHexInput(i, y, 255, VALUE);
+							break;
+						}
+						else if (Currentkey == SDLK_DELETE)
+						{
+							Channels[x].Rows[y].effectvalue = MAX_VALUE;
+						}
+						ChangePatternData(x, y, i);
+					}
+					break;
 				}
+				if (CursorY >= TrackLength)
+				{
+					CursorY = TrackLength - 1;
+				}
+				else if (CursorY < 0)
+				{
+					CursorY = 0;
+				}
+			}
 			IsPressed = true;
 		}
 	}
@@ -1107,14 +1107,14 @@ void Tracker::DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[])
 
 void Tracker::UpdatePatternIndex(int x, int y)
 {
-	//Pattern changing seems to affect the pattern BEFORE the one you're changing
+	//Pattern changing seems to affect the pattern BEFORE the one you're changing 
+	//[edit, I just wasn't displaying the first channe so please ignore this commentl]
 	if (patterns[x][y].Index > Maxindex)
 	{
 		Maxindex = patterns[x][y].Index;
 		Patterns pat;
 		pat = DefaultPattern;
 		patterns->push_back(pat);
-
 	}
 
 	cout << "\n" << x << "\n" << y;
@@ -1127,6 +1127,7 @@ void Tracker::UpdatePatternIndex(int x, int y)
 	}
 
 }
+
 void Tracker::ChangePatternData(int x, int y, int i)
 {
 	patterns[x][y].SavedRows[i].note = Channels[x].Rows[i].note;
