@@ -8,6 +8,9 @@ void Patterns::SetUp(int Length)
 		SavedRows.push_back(row);
 		SavedRows[i].note = 256;
 		SavedRows[i].instrument = 256;
+		SavedRows[i].volume = 256;
+		SavedRows[i].effect = 256;
+		SavedRows[i].effectvalue = 256;
 	}
 }
 

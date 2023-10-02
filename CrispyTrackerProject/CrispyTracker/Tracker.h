@@ -164,6 +164,7 @@ public:
 	void LoadSample();
 	void DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[]);
 	void UpdatePatternIndex(int x, int y);
+	void ChangePatternData(int x, int y, int i);
 	void UpdateRows();
 	void BRRConverter();
 

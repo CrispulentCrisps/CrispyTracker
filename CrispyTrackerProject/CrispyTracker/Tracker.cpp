@@ -140,74 +140,6 @@ void Tracker::CheckInput()
 			case SDL_QUIT:
 				running = false;
 				break;
-				/*
-				//upper octave
-			case SDLK_q:
-				SG.NoteIndex = TuninOff;
-				printf("PRESSED Q");
-				SG.PlayingNoise = true;
-				break;
-			case SDLK_2:
-				SG.NoteIndex = TuninOff + 1;
-				printf("PRESSED 1");
-				SG.PlayingNoise = true;
-				break;
-			case SDLK_w:
-				SG.NoteIndex = TuninOff + 2;
-				printf("PRESSED W");
-				SG.PlayingNoise = true;
-				break;
-			case SDLK_3:
-				SG.NoteIndex = TuninOff + 3;
-				printf("PRESSED 3");
-				SG.PlayingNoise = true;
-				break;
-			case SDLK_e:
-				SG.NoteIndex = TuninOff + 4;
-				printf("PRESSED E");
-				SG.PlayingNoise = true;
-				break;
-			case SDLK_r:
-				SG.NoteIndex = TuninOff + 5;
-				printf("PRESSED R");
-				SG.PlayingNoise = true;
-				break;
-			case SDLK_5:
-				SG.NoteIndex = TuninOff + 6;
-				printf("PRESSED 5");
-				SG.PlayingNoise = true;
-				break;
-			case SDLK_t:
-				SG.NoteIndex = TuninOff + 7;
-				printf("PRESSED T");
-				SG.PlayingNoise = true;
-				break;
-			case SDLK_6:
-				SG.NoteIndex = TuninOff + 8;
-				printf("PRESSED 6");
-				SG.PlayingNoise = true;
-				break;
-			case SDLK_y:
-				SG.NoteIndex = TuninOff + 9;
-				printf("PRESSED Y");
-				SG.PlayingNoise = true;
-				break;
-			case SDLK_7:
-				SG.NoteIndex = TuninOff + 10;
-				printf("PRESSED 7");
-				SG.PlayingNoise = true;
-				break;
-			case SDLK_u:
-				SG.NoteIndex = TuninOff + 11;
-				printf("PRESSED U");
-				SG.PlayingNoise = true;
-				break;
-			case SDLK_i:
-				SG.NoteIndex = TuninOff + 12;
-				printf("PRESSED I");
-				SG.PlayingNoise = true;
-				break;
-				*/
 			}
 			SG.CheckSound(want, have, dev, Channels);
 			SDL_PauseAudioDevice(dev, 0);
@@ -506,9 +438,9 @@ void Tracker::Channel_View()
 		{
 			//Actual pattern data
 			TableNextColumn();
-			for (char i = 0; i < 8; i++)//X
+			for (int i = -1; i < 8; i++)//X
 			{
-				for (char j = 0; j < TrackLength; j++)//Y
+				for (int j = 0; j < TrackLength; j++)//Y
 				{
 					if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
 					{
@@ -525,7 +457,7 @@ void Tracker::Channel_View()
 						str += to_string(CursorY);
 						SetTooltip(str.data());
 					}
-					if (i == 0)
+					if (i == -1)
 					{
 						Selectable(to_string(j).data());
 						if (j < 10)
@@ -946,7 +878,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 						{
 							if (Currentkey == NoteInput[i])
 							{
-								if (i < 13)
+								if (i < 12)
 								{
 									Channels[x].Rows[y].note = i + (12 * (Octave - 1));
 									Channels[x].Rows[y].octave = (Octave - 1);
@@ -962,6 +894,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 									CursorY = TrackLength - 1;
 								}
 								break;
+								ChangePatternData(x, y, i);
 							}
 						}
 
@@ -977,9 +910,13 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 							if (Currentkey == VolInput[i])
 							{
 								Channels[x].Rows[y].instrument = Channels[x].EvaluateHexInput(i, y, 127, INSTR);
-								CursorY += Step;
 								break;
 							}
+							else if (Currentkey == SDLK_DELETE)
+							{
+								Channels[x].Rows[y].instrument = MAX_VALUE;
+							}
+							ChangePatternData(x, y, i);
 						}
 						break;
 					case VOLUME:
@@ -988,9 +925,13 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 							if (Currentkey == VolInput[i])
 							{
 								Channels[x].Rows[y].volume = Channels[x].EvaluateHexInput(i, y, 127, VOLUME);
-								CursorY += Step;
 								break;
 							}
+							else if (Currentkey == SDLK_DELETE)
+							{
+								Channels[x].Rows[y].volume = MAX_VALUE;
+							}
+							ChangePatternData(x, y, i);
 						}
 						break;
 					case EFFECT:
@@ -999,9 +940,13 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 							if (Currentkey == VolInput[i])
 							{
 								Channels[x].Rows[y].effect = Channels[x].EvaluateHexInput(i, y, 255, EFFECT);
-								CursorY += Step;
 								break;
 							}
+							else if (Currentkey == SDLK_DELETE)
+							{
+								Channels[x].Rows[y].effect = MAX_VALUE;
+							}
+							ChangePatternData(x, y, i);
 						}
 						break;
 					case VALUE:
@@ -1010,9 +955,13 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 							if (Currentkey == VolInput[i])
 							{
 								Channels[x].Rows[y].effectvalue = Channels[x].EvaluateHexInput(i, y, 255, VALUE);
-								CursorY += Step;
 								break;
 							}
+							else if (Currentkey == SDLK_DELETE)
+							{
+								Channels[x].Rows[y].effectvalue = MAX_VALUE;
+							}
+							ChangePatternData(x, y, i);
 						}
 						break;
 					}
@@ -1158,6 +1107,7 @@ void Tracker::DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[])
 
 void Tracker::UpdatePatternIndex(int x, int y)
 {
+	//Pattern changing seems to affect the pattern BEFORE the one you're changing
 	if (patterns[x][y].Index > Maxindex)
 	{
 		Maxindex = patterns[x][y].Index;
@@ -1166,13 +1116,23 @@ void Tracker::UpdatePatternIndex(int x, int y)
 		patterns->push_back(pat);
 
 	}
-	for (char i = 0; i < TrackLength; i++)
+
+	cout << "\n" << x << "\n" << y;
+	for (int i = 0; i < TrackLength; i++)
 	{
 		Channels[x].Rows[i].note = patterns[x][y].SavedRows[i].note;
 		Channels[x].Rows[i].volume = patterns[x][y].SavedRows[i].volume;
 		Channels[x].Rows[i].effect = patterns[x][y].SavedRows[i].effect;
 		Channels[x].Rows[i].effectvalue = patterns[x][y].SavedRows[i].effectvalue;
 	}
+
+}
+void Tracker::ChangePatternData(int x, int y, int i)
+{
+	patterns[x][y].SavedRows[i].note = Channels[x].Rows[i].note;
+	patterns[x][y].SavedRows[i].volume = Channels[x].Rows[i].volume;
+	patterns[x][y].SavedRows[i].effect = Channels[x].Rows[i].effect;
+	patterns[x][y].SavedRows[i].effectvalue = Channels[x].Rows[i].effectvalue;
 }
 /*
 if (Begin("Main"), true, UNIVERSAL_WINDOW_FLAGS)
