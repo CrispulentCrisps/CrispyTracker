@@ -254,7 +254,6 @@ void Tracker::Patterns_View()
 					patterns[x][y].Index++;
 					UpdatePatternIndex(x, y);
 				}
-
 				NextColumn();
 			}
 		}
@@ -379,23 +378,59 @@ void Tracker::Instrument_View()
 				{
 					NewLine();
 					Text("Envelope");
-					SliderInt("Attack ", &inst[SelectedInst].Attack, 0, 15);
-					SameLine();
-					SliderInt("Decay", &inst[SelectedInst].Decay, 0, 7);
+					for (int i = 0; i < 4; i++)
+					{
+						if (RadioButton(ADSRNames[i].data(), &inst[SelectedInst].ADSRType,i))
+						{
+							inst[SelectedInst].ADSRType = i;
+						}
+					}
 
-					SliderInt("Sustain", &inst[SelectedInst].Sustain, 0, 31);
-					SameLine();
-					SliderInt("Release", &inst[SelectedInst].Release, 0, 31);
+					if (inst[SelectedInst].ADSRType == 0)
+					{
+						SliderInt("Attack ", &inst[SelectedInst].Attack, 0, 15);
+						PushStyleColor(ImGuiCol_Text, AttackColour);
+						SliderInt("Decay", &inst[SelectedInst].Decay, 0, 7);
+						PopStyleColor();
+						PushStyleColor(ImGuiCol_Text, SustainColour);
+						SliderInt("Sustain", &inst[SelectedInst].Sustain, 0, 31);
+						PopStyleColor();
+						PushStyleColor(ImGuiCol_Text, ReleaseColour);
+						SliderInt("Release", &inst[SelectedInst].Release, 0, 31);
+						PopStyleColor();
+						float PlotArr[4] = { inst[SelectedInst].Attack , inst[SelectedInst].Decay , inst[SelectedInst].Sustain , inst[SelectedInst].Release};
+						float* PlotBuff[256];
+						//PlotLines("Envelope output", PlotArr, PlotBuff.Size(), 0, "Envelope output", 0, 32, ImVec2(GetWindowWidth() * 0.85, GetWindowHeight() * 0.25))
+					}
+					else
+					{
+						PushStyleColor(ImGuiCol_Text, AttackColour);
+						SliderInt("Attack ", &inst[SelectedInst].Attack, 0, 15);
+						PopStyleColor();
+						PushStyleColor(ImGuiCol_Text, DecayColour);
+						SliderInt("Decay", &inst[SelectedInst].Decay, 0, 7);
+						PopStyleColor();
+						PushStyleColor(ImGuiCol_Text, SustainColour);
+						SliderInt("Sustain", &inst[SelectedInst].Sustain, 0, 31);
+						PopStyleColor();
+						PushStyleColor(ImGuiCol_Text, DecayColour);
+						SliderInt("Decay 2", &inst[SelectedInst].Decay2, 0, 31);
+						PopStyleColor();
+						PushStyleColor(ImGuiCol_Text, ReleaseColour);
+						SliderInt("Release", &inst[SelectedInst].Release, 0, 31);
+						PopStyleColor();
+					}
 
-
+					NewLine();
 					SliderInt("Left   ", &inst[SelectedInst].LPan, 0, 127);
 					SameLine();
 					SliderInt("Right", &inst[SelectedInst].RPan, 0, 127);
+					
 				}
 
 				NewLine();
 				Text("Special");
-				NewLine();
+				Text("Special");
 				Checkbox("Invert L  ", &inst[SelectedInst].InvL);
 				SameLine();
 				Checkbox("Invert R", &inst[SelectedInst].InvR);

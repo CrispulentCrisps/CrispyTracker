@@ -173,5 +173,16 @@ public:
 	string Output = " ";
 	string FilePath = " ";
 	string FileName = " ";
+	string ADSRNames[4] = {
+		"Direct (cut on release)",
+		"Effective (linear decrease)",
+		"Effective (exponential decrease)",
+		"Delayed (write r on release)"
+	};
+
+	ImVec4 AttackColour = ImVec4(0, 1, 1, 1);
+	ImVec4 DecayColour = ImVec4(0, 1, 0, 1);
+	ImVec4 SustainColour = ImVec4(1, 1, 0, 1);
+	ImVec4 ReleaseColour = ImVec4(1, .25, .25, 1);
 };
 #endif // DEBUG
