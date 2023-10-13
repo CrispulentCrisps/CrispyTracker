@@ -80,12 +80,16 @@ public:
 	int Octave = 4;
 	int ChannelColumn = 0, ChannelRow = 0;
 	bool PlayingTrack;
-	int TextSize = 13;
+	int TextSize = 12;
+	int TextSizeLarge = 24;
 	int BaseTempo = 150;
 	int Highlight1 = 4;
 	int Highlight2 = 16;
 	int TempoDivider = 6;
 	
+	ImFont* font;
+	ImFont* Largefont;
+
 	int CursorX = 0;			//Xpos of the channel cursor, not the mouse cursor
 	int CursorY = 0;			//Ypos of the channel cursor, not the mouse cursor
 	int CursorPos = 0;			//This is specifically for the individual elements in the effects chain

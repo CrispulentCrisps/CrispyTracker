@@ -74,7 +74,7 @@ void Tracker::Run(void)
 	io = GetIO();
 	io.DisplaySize.x = SCREEN_WIDTH;
 	io.DisplaySize.y = SCREEN_HEIGHT;
-	io.DeltaTime = 1.f / 60.f;
+	io.DeltaTime = 1.f / 144.f;
 	GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	//Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
@@ -98,7 +98,8 @@ void Tracker::Run(void)
 			else
 			{
 				//Load fonts
-				ImFont* font = io.Fonts->AddFontFromFileTTF("fonts/Manaspace.ttf", TextSize, NULL, NULL);
+				font = io.Fonts->AddFontFromFileTTF("fonts/Manaspace.ttf", TextSize, NULL, NULL);
+				Largefont = io.Fonts->AddFontFromFileTTF("fonts/Manaspace.ttf", TextSizeLarge, NULL, NULL);
 				io.Fonts->Build();
 				ImGui_ImplSDLRenderer2_CreateFontsTexture();
 				WindowIsGood = true;
@@ -243,8 +244,8 @@ void Tracker::Patterns_View()
 {
 	if (Begin("Patterns"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-		Columns(9);
-		for (char y = 0; y < SongLength; y++)
+		Columns(10);
+		for (int y = 0; y < SongLength; y++)
 		{
 			Text(to_string(y).data());
 			NextColumn();
@@ -257,6 +258,53 @@ void Tracker::Patterns_View()
 				NextColumn();
 			}
 		}
+		PushFont(Largefont);
+		if (Button("+", ImVec2(TextSize * 2, TextSize * 2)))
+		{
+			for (int i = 0; i < 8; i++)
+			{
+				Patterns pat;
+				pat = DefaultPattern;
+				pat.Index = Maxindex + i;
+				cout << "\n SavedRows: " << pat.SavedRows.size();
+				patterns[i].push_back(pat);
+				SongLength++;
+
+			}
+		}
+		if (IsItemHovered())
+		{
+			PopFont();
+			PushFont(font);
+			SetTooltip("Add a new pattern");
+			PopFont();
+			PushFont(Largefont);
+		}
+		if (Button("-", ImVec2(TextSize * 2, TextSize * 2)))
+		{
+
+		}
+		if (IsItemHovered())
+		{
+			PopFont();
+			PushFont(font);
+			SetTooltip("Delete a new pattern");
+			PopFont();
+			PushFont(Largefont);
+		}
+		if (Button("=", ImVec2(TextSize * 2, TextSize * 2)))
+		{
+
+		}
+		if (IsItemHovered())
+		{
+			PopFont();
+			PushFont(font);
+			SetTooltip("Copy a selected pattern");
+			PopFont();
+			PushFont(Largefont);
+		}
+		PopFont();
 		End();
 	}
 	else
@@ -399,8 +447,8 @@ void Tracker::Instrument_View()
 						SliderInt("Release", &inst[SelectedInst].Release, 0, 31);
 						PopStyleColor();
 						float PlotArr[4] = { inst[SelectedInst].Attack , inst[SelectedInst].Decay , inst[SelectedInst].Sustain , inst[SelectedInst].Release};
-						float* PlotBuff[256];
-						//PlotLines("Envelope output", PlotArr, PlotBuff.Size(), 0, "Envelope output", 0, 32, ImVec2(GetWindowWidth() * 0.85, GetWindowHeight() * 0.25))
+						float PlotBuff[256];
+						//PlotLines("Envelope output", PlotArr, 256, 0, "Envelope output", 0, 32, ImVec2(GetWindowWidth() * 0.85, GetWindowHeight() * 0.25))
 					}
 					else
 					{
@@ -777,8 +825,10 @@ void Tracker::Author_View()
 {
 	if (Begin("Author"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-		InputInt("Base tempo", &BaseTempo,1, 1);
-		InputInt("Tempo divider", &TempoDivider,1,1);
+		Text("Base tempo");
+		InputInt("##Base tempo", &BaseTempo,1, 1);
+		Text("Tempo divider");
+		InputInt("##Tempo divider", &TempoDivider,1,1);
 		if (BaseTempo < 1)
 		{
 			BaseTempo = 1;
@@ -790,8 +840,11 @@ void Tracker::Author_View()
 		string temp = "Tempo: ";
 		temp += to_string(BaseTempo / TempoDivider);
 		Text(temp.data());
-		InputInt("Highlight 1", &Highlight1, 1, 1);
-		InputInt("Highlight 2", &Highlight2, 1, 1);
+		NewLine();
+		Text("Highlight 1");
+		InputInt("##Highlight 1", &Highlight1, 1, 1);
+		Text("Highlight 2");
+		InputInt("##Highlight 2", &Highlight2, 1, 1);
 		if (Highlight1 < 1)
 		{
 			Highlight1 = 1;
@@ -801,8 +854,10 @@ void Tracker::Author_View()
 			Highlight2 = 1;
 		}
 		NewLine();
-		InputText("Author", (char*)Authbuf.data(), 1024);
-		InputTextMultiline("Desc", (char*)Descbuf.data(), 1024,ImVec2(GetWindowWidth() * 0.5, GetWindowHeight() * 0.9));
+		Text("Author");
+		InputText("##Author", (char*)Authbuf.data(), 1024);
+		Text("Desc");
+		InputTextMultiline("##Desc", (char*)Descbuf.data(), 1024,ImVec2(GetWindowWidth() * 0.65, GetWindowHeight() * 0.9));
 		End();
 	}
 	else
@@ -877,6 +932,9 @@ void Tracker::SetupInstr()
 	DefaultSample.SampleData.clear();
 	DefaultSample.BRRSampleData.clear();
 	samples.push_back(DefaultSample);
+
+	DefaultPattern.Index = 0;
+	DefaultPattern.SetUp(TrackLength);
 }
 
 void Tracker::ChannelInput(int CurPos, int x, int y)
@@ -931,12 +989,12 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 							break;
 							ChangePatternData(x, y, i);
 						}
-					}
-
-					if (Currentkey == SDLK_DELETE)
-					{
-						Channels[x].Rows[y].note = MAX_VALUE;
-						CursorY += Step;
+						else if (Currentkey == SDLK_DELETE)
+						{
+							Channels[x].Rows[y].note = MAX_VALUE;
+							CursorY += Step;
+							ChangePatternData(x, y, i);
+						}
 					}
 					break;
 				case INSTR:
@@ -945,13 +1003,14 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 						if (Currentkey == VolInput[i])
 						{
 							Channels[x].Rows[y].instrument = Channels[x].EvaluateHexInput(i, y, 127, INSTR);
+							ChangePatternData(x, y, i);
 							break;
 						}
 						else if (Currentkey == SDLK_DELETE)
 						{
 							Channels[x].Rows[y].instrument = MAX_VALUE;
+							ChangePatternData(x, y, i);
 						}
-						ChangePatternData(x, y, i);
 					}
 					break;
 				case VOLUME:
@@ -960,13 +1019,14 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 						if (Currentkey == VolInput[i])
 						{
 							Channels[x].Rows[y].volume = Channels[x].EvaluateHexInput(i, y, 127, VOLUME);
+							ChangePatternData(x, y, i);
 							break;
 						}
 						else if (Currentkey == SDLK_DELETE)
 						{
 							Channels[x].Rows[y].volume = MAX_VALUE;
+							ChangePatternData(x, y, i);
 						}
-						ChangePatternData(x, y, i);
 					}
 					break;
 				case EFFECT:
@@ -975,13 +1035,14 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 						if (Currentkey == VolInput[i])
 						{
 							Channels[x].Rows[y].effect = Channels[x].EvaluateHexInput(i, y, 255, EFFECT);
+							ChangePatternData(x, y, i);
 							break;
 						}
 						else if (Currentkey == SDLK_DELETE)
 						{
 							Channels[x].Rows[y].effect = MAX_VALUE;
+							ChangePatternData(x, y, i);
 						}
-						ChangePatternData(x, y, i);
 					}
 					break;
 				case VALUE:
@@ -990,13 +1051,14 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 						if (Currentkey == VolInput[i])
 						{
 							Channels[x].Rows[y].effectvalue = Channels[x].EvaluateHexInput(i, y, 255, VALUE);
+							ChangePatternData(x, y, i);
 							break;
 						}
 						else if (Currentkey == SDLK_DELETE)
 						{
 							Channels[x].Rows[y].effectvalue = MAX_VALUE;
+							ChangePatternData(x, y, i);
 						}
-						ChangePatternData(x, y, i);
 					}
 					break;
 				}
@@ -1165,6 +1227,7 @@ void Tracker::UpdatePatternIndex(int x, int y)
 
 void Tracker::ChangePatternData(int x, int y, int i)
 {
+	cout << "CHANGED PATTERN DATA: " << "\n" << "X: " << x << "\n" << "Y: " << y << "\n" << "I: " << i;
 	patterns[x][y].SavedRows[i].note = Channels[x].Rows[i].note;
 	patterns[x][y].SavedRows[i].volume = Channels[x].Rows[i].volume;
 	patterns[x][y].SavedRows[i].effect = Channels[x].Rows[i].effect;
