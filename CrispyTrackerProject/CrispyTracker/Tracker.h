@@ -103,6 +103,7 @@ public:
 	
 	int SelectedInst = 0;
 	int SelectedSample = 0;
+	int SelectedPattern = 0;
 	
 	bool ShowCredits = false;
 	bool ShowInstrument = false;

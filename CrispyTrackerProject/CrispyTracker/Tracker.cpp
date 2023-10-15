@@ -244,33 +244,41 @@ void Tracker::Patterns_View()
 {
 	if (Begin("Patterns"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-		Columns(10);
+		Columns(2);
+		
+		BeginTable("PatternsTable", 9, TABLE_FLAGS);
 		for (int y = 0; y < SongLength; y++)
 		{
+			TableNextRow();
+			TableNextColumn();
 			Text(to_string(y).data());
-			NextColumn();
+			TableNextColumn();
 			for (char x = 0; x < 8; x++)
 			{
 				if (Selectable(to_string(patterns[x][y].Index).data())) {
 					patterns[x][y].Index++;
 					UpdatePatternIndex(x, y);
+					SelectedPattern = y;
 				}
-				NextColumn();
+				TableNextColumn();
 			}
 		}
+		EndTable();
+
+		NextColumn();
 		PushFont(Largefont);
-		if (Button("+", ImVec2(TextSize * 2, TextSize * 2)))
+		if (Button("+", ImVec2(TextSizeLarge, TextSizeLarge)))
 		{
 			for (int i = 0; i < 8; i++)
 			{
 				Patterns pat;
 				pat = DefaultPattern;
 				pat.Index = Maxindex + i;
-				cout << "\n SavedRows: " << pat.SavedRows.size();
+				//cout << "\n SavedRows: " << pat.SavedRows.size();
 				patterns[i].push_back(pat);
-				SongLength++;
-
 			}
+			Maxindex += 8;
+			SongLength++;	
 		}
 		if (IsItemHovered())
 		{
@@ -280,9 +288,13 @@ void Tracker::Patterns_View()
 			PopFont();
 			PushFont(Largefont);
 		}
-		if (Button("-", ImVec2(TextSize * 2, TextSize * 2)))
+		if (Button("-", ImVec2(TextSizeLarge, TextSizeLarge)))
 		{
-
+			if (SongLength > 1)
+			{
+				patterns->erase((patterns->begin()+(SelectedPattern-1)*8), (patterns->begin() + (SelectedPattern - 1) * 8)+8);
+				SongLength--;
+			}
 		}
 		if (IsItemHovered())
 		{
@@ -292,9 +304,17 @@ void Tracker::Patterns_View()
 			PopFont();
 			PushFont(Largefont);
 		}
-		if (Button("=", ImVec2(TextSize * 2, TextSize * 2)))
+		if (Button("=", ImVec2(TextSizeLarge, TextSizeLarge)))
 		{
-
+			for (int i = 0; i < 8; i++)
+			{
+				Patterns pat;
+				pat = patterns[i][SelectedPattern];
+				//cout << "\n SavedRows: " << pat.SavedRows.size();
+				patterns[i].push_back(pat);
+			}
+			Maxindex += 8;
+			SongLength++;
 		}
 		if (IsItemHovered())
 		{
@@ -525,6 +545,7 @@ void Tracker::Channel_View()
 			{
 				for (int j = 0; j < TrackLength; j++)//Y
 				{
+
 					if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
 					{
 						string str;
