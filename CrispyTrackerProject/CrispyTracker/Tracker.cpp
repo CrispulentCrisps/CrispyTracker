@@ -151,7 +151,7 @@ void Tracker::CheckInput()
 			Currentkey = 0;
 			SG.PlayingNoise = false;
 			SDL_PauseAudioDevice(dev, 1);
-break;
+			break;
 
 		case SDL_QUIT:
 			running = false;
@@ -292,7 +292,11 @@ void Tracker::Patterns_View()
 		{
 			if (SongLength > 1)
 			{
-				patterns->erase((patterns->begin()+(SelectedPattern-1)*8), (patterns->begin() + (SelectedPattern - 1) * 8)+8);
+				SelectedPattern >= SongLength ? SelectedPattern-- : SelectedPattern = SelectedPattern;
+				for (int i = 0; i < 8; i++)
+				{
+					patterns[i].erase(patterns[i].begin() + SelectedPattern);
+				}
 				SongLength--;
 			}
 		}
