@@ -1,18 +1,5 @@
 #include "Channel.h"
 
-string Channel::Row_View(int index)
-{
-	if (Rows[index].note == MAX_VALUE)
-	{
-		return "---" + to_string(Rows[index].instrument) + " " + to_string(Rows[index].volume) + " " + to_string(Rows[index].effect);
-	}
-	else
-	{
-		cout << "\n" << index;
-		return NoteNames[Rows[index].note] + to_string(Rows[index].octave) + " " + to_string(Rows[index].instrument) + " " + to_string(Rows[index].volume) + " " + to_string(Rows[index].effect);
-	}
-}
-
 string Channel::NoteView(int index)
 {
 	if (Rows[index].note == MAX_VALUE)
@@ -29,13 +16,7 @@ string Channel::VolumeView(int index)
 {
 	if (Rows[index].volume == MAX_VALUE)
 	{
-		return "--";
-	}
-	else if (Rows[index].volume < 16)
-	{
-		char buf[10];
-		sprintf_s(buf, "%X", Rows[index].volume);
-		return buf;
+		return "..";
 	}
 	else
 	{
@@ -49,13 +30,7 @@ string Channel::InstrumentView(int index)
 {
 	if (Rows[index].instrument == MAX_VALUE)
 	{
-		return "--";
-	}
-	else if (Rows[index].instrument < 16)
-	{
-		char buf[10];
-		sprintf_s(buf, "%X", Rows[index].instrument);
-		return buf;
+		return "..";
 	}
 	else
 	{
@@ -69,13 +44,7 @@ string Channel::EffectView(int index)
 {
 	if (Rows[index].effect == MAX_VALUE)
 	{
-		return "--";
-	}
-	else if (Rows[index].effect < 16)
-	{
-		char buf[10];
-		sprintf_s(buf, "%X", Rows[index].effect);
-		return buf;
+		return "..";
 	}
 	else
 	{
@@ -89,13 +58,7 @@ string Channel::Effectvalue(int index)
 {
 	if (Rows[index].effectvalue == MAX_VALUE)
 	{
-		return "--";
-	}
-	else if (Rows[index].effectvalue < 16)
-	{
-		char buf[10];
-		sprintf_s(buf, "%X", Rows[index].effectvalue);
-		return buf;
+		return "..";
 	}
 	else
 	{
@@ -147,12 +110,12 @@ int Channel::EvaluateHexInput(int input, int index, int max, int valuetype)
 
 void Channel::SetUp(int Length)
 {
-	for (char i = 0; i < Length; i++)
+	Row row;
+	row.note = MAX_VALUE;
+	row.instrument = MAX_VALUE;
+	for (int i = 0; i < Length; i++)
 	{
-		Row row;
 		Rows.push_back(row);
-		Rows[i].note = MAX_VALUE;
-		Rows[i].instrument = MAX_VALUE;
 	}
 }
 

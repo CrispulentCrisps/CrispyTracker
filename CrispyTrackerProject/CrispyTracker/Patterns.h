@@ -17,8 +17,8 @@ public:
 		int effectvalue = 256;
 	};
 
-	vector<Row> SavedRows;
-
+	Row SavedRows[256];
+	Row StandardRow;
 	void SetUp(int Length);
 	int Pattern_EvaluateHexInput(int input, int index);
 };

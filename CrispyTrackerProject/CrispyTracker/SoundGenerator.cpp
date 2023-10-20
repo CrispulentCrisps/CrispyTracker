@@ -22,14 +22,6 @@ SoundGenerator::SoundGenerator(int TV, int NI, int POS) {
 	TotalVolume = TV;
 	NotePos = POS;
     NoteIndex = NI;
-	for (char i = 0; i < 9; i++)
-	{
-		for (char j = 0; j < 12; j++)
-		{
-			cout << NVT[(i * 12) + j] << "\n";
-		}
-		cout << "\n";
-	}
 }
 
 void SoundGenerator::CheckSound(SDL_AudioSpec want, SDL_AudioSpec have, SDL_AudioDeviceID dev, Channel AudioData[])

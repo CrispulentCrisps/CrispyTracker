@@ -73,15 +73,16 @@ public:
 	};
 
 	int TickLimit;
-	int TrackLength = 64;
+	int TrackLength = 32;
 	int YPos;
 	int Input;
 	int Step = 1;
 	int Octave = 4;
 	int ChannelColumn = 0, ChannelRow = 0;
 	bool PlayingTrack;
-	int TextSize = 12;
-	int TextSizeLarge = 24;
+
+	const int TextSize = 12;
+	const int TextSizeLarge = TextSize*2;
 	int BaseTempo = 150;
 	int Highlight1 = 4;
 	int Highlight2 = 16;
@@ -93,11 +94,6 @@ public:
 	int CursorX = 0;			//Xpos of the channel cursor, not the mouse cursor
 	int CursorY = 0;			//Ypos of the channel cursor, not the mouse cursor
 	int CursorPos = 0;			//This is specifically for the individual elements in the effects chain
-	bool HoverNote = false;
-	bool HoverInst = false;
-	bool HoverVolume = false;
-	bool HoverEffect = false;
-	bool HoverValue = false;	//In regards to effect values
 
 	bool ShowSettings = false;
 	
@@ -120,7 +116,11 @@ public:
 	vector<Sample> samples;
 	Sample DefaultSample;
 
-	vector<Patterns> patterns[8];
+	//This is the patterns that is Displayed with
+	vector<Patterns> patterns[8];//Display
+
+	//This is the patterns that is Stored so that when a pattern index is removed the data is preserved
+	vector<Patterns> StoragePatterns;//Storage
 	Patterns DefaultPattern;
 
 	int VolumeScaleL = 127;	//(0-127)
@@ -162,7 +162,6 @@ public:
 	void Misc_View();
 	void Author_View();
 	void EchoSettings();
-	void Credits();
 	void SetupInstr();
 
 	void ChannelInput(int CurPos, int x, int y);
@@ -172,10 +171,8 @@ public:
 	void ChangePatternData(int x, int y, int i);
 	void UpdateRows();
 	void BRRConverter();
-
 	string Authbuf;
 	string Descbuf;
-	string Output = " ";
 	string FilePath = " ";
 	string FileName = " ";
 	string ADSRNames[4] = {
@@ -185,9 +182,11 @@ public:
 		"Delayed (write r on release)"
 	};
 
+	string Credits = "Crisptytracker   |   Tracker Code: Crisps, Alexmush   |   Optimisation Help: Myself806   |   Emulator Code: SPC Player   |   Driver Code: Kulor (hopefully)";
+
 	ImVec4 AttackColour = ImVec4(0, 1, 1, 1);
 	ImVec4 DecayColour = ImVec4(0, 1, 0, 1);
 	ImVec4 SustainColour = ImVec4(1, 1, 0, 1);
-	ImVec4 ReleaseColour = ImVec4(1, .25, .25, 1);
+	ImVec4 ReleaseColour = ImVec4(1, .33, .33, 1);
 };
 #endif // DEBUG

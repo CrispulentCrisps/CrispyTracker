@@ -2,15 +2,14 @@
 
 void Patterns::SetUp(int Length)
 {
-	for (char i = 0; i < Length; i++)
+	StandardRow.note = 256;
+	StandardRow.instrument = 256;
+	StandardRow.volume = 256;
+	StandardRow.effect = 256;
+	StandardRow.effectvalue = 256;
+	for (int i = 0; i < Length; i++)
 	{
-		Row row;
-		SavedRows.push_back(row);
-		SavedRows[i].note = 256;
-		SavedRows[i].instrument = 256;
-		SavedRows[i].volume = 256;
-		SavedRows[i].effect = 256;
-		SavedRows[i].effectvalue = 256;
+		SavedRows[i] = StandardRow;
 	}
 }
 

@@ -36,8 +36,8 @@ void Tracker::Initialise(int StartLength)
 		pat.SetUp(TrackLength);
 		pat.Index = i;
 		patterns[i].push_back(pat);
+		StoragePatterns.push_back(pat);
 	}
-	cout << patterns->size();
 }
 
 void Tracker::Run(void)
@@ -46,7 +46,6 @@ void Tracker::Run(void)
 
 	Authbuf.reserve(128);
 	Descbuf.reserve(1024);
-	Output.reserve(2048);
 	FilePath.reserve(4096);
 
 	bool PlayingTrack = false;
@@ -74,7 +73,7 @@ void Tracker::Run(void)
 	io = GetIO();
 	io.DisplaySize.x = SCREEN_WIDTH;
 	io.DisplaySize.y = SCREEN_HEIGHT;
-	io.DeltaTime = 1.f / 144.f;
+	io.DeltaTime = 1.f / 60.f;
 	GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	//Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
@@ -85,7 +84,7 @@ void Tracker::Run(void)
 		else
 		{
 			//Create window
-			window = SDL_CreateWindow("CrispyTracker", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_RESIZABLE);
+			window = SDL_CreateWindow(Credits.data(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_RESIZABLE);
 			rend = SDL_CreateRenderer(window, 0, SDL_RENDERER_PRESENTVSYNC);
 			// Setup Platform/Renderer backends
 			ImGui_ImplSDL2_InitForSDLRenderer(window, rend);
@@ -167,27 +166,20 @@ void Tracker::Render()
 	NewFrame();
 	MenuBar();
 	DockSpaceOverViewport(NULL);
-	if (!ShowCredits)
+	//ShowDemoWindow();
+	Patterns_View();
+	Channel_View();
+	Instruments();
+	Instrument_View();
+	Samples();
+	Sample_View();
+	Settings_View();
+	Misc_View();
+	Author_View();
+	EchoSettings();
+	if (LoadingSample)
 	{
-		//ShowDemoWindow();
-		Patterns_View();
-		Channel_View();
-		Instruments();
-		Instrument_View();
-		Samples();
-		Sample_View();
-		Settings_View();
-		Misc_View();
-		Author_View();
-		EchoSettings();
-		if (LoadingSample)
-		{
-			LoadSample();
-		}
-	}
-	else
-	{
-		Credits();
+		LoadSample();
 	}
 	SDL_RenderSetScale(rend, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
 	ImGui::Render();
@@ -228,10 +220,6 @@ void Tracker::MenuBar()
 	{
 		ImGui::MenuItem("Effects List");
 		ImGui::MenuItem("Manual");
-		if (Selectable("Credits"))
-		{
-			ShowCredits = !ShowCredits;
-		}
 		ImGui::EndMenu();
 	}
 	ImGui::Text("	|	%.3f ms/frame (%.1f FPS)", 1000.0 / (ImGui::GetIO().Framerate), (ImGui::GetIO().Framerate));
@@ -253,6 +241,19 @@ void Tracker::Patterns_View()
 			TableNextColumn();
 			Text(to_string(y).data());
 			TableNextColumn();
+
+			//Row Highlighting
+			ImU32 col;
+			if (SelectedPattern == y)
+			{
+				col = H1Col;
+			}
+			else
+			{
+				col = Default;
+			}
+			TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+
 			for (char x = 0; x < 8; x++)
 			{
 				if (Selectable(to_string(patterns[x][y].Index).data())) {
@@ -276,6 +277,7 @@ void Tracker::Patterns_View()
 				pat.Index = Maxindex + i;
 				//cout << "\n SavedRows: " << pat.SavedRows.size();
 				patterns[i].push_back(pat);
+				StoragePatterns.push_back(pat);
 			}
 			Maxindex += 8;
 			SongLength++;	
@@ -460,8 +462,10 @@ void Tracker::Instrument_View()
 
 					if (inst[SelectedInst].ADSRType == 0)
 					{
-						SliderInt("Attack ", &inst[SelectedInst].Attack, 0, 15);
 						PushStyleColor(ImGuiCol_Text, AttackColour);
+						SliderInt("Attack ", &inst[SelectedInst].Attack, 0, 15);
+						PopStyleColor();
+						PushStyleColor(ImGuiCol_Text, DecayColour);
 						SliderInt("Decay", &inst[SelectedInst].Decay, 0, 7);
 						PopStyleColor();
 						PushStyleColor(ImGuiCol_Text, SustainColour);
@@ -501,7 +505,6 @@ void Tracker::Instrument_View()
 				}
 
 				NewLine();
-				Text("Special");
 				Text("Special");
 				Checkbox("Invert L  ", &inst[SelectedInst].InvL);
 				SameLine();
@@ -543,13 +546,18 @@ void Tracker::Channel_View()
 	{
 		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*.9 + (TextSize*8), 0)));
 		{
+			ImVec2 RowVec = ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4);
 			//Actual pattern data
 			TableNextColumn();
+
+			// This index is for each individual channel on the snes
+			// the -1 is for the left hand columns index
 			for (int i = -1; i < 8; i++)//X
 			{
+				//This determines the columns on a given channel [all track lengths are constant between channels]
 				for (int j = 0; j < TrackLength; j++)//Y
 				{
-
+					/*
 					if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
 					{
 						string str;
@@ -565,25 +573,28 @@ void Tracker::Channel_View()
 						str += to_string(CursorY);
 						SetTooltip(str.data());
 					}
+					*/
 					if (i == -1)
 					{
-						Selectable(to_string(j).data());
+						string ind;
+						ind = to_string(j);
 						if (j < 10)
 						{
-							SameLine();
-							Text("  ");
+							ind += "  ";
 						}
 						else if (j >= 10 && j < 100)
 						{
-							SameLine();
-							Text(" ");
+							ind += " ";
 						}
+						Text(ind.data());
 					}
 					else
 					{
 						//Channel
-						if (BeginTable("RowView", 5, 0)) 
+						if (BeginTable("RowView", 5, 0))
 						{
+							TableNextColumn();
+
 							//Row Highlighting
 							ImU32 col;
 							if (j % Highlight2 == 0)
@@ -600,98 +611,53 @@ void Tracker::Channel_View()
 							{
 								col = Default;
 							}
-							TableNextColumn();
-							
+
 							TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 
-							if (CursorX == i && CursorY == j)//i = x, j = y
+							bool IsPoint = CursorX == i && CursorY == j;
+							if (IsPoint)//i = x, j = y
 							{
 								if (IsWindowFocused())
 								{
 									ChannelInput(CursorPos, i, j);
 								}
-								switch (CursorPos)
-								{
-								case 0:
-									HoverNote = true;
-									HoverInst = false;
-									HoverVolume = false;
-									HoverEffect = false;
-									HoverValue = false;
-									break;
-								case 1:
-									HoverNote = false;
-									HoverInst = true;
-									HoverVolume = false;
-									HoverEffect = false;
-									HoverValue = false;
-									break;
-								case 2:
-									HoverNote = false;
-									HoverInst = false;
-									HoverVolume = true;
-									HoverEffect = false;
-									HoverValue = false;
-									break;
-								case 3:
-									HoverNote = false;
-									HoverInst = false;
-									HoverVolume = false;
-									HoverEffect = true;
-									HoverValue = false;
-									break;
-								case 4:
-									HoverNote = false;
-									HoverInst = false;
-									HoverVolume = false;
-									HoverEffect = false;
-									HoverValue = true;
-									break;
-								}
-							}
-							else
-							{
-								HoverNote = false;
-								HoverInst = false;
-								HoverVolume = false;
-								HoverEffect = false;
-								HoverValue = false;
 							}
 							//Cursor highlighting
-							if (Selectable(Channels[i].NoteView(j).c_str(), HoverNote, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
+							if (Selectable(Channels[i].NoteView(j).data(), IsPoint && CursorPos == NOTE, 0, RowVec))
 							{
 								CursorPos = NOTE;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].InstrumentView(j).c_str(), HoverInst, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
+							if (Selectable(Channels[i].InstrumentView(j).data(), IsPoint && CursorPos == INSTR, 0, RowVec))
 							{
 								CursorPos = INSTR;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].VolumeView(j).c_str(), HoverVolume, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
+							if (Selectable(Channels[i].VolumeView(j).data(), IsPoint && CursorPos == VOLUME, CursorPos == VOLUME, RowVec))
 							{
 								CursorPos = VOLUME;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].EffectView(j).c_str(), HoverEffect, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
+							if (Selectable(Channels[i].EffectView(j).data(), IsPoint && CursorPos == EFFECT, 0, RowVec))
 							{
 								CursorPos = EFFECT;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].Effectvalue(j).c_str(), HoverValue, 0, ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4)))
+							if (Selectable(Channels[i].Effectvalue(j).data(), IsPoint && CursorPos == VALUE, 0, RowVec))
 							{
 								CursorPos = VALUE;
 								CursorX = i;
 								CursorY = j;
 							}
+
 							EndTable();
 						}
 						else
@@ -699,6 +665,7 @@ void Tracker::Channel_View()
 							EndTable();
 						}
 					}
+
 				}
 				TableNextColumn(); 
 			}
@@ -916,20 +883,6 @@ void Tracker::EchoSettings()
 	}
 }
 
-void Tracker::Credits()
-{
-	if (ShowCredits)
-	{
-		if (Begin("Credits"), true, UNIVERSAL_WINDOW_FLAGS)
-		{
-			Text("Tracker Code: Crisps, Alexmush");
-			Text("Emulator Code: SPC Player");
-			Text("Driver Code: Nobody yet!!!");
-			End();
-		}
-	}
-}
-
 void Tracker::SetupInstr()
 {
 	DefaultInst.Index = 1;
@@ -983,6 +936,10 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 			else if (Currentkey == SDLK_UP)
 			{
 				CursorY--;
+			}
+			else if (Currentkey == SDLK_SPACE)
+			{
+				EditingMode = !EditingMode;
 			}
 
 			if (EditingMode)
@@ -1114,9 +1071,10 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 		CursorX--;
 		CursorPos = VALUE;
 	}
-	else if (CursorX <= 1 && CurPos < 0)
+	
+	if (CursorX < 0)
 	{
-		CursorX = 1;
+		CursorX = 0;
 		CurPos = 0;
 	}
 
@@ -1229,19 +1187,24 @@ void Tracker::DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[])
 
 void Tracker::UpdatePatternIndex(int x, int y)
 {
-	//Pattern changing seems to affect the pattern BEFORE the one you're changing 
-	//[edit, I just wasn't displaying the first channe so please ignore this commentl]
 	if (patterns[x][y].Index > Maxindex)
 	{
 		Maxindex = patterns[x][y].Index;
 		Patterns pat;
 		pat = DefaultPattern;
+		StoragePatterns.push_back(pat);
 		patterns->push_back(pat);
 	}
 
 	cout << "\n" << x << "\n" << y;
 	for (int i = 0; i < TrackLength; i++)
 	{
+
+		StoragePatterns[y].SavedRows[i].note = patterns[x][y].SavedRows[i].note;
+		StoragePatterns[y].SavedRows[i].volume = patterns[x][y].SavedRows[i].volume;
+		StoragePatterns[y].SavedRows[i].effect = patterns[x][y].SavedRows[i].effect;
+		StoragePatterns[y].SavedRows[i].effectvalue = patterns[x][y].SavedRows[i].effectvalue;
+
 		Channels[x].Rows[i].note = patterns[x][y].SavedRows[i].note;
 		Channels[x].Rows[i].volume = patterns[x][y].SavedRows[i].volume;
 		Channels[x].Rows[i].effect = patterns[x][y].SavedRows[i].effect;
@@ -1252,11 +1215,12 @@ void Tracker::UpdatePatternIndex(int x, int y)
 
 void Tracker::ChangePatternData(int x, int y, int i)
 {
-	cout << "CHANGED PATTERN DATA: " << "\n" << "X: " << x << "\n" << "Y: " << y << "\n" << "I: " << i;
-	patterns[x][y].SavedRows[i].note = Channels[x].Rows[i].note;
-	patterns[x][y].SavedRows[i].volume = Channels[x].Rows[i].volume;
-	patterns[x][y].SavedRows[i].effect = Channels[x].Rows[i].effect;
-	patterns[x][y].SavedRows[i].effectvalue = Channels[x].Rows[i].effectvalue;
+	cout << "\n" << "CHANGED PATTERN DATA: " << "\n" << "X: " << x << "\n" << "Y: " << y << "\n" << "I: " << i;
+	cout << "\n" << patterns->size() << " : " << patterns[x].size();
+	patterns[x][SelectedPattern].SavedRows[i].note = Channels[x].Rows[i].note;
+	patterns[x][SelectedPattern].SavedRows[i].volume = Channels[x].Rows[i].volume;
+	patterns[x][SelectedPattern].SavedRows[i].effect = Channels[x].Rows[i].effect;
+	patterns[x][SelectedPattern].SavedRows[i].effectvalue = Channels[x].Rows[i].effectvalue;
 }
 /*
 if (Begin("Main"), true, UNIVERSAL_WINDOW_FLAGS)

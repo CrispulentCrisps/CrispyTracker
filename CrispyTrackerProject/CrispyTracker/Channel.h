@@ -20,10 +20,16 @@ public:
 	"G#", "A-", "A#", "B-",
 	};
 
+	string NoteNames_MT[12] = {
+	"c-", "c#", "d-", "d#",
+	"e-", "F-", "f#", "g-",
+	"g#", "a-", "a#", "b-",
+	};
+
 	string NoteNames_GR[12] = {
 	"C-", "C#", "D-", "D#",	
 	"E-", "F-", "F#", "G-",
-	"G#", "A-", "B", "H-",
+	"G#", "A-", "B-", "H-",
 	};
 
 	string NoteNames_FL[12] = {
@@ -32,11 +38,11 @@ public:
 	"Ab", "A-", "Bb", "B-",
 	};
 
-	string HexValues[15] = {
-		"1","2","3","4",
-		"5","6","7","8",
-		"9","A","B","C",
-		"D","E","F",
+	string HexValues[16] = {
+		"0","1","2","3",
+		"4","5","6","7",
+		"8","9","A","B",
+		"C","D","E","F",
 	};
 
 	struct Row {
@@ -64,8 +70,6 @@ public:
 
 	void SetUp(int Length);
 	void TickCheck();
-
-	string Row_View(int index);
 	string NoteView(int index);
 	string VolumeView(int index);
 	string InstrumentView(int index);
