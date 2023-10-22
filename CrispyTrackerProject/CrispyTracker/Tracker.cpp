@@ -44,6 +44,8 @@ void Tracker::Run(void)
 {
 	SetupInstr();
 
+	glfwInit();
+
 	Authbuf.reserve(128);
 	Descbuf.reserve(1024);
 	FilePath.reserve(4096);
@@ -51,7 +53,7 @@ void Tracker::Run(void)
 	bool PlayingTrack = false;
 	bool WindowIsGood = true;
 
-	SDL_INIT_AUDIO;
+	SDL_Init(SDL_INIT_EVERYTHING);
 	have.channels = 1;
 	have.size = TRACKER_AUDIO_BUFFER;
 	have.freq = SPS;
@@ -60,10 +62,21 @@ void Tracker::Run(void)
 	have.padding = 512;
 
 	have.format = AUDIO_S16;
+
+	//Create window
+	window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, Credits.data(), NULL, NULL);
+	// Setup Platform/Renderer backends
+
+	glfwMakeContextCurrent(window);
+	glfwSwapInterval(1); // Enable vsync
+	
 	//ImGUI setup
 	IMGUI_CHECKVERSION();
 	cont = ImGui::CreateContext();
-	SetCurrentContext(cont);
+
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init();
+
 	StyleColorsClassic();
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.FrameBorderSize = 0.4f;
@@ -75,35 +88,22 @@ void Tracker::Run(void)
 	io.DisplaySize.y = SCREEN_HEIGHT;
 	io.DeltaTime = 1.f / 60.f;
 	GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	//Initialize SDL
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
-		{
-			printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
-			WindowIsGood = false;
-		}
-		else
-		{
-			//Create window
-			window = SDL_CreateWindow(Credits.data(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_RESIZABLE);
-			rend = SDL_CreateRenderer(window, 0, SDL_RENDERER_PRESENTVSYNC);
-			// Setup Platform/Renderer backends
-			ImGui_ImplSDL2_InitForSDLRenderer(window, rend);
-			ImGui_ImplSDLRenderer2_Init(rend);
-			if (window == NULL)
-			{
-				printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
-				WindowIsGood = false;
-			}
-			else
-			{
-				//Load fonts
-				font = io.Fonts->AddFontFromFileTTF("fonts/Manaspace.ttf", TextSize, NULL, NULL);
-				Largefont = io.Fonts->AddFontFromFileTTF("fonts/Manaspace.ttf", TextSizeLarge, NULL, NULL);
-				io.Fonts->Build();
-				ImGui_ImplSDLRenderer2_CreateFontsTexture();
-				WindowIsGood = true;
-			}
+	
+	if (window == NULL)
+	{
+		printf("Window could not be created! ERROR: %s\n", SDL_GetError());
+		WindowIsGood = false;
 	}
+	else
+	{
+		//Load fonts
+		font = io.Fonts->AddFontFromFileTTF("fonts/Manaspace.ttf", TextSize, NULL, NULL);
+		Largefont = io.Fonts->AddFontFromFileTTF("fonts/Manaspace.ttf", TextSizeLarge, NULL, NULL);
+		io.Fonts->Build();
+		ImGui_ImplOpenGL3_CreateFontsTexture();
+		WindowIsGood = true;
+	}
+
 	ChannelEditState cstate = NOTE;
 	//Initialise the tracker
 	Initialise(TrackLength);
@@ -115,15 +115,22 @@ void Tracker::Run(void)
 	}
 
 	//Destroy window
-	SDL_DestroyWindow(window);
 	DestroyContext();
+	glfwDestroyWindow(window);
 	//Quit SDL subsystems
+	ImGui_ImplOpenGL3_Shutdown();
 	SDL_Quit();
 }
 
 void Tracker::CheckInput()
 {
 	int TuninOff = 48;
+
+	glfwPollEvents();
+
+	Currentkey = glfwGetKey(window, GLFW_KEY_E);
+
+	/*
 	SDL_Event event;
 	const Uint8* keystates = SDL_GetKeyboardState(NULL);
 	if (SDL_PollEvent(&event))
@@ -136,10 +143,9 @@ void Tracker::CheckInput()
 			Currentkey = event.key.keysym.sym;
 			switch (event.key.keysym.sym)
 			{
-				break;
-			case SDL_QUIT:
-				running = false;
-				break;
+				case SDL_QUIT:
+					running = false;
+					break;
 			}
 			SG.CheckSound(want, have, dev, Channels);
 			SDL_PauseAudioDevice(dev, 0);
@@ -157,13 +163,16 @@ void Tracker::CheckInput()
 			break;
 		}
 	}
+	*/
 }
 
 void Tracker::Render()
 {
 	FrameCount++;
-	ImGui_ImplSDL2_NewFrame();
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
 	NewFrame();
+	
 	MenuBar();
 	DockSpaceOverViewport(NULL);
 	//ShowDemoWindow();
@@ -181,11 +190,10 @@ void Tracker::Render()
 	{
 		LoadSample();
 	}
-	SDL_RenderSetScale(rend, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
 	ImGui::Render();
-	SDL_RenderClear(rend);
-	ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
-	SDL_RenderPresent(rend);
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	glfwSwapBuffers(window);
+	glfwWaitEvents();
 	EndFrame();
 }
 
@@ -623,35 +631,35 @@ void Tracker::Channel_View()
 								}
 							}
 							//Cursor highlighting
-							if (Selectable(Channels[i].NoteView(j).data(), IsPoint && CursorPos == NOTE, 0, RowVec))
+							if (Selectable(Channels[i].Rows[j].S_Note.data(), IsPoint && CursorPos == NOTE, 0, RowVec))
 							{
 								CursorPos = NOTE;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].InstrumentView(j).data(), IsPoint && CursorPos == INSTR, 0, RowVec))
+							if (Selectable(Channels[i].Rows[j].S_Inst.data(), IsPoint && CursorPos == INSTR, 0, RowVec))
 							{
 								CursorPos = INSTR;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].VolumeView(j).data(), IsPoint && CursorPos == VOLUME, CursorPos == VOLUME, RowVec))
+							if (Selectable(Channels[i].Rows[j].S_Volume.data(), IsPoint && CursorPos == VOLUME, CursorPos == VOLUME, RowVec))
 							{
 								CursorPos = VOLUME;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].EffectView(j).data(), IsPoint && CursorPos == EFFECT, 0, RowVec))
+							if (Selectable(Channels[i].Rows[j].S_Effect.data(), IsPoint && CursorPos == EFFECT, 0, RowVec))
 							{
 								CursorPos = EFFECT;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].Effectvalue(j).data(), IsPoint && CursorPos == VALUE, 0, RowVec))
+							if (Selectable(Channels[i].Rows[j].S_Value.data(), IsPoint && CursorPos == VALUE, 0, RowVec))
 							{
 								CursorPos = VALUE;
 								CursorX = i;
@@ -917,27 +925,27 @@ void Tracker::SetupInstr()
 
 void Tracker::ChannelInput(int CurPos, int x, int y)
 {
-	if (Event.type == SDL_KEYDOWN)
+	if (Event == GLFW_PRESS)
 	{
 		if (!IsPressed)
 		{
-			if (Currentkey == SDLK_LEFT)
+			if (Currentkey == GLFW_KEY_LEFT)
 			{
 				CursorPos--;
 			}
-			else if (Currentkey == SDLK_RIGHT)
+			else if (Currentkey == GLFW_KEY_RIGHT)
 			{
 				CursorPos++;
 			}
-			if (Currentkey == SDLK_DOWN)
+			if (Currentkey == GLFW_KEY_DOWN)
 			{
 				CursorY++;
 			}
-			else if (Currentkey == SDLK_UP)
+			else if (Currentkey == GLFW_KEY_UP)
 			{
 				CursorY--;
 			}
-			else if (Currentkey == SDLK_SPACE)
+			else if (Currentkey == GLFW_KEY_SPACE)
 			{
 				EditingMode = !EditingMode;
 			}
@@ -963,6 +971,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 								Channels[x].Rows[y].note = i + (12 * Octave);
 								Channels[x].Rows[y].octave = Octave;
 							}
+							Channels[x].Rows[y].S_Note = Channels[x].NoteNames[Channels[x].Rows[y].note % 12] + to_string(Channels[x].Rows[y].octave);
 							CursorY += Step;
 							if (CursorY >= TrackLength)
 							{
@@ -971,10 +980,11 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 							break;
 							ChangePatternData(x, y, i);
 						}
-						else if (Currentkey == SDLK_DELETE)
+						else if (Currentkey == GLFW_KEY_DELETE)
 						{
 							Channels[x].Rows[y].note = MAX_VALUE;
 							CursorY += Step;
+							Channels[x].Rows[y].S_Note = "---";
 							ChangePatternData(x, y, i);
 						}
 					}
@@ -1056,7 +1066,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 			IsPressed = true;
 		}
 	}
-	else if (Event.type == SDL_KEYUP)
+	else if (Event == GLFW_KEY_UP)
 	{
 		IsPressed = false;
 	}

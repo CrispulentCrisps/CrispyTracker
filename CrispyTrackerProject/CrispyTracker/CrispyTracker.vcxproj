@@ -81,13 +81,13 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>$(ProjectDir)Libraries\SDL2\lib\x64;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\libsndfile\lib;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(ProjectDir)Libraries\SDL2\include;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)Libraries\SDL2\lib\x64;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\libsndfile\lib;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\lib-vc2022;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)Libraries\SDL2\include;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\include;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\include;$(ProjectDir)Libraries;$(ProjectDir)Libraries\opengl;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>$(ProjectDir)Libraries\SDL2\lib\x64;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\libsndfile\lib;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(ProjectDir)Libraries\SDL2\include;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)Libraries\SDL2\lib\x64;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\libsndfile\lib;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\lib-vc2022;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)Libraries\SDL2\include;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\include;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\include;$(ProjectDir)Libraries;$(ProjectDir)Libraries\opengl;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -129,15 +129,15 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Libraries\SDL2\include;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Libraries\SDL2\include;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\include;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\include;$(ProjectDir)Libraries\opengl;$(ProjectDir)Libraries;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>Default</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;sndfile.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)Libraries\SDL2\lib\x64;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\imgui\backends;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;sndfile.lib;glfw3_mt.lib;glfw3dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)Libraries\SDL2\lib\x64;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\imgui\backends;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\lib;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\lib-vc2022;$(ProjectDir)Libraries\opengl;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -148,23 +148,24 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Libraries\SDL2\include;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Libraries\SDL2\include;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\include;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\include;$(ProjectDir)Libraries\opengl;$(ProjectDir)Libraries;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;sndfile.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)Libraries\SDL2\lib\x64;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\imgui\backends;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;sndfile.lib;glfw3_mt.lib;glfw3dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)Libraries\SDL2\lib\x64;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\imgui\backends;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\lib;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\lib-vc2022;$(ProjectDir)Libraries\opengl;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdl2.cpp" />
-    <ClCompile Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdlrenderer2.cpp" />
     <ClCompile Include="Channel.cpp" />
     <ClCompile Include="Instrument.cpp" />
     <ClCompile Include="Libraries\ImGuiFileDialog-0.6.5\ImGuiFileDialog.cpp" />
+    <ClCompile Include="Libraries\imgui\backends\imgui_impl_glfw.cpp" />
+    <ClCompile Include="Libraries\imgui\backends\imgui_impl_opengl3.cpp" />
     <ClCompile Include="Libraries\imgui\imgui.cpp" />
     <ClCompile Include="Libraries\imgui\imgui_demo.cpp" />
     <ClCompile Include="Libraries\imgui\imgui_draw.cpp" />
@@ -177,11 +178,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdl2.h" />
-    <ClInclude Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdlrenderer2.h" />
     <ClInclude Include="Channel.h" />
     <ClInclude Include="Instrument.h" />
+    <ClInclude Include="Libraries\glfw-3.3.8\glfw-3.3.8\include\GLFW\glfw3.h" />
+    <ClInclude Include="Libraries\glfw-3.3.8\glfw-3.3.8\include\GLFW\glfw3native.h" />
     <ClInclude Include="Libraries\ImGuiFileDialog-0.6.5\ImGuiFileDialog.h" />
     <ClInclude Include="Libraries\ImGuiFileDialog-0.6.5\ImGuiFileDialogConfig.h" />
+    <ClInclude Include="Libraries\imgui\backends\imgui_impl_glfw.h" />
+    <ClInclude Include="Libraries\imgui\backends\imgui_impl_opengl3.h" />
+    <ClInclude Include="Libraries\imgui\backends\imgui_impl_opengl3_loader.h" />
     <ClInclude Include="Libraries\imgui\imconfig.h" />
     <ClInclude Include="Libraries\imgui\imgui.h" />
     <ClInclude Include="Libraries\imgui\imgui_internal.h" />

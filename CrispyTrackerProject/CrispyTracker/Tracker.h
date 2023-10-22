@@ -7,9 +7,13 @@
 #include "Instrument.h"
 #include "Patterns.h"
 
+#include "Libraries/imgui/backends/imgui_impl_opengl3_loader.h"
+#include "Libraries/glfw-3.3.8/glfw-3.3.8/include/GLFW/glfw3.h"
+#include "Libraries/glfw-3.3.8/glfw-3.3.8/include/GLFW/glfw3native.h"
+#include "Libraries/imgui/backends/imgui_impl_glfw.h"
 #include "Libraries/imgui/imgui.h"
 #include "Libraries/imgui/backends/imgui_impl_sdl2.h"
-#include "Libraries/imgui/backends/imgui_impl_sdlrenderer2.h"
+#include "Libraries/imgui/backends/imgui_impl_opengl3.h"
 #include "Libraries/ImGuiFileDialog-0.6.5/ImGuiFileDialog.h"
 #include "Libraries/libsndfile/include/sndfile.h"
 
@@ -35,12 +39,12 @@ public:
 	string VERSION = "version: 0.3";
 	int AUDIO_FORMATS = SF_FORMAT_WAV;
 	int FrameCount = 0;
-	SDL_Event Event;
-	SDL_Keycode Currentkey;
+	int Event;
+	int Currentkey;
 	bool IsPressed = false;
 	bool EditingMode = true;
-	SDL_Renderer* rend = NULL;
-	SDL_Window* window = NULL;
+
+	GLFWwindow* window = NULL;
 	ImGuiContext* cont = NULL;
 	ImGuiIO io;
 	Channel Channels[8];
@@ -52,28 +56,28 @@ public:
 	ImColor H1Col = IM_COL32(33, 33, 66, 255);
 	ImColor CursorCol = IM_COL32(99, 99, 122, 255);
 	
-	SDL_KeyCode NoteInput[24] = 
+	int NoteInput[24] = 
 	{
 		//Lower octave
-		SDLK_z, SDLK_s, SDLK_x, SDLK_d,
-		SDLK_c, SDLK_v, SDLK_g, SDLK_b,
-		SDLK_h, SDLK_n, SDLK_j, SDLK_m,
+		GLFW_KEY_Z, GLFW_KEY_S, GLFW_KEY_X, GLFW_KEY_D,
+		GLFW_KEY_C, GLFW_KEY_V, GLFW_KEY_G, GLFW_KEY_B,
+		GLFW_KEY_H, GLFW_KEY_N, GLFW_KEY_J, GLFW_KEY_M,
 		//Higher octave
-		SDLK_q , SDLK_2, SDLK_w, SDLK_3, 
-		SDLK_e, SDLK_r, SDLK_5, SDLK_t, 
-		SDLK_6, SDLK_y, SDLK_7, SDLK_u,
+		GLFW_KEY_1 , GLFW_KEY_2, GLFW_KEY_W, GLFW_KEY_3, 
+		GLFW_KEY_3, GLFW_KEY_R, GLFW_KEY_5, GLFW_KEY_T, 
+		GLFW_KEY_6, GLFW_KEY_Y, GLFW_KEY_7, GLFW_KEY_U,
 	};
 
-	SDL_KeyCode VolInput[16] =
+	int VolInput[16] =
 	{
-		SDLK_0, SDLK_1, SDLK_2, SDLK_3, 
-		SDLK_4, SDLK_5, SDLK_6, SDLK_7, 
-		SDLK_8, SDLK_9, SDLK_a, SDLK_b, 
-		SDLK_c, SDLK_d, SDLK_e, SDLK_f,
+		GLFW_KEY_0, GLFW_KEY_1, GLFW_KEY_2, GLFW_KEY_3, 
+		GLFW_KEY_4, GLFW_KEY_5, GLFW_KEY_6, GLFW_KEY_7, 
+		GLFW_KEY_8, GLFW_KEY_9, GLFW_KEY_A, GLFW_KEY_B, 
+		GLFW_KEY_C, GLFW_KEY_D, GLFW_KEY_E, GLFW_KEY_F,
 	};
 
 	int TickLimit;
-	int TrackLength = 32;
+	int TrackLength = 256;
 	int YPos;
 	int Input;
 	int Step = 1;
@@ -81,7 +85,7 @@ public:
 	int ChannelColumn = 0, ChannelRow = 0;
 	bool PlayingTrack;
 
-	const int TextSize = 12;
+	const int TextSize = 11;
 	const int TextSizeLarge = TextSize*2;
 	int BaseTempo = 150;
 	int Highlight1 = 4;
@@ -171,6 +175,7 @@ public:
 	void ChangePatternData(int x, int y, int i);
 	void UpdateRows();
 	void BRRConverter();
+
 	string Authbuf;
 	string Descbuf;
 	string FilePath = " ";

@@ -77,15 +77,19 @@ int Channel::EvaluateHexInput(int input, int index, int max, int valuetype)
 	{
 	case 1:
 		ModValue = Rows[index].instrument;
+		Rows[index].S_Inst = ModValue;
 		break;
 	case 2:
 		ModValue = Rows[index].volume;
+		Rows[index].S_Volume = ModValue;
 		break;
 	case 3:
 		ModValue = Rows[index].effect;
+		Rows[index].S_Effect = ModValue;
 		break;
 	case 4:
 		ModValue = Rows[index].effectvalue;
+		Rows[index].S_Value = ModValue;
 		break;
 	}
 

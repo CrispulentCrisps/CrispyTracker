@@ -57,7 +57,10 @@
     <ClCompile Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdl2.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdlrenderer2.cpp">
+    <ClCompile Include="Libraries\imgui\backends\imgui_impl_opengl3.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Libraries\imgui\backends\imgui_impl_glfw.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
   </ItemGroup>
@@ -107,7 +110,19 @@
     <ClInclude Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdl2.h">
       <Filter>imgui</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdlrenderer2.h">
+    <ClInclude Include="Libraries\imgui\backends\imgui_impl_opengl3.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\imgui\backends\imgui_impl_opengl3_loader.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\imgui\backends\imgui_impl_glfw.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\glfw-3.3.8\glfw-3.3.8\include\GLFW\glfw3.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\glfw-3.3.8\glfw-3.3.8\include\GLFW\glfw3native.h">
       <Filter>imgui</Filter>
     </ClInclude>
   </ItemGroup>
