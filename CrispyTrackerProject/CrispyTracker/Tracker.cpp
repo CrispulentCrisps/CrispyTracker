@@ -39,6 +39,45 @@ void Tracker::Initialise(int StartLength)
 		StoragePatterns.push_back(pat);
 	}
 }
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	Tracker* tr = static_cast<Tracker*>(glfwGetWindowUserPointer(window));
+	if (tr)
+	{
+		cout << "\nTR IS CASTED";
+	}
+	else
+	{
+		cout << "\nTR IS NOT CASTED";
+	}
+	if (glfwGetWindowUserPointer(window) != NULL)
+	{
+		cout << "\nWINDOW GOT";
+	}
+	else
+	{
+		cout << "\nWINDOW NOT GOT";
+	}
+	cout << "\n FIRST INPUT DONE\n" << key;
+	for (int i = 0; i < 24; i++)//Note input
+	{
+		if (glfwGetKey(window, tr->NoteInput[i] == GLFW_PRESS) /* && action == GLFW_PRESS*/)
+		{
+			tr->Currentkey = tr->NoteInput[i];
+			cout << "\n INPUT EXECUTED \n" << tr->Currentkey;
+			break;
+		}
+	}
+	for (int i = 0; i < 16; i++)
+	{
+		if (glfwGetKey(window, tr->VolInput[i] == GLFW_PRESS))
+		{
+			tr->Currentkey = tr->VolInput[i];
+			cout << "\n INPUT EXECUTED \n" << tr->Currentkey;
+			break;
+		}
+	}
+}
 
 void Tracker::Run(void)
 {
@@ -46,7 +85,7 @@ void Tracker::Run(void)
 
 	glfwInit();
 
-	Authbuf.reserve(128);
+	Authbuf.reserve(256);
 	Descbuf.reserve(1024);
 	FilePath.reserve(4096);
 
@@ -69,13 +108,18 @@ void Tracker::Run(void)
 
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1); // Enable vsync
-	
+
+	glfwSetWindowUserPointer(window, this);
+
 	//ImGUI setup
 	IMGUI_CHECKVERSION();
 	cont = ImGui::CreateContext();
 
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init();
+
+	glfwSetKeyCallback(window, keyCallback);
+	glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
 
 	StyleColorsClassic();
 	ImGuiStyle& style = ImGui::GetStyle();
@@ -105,10 +149,12 @@ void Tracker::Run(void)
 	}
 
 	ChannelEditState cstate = NOTE;
+	
 	//Initialise the tracker
 	Initialise(TrackLength);
 	while (running) {
 		if (WindowIsGood) {
+			cout << "\nCurrent key: " << Currentkey;
 			Render();
 		}
 		CheckInput();
@@ -127,9 +173,6 @@ void Tracker::CheckInput()
 	int TuninOff = 48;
 
 	glfwPollEvents();
-
-	Currentkey = glfwGetKey(window, GLFW_KEY_E);
-
 	/*
 	SDL_Event event;
 	const Uint8* keystates = SDL_GetKeyboardState(NULL);
@@ -909,7 +952,7 @@ void Tracker::SetupInstr()
 	inst.push_back(DefaultInst);
 
 	DefaultSample.SampleIndex = 0;
-	DefaultSample.SampleName = "Sample: 0";
+	DefaultSample.SampleName = "Choose a sample!";
 	DefaultSample.FineTune = 0;
 	DefaultSample.SampleRate = 0;
 	DefaultSample.Loop = false;
@@ -925,7 +968,7 @@ void Tracker::SetupInstr()
 
 void Tracker::ChannelInput(int CurPos, int x, int y)
 {
-	if (Event == GLFW_PRESS)
+	if (true/*Event*/)
 	{
 		if (!IsPressed)
 		{
