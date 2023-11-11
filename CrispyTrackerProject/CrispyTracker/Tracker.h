@@ -75,7 +75,10 @@ public:
 		GLFW_KEY_8, GLFW_KEY_9, GLFW_KEY_A, GLFW_KEY_B, 
 		GLFW_KEY_C, GLFW_KEY_D, GLFW_KEY_E, GLFW_KEY_F,
 	};
-
+	int ArrowInput[4] =
+	{
+		GLFW_KEY_LEFT, GLFW_KEY_RIGHT, GLFW_KEY_UP, GLFW_KEY_DOWN,
+	};
 	int TickLimit;
 	int TrackLength = 256;
 	int YPos;

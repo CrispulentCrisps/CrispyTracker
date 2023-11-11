@@ -61,7 +61,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	cout << "\n FIRST INPUT DONE\n" << key;
 	for (int i = 0; i < 24; i++)//Note input
 	{
-		if (glfwGetKey(window, tr->NoteInput[i] == GLFW_PRESS) /* && action == GLFW_PRESS*/)
+		if (key == tr->NoteInput[i] && glfwGetKey(window, tr->NoteInput[i]) == GLFW_PRESS) /* && action == GLFW_PRESS*/
 		{
 			tr->Currentkey = tr->NoteInput[i];
 			cout << "\n INPUT EXECUTED \n" << tr->Currentkey;
@@ -70,9 +70,18 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	}
 	for (int i = 0; i < 16; i++)
 	{
-		if (glfwGetKey(window, tr->VolInput[i] == GLFW_PRESS))
+		if (key == tr->VolInput[i] && glfwGetKey(window, tr->VolInput[i] == GLFW_PRESS))
 		{
 			tr->Currentkey = tr->VolInput[i];
+			cout << "\n INPUT EXECUTED \n" << tr->Currentkey;
+			break;
+		}
+	}
+	for (int i = 0; i < 4; i++)
+	{
+		if (key == tr->ArrowInput[i] && glfwGetKey(window, tr->ArrowInput[i] == GLFW_PRESS))
+		{
+			tr->Currentkey = tr->ArrowInput[i];
 			cout << "\n INPUT EXECUTED \n" << tr->Currentkey;
 			break;
 		}
