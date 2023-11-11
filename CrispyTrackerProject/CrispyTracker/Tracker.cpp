@@ -42,9 +42,10 @@ void Tracker::Initialise(int StartLength)
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	Tracker* tr = static_cast<Tracker*>(glfwGetWindowUserPointer(window));
+	/*
 	if (tr)
 	{
-		cout << "\nTR IS CASTED";
+		cout << "\nTR IS CAST";
 	}
 	else
 	{
@@ -59,33 +60,9 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 		cout << "\nWINDOW NOT GOT";
 	}
 	cout << "\n FIRST INPUT DONE\n" << key;
-	for (int i = 0; i < 24; i++)//Note input
-	{
-		if (key == tr->NoteInput[i] && glfwGetKey(window, tr->NoteInput[i]) == GLFW_PRESS) /* && action == GLFW_PRESS*/
-		{
-			tr->Currentkey = tr->NoteInput[i];
-			cout << "\n INPUT EXECUTED \n" << tr->Currentkey;
-			break;
-		}
-	}
-	for (int i = 0; i < 16; i++)
-	{
-		if (key == tr->VolInput[i] && glfwGetKey(window, tr->VolInput[i] == GLFW_PRESS))
-		{
-			tr->Currentkey = tr->VolInput[i];
-			cout << "\n INPUT EXECUTED \n" << tr->Currentkey;
-			break;
-		}
-	}
-	for (int i = 0; i < 4; i++)
-	{
-		if (key == tr->ArrowInput[i] && glfwGetKey(window, tr->ArrowInput[i] == GLFW_PRESS))
-		{
-			tr->Currentkey = tr->ArrowInput[i];
-			cout << "\n INPUT EXECUTED \n" << tr->Currentkey;
-			break;
-		}
-	}
+	*/
+	tr->Currentkey = key;
+	tr->Event = action;
 }
 
 void Tracker::Run(void)
@@ -163,7 +140,6 @@ void Tracker::Run(void)
 	Initialise(TrackLength);
 	while (running) {
 		if (WindowIsGood) {
-			cout << "\nCurrent key: " << Currentkey;
 			Render();
 		}
 		CheckInput();
@@ -977,10 +953,11 @@ void Tracker::SetupInstr()
 
 void Tracker::ChannelInput(int CurPos, int x, int y)
 {
-	if (true/*Event*/)
+	if (Event == GLFW_PRESS)
 	{
 		if (!IsPressed)
 		{
+			cout << "\nCurrent key: " << Currentkey;
 			if (Currentkey == GLFW_KEY_LEFT)
 			{
 				CursorPos--;
@@ -1118,7 +1095,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 			IsPressed = true;
 		}
 	}
-	else if (Event == GLFW_KEY_UP)
+	else if (Event == GLFW_RELEASE)
 	{
 		IsPressed = false;
 	}
