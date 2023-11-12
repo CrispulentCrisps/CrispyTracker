@@ -15,6 +15,7 @@ void Patterns::SetUp(int Length)
 
 int Patterns::Pattern_EvaluateHexInput(int input, int index)
 {
+	//Taxes a value and then converts it to hexidecimal
 	int surrogate = 0;
 	if (input == 0)
 	{

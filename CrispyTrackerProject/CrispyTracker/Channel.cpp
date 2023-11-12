@@ -70,6 +70,7 @@ string Channel::Effectvalue(int index)
 
 int Channel::EvaluateHexInput(int input, int index, int max, int valuetype)
 {
+	//Value type gets the subcolumn in the given row
 	int surrogate = 0;
 	int ModValue = 0;
 
@@ -77,23 +78,19 @@ int Channel::EvaluateHexInput(int input, int index, int max, int valuetype)
 	{
 	case 1:
 		ModValue = Rows[index].instrument;
-		Rows[index].S_Inst = ModValue;
 		break;
 	case 2:
 		ModValue = Rows[index].volume;
-		Rows[index].S_Volume = ModValue;
 		break;
 	case 3:
 		ModValue = Rows[index].effect;
-		Rows[index].S_Effect = ModValue;
 		break;
 	case 4:
 		ModValue = Rows[index].effectvalue;
-		Rows[index].S_Value = ModValue;
 		break;
 	}
 
-	if (input == 0 && ModValue > max)
+	if (input == 0 || ModValue > max)
 	{
 		surrogate = 0;
 	}
@@ -103,12 +100,11 @@ int Channel::EvaluateHexInput(int input, int index, int max, int valuetype)
 	}
 
 	//Clamp input
-	/*
+	
 	if (surrogate > max && surrogate != 256)
 	{
 		surrogate = 127;
 	}
-	*/
 	return surrogate;
 }
 

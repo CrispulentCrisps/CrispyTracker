@@ -52,12 +52,6 @@ public:
 		int volume = 256;
 		int effect = 256;
 		int effectvalue = 256;
-
-		string S_Note = "---";
-		string S_Inst = "..";
-		string S_Volume = "..";
-		string S_Effect = "..";
-		string S_Value = "..";
 	};
 	
 	//Visible rows

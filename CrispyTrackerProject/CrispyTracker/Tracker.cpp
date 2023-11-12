@@ -150,6 +150,7 @@ void Tracker::Run(void)
 	glfwDestroyWindow(window);
 	//Quit SDL subsystems
 	ImGui_ImplOpenGL3_Shutdown();
+	glfwTerminate();
 	SDL_Quit();
 }
 
@@ -158,40 +159,10 @@ void Tracker::CheckInput()
 	int TuninOff = 48;
 
 	glfwPollEvents();
-	/*
-	SDL_Event event;
-	const Uint8* keystates = SDL_GetKeyboardState(NULL);
-	if (SDL_PollEvent(&event))
+	if (glfwWindowShouldClose(window))
 	{
-		ImGui_ImplSDL2_ProcessEvent(&event);
-		Event = event;
-		switch (event.type)
-		{
-		case SDL_KEYDOWN:
-			Currentkey = event.key.keysym.sym;
-			switch (event.key.keysym.sym)
-			{
-				case SDL_QUIT:
-					running = false;
-					break;
-			}
-			SG.CheckSound(want, have, dev, Channels);
-			SDL_PauseAudioDevice(dev, 0);
-			SDL_Delay(io.DeltaTime);
-
-			break;
-		case SDL_KEYUP:
-			Currentkey = 0;
-			SG.PlayingNoise = false;
-			SDL_PauseAudioDevice(dev, 1);
-			break;
-
-		case SDL_QUIT:
-			running = false;
-			break;
-		}
+		running = false;
 	}
-	*/
 }
 
 void Tracker::Render()
@@ -512,7 +483,7 @@ void Tracker::Instrument_View()
 						PopStyleColor();
 						float PlotArr[4] = { inst[SelectedInst].Attack , inst[SelectedInst].Decay , inst[SelectedInst].Sustain , inst[SelectedInst].Release};
 						float PlotBuff[256];
-						//PlotLines("Envelope output", PlotArr, 256, 0, "Envelope output", 0, 32, ImVec2(GetWindowWidth() * 0.85, GetWindowHeight() * 0.25))
+						PlotLines("Envelope output", PlotArr, 4, 0, "Envelope output", 0, 32, ImVec2(GetWindowWidth() * 0.75, GetWindowHeight() * 0.25));
 					}
 					else
 					{
@@ -659,35 +630,35 @@ void Tracker::Channel_View()
 								}
 							}
 							//Cursor highlighting
-							if (Selectable(Channels[i].Rows[j].S_Note.data(), IsPoint && CursorPos == NOTE, 0, RowVec))
+							if (Selectable(Channels[i].NoteView(j).data(), IsPoint && CursorPos == NOTE, 0, RowVec))
 							{
 								CursorPos = NOTE;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].Rows[j].S_Inst.data(), IsPoint && CursorPos == INSTR, 0, RowVec))
+							if (Selectable(Channels[i].InstrumentView(j).data(), IsPoint && CursorPos == INSTR, 0, RowVec))
 							{
 								CursorPos = INSTR;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].Rows[j].S_Volume.data(), IsPoint && CursorPos == VOLUME, CursorPos == VOLUME, RowVec))
+							if (Selectable(Channels[i].VolumeView(j).data(), IsPoint && CursorPos == VOLUME, CursorPos == VOLUME, RowVec))
 							{
 								CursorPos = VOLUME;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].Rows[j].S_Effect.data(), IsPoint && CursorPos == EFFECT, 0, RowVec))
+							if (Selectable(Channels[i].EffectView(j).data(), IsPoint && CursorPos == EFFECT, 0, RowVec))
 							{
 								CursorPos = EFFECT;
 								CursorX = i;
 								CursorY = j;
 							}
 							TableNextColumn();
-							if (Selectable(Channels[i].Rows[j].S_Value.data(), IsPoint && CursorPos == VALUE, 0, RowVec))
+							if (Selectable(Channels[i].Effectvalue(j).data(), IsPoint && CursorPos == VALUE, 0, RowVec))
 							{
 								CursorPos = VALUE;
 								CursorX = i;
@@ -986,7 +957,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 				default:
 					break;
 				case NOTE:
-					for (char i = 0; i < 24; i++)
+					for (int i = 0; i < 24; i++)
 					{
 						if (Currentkey == NoteInput[i])
 						{
@@ -1000,7 +971,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 								Channels[x].Rows[y].note = i + (12 * Octave);
 								Channels[x].Rows[y].octave = Octave;
 							}
-							Channels[x].Rows[y].S_Note = Channels[x].NoteNames[Channels[x].Rows[y].note % 12] + to_string(Channels[x].Rows[y].octave);
+							//Channels[x].Rows[y].S_Note = Channels[x].NoteNames[Channels[x].Rows[y].note % 12] + to_string(Channels[x].Rows[y].octave);
 							CursorY += Step;
 							if (CursorY >= TrackLength)
 							{
@@ -1013,13 +984,13 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 						{
 							Channels[x].Rows[y].note = MAX_VALUE;
 							CursorY += Step;
-							Channels[x].Rows[y].S_Note = "---";
 							ChangePatternData(x, y, i);
+							break;
 						}
 					}
 					break;
 				case INSTR:
-					for (char i = 0; i < 16; i++)
+					for (int i = 0; i < 16; i++)
 					{
 						if (Currentkey == VolInput[i])
 						{
@@ -1027,15 +998,17 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 							ChangePatternData(x, y, i);
 							break;
 						}
-						else if (Currentkey == SDLK_DELETE)
+						else if (Currentkey == GLFW_KEY_DELETE)
 						{
 							Channels[x].Rows[y].instrument = MAX_VALUE;
+							CursorY += Step;
 							ChangePatternData(x, y, i);
+							break;
 						}
 					}
 					break;
 				case VOLUME:
-					for (char i = 0; i < 16; i++)
+					for (int i = 0; i < 16; i++)
 					{
 						if (Currentkey == VolInput[i])
 						{
@@ -1043,15 +1016,17 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 							ChangePatternData(x, y, i);
 							break;
 						}
-						else if (Currentkey == SDLK_DELETE)
+						else if (Currentkey == GLFW_KEY_DELETE)
 						{
 							Channels[x].Rows[y].volume = MAX_VALUE;
+							CursorY += Step;
 							ChangePatternData(x, y, i);
+							break;
 						}
 					}
 					break;
 				case EFFECT:
-					for (char i = 0; i < 16; i++)
+					for (int i = 0; i < 16; i++)
 					{
 						if (Currentkey == VolInput[i])
 						{
@@ -1059,15 +1034,17 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 							ChangePatternData(x, y, i);
 							break;
 						}
-						else if (Currentkey == SDLK_DELETE)
+						else if (Currentkey == GLFW_KEY_DELETE)
 						{
 							Channels[x].Rows[y].effect = MAX_VALUE;
+							CursorY += Step;
 							ChangePatternData(x, y, i);
+							break;
 						}
 					}
 					break;
 				case VALUE:
-					for (char i = 0; i < 16; i++)
+					for (int i = 0; i < 16; i++)
 					{
 						if (Currentkey == VolInput[i])
 						{
@@ -1075,10 +1052,12 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 							ChangePatternData(x, y, i);
 							break;
 						}
-						else if (Currentkey == SDLK_DELETE)
+						else if (Currentkey == GLFW_KEY_DELETE)
 						{
 							Channels[x].Rows[y].effectvalue = MAX_VALUE;
+							CursorY += Step;
 							ChangePatternData(x, y, i);
+							break;
 						}
 					}
 					break;
