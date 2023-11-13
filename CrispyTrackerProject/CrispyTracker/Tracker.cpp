@@ -476,14 +476,68 @@ void Tracker::Instrument_View()
 						SliderInt("Decay", &inst[SelectedInst].Decay, 0, 7);
 						PopStyleColor();
 						PushStyleColor(ImGuiCol_Text, SustainColour);
-						SliderInt("Sustain", &inst[SelectedInst].Sustain, 0, 31);
+						SliderInt("Sustain", &inst[SelectedInst].Sustain, 0, 7);
 						PopStyleColor();
 						PushStyleColor(ImGuiCol_Text, ReleaseColour);
 						SliderInt("Release", &inst[SelectedInst].Release, 0, 31);
 						PopStyleColor();
-						float PlotArr[4] = { inst[SelectedInst].Attack , inst[SelectedInst].Decay , inst[SelectedInst].Sustain , inst[SelectedInst].Release};
+						float PlotArr[64] = { 
+							0, 0, 0, 0, 0, 0, 0, 0, 
+							0, 0, 0, 0, 0, 0, 0, 0,
+							0, 0, 0, 0, 0, 0, 0, 0, 
+							0, 0, 0, 0, 0, 0, 0, 0,
+							0, 0, 0, 0, 0, 0, 0, 0,
+							0, 0, 0, 0, 0, 0, 0, 0,
+							0, 0, 0, 0, 0, 0, 0, 0,
+							0, 0, 0, 0, 0, 0, 0, 0
+						};
+						int PreviousPoint = 0;
+						for (int i = 0; i < 16; i++)
+						{
+							if (inst[SelectedInst].Attack > 0)
+							{
+								PlotArr[i] = (i * inst[SelectedInst].Attack*2);
+							}
+							if (PlotArr[i] == 30)
+							{
+								PreviousPoint = i;
+								break;
+							}
+						}
+						for (int i = PreviousPoint; i < PreviousPoint+7; i++)
+						{
+							if (inst[SelectedInst].Decay > 0)
+							{
+								PlotArr[i] = (i+1) / inst[SelectedInst].Decay*4;
+							}
+							if (PlotArr[i] == 28)
+							{
+								PreviousPoint = i;
+								break;
+							}
+						}
+						for (int i = PreviousPoint; i < PreviousPoint+7; i++)
+						{
+							if (inst[SelectedInst].Sustain > 0)
+							{
+								PlotArr[i] = inst[SelectedInst].Sustain*4;
+							}
+							if (PlotArr[i] == 30)
+							{
+								PreviousPoint = i;
+								break;
+							}
+						}
+						for (int i = PreviousPoint; i < 64; i++)
+						{
+							if (inst[SelectedInst].Release > 0 && inst[SelectedInst].Sustain > 0)
+							{
+								PlotArr[i] = (inst[SelectedInst].Release + (inst[SelectedInst].Sustain * 4)) / i;
+							}
+						}
+						//float PlotArr[5] = { 0, inst[SelectedInst].Attack*2 , inst[SelectedInst].Decay*4 , inst[SelectedInst].Sustain*4 , inst[SelectedInst].Release};
 						float PlotBuff[256];
-						PlotLines("Envelope output", PlotArr, 4, 0, "Envelope output", 0, 32, ImVec2(GetWindowWidth() * 0.75, GetWindowHeight() * 0.25));
+						PlotLines("Envelope output", PlotArr, 64, 0, "Envelope output", 0, 32, ImVec2(GetWindowWidth() * 0.75, GetWindowHeight() * 0.25));
 					}
 					else
 					{
@@ -494,7 +548,7 @@ void Tracker::Instrument_View()
 						SliderInt("Decay", &inst[SelectedInst].Decay, 0, 7);
 						PopStyleColor();
 						PushStyleColor(ImGuiCol_Text, SustainColour);
-						SliderInt("Sustain", &inst[SelectedInst].Sustain, 0, 31);
+						SliderInt("Sustain", &inst[SelectedInst].Sustain, 0, 7);
 						PopStyleColor();
 						PushStyleColor(ImGuiCol_Text, DecayColour);
 						SliderInt("Decay 2", &inst[SelectedInst].Decay2, 0, 31);

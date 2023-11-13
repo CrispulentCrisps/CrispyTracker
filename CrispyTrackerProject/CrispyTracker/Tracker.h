@@ -190,7 +190,7 @@ public:
 		"Delayed (write r on release)"
 	};
 
-	string Credits = "Crisptytracker   |   Tracker Code: Crisps, Alexmush   |   Optimisation Help: Myself806   |   Emulator Code: SPC Player   |   Driver Code: Kulor (hopefully)";
+	string Credits = "Crispytracker   |   Tracker Code: Crisps, Alexmush, Eulous  |   Optimisation Help: Myself806   |   Emulator Code: SPC Player   |   Driver Code: Kulor (hopefully)";
 
 	ImVec4 AttackColour = ImVec4(0, 1, 1, 1);
 	ImVec4 DecayColour = ImVec4(0, 1, 0, 1);
