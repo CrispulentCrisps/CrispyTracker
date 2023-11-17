@@ -19,8 +19,10 @@
 
 #include <iostream>
 #include <vector>
+#if !CT_UNIX
 #include <mmdeviceapi.h>
 #include <Audioclient.h>
+#endif
 #include <math.h>
 
 using namespace std;

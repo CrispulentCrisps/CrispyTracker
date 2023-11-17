@@ -89,6 +89,12 @@ void Tracker::Run(void)
 	have.format = AUDIO_S16;
 
 	//Create window
+#if CT_UNIX
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#endif
 	window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, Credits.data(), NULL, NULL);
 	// Setup Platform/Renderer backends
 
