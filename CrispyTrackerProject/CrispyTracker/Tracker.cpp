@@ -39,6 +39,7 @@ void Tracker::Initialise(int StartLength)
 		StoragePatterns.push_back(pat);
 	}
 }
+
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	Tracker* tr = static_cast<Tracker*>(glfwGetWindowUserPointer(window));
@@ -135,7 +136,6 @@ void Tracker::Run(void)
 	}
 
 	ChannelEditState cstate = NOTE;
-	
 	//Initialise the tracker
 	Initialise(TrackLength);
 	while (running) {
@@ -157,8 +157,7 @@ void Tracker::Run(void)
 void Tracker::CheckInput()
 {
 	int TuninOff = 48;
-
-	glfwPollEvents();
+	glfwPostEmptyEvent();
 	if (glfwWindowShouldClose(window))
 	{
 		running = false;
@@ -482,7 +481,7 @@ void Tracker::Instrument_View()
 						SliderInt("Release", &inst[SelectedInst].Release, 0, 31);
 						PopStyleColor();
 						float PlotArr[64] = { 
-							0, 0, 0, 0, 0, 0, 0, 0, 
+							0, 0, 0, 0, 0, 0, 0, 0,
 							0, 0, 0, 0, 0, 0, 0, 0,
 							0, 0, 0, 0, 0, 0, 0, 0, 
 							0, 0, 0, 0, 0, 0, 0, 0,
@@ -491,53 +490,37 @@ void Tracker::Instrument_View()
 							0, 0, 0, 0, 0, 0, 0, 0,
 							0, 0, 0, 0, 0, 0, 0, 0
 						};
-						int PreviousPoint = 0;
-						for (int i = 0; i < 16; i++)
+
+						for (int i = 0; i < inst[SelectedInst].Attack; i++)
 						{
-							if (inst[SelectedInst].Attack > 0)
-							{
-								PlotArr[i] = (i * inst[SelectedInst].Attack*2);
-							}
-							if (PlotArr[i] == 30)
-							{
-								PreviousPoint = i;
-								break;
-							}
+							PlotArr[i] = (float)i / (inst[SelectedInst].Attack + 1)*32;
 						}
-						for (int i = PreviousPoint; i < PreviousPoint+7; i++)
+						PlotArr[inst[SelectedInst].Attack] = 32;
+						
+						int PreviousPoint = inst[SelectedInst].Attack+1;
+
+						for (int j = PreviousPoint; j < PreviousPoint+(8-inst[SelectedInst].Decay); j++)
 						{
-							if (inst[SelectedInst].Decay > 0)
-							{
-								PlotArr[i] = (i+1) / inst[SelectedInst].Decay*4;
-							}
-							if (PlotArr[i] == 28)
-							{
-								PreviousPoint = i;
-								break;
-							}
+							PlotArr[j] = ((inst[SelectedInst].Decay*4)/(((float)j + 1 - PreviousPoint))) + (inst[SelectedInst].Sustain*4);
 						}
-						for (int i = PreviousPoint; i < PreviousPoint+7; i++)
+						
+						PreviousPoint += (8 - inst[SelectedInst].Decay);
+						
+						for (int k = PreviousPoint; k < PreviousPoint+inst[SelectedInst].Release; k++)
 						{
 							if (inst[SelectedInst].Sustain > 0)
 							{
-								PlotArr[i] = inst[SelectedInst].Sustain*4;
+								PlotArr[k] = (inst[SelectedInst].Sustain * 4) - ((((float)k - PreviousPoint)*32) / inst[SelectedInst].Release);
 							}
-							if (PlotArr[i] == 30)
+							else
 							{
-								PreviousPoint = i;
-								break;
-							}
-						}
-						for (int i = PreviousPoint; i < 64; i++)
-						{
-							if (inst[SelectedInst].Release > 0 && inst[SelectedInst].Sustain > 0)
-							{
-								PlotArr[i] = (inst[SelectedInst].Release + (inst[SelectedInst].Sustain * 4)) / i;
+								PlotArr[k] = 0;
 							}
 						}
 						//float PlotArr[5] = { 0, inst[SelectedInst].Attack*2 , inst[SelectedInst].Decay*4 , inst[SelectedInst].Sustain*4 , inst[SelectedInst].Release};
 						float PlotBuff[256];
-						PlotLines("Envelope output", PlotArr, 64, 0, "Envelope output", 0, 32, ImVec2(GetWindowWidth() * 0.75, GetWindowHeight() * 0.25));
+						NewLine();
+						PlotLines("##Envelope output", PlotArr, 64, 0, "Envelope output", 0, 32, ImVec2(GetWindowWidth() * 0.75, GetWindowHeight() * 0.25));
 					}
 					else
 					{
@@ -556,6 +539,46 @@ void Tracker::Instrument_View()
 						PushStyleColor(ImGuiCol_Text, ReleaseColour);
 						SliderInt("Release", &inst[SelectedInst].Release, 0, 31);
 						PopStyleColor();
+						float PlotArr[64] = {
+						0, 0, 0, 0, 0, 0, 0, 0,
+						0, 0, 0, 0, 0, 0, 0, 0,
+						0, 0, 0, 0, 0, 0, 0, 0,
+						0, 0, 0, 0, 0, 0, 0, 0,
+						0, 0, 0, 0, 0, 0, 0, 0,
+						0, 0, 0, 0, 0, 0, 0, 0,
+						0, 0, 0, 0, 0, 0, 0, 0,
+						0, 0, 0, 0, 0, 0, 0, 0
+						};
+
+						for (int i = 0; i < inst[SelectedInst].Attack; i++)
+						{
+							PlotArr[i] = (float)i / (inst[SelectedInst].Attack + 1) * 32;
+						}
+						PlotArr[inst[SelectedInst].Attack] = 32;
+
+						int PreviousPoint = inst[SelectedInst].Attack + 1;
+
+						for (int j = PreviousPoint; j < PreviousPoint + (8 - inst[SelectedInst].Decay); j++)
+						{
+							PlotArr[j] = ((inst[SelectedInst].Decay * 4) / (((float)j - PreviousPoint + 1))) + (inst[SelectedInst].Sustain * 4);
+						}
+
+						PreviousPoint += (8 - inst[SelectedInst].Decay);
+
+						for (int k = PreviousPoint; k < PreviousPoint + inst[SelectedInst].Decay2; k++)
+						{
+							if (inst[SelectedInst].Sustain > 0)
+							{
+								PlotArr[k] = (inst[SelectedInst].Sustain * 4) - ((((float)k - PreviousPoint) * 32) / inst[SelectedInst].Decay2);
+							}
+							else
+							{
+								PlotArr[k] = 0;
+							}
+						}
+						//float PlotArr[5] = { 0, inst[SelectedInst].Attack*2 , inst[SelectedInst].Decay*4 , inst[SelectedInst].Sustain*4 , inst[SelectedInst].Release};
+						float PlotBuff[256];
+						PlotLines("##Envelope output", PlotArr, 64, 0, "Envelope output", 0, 32, ImVec2(GetWindowWidth() * 0.75, GetWindowHeight() * 0.25));
 					}
 
 					NewLine();
@@ -567,14 +590,17 @@ void Tracker::Instrument_View()
 
 				NewLine();
 				Text("Special");
+				NewLine();
 				Checkbox("Invert L  ", &inst[SelectedInst].InvL);
 				SameLine();
 				Checkbox("Invert R", &inst[SelectedInst].InvR);
 
+				SameLine();
 				Checkbox("Pitch Mod ", &inst[SelectedInst].PitchMod);
 				SameLine();
 				Checkbox("Echo", &inst[SelectedInst].Echo);
 
+				SameLine();
 				Checkbox("Noise     ", &inst[SelectedInst].Noise);
 				if (inst[SelectedInst].Noise)
 				{
@@ -658,21 +684,27 @@ void Tracker::Channel_View()
 
 							//Row Highlighting
 							ImU32 col;
-							if (j % Highlight2 == 0)
+							if (EditingMode && j == CursorY)
 							{
-								col = H2Col;
-
-							}
-							else if (j % Highlight1 == 0)
-							{
-								col = H1Col;
-
+								col = Editing_H2Col;
 							}
 							else
 							{
-								col = Default;
-							}
+								if (j % Highlight2 == 0)
+								{
+									col = H2Col;
 
+								}
+								else if (j % Highlight1 == 0)
+								{
+									col = H1Col;
+
+								}
+								else
+								{
+									col = Default;
+								}
+							}
 							TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 
 							bool IsPoint = CursorX == i && CursorY == j;
@@ -976,167 +1008,207 @@ void Tracker::SetupInstr()
 	DefaultPattern.SetUp(TrackLength);
 }
 
+void Tracker::RunTracker()
+{
+
+}
+
+void Tracker::UpdateRows()
+{
+
+}
+
 void Tracker::ChannelInput(int CurPos, int x, int y)
 {
-	if (Event == GLFW_PRESS)
+	if (Event == GLFW_REPEAT || Event == GLFW_PRESS)
 	{
-		if (!IsPressed)
+		if (KeyTimer > MinKeyTime)
 		{
-			cout << "\nCurrent key: " << Currentkey;
-			if (Currentkey == GLFW_KEY_LEFT)
+			IsPressed = false;
+			KeyTimer = 0;
+		}
+		else if (!InitPressed)
+		{
+			IsPressed = false;
+			InitPressed = true;
+		}
+		else
+		{
+			if (InitTimer > InitKeyTime)
 			{
-				CursorPos--;
+				KeyTimer += GetIO().DeltaTime;
 			}
-			else if (Currentkey == GLFW_KEY_RIGHT)
+			else
 			{
-				CursorPos++;
+				InitTimer += GetIO().DeltaTime;
 			}
-			if (Currentkey == GLFW_KEY_DOWN)
-			{
-				CursorY++;
-			}
-			else if (Currentkey == GLFW_KEY_UP)
-			{
-				CursorY--;
-			}
-			else if (Currentkey == GLFW_KEY_SPACE)
-			{
-				EditingMode = !EditingMode;
-			}
-
-			if (EditingMode)
-			{
-				switch (CurPos)
-				{
-				default:
-					break;
-				case NOTE:
-					for (int i = 0; i < 24; i++)
-					{
-						if (Currentkey == NoteInput[i])
-						{
-							if (i < 12)
-							{
-								Channels[x].Rows[y].note = i + (12 * (Octave - 1));
-								Channels[x].Rows[y].octave = (Octave - 1);
-							}
-							else
-							{
-								Channels[x].Rows[y].note = i + (12 * Octave);
-								Channels[x].Rows[y].octave = Octave;
-							}
-							//Channels[x].Rows[y].S_Note = Channels[x].NoteNames[Channels[x].Rows[y].note % 12] + to_string(Channels[x].Rows[y].octave);
-							CursorY += Step;
-							if (CursorY >= TrackLength)
-							{
-								CursorY = TrackLength - 1;
-							}
-							break;
-							ChangePatternData(x, y, i);
-						}
-						else if (Currentkey == GLFW_KEY_DELETE)
-						{
-							Channels[x].Rows[y].note = MAX_VALUE;
-							CursorY += Step;
-							ChangePatternData(x, y, i);
-							break;
-						}
-					}
-					break;
-				case INSTR:
-					for (int i = 0; i < 16; i++)
-					{
-						if (Currentkey == VolInput[i])
-						{
-							Channels[x].Rows[y].instrument = Channels[x].EvaluateHexInput(i, y, 127, INSTR);
-							ChangePatternData(x, y, i);
-							break;
-						}
-						else if (Currentkey == GLFW_KEY_DELETE)
-						{
-							Channels[x].Rows[y].instrument = MAX_VALUE;
-							CursorY += Step;
-							ChangePatternData(x, y, i);
-							break;
-						}
-					}
-					break;
-				case VOLUME:
-					for (int i = 0; i < 16; i++)
-					{
-						if (Currentkey == VolInput[i])
-						{
-							Channels[x].Rows[y].volume = Channels[x].EvaluateHexInput(i, y, 127, VOLUME);
-							ChangePatternData(x, y, i);
-							break;
-						}
-						else if (Currentkey == GLFW_KEY_DELETE)
-						{
-							Channels[x].Rows[y].volume = MAX_VALUE;
-							CursorY += Step;
-							ChangePatternData(x, y, i);
-							break;
-						}
-					}
-					break;
-				case EFFECT:
-					for (int i = 0; i < 16; i++)
-					{
-						if (Currentkey == VolInput[i])
-						{
-							Channels[x].Rows[y].effect = Channels[x].EvaluateHexInput(i, y, 255, EFFECT);
-							ChangePatternData(x, y, i);
-							break;
-						}
-						else if (Currentkey == GLFW_KEY_DELETE)
-						{
-							Channels[x].Rows[y].effect = MAX_VALUE;
-							CursorY += Step;
-							ChangePatternData(x, y, i);
-							break;
-						}
-					}
-					break;
-				case VALUE:
-					for (int i = 0; i < 16; i++)
-					{
-						if (Currentkey == VolInput[i])
-						{
-							Channels[x].Rows[y].effectvalue = Channels[x].EvaluateHexInput(i, y, 255, VALUE);
-							ChangePatternData(x, y, i);
-							break;
-						}
-						else if (Currentkey == GLFW_KEY_DELETE)
-						{
-							Channels[x].Rows[y].effectvalue = MAX_VALUE;
-							CursorY += Step;
-							ChangePatternData(x, y, i);
-							break;
-						}
-					}
-					break;
-				}
-				if (CursorY >= TrackLength)
-				{
-					CursorY = TrackLength - 1;
-				}
-				else if (CursorY < 0)
-				{
-					CursorY = 0;
-				}
-			}
-			IsPressed = true;
 		}
 	}
-	else if (Event == GLFW_RELEASE)
+	else
 	{
-		IsPressed = false;
+		InitPressed = false;
+		KeyTimer = 0;
+		InitTimer = 0;
+	}
+
+	if (!IsPressed)
+	{
+		cout << "\nCurrent key: " << Currentkey;
+		if (Currentkey == GLFW_KEY_LEFT)
+		{
+			CursorPos--;
+		}
+		else if (Currentkey == GLFW_KEY_RIGHT)
+		{
+			CursorPos++;
+		}
+
+		if (Currentkey == GLFW_KEY_DOWN)
+		{
+			CursorY++;
+		}
+		else if (Currentkey == GLFW_KEY_UP)
+		{
+			CursorY--;
+		}
+		else if (Currentkey == GLFW_KEY_SPACE)
+		{
+			EditingMode = !EditingMode;
+		}
+
+		if (EditingMode)
+		{
+			switch (CurPos)
+			{
+			default:
+				break;
+			case NOTE:
+				for (int i = 0; i < 24; i++)
+				{
+					if (Currentkey == NoteInput[i])
+					{
+						if (i < 12)
+						{
+							Channels[x].Rows[y].note = i + (12 * (Octave - 1));
+							Channels[x].Rows[y].octave = (Octave - 1);
+						}
+						else
+						{
+							Channels[x].Rows[y].note = i + (12 * Octave);
+							Channels[x].Rows[y].octave = Octave;
+						}
+						if (SelectedInst != 0)
+						{
+							Channels[x].Rows[y].instrument = SelectedInst;
+						}
+						//Channels[x].Rows[y].S_Note = Channels[x].NoteNames[Channels[x].Rows[y].note % 12] + to_string(Channels[x].Rows[y].octave);
+						CursorY += Step;
+						if (CursorY >= TrackLength)
+						{
+							CursorY = TrackLength - 1;
+						}
+						break;
+						ChangePatternData(x, y, i);
+					}
+					else if (Currentkey == GLFW_KEY_DELETE)
+					{
+						Channels[x].Rows[y].note = MAX_VALUE;
+						CursorY += Step;
+						ChangePatternData(x, y, i);
+						break;
+					}
+				}
+				break;
+				
+			case INSTR:
+				for (int i = 0; i < 16; i++)
+				{
+					if (Currentkey == VolInput[i])
+					{
+						Channels[x].Rows[y].instrument = Channels[x].EvaluateHexInput(i, y, 127, INSTR);
+						ChangePatternData(x, y, i);
+						break;
+					}
+					else if (Currentkey == GLFW_KEY_DELETE)
+					{
+						Channels[x].Rows[y].instrument = MAX_VALUE;
+						CursorY += Step;
+						ChangePatternData(x, y, i);
+						break;
+					}
+				}
+				break;
+			case VOLUME:
+				for (int i = 0; i < 16; i++)
+				{
+					if (Currentkey == VolInput[i])
+					{
+						Channels[x].Rows[y].volume = Channels[x].EvaluateHexInput(i, y, 127, VOLUME);
+						ChangePatternData(x, y, i);
+						break;
+					}
+					else if (Currentkey == GLFW_KEY_DELETE)
+					{
+						Channels[x].Rows[y].volume = MAX_VALUE;
+						CursorY += Step;
+						ChangePatternData(x, y, i);
+						break;
+					}
+				}
+				break;
+			case EFFECT:
+				for (int i = 0; i < 16; i++)
+				{
+					if (Currentkey == VolInput[i])
+					{
+						Channels[x].Rows[y].effect = Channels[x].EvaluateHexInput(i, y, 255, EFFECT);
+						ChangePatternData(x, y, i);
+						break;
+					}
+					else if (Currentkey == GLFW_KEY_DELETE)
+					{
+						Channels[x].Rows[y].effect = MAX_VALUE;
+						CursorY += Step;
+						ChangePatternData(x, y, i);
+						break;
+					}
+				}
+				break;
+			case VALUE:
+				for (int i = 0; i < 16; i++)
+				{
+					if (Currentkey == VolInput[i])
+					{
+						Channels[x].Rows[y].effectvalue = Channels[x].EvaluateHexInput(i, y, 255, VALUE);
+						ChangePatternData(x, y, i);
+						break;
+					}
+					else if (Currentkey == GLFW_KEY_DELETE)
+					{
+						Channels[x].Rows[y].effectvalue = MAX_VALUE;
+						CursorY += Step;
+						ChangePatternData(x, y, i);
+						break;
+					}
+				}
+				break;
+			}
+			if (CursorY >= TrackLength)
+			{
+				CursorY = TrackLength - 1;
+			}
+			else if (CursorY < 0)
+			{
+				CursorY = 0;
+			}
+		}
+		IsPressed = true;
 	}
 
 	if (CurPos > VALUE)
 	{
-		CursorX += (CurPos % VALUE);
-		CursorPos -= 5 * (CurPos % VALUE);
+		CursorX ++;
+		CursorPos = NOTE;
 	}
 	else if (CurPos < 0  && CursorX > 1)
 	{
@@ -1294,6 +1366,7 @@ void Tracker::ChangePatternData(int x, int y, int i)
 	patterns[x][SelectedPattern].SavedRows[i].effect = Channels[x].Rows[i].effect;
 	patterns[x][SelectedPattern].SavedRows[i].effectvalue = Channels[x].Rows[i].effectvalue;
 }
+
 /*
 if (Begin("Main"), true, UNIVERSAL_WINDOW_FLAGS)
 {

@@ -32,6 +32,8 @@ public:
 	Tracker();
 	~Tracker();
 
+	
+	
 	int UNIVERSAL_WINDOW_FLAGS = ImGuiWindowFlags_AlwaysAutoResize;
 	int TABLE_FLAGS = ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp;
 	int TRACKER_AUDIO_BUFFER = 1024;
@@ -44,6 +46,8 @@ public:
 	bool IsPressed = false;
 	bool EditingMode = true;
 
+	
+	
 	GLFWwindow* window = NULL;
 	ImGuiContext* cont = NULL;
 	ImGuiIO io;
@@ -51,10 +55,16 @@ public:
 	vector<Patterns> pattern;
 	int MAX_VALUE = 256;
 
+	
+	
 	ImColor Default = IM_COL32(22, 22, 33, 255);
 	ImColor H2Col = IM_COL32(66, 66, 88, 255);
 	ImColor H1Col = IM_COL32(33, 33, 66, 255);
-	ImColor CursorCol = IM_COL32(99, 99, 122, 255);
+	ImColor CursorCol = IM_COL32(122, 122, 188, 255);
+	
+	ImColor Editing_H2Col = IM_COL32(66, 88, 110, 255);
+	ImColor Editing_H1Col = IM_COL32(33, 66, 88, 255);
+	
 	
 	int NoteInput[24] = 
 	{
@@ -75,10 +85,13 @@ public:
 		GLFW_KEY_8, GLFW_KEY_9, GLFW_KEY_A, GLFW_KEY_B, 
 		GLFW_KEY_C, GLFW_KEY_D, GLFW_KEY_E, GLFW_KEY_F,
 	};
+	
 	int ArrowInput[4] =
 	{
 		GLFW_KEY_LEFT, GLFW_KEY_RIGHT, GLFW_KEY_UP, GLFW_KEY_DOWN,
 	};
+	
+	
 	int TickLimit;
 	int TrackLength = 256;
 	int YPos;
@@ -88,6 +101,8 @@ public:
 	int ChannelColumn = 0, ChannelRow = 0;
 	bool PlayingTrack;
 
+
+
 	const int TextSize = 11;
 	const int TextSizeLarge = TextSize*2;
 	int BaseTempo = 150;
@@ -95,33 +110,58 @@ public:
 	int Highlight2 = 16;
 	int TempoDivider = 6;
 	
+
+
+	float MinKeyTime = 0.02f;
+	float KeyTimer = 0;
+
+	float InitKeyTime = 0.5f;
+	float InitTimer = 0;
+	bool InitPressed = false;
+
+
+
 	ImFont* font;
 	ImFont* Largefont;
+
+
 
 	int CursorX = 0;			//Xpos of the channel cursor, not the mouse cursor
 	int CursorY = 0;			//Ypos of the channel cursor, not the mouse cursor
 	int CursorPos = 0;			//This is specifically for the individual elements in the effects chain
 
+
+
 	bool ShowSettings = false;
 	
+
+
 	int SelectedInst = 0;
 	int SelectedSample = 0;
 	int SelectedPattern = 0;
 	
+
+
 	bool ShowCredits = false;
 	bool ShowInstrument = false;
 	bool ShowSample = false;
 	bool ShowEcho = false;
 	bool LoadingSample = false;
 
+
+
 	int InstXPadding = 32;
 	int InstYPadding = 72;
+
+
 
 	vector<Instrument> inst;
 	Instrument DefaultInst;
 
 	vector<Sample> samples;
 	Sample DefaultSample;
+
+
 
 	//This is the patterns that is Displayed with
 	vector<Patterns> patterns[8];//Display
@@ -130,8 +170,12 @@ public:
 	vector<Patterns> StoragePatterns;//Storage
 	Patterns DefaultPattern;
 
+
+
 	int VolumeScaleL = 127;	//(0-127)
 	int VolumeScaleR = 127;	//(0-127)
+
+
 
 	//Echo settings
 	int Delay;			//(0-15)
@@ -140,23 +184,29 @@ public:
 	int EchoVolR;		//(0-127)
 	int EchoFilter[8];	//(0-127) Must accumulate to 127 at most!!!!
 
+
+
 	//Enums
 	enum ChannelEditState {
-		NOTE = 0,
-		INSTR = 1,
-		VOLUME = 2,
-		EFFECT = 3,
-		VALUE = 4,
+		NOTE =		0,
+		INSTR =		1,
+		VOLUME =	2,
+		EFFECT =	3,
+		VALUE =		4,
 	};
 
 	int SongLength = 1;
 	int Maxindex = 8;
 
+	
+	
 	//Functions
 	void Initialise(int StartLength);
 	void Run(void);
 	void CheckInput();
 	void Render();
+
+
 
 	void MenuBar();
 	void Patterns_View();
@@ -171,13 +221,20 @@ public:
 	void EchoSettings();
 	void SetupInstr();
 
+
+
+	void RunTracker(); //For when the tracker
+	void UpdateRows();
+
+
 	void ChannelInput(int CurPos, int x, int y);
 	void LoadSample();
 	void DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[]);
 	void UpdatePatternIndex(int x, int y);
 	void ChangePatternData(int x, int y, int i);
-	void UpdateRows();
 	void BRRConverter();
+
+
 
 	string Authbuf;
 	string Descbuf;
@@ -190,7 +247,9 @@ public:
 		"Delayed (write r on release)"
 	};
 
-	string Credits = "Crispytracker   |   Tracker Code: Crisps, Alexmush, Eulous  |   Optimisation Help: Myself806   |   Emulator Code: SPC Player   |   Driver Code: Kulor (hopefully)";
+	string Credits = "Crispytracker   |   Tracker Code: Crisps, Alexmush, Euly  |   Optimisation Help: Myself806   |   Emulator Code: SPC Player   |   Driver Code: Kulor (hopefully)";
+
+
 
 	ImVec4 AttackColour = ImVec4(0, 1, 1, 1);
 	ImVec4 DecayColour = ImVec4(0, 1, 0, 1);
