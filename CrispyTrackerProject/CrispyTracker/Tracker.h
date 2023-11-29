@@ -45,7 +45,8 @@ public:
 	int Currentkey;
 	bool IsPressed = false;
 	bool EditingMode = true;
-
+	bool PlayingMode = false;
+	float TickTimer = 0;//For when the tracker is running
 	
 	
 	GLFWwindow* window = NULL;
@@ -84,7 +85,7 @@ public:
 		GLFW_KEY_4, GLFW_KEY_5, GLFW_KEY_6, GLFW_KEY_7, 
 		GLFW_KEY_8, GLFW_KEY_9, GLFW_KEY_A, GLFW_KEY_B, 
 		GLFW_KEY_C, GLFW_KEY_D, GLFW_KEY_E, GLFW_KEY_F,
-	};
+	};//Should really be called Hex Input but I can't be bothered :]
 	
 	int ArrowInput[4] =
 	{
@@ -106,9 +107,11 @@ public:
 	const int TextSize = 11;
 	const int TextSizeLarge = TextSize*2;
 	int BaseTempo = 150;
+	int Speed1 = 4;
+	int Speed2 = 4;
 	int Highlight1 = 4;
 	int Highlight2 = 16;
-	int TempoDivider = 6;
+	int TempoDivider = 1;
 	
 
 
@@ -223,8 +226,8 @@ public:
 
 
 
-	void RunTracker(); //For when the tracker
-	void UpdateRows();
+	void RunTracker(); //For when the tracker is playing the tune
+	void UpdateRows(); //Sending the audio data to the speakers for every element in the tracker row
 
 
 	void ChannelInput(int CurPos, int x, int y);

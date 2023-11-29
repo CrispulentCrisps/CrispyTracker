@@ -162,6 +162,11 @@ void Tracker::CheckInput()
 	{
 		running = false;
 	}
+
+	if (PlayingMode)
+	{
+		RunTracker();
+	}
 }
 
 void Tracker::Render()
@@ -629,10 +634,12 @@ void Tracker::Instrument_View()
 
 void Tracker::Channel_View()
 {
+
 	if (Begin("Channels"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
 		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*.9 + (TextSize*8), 0)));
 		{
+		
 			ImVec2 RowVec = ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4);
 			//Actual pattern data
 			TableNextColumn();
@@ -677,6 +684,11 @@ void Tracker::Channel_View()
 					}
 					else
 					{
+						if (PlayingMode)
+						{
+							double ScrollVal = ((double)CursorY * (double)TrackLength)/((double)TextSize*2-5);
+							SetScrollY(ScrollVal);
+						}
 						//Channel
 						if (BeginTable("RowView", 5, 0))
 						{
@@ -684,7 +696,7 @@ void Tracker::Channel_View()
 
 							//Row Highlighting
 							ImU32 col;
-							if (EditingMode && j == CursorY)
+							if (EditingMode && j == CursorY || PlayingMode && j == CursorY)
 							{
 								col = Editing_H2Col;
 							}
@@ -912,6 +924,10 @@ void Tracker::Author_View()
 	{
 		Text("Base tempo");
 		InputInt("##Base tempo", &BaseTempo,1, 1);
+		Text("Speeds");
+		InputInt("##Speed 1", &Speed1, 1, 31);
+		InputInt("##Speed 2", &Speed2, 1, 31);
+		NewLine();
 		Text("Tempo divider");
 		InputInt("##Tempo divider", &TempoDivider,1,1);
 		if (BaseTempo < 1)
@@ -921,6 +937,14 @@ void Tracker::Author_View()
 		if (TempoDivider < 1)
 		{
 			TempoDivider = 1;
+		}
+		if (Speed1 < 1)
+		{
+			Speed1 = 1;
+		}
+		if (Speed2 < 1)
+		{
+			Speed2 = 1;
 		}
 		string temp = "Tempo: ";
 		temp += to_string(BaseTempo / TempoDivider);
@@ -1010,7 +1034,18 @@ void Tracker::SetupInstr()
 
 void Tracker::RunTracker()
 {
+	TickTimer += GetIO().DeltaTime;
 
+	if (CursorY >= TrackLength-1)
+	{
+		PlayingMode = false;
+	}
+	else if (TickTimer > ((float)BaseTempo * (float)TempoDivider) - max(((float)BaseTempo / (float)Speed1 + (float)BaseTempo / (float)Speed2),1))
+	{
+		CursorY++;
+		TickTimer = 0;
+		UpdateRows();
+	}
 }
 
 void Tracker::UpdateRows()
@@ -1074,6 +1109,11 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 		else if (Currentkey == GLFW_KEY_SPACE)
 		{
 			EditingMode = !EditingMode;
+		}
+		else if (Currentkey == GLFW_KEY_ENTER)
+		{
+			PlayingMode = !PlayingMode;
+			EditingMode = false;
 		}
 
 		if (EditingMode)
