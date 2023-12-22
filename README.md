@@ -6,12 +6,12 @@ There seems to be no good or effecient way to make snes music without turning to
 Now, this is a group project, but life can get in the way and must be prioritised so progress may be slow.
 I intend for this project to be free and open source, as this is what I believe is the best way to store programs, so any contributions or suggestions can be throw at me!
 
-# Collaberators
+# Collaborators
 
 	AlexMush
 	Kulor
 	Myself806
-	Eulous
+	Euly
 
 # Libraries:
 	ImGUI

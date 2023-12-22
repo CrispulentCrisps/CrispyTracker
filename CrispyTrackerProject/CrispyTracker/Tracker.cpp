@@ -66,7 +66,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	tr->Event = action;
 }
 
-void Tracker::Run(void)
+void Tracker::Run()
 {
 	SetupInstr();
 
@@ -171,6 +171,7 @@ void Tracker::CheckInput()
 
 void Tracker::Render()
 {
+	IDOffset = 0;
 	FrameCount++;
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
@@ -250,7 +251,9 @@ void Tracker::Patterns_View()
 		{
 			TableNextRow();
 			TableNextColumn();
-			Text(to_string(y).data());
+			if (Selectable(to_string(y).data())) {
+				SelectedPattern = y;
+			}
 			TableNextColumn();
 
 			//Row Highlighting
@@ -265,13 +268,24 @@ void Tracker::Patterns_View()
 			}
 			TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 
-			for (char x = 0; x < 8; x++)
+			for (int x = 0; x < 8; x++)
 			{
-				if (Selectable(to_string(patterns[x][y].Index).data())) {
-					patterns[x][y].Index++;
-					UpdatePatternIndex(x, y);
+				PushID(IDOffset);
+				Selectable(to_string(patterns[x][y].Index).data());
+				
+				if (IsItemClicked(ImGuiMouseButton_Right)) {
+					patterns[x][y].Index > 0 ? patterns[x][y].Index-- : patterns[x][y].Index = 0;
 					SelectedPattern = y;
+					UpdatePatternIndex(x, y);
 				}
+				else if (IsItemClicked(ImGuiMouseButton_Left)) {
+					patterns[x][y].Index++;
+					SelectedPattern = y;
+					UpdatePatternIndex(x, y);
+				}
+				
+				PopID();
+				IDOffset++;
 				TableNextColumn();
 			}
 		}
@@ -648,10 +662,19 @@ void Tracker::Channel_View()
 			// the -1 is for the left hand columns index
 			for (int i = -1; i < 8; i++)//X
 			{
-				//This determines the columns on a given channel [all track lengths are constant between channels]
-				for (int j = 0; j < TrackLength; j++)//Y
+
+				if (i >= 0)
 				{
-					/*
+					PushStyleColor(ImGuiTableBgTarget_RowBg0,(ImVec4)CursorCol);
+					string ChannelTitle = "Pattern: ";
+					ChannelTitle += to_string(patterns[i][SelectedPattern].Index);
+					Text(ChannelTitle.data());
+					PopStyleColor();
+				}
+				//This determines the columns on a given channel [all track lengths are constant between channels]
+				for (int j = -1; j < TrackLength; j++)//Y
+				{
+					/* keep this for future debugging
 					if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
 					{
 						string str;
@@ -668,10 +691,13 @@ void Tracker::Channel_View()
 						SetTooltip(str.data());
 					}
 					*/
+					
 					if (i == -1)
 					{
 						string ind;
-						ind = to_string(j);
+						if (j == -1) ind = "*_*";
+						else ind = to_string(j);
+
 						if (j < 10)
 						{
 							ind += "  ";
@@ -680,9 +706,9 @@ void Tracker::Channel_View()
 						{
 							ind += " ";
 						}
-						Text(ind.data());
+						Selectable(ind.data());
 					}
-					else
+					else if (j > -1)
 					{
 						if (PlayingMode)
 						{
@@ -727,6 +753,8 @@ void Tracker::Channel_View()
 									ChannelInput(CursorPos, i, j);
 								}
 							}
+
+							PushID(IDOffset +i+(j*40));
 							//Cursor highlighting
 							if (Selectable(Channels[i].NoteView(j).data(), IsPoint && CursorPos == NOTE, 0, RowVec))
 							{
@@ -734,6 +762,8 @@ void Tracker::Channel_View()
 								CursorX = i;
 								CursorY = j;
 							}
+							PopID();
+							PushID(IDOffset + i + (j * 40)+1);
 							TableNextColumn();
 							if (Selectable(Channels[i].InstrumentView(j).data(), IsPoint && CursorPos == INSTR, 0, RowVec))
 							{
@@ -741,6 +771,8 @@ void Tracker::Channel_View()
 								CursorX = i;
 								CursorY = j;
 							}
+							PopID();
+							PushID(IDOffset + i + (j * 40)+2);
 							TableNextColumn();
 							if (Selectable(Channels[i].VolumeView(j).data(), IsPoint && CursorPos == VOLUME, CursorPos == VOLUME, RowVec))
 							{
@@ -748,6 +780,8 @@ void Tracker::Channel_View()
 								CursorX = i;
 								CursorY = j;
 							}
+							PopID();
+							PushID(IDOffset + i + (j * 40)+3);
 							TableNextColumn();
 							if (Selectable(Channels[i].EffectView(j).data(), IsPoint && CursorPos == EFFECT, 0, RowVec))
 							{
@@ -755,6 +789,8 @@ void Tracker::Channel_View()
 								CursorX = i;
 								CursorY = j;
 							}
+							PopID();
+							PushID(IDOffset + i + (j * 40)+4);
 							TableNextColumn();
 							if (Selectable(Channels[i].Effectvalue(j).data(), IsPoint && CursorPos == VALUE, 0, RowVec))
 							{
@@ -762,7 +798,7 @@ void Tracker::Channel_View()
 								CursorX = i;
 								CursorY = j;
 							}
-
+							PopID();
 							EndTable();
 						}
 						else
@@ -924,9 +960,8 @@ void Tracker::Author_View()
 	{
 		Text("Base tempo");
 		InputInt("##Base tempo", &BaseTempo,1, 1);
-		Text("Speeds");
+		Text("Speed");
 		InputInt("##Speed 1", &Speed1, 1, 31);
-		InputInt("##Speed 2", &Speed2, 1, 31);
 		NewLine();
 		Text("Tempo divider");
 		InputInt("##Tempo divider", &TempoDivider,1,1);
@@ -941,10 +976,6 @@ void Tracker::Author_View()
 		if (Speed1 < 1)
 		{
 			Speed1 = 1;
-		}
-		if (Speed2 < 1)
-		{
-			Speed2 = 1;
 		}
 		string temp = "Tempo: ";
 		temp += to_string(BaseTempo / TempoDivider);
@@ -1034,17 +1065,40 @@ void Tracker::SetupInstr()
 
 void Tracker::RunTracker()
 {
-	TickTimer += GetIO().DeltaTime;
+	TickTimer -= GetIO().DeltaTime;
 
-	if (CursorY >= TrackLength-1)
+	float BPM = (float)BaseTempo;
+	if (CursorY >= TrackLength-1 && PatternIndex >= patterns->size()-1)
 	{
 		PlayingMode = false;
 	}
-	else if (TickTimer > ((float)BaseTempo * (float)TempoDivider) - max(((float)BaseTempo / (float)Speed1 + (float)BaseTempo / (float)Speed2),1))
+	else if (CursorY >= TrackLength)
 	{
-		CursorY++;
-		TickTimer = 0;
-		UpdateRows();
+		CursorY = 0;
+		SelectedPattern++;
+		for (int i = 0; i < 8; i++)
+		{
+			for (int j = 0; j < TrackLength; j++)
+			{
+				Channels[i].Rows[j].note		= StoragePatterns[Channels[i].Index].SavedRows[j].note;
+				Channels[i].Rows[j].instrument	= StoragePatterns[Channels[i].Index].SavedRows[j].instrument;
+				Channels[i].Rows[j].volume		= StoragePatterns[Channels[i].Index].SavedRows[j].volume;
+				Channels[i].Rows[j].effect		= StoragePatterns[Channels[i].Index].SavedRows[j].effect;
+				Channels[i].Rows[j].effectvalue = StoragePatterns[Channels[i].Index].SavedRows[j].effectvalue;
+			}
+		}
+
+	}
+	else if (TickTimer < (BPM / (float)TempoDivider))
+	{
+		TickCounter++;
+		if (TickCounter > Speed1)
+		{
+			CursorY++;
+			UpdateRows();
+			TickCounter = 0;
+		}
+		TickTimer = 2;
 	}
 }
 
@@ -1057,6 +1111,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 {
 	if (Event == GLFW_REPEAT || Event == GLFW_PRESS)
 	{
+		//Shit to make sure the input can do repeating and held down keys
 		if (KeyTimer > MinKeyTime)
 		{
 			IsPressed = false;
@@ -1147,8 +1202,8 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 						{
 							CursorY = TrackLength - 1;
 						}
-						break;
 						ChangePatternData(x, y, i);
+						break;
 					}
 					else if (Currentkey == GLFW_KEY_DELETE)
 					{
@@ -1369,7 +1424,7 @@ void Tracker::DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[])
 
 }
 
-void Tracker::UpdatePatternIndex(int x, int y)
+void Tracker::UpdatePatternIndex(int x, int y)//For when you are switching patterns in the top menu item
 {
 	if (patterns[x][y].Index > Maxindex)
 	{
@@ -1383,28 +1438,30 @@ void Tracker::UpdatePatternIndex(int x, int y)
 	cout << "\n" << x << "\n" << y;
 	for (int i = 0; i < TrackLength; i++)
 	{
-
-		StoragePatterns[y].SavedRows[i].note = patterns[x][y].SavedRows[i].note;
-		StoragePatterns[y].SavedRows[i].volume = patterns[x][y].SavedRows[i].volume;
-		StoragePatterns[y].SavedRows[i].effect = patterns[x][y].SavedRows[i].effect;
-		StoragePatterns[y].SavedRows[i].effectvalue = patterns[x][y].SavedRows[i].effectvalue;
-
-		Channels[x].Rows[i].note = patterns[x][y].SavedRows[i].note;
-		Channels[x].Rows[i].volume = patterns[x][y].SavedRows[i].volume;
-		Channels[x].Rows[i].effect = patterns[x][y].SavedRows[i].effect;
-		Channels[x].Rows[i].effectvalue = patterns[x][y].SavedRows[i].effectvalue;
+		Channels[x].Rows[i].note = StoragePatterns[(SelectedPattern * 8) + x].SavedRows[i].note;
+		Channels[x].Rows[i].volume = StoragePatterns[(SelectedPattern * 8) + x].SavedRows[i].volume;
+		Channels[x].Rows[i].effect = StoragePatterns[(SelectedPattern * 8) + x].SavedRows[i].effect;
+		Channels[x].Rows[i].effectvalue = StoragePatterns[(SelectedPattern * 8) + x].SavedRows[i].effectvalue;
 	}
 
 }
 
 void Tracker::ChangePatternData(int x, int y, int i)
 {
-	cout << "\n" << "CHANGED PATTERN DATA: " << "\n" << "X: " << x << "\n" << "Y: " << y << "\n" << "I: " << i;
+	cout << "\nCHANGED PATTERN DATA:" << "\nX: " << x << "\nY: " << y << "\nI: " << i << "\nSelected Pattern " << SelectedPattern;
 	cout << "\n" << patterns->size() << " : " << patterns[x].size();
-	patterns[x][SelectedPattern].SavedRows[i].note = Channels[x].Rows[i].note;
-	patterns[x][SelectedPattern].SavedRows[i].volume = Channels[x].Rows[i].volume;
-	patterns[x][SelectedPattern].SavedRows[i].effect = Channels[x].Rows[i].effect;
-	patterns[x][SelectedPattern].SavedRows[i].effectvalue = Channels[x].Rows[i].effectvalue;
+
+	//Put data into channel
+	patterns[x][SelectedPattern].SavedRows[y].note = Channels[x].Rows[y].note;
+	patterns[x][SelectedPattern].SavedRows[y].volume = Channels[x].Rows[y].volume;
+	patterns[x][SelectedPattern].SavedRows[y].effect = Channels[x].Rows[y].effect;
+	patterns[x][SelectedPattern].SavedRows[y].effectvalue = Channels[x].Rows[y].effectvalue;
+
+	//Put data into channel
+	StoragePatterns[(SelectedPattern * 8) + x].SavedRows[y].note = Channels[x].Rows[y].note;
+	StoragePatterns[(SelectedPattern * 8) + x].SavedRows[y].volume = Channels[x].Rows[y].volume;
+	StoragePatterns[(SelectedPattern * 8) + x].SavedRows[y].effect = Channels[x].Rows[y].effect;
+	StoragePatterns[(SelectedPattern * 8) + x].SavedRows[y].effectvalue = Channels[x].Rows[y].effectvalue;
 }
 
 /*

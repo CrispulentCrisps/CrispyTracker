@@ -10,7 +10,7 @@ public:
 	
 	struct Row {
 		int note = 256;
-		int octave = 0;
+		int octave = 256;
 		int instrument = 256;
 		int volume = 127;
 		int effect = 256;

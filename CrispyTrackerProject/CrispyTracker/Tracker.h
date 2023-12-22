@@ -35,7 +35,7 @@ public:
 	
 	
 	int UNIVERSAL_WINDOW_FLAGS = ImGuiWindowFlags_AlwaysAutoResize;
-	int TABLE_FLAGS = ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp;
+	int TABLE_FLAGS = ImGuiTableFlags_SizingStretchProp;
 	int TRACKER_AUDIO_BUFFER = 1024;
 	int SPS = 41000;
 	string VERSION = "version: 0.3";
@@ -47,7 +47,7 @@ public:
 	bool EditingMode = true;
 	bool PlayingMode = false;
 	float TickTimer = 0;//For when the tracker is running
-	
+	int IDOffset = 0;
 	
 	GLFWwindow* window = NULL;
 	ImGuiContext* cont = NULL;
@@ -93,8 +93,7 @@ public:
 	};
 	
 	
-	int TickLimit;
-	int TrackLength = 256;
+	int TrackLength = 64;
 	int YPos;
 	int Input;
 	int Step = 1;
@@ -107,8 +106,8 @@ public:
 	const int TextSize = 11;
 	const int TextSizeLarge = TextSize*2;
 	int BaseTempo = 150;
-	int Speed1 = 4;
-	int Speed2 = 4;
+	int Speed1 = 6;
+	int TickCounter = 0;
 	int Highlight1 = 4;
 	int Highlight2 = 16;
 	int TempoDivider = 1;
@@ -132,6 +131,7 @@ public:
 	int CursorX = 0;			//Xpos of the channel cursor, not the mouse cursor
 	int CursorY = 0;			//Ypos of the channel cursor, not the mouse cursor
 	int CursorPos = 0;			//This is specifically for the individual elements in the effects chain
+	int PatternIndex = 0;		//This is for the currently scelected index
 
 
 
@@ -205,7 +205,7 @@ public:
 	
 	//Functions
 	void Initialise(int StartLength);
-	void Run(void);
+	void Run();
 	void CheckInput();
 	void Render();
 
