@@ -212,6 +212,7 @@ public:
 
 
 	void MenuBar();
+	void CreditsWindow();
 	void Patterns_View();
 	void Instruments();
 	void Instrument_View();
@@ -234,6 +235,7 @@ public:
 	void LoadSample();
 	void DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[]);
 	void UpdatePatternIndex(int x, int y);
+	void UpdateAllPatterns();
 	void ChangePatternData(int x, int y, int i);
 	void BRRConverter();
 
@@ -250,7 +252,7 @@ public:
 		"Delayed (write r on release)"
 	};
 
-	string Credits = "Crispytracker   |   Tracker Code: Crisps, Alexmush, Euly  |   Optimisation Help: Myself806   |   Emulator Code: SPC Player   |   Driver Code: Kulor (hopefully)";
+	string Credits = "Crispytracker";
 
 
 

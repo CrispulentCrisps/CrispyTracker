@@ -176,23 +176,29 @@ void Tracker::Render()
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	NewFrame();
-	
-	MenuBar();
 	DockSpaceOverViewport(NULL);
-	//ShowDemoWindow();
-	Patterns_View();
-	Channel_View();
-	Instruments();
-	Instrument_View();
-	Samples();
-	Sample_View();
-	Settings_View();
-	Misc_View();
-	Author_View();
-	EchoSettings();
-	if (LoadingSample)
+	if (!ShowCredits)
 	{
-		LoadSample();
+		MenuBar();
+		//ShowDemoWindow();
+		Patterns_View();
+		Channel_View();
+		Instruments();
+		Instrument_View();
+		Samples();
+		Sample_View();
+		Settings_View();
+		Misc_View();
+		Author_View();
+		EchoSettings();
+		if (LoadingSample)
+		{
+			LoadSample();
+		}
+	}
+	else
+	{
+		CreditsWindow();
 	}
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -232,12 +238,40 @@ void Tracker::MenuBar()
 	{
 		ImGui::MenuItem("Effects List");
 		ImGui::MenuItem("Manual");
+		if (ImGui::MenuItem("Credits")) ShowCredits = true;
 		ImGui::EndMenu();
 	}
 	ImGui::Text("	|	%.3f ms/frame (%.1f FPS)", 1000.0 / (ImGui::GetIO().Framerate), (ImGui::GetIO().Framerate));
 	Text(VERSION.data());
 	EndMainMenuBar();
 
+}
+
+void Tracker::CreditsWindow()
+{
+	Begin("CreditsWindow"), true, UNIVERSAL_WINDOW_FLAGS;
+	PushFont(Largefont);
+	Text("CREDITS");
+	PopFont();
+	NewLine();
+	NewLine();
+	Text("Code:");
+	
+	BulletText("Crisps");
+	BulletText("Alexmush");
+	BulletText("Euly");
+
+	NewLine();
+	Text("Emulator Code:");
+	BulletText("SPC Player");
+
+	NewLine();
+	Text("Driver Code:");
+	BulletText("Kulor");
+
+	if (Button("Back to editor", ImVec2(128, TextSize * 1.5))) ShowCredits = false;
+	
+	End();
 }
 
 void Tracker::Patterns_View()
@@ -253,6 +287,7 @@ void Tracker::Patterns_View()
 			TableNextColumn();
 			if (Selectable(to_string(y).data())) {
 				SelectedPattern = y;
+				UpdateAllPatterns();
 			}
 			TableNextColumn();
 
@@ -277,11 +312,13 @@ void Tracker::Patterns_View()
 					patterns[x][y].Index > 0 ? patterns[x][y].Index-- : patterns[x][y].Index = 0;
 					SelectedPattern = y;
 					UpdatePatternIndex(x, y);
+					UpdateAllPatterns();
 				}
 				else if (IsItemClicked(ImGuiMouseButton_Left)) {
 					patterns[x][y].Index++;
 					SelectedPattern = y;
 					UpdatePatternIndex(x, y);
+					UpdateAllPatterns();
 				}
 				
 				PopID();
@@ -1438,12 +1475,28 @@ void Tracker::UpdatePatternIndex(int x, int y)//For when you are switching patte
 	cout << "\n" << x << "\n" << y;
 	for (int i = 0; i < TrackLength; i++)
 	{
-		Channels[x].Rows[i].note = StoragePatterns[(SelectedPattern * 8) + x].SavedRows[i].note;
-		Channels[x].Rows[i].volume = StoragePatterns[(SelectedPattern * 8) + x].SavedRows[i].volume;
-		Channels[x].Rows[i].effect = StoragePatterns[(SelectedPattern * 8) + x].SavedRows[i].effect;
-		Channels[x].Rows[i].effectvalue = StoragePatterns[(SelectedPattern * 8) + x].SavedRows[i].effectvalue;
+		Channels[x].Rows[i].note = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].note;
+		Channels[x].Rows[i].octave = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].octave;
+		Channels[x].Rows[i].volume = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].volume;
+		Channels[x].Rows[i].effect = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].effect;
+		Channels[x].Rows[i].effectvalue = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].effectvalue;
 	}
 
+}
+
+void Tracker::UpdateAllPatterns()
+{
+	for (int x = 0; x < 8; x++)
+	{
+		for (int i = 0; i < TrackLength; i++)
+		{
+			Channels[x].Rows[i].note = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].note;
+			Channels[x].Rows[i].octave = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].octave;
+			Channels[x].Rows[i].volume = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].volume;
+			Channels[x].Rows[i].effect = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].effect;
+			Channels[x].Rows[i].effectvalue = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].effectvalue;
+		}
+	}
 }
 
 void Tracker::ChangePatternData(int x, int y, int i)
@@ -1453,15 +1506,17 @@ void Tracker::ChangePatternData(int x, int y, int i)
 
 	//Put data into channel
 	patterns[x][SelectedPattern].SavedRows[y].note = Channels[x].Rows[y].note;
+	patterns[x][SelectedPattern].SavedRows[y].octave = Channels[x].Rows[y].octave;
 	patterns[x][SelectedPattern].SavedRows[y].volume = Channels[x].Rows[y].volume;
 	patterns[x][SelectedPattern].SavedRows[y].effect = Channels[x].Rows[y].effect;
 	patterns[x][SelectedPattern].SavedRows[y].effectvalue = Channels[x].Rows[y].effectvalue;
 
 	//Put data into channel
-	StoragePatterns[(SelectedPattern * 8) + x].SavedRows[y].note = Channels[x].Rows[y].note;
-	StoragePatterns[(SelectedPattern * 8) + x].SavedRows[y].volume = Channels[x].Rows[y].volume;
-	StoragePatterns[(SelectedPattern * 8) + x].SavedRows[y].effect = Channels[x].Rows[y].effect;
-	StoragePatterns[(SelectedPattern * 8) + x].SavedRows[y].effectvalue = Channels[x].Rows[y].effectvalue;
+	StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[y].note = Channels[x].Rows[y].note;
+	StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[y].octave = Channels[x].Rows[y].octave;
+	StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[y].volume = Channels[x].Rows[y].volume;
+	StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[y].effect = Channels[x].Rows[y].effect;
+	StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[y].effectvalue = Channels[x].Rows[y].effectvalue;
 }
 
 /*

@@ -63,6 +63,9 @@
     <ClCompile Include="Libraries\imgui\backends\imgui_impl_glfw.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
+    <ClCompile Include="BRRFile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Channel.h">
@@ -124,6 +127,9 @@
     </ClInclude>
     <ClInclude Include="Libraries\glfw-3.3.8\glfw-3.3.8\include\GLFW\glfw3native.h">
       <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="BRRFile.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

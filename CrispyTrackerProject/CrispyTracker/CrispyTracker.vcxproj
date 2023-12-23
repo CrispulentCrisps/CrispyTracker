@@ -161,6 +161,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdl2.cpp" />
+    <ClCompile Include="BRRFile.cpp" />
     <ClCompile Include="Channel.cpp" />
     <ClCompile Include="Instrument.cpp" />
     <ClCompile Include="Libraries\ImGuiFileDialog-0.6.5\ImGuiFileDialog.cpp" />
@@ -178,6 +179,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdl2.h" />
+    <ClInclude Include="BRRFile.h" />
     <ClInclude Include="Channel.h" />
     <ClInclude Include="Instrument.h" />
     <ClInclude Include="Libraries\glfw-3.3.8\glfw-3.3.8\include\GLFW\glfw3.h" />
