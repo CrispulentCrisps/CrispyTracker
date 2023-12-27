@@ -1,5 +1,9 @@
 #include "Channel.h"
 
+#if CT_UNIX
+#define sprintf_s sprintf
+#endif
+
 string Channel::NoteView(int index)
 {
 	if (Rows[index].note == MAX_VALUE)

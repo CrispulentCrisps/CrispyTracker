@@ -1,16 +1,23 @@
 #ifndef SoundGenerator
 
 #include <stdio.h>
+
+#if !CT_UNIX
 #include <conio.h>
+#include <mmdeviceapi.h>
+#include <Audioclient.h>
+#endif
+#if CT_UNIX
+#define BYTE unsigned char
+#endif
+
 #include <ctype.h>
 #include <iostream>
 #include "Channel.h"
 
-#include <mmdeviceapi.h>
-#include <Audioclient.h>
-
 #include <math.h>
 #include <vector>
+
 
 #pragma once
 using namespace std;
