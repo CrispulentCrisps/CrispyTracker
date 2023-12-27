@@ -11,6 +11,7 @@
 class Instrument
 {
 public:
+	//Overall data size is 8 bytes and 2 bits
 	//Instrument index
 	int Index;
 	//Instrument name
@@ -18,11 +19,11 @@ public:
 	//Sample pointer
 	int SampleIndex;
 
-	//Total volume (will only go from 0 to 127)
+	//Total volume (will only go from -128 to 127)
 	int Volume;
-	//Left ear panning (will only go from 0 to 127)
+	//Left ear panning (will only go from -128 to 127)
 	int LPan;
-	//Right ear panning (will only go from 0 to 127)
+	//Right ear panning (will only go from -128 to 127)
 	int RPan;
 	//Frequency of noise in noise mode (0 to 31)
 	int NoiseFreq;
@@ -41,7 +42,7 @@ public:
 
 	//ADSR
 	bool EnvelopeUsed;
-	//ADSR type (0-4)
+	//ADSR type (0-3)
 	int ADSRType;
 	//Attack (0-15)
 	int Attack;

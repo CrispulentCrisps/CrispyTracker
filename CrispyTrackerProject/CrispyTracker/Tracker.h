@@ -222,6 +222,7 @@ public:
 	void Settings_View();
 	void Misc_View();
 	void Author_View();
+	void Info_View();
 	void EchoSettings();
 	void SetupInstr();
 
@@ -240,7 +241,6 @@ public:
 	void BRRConverter();
 
 
-
 	string Authbuf;
 	string Descbuf;
 	string FilePath = " ";
@@ -252,13 +252,13 @@ public:
 		"Delayed (write r on release)"
 	};
 
-	string Credits = "Crispytracker";
+	string Credits = "Crispytracker";//Is actually used for the title
 
 
 
-	ImVec4 AttackColour = ImVec4(0, 1, 1, 1);
-	ImVec4 DecayColour = ImVec4(0, 1, 0, 1);
-	ImVec4 SustainColour = ImVec4(1, 1, 0, 1);
-	ImVec4 ReleaseColour = ImVec4(1, .33, .33, 1);
+	ImVec4 AttackColour = ImVec4(.22, .88, .88, 1);
+	ImVec4 DecayColour = ImVec4(.22, .88, .22, 1);
+	ImVec4 SustainColour = ImVec4(.88, .88, .22, 1);
+	ImVec4 ReleaseColour = ImVec4(.77, .33, .33, 1);
 };
 #endif // DEBUG

@@ -42,6 +42,7 @@ void Tracker::Initialise(int StartLength)
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+	ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
 	Tracker* tr = static_cast<Tracker*>(glfwGetWindowUserPointer(window));
 	/*
 	if (tr)
@@ -71,29 +72,26 @@ void Tracker::Run()
 	SetupInstr();
 
 	glfwInit();
-
-	Authbuf.reserve(256);
-	Descbuf.reserve(1024);
+	Authbuf.reserve(2048);
+	Descbuf.reserve(4096);
 	FilePath.reserve(4096);
 
 	bool PlayingTrack = false;
 	bool WindowIsGood = true;
 
-	SDL_Init(SDL_INIT_EVERYTHING);
+	SDL_Init(SDL_INIT_AUDIO);
 	have.channels = 1;
 	have.size = TRACKER_AUDIO_BUFFER;
 	have.freq = SPS;
 	have.samples = have.freq / have.channels;
 	have.silence = 1024;
 	have.padding = 512;
-
 	have.format = AUDIO_S16;
-
 	//Create window
 	window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, Credits.data(), NULL, NULL);
 	// Setup Platform/Renderer backends
 
-	glfwMakeContextCurrent(window);
+	glfwMakeContextCurrent(window);	
 	glfwSwapInterval(1); // Enable vsync
 
 	glfwSetWindowUserPointer(window, this);
@@ -108,6 +106,7 @@ void Tracker::Run()
 	glfwSetKeyCallback(window, keyCallback);
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
 
+	GetIO().AddKeyEvent(ImGuiKey_Backspace, false);
 	StyleColorsClassic();
 	ImGuiStyle& style = ImGui::GetStyle();
 	style.FrameBorderSize = 0.4f;
@@ -117,9 +116,9 @@ void Tracker::Run()
 	io = GetIO();
 	io.DisplaySize.x = SCREEN_WIDTH;
 	io.DisplaySize.y = SCREEN_HEIGHT;
-	io.DeltaTime = 1.f / 60.f;
+	io.DeltaTime = 1.f / 60.f;	
 	GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	
+
 	if (window == NULL)
 	{
 		printf("Window could not be created! ERROR: %s\n", SDL_GetError());
@@ -195,6 +194,7 @@ void Tracker::Render()
 		{
 			LoadSample();
 		}
+		Info_View();
 	}
 	else
 	{
@@ -685,7 +685,6 @@ void Tracker::Instrument_View()
 
 void Tracker::Channel_View()
 {
-
 	if (Begin("Channels"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
 		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*.9 + (TextSize*8), 0)));
@@ -711,7 +710,8 @@ void Tracker::Channel_View()
 				//This determines the columns on a given channel [all track lengths are constant between channels]
 				for (int j = -1; j < TrackLength; j++)//Y
 				{
-					/* keep this for future debugging
+					// keep this for future debugging
+					
 					if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
 					{
 						string str;
@@ -727,7 +727,7 @@ void Tracker::Channel_View()
 						str += to_string(CursorY);
 						SetTooltip(str.data());
 					}
-					*/
+					
 					
 					if (i == -1)
 					{
@@ -749,7 +749,7 @@ void Tracker::Channel_View()
 					{
 						if (PlayingMode)
 						{
-							double ScrollVal = ((double)CursorY * (double)TrackLength)/((double)TextSize*2-5);
+							double ScrollVal = ((double)CursorY * (double)TrackLength)/((double)TextSize*2-4.5);
 							SetScrollY(ScrollVal);
 						}
 						//Channel
@@ -1043,6 +1043,26 @@ void Tracker::Author_View()
 	}
 }
 
+void Tracker::Info_View()
+{
+	Begin("Information");
+
+	Text("Space left");
+
+	ImDrawList* draw_list = GetWindowDrawList();
+	ImVec2 p = ImGui::GetCursorScreenPos();
+	int xpos = p.x;
+	int ypos = p.y;
+	int StepSize = (xpos - GetWindowWidth()) / inst.size();
+	for (int i = 0; i < inst.size(); i++)
+	{
+		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + StepSize, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(SustainColour), .25f, 0);
+		xpos += StepSize;
+	}
+		
+	End();
+}
+
 void Tracker::EchoSettings()
 {
 	if (ShowEcho)
@@ -1071,7 +1091,7 @@ void Tracker::EchoSettings()
 void Tracker::SetupInstr()
 {
 	DefaultInst.Index = 1;
-	DefaultInst.Name = "Instrument: ";
+	DefaultInst.Name += "Instrument: ";
 	DefaultInst.SampleIndex = 0;
 	DefaultInst.Volume = 127;
 	DefaultInst.LPan = 127;
@@ -1337,26 +1357,29 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 		IsPressed = true;
 	}
 
+	if (CurPos < 0 && CursorX == 0)
+	{
+		CurPos = 0;
+		cout << "CURSOR BOUNDS MET";
+	}
 	if (CurPos > VALUE)
 	{
 		CursorX ++;
 		CursorPos = NOTE;
 	}
-	else if (CurPos < 0  && CursorX > 1)
+	else if (CurPos < 0  && CursorX > 0)
 	{
 		CursorX--;
 		CursorPos = VALUE;
-	}
-	
-	if (CursorX < 0)
-	{
-		CursorX = 0;
-		CurPos = 0;
 	}
 
 	if (CursorY < 0)
 	{
 		CursorY = 0;
+	}
+	else if (CursorY > TrackLength)
+	{
+		CursorY = TrackLength;
 	}
 }
 
