@@ -1060,12 +1060,41 @@ void Tracker::Info_View()
 	int xpos = p.x;
 	int ypos = p.y;
 	int StepSize = (xpos - GetWindowWidth()) / inst.size();
-	for (int i = 0; i < inst.size(); i++)
+	int MaxRange = 65536;
+	int UsedSpace = 0;
+	int LastPos = 0;
+
+	//Background Rect to show bounds
+	if (UsedSpace > MaxRange)
 	{
-		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + StepSize, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(SustainColour), .25f, 0);
-		xpos += StepSize;
+		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + GetWindowWidth() * 0.95f, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(ReleaseColour), .25f, 0);
+		Text("Too much data!!!");
 	}
+	else
+	{
+		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + GetWindowWidth() * 0.95f, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(H2Col), .25f, 0);
 		
+		for (int i = 0; i < inst.size(); i++)
+		{
+			UsedSpace += 9;//While technically wasting 6 bits here, I can't be bothered
+		}
+		
+		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + (UsedSpace * GetWindowWidth()*0.95f)/ MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(AttackColour));
+		LastPos += (UsedSpace * GetWindowWidth() * 0.95f) / MaxRange;
+
+		for (int i = 1; i < samples.size(); i++)
+		{
+			UsedSpace += sizeof(samples[i]);//Temporary, please change when the BRR conversion actually works
+		}
+		draw_list->AddRectFilled(ImVec2(xpos + LastPos, ypos), ImVec2(xpos + LastPos + (UsedSpace * GetWindowWidth()*0.95f)/ MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(SustainColour));
+		LastPos += (UsedSpace * GetWindowWidth() * 0.95f) / MaxRange;
+
+		UsedSpace += 2048 * Delay;
+		draw_list->AddRectFilled(ImVec2(xpos + LastPos, ypos), ImVec2(xpos + LastPos + (UsedSpace * GetWindowWidth() * 0.95f) / MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(DecayColour));
+		LastPos += (UsedSpace * GetWindowWidth() * 0.95f) / MaxRange;
+
+	}
+
 	End();
 }
 
@@ -1143,11 +1172,11 @@ void Tracker::RunTracker()
 		{
 			for (int j = 0; j < TrackLength; j++)
 			{
-				Channels[i].Rows[j].note		= StoragePatterns[Channels[i].Index].SavedRows[j].note;
-				Channels[i].Rows[j].instrument	= StoragePatterns[Channels[i].Index].SavedRows[j].instrument;
-				Channels[i].Rows[j].volume		= StoragePatterns[Channels[i].Index].SavedRows[j].volume;
-				Channels[i].Rows[j].effect		= StoragePatterns[Channels[i].Index].SavedRows[j].effect;
-				Channels[i].Rows[j].effectvalue = StoragePatterns[Channels[i].Index].SavedRows[j].effectvalue;
+				Channels[i].Rows[j].note = StoragePatterns[patterns[i][SelectedPattern].Index].SavedRows[j].note;
+				Channels[i].Rows[j].instrument = StoragePatterns[patterns[i][SelectedPattern].Index].SavedRows[j].instrument;
+				Channels[i].Rows[j].volume = StoragePatterns[patterns[i][SelectedPattern].Index].SavedRows[j].volume;
+				Channels[i].Rows[j].effect = StoragePatterns[patterns[i][SelectedPattern].Index].SavedRows[j].effect;
+				Channels[i].Rows[j].effectvalue = StoragePatterns[patterns[i][SelectedPattern].Index].SavedRows[j].effectvalue;
 			}
 		}
 
@@ -1400,8 +1429,6 @@ void Tracker::LoadSample()
 			FileName = ImGuiFileDialog::Instance()->GetFilePathName();
 			FilePath = ImGuiFileDialog::Instance()->GetCurrentPath();
 			cout << "\n" + FileName + "\n" + FilePath;
-			//auto file = SDL_RWFromFile(FileName.data(), "rb");
-
 			SF_INFO soundinfo;
 			soundinfo.format = AUDIO_FORMATS;
 			soundinfo.samplerate = SPS;
@@ -1411,7 +1438,7 @@ void Tracker::LoadSample()
 			SNDFILE* file = sf_open(FileName.data(), SFM_READ, &soundinfo);
 			if (file)//Loaded right
 			{
-				short FileBuffer[8192];
+				short FileBuffer[65536];
 				Uint32 AudioLen = soundinfo.frames * soundinfo.channels;
 				if (soundinfo.channels == 1)
 				{
@@ -1428,7 +1455,7 @@ void Tracker::LoadSample()
 					cur = DefaultSample;
 					for (size_t i = 0; i < AudioLen/soundinfo.channels; i++)
 					{
-						cout << "\n" << i;
+						//cout << "\n" << i;
 						/*
 						cout << " " << FileBuffer[i];
 						if (i % 8 == 1)
@@ -1450,15 +1477,14 @@ void Tracker::LoadSample()
 					samples.push_back(cur);
 					sf_close(file);
 
+					//Assume the file isn't fucked and we can move to the BRR conversion
+					cur.BRRConvert();
 				}
 				else
 				{
 					sf_close(file);
 					cout << "\n ERROR: FILE IS EITHER EMPTY OR IS OTHERWISE UNABLE TO LOAD \n ";
 				}
-			}
-			else//fucked the file
-			{
 			}
 
 		}
@@ -1478,12 +1504,16 @@ void Tracker::DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[])
 	vector<Sint16> sampleBuffer;
 	sampleBuffer.reserve(sampleBufferSize * sfinfo.channels);
 	Sint64 sum;
-	for (int a = 0; a < sampleLength; a += sampleBufferSize) {
+	
+	for (int a = 0; a < sampleLength; a += sampleBufferSize) 
+	{
 		sf_read_short(sndfile, sampleBuffer.data(), sampleBufferSize);
-		for (int i = 0; i < sampleBufferSize; i++) {
+		for (int i = 0; i < sampleBufferSize; i++) 
+		{
 			sum = 0;
 			for (int j = 0; j < sfinfo.channels; j++)
 				sum += sampleBuffer.data()[i * sfinfo.channels + j];
+		
 			outputBuffer[i] = (Sint16)(sum / (double)sfinfo.channels);
 		}
 	}
@@ -1547,29 +1577,3 @@ void Tracker::ChangePatternData(int x, int y, int i)
 	StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[y].effect = Channels[x].Rows[y].effect;
 	StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[y].effectvalue = Channels[x].Rows[y].effectvalue;
 }
-
-/*
-if (Begin("Main"), true, UNIVERSAL_WINDOW_FLAGS)
-{
-	Text("This is some text");
-	BeginChild("Sub", ImVec2(240, 120), true, UNIVERSAL_WINDOW_FLAGS);
-		Text("More text");
-		EndChild();
-	End();
-}
-else
-{
-	End();
-}
-
-//ImGui::ShowDemoWindow();
-{
-	Begin("Main Window", &ShowMain);
-
-	Text("This is some useful text.");               // Display some text (you can use a format strings too)
-	Checkbox("Demo Window", &ShowMain);      // Edit bools storing our window open/close state
-	Checkbox("Another Window", &ShowMain);
-
-	End();
-}
-*/

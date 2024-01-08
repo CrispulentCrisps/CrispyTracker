@@ -173,6 +173,7 @@
     <ClCompile Include="Libraries\imgui\imgui_tables.cpp" />
     <ClCompile Include="Libraries\imgui\imgui_widgets.cpp" />
     <ClCompile Include="Patterns.cpp" />
+    <ClCompile Include="Sample.cpp" />
     <ClCompile Include="SoundGenerator.cpp" />
     <ClCompile Include="Source.cpp" />
     <ClCompile Include="Tracker.cpp" />

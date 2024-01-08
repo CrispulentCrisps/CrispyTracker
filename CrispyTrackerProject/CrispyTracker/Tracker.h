@@ -18,7 +18,6 @@
 #include "Libraries/libsndfile/include/sndfile.h"
 
 #include <iostream>
-#include <vector>
 #if !CT_UNIX
 #include <mmdeviceapi.h>
 #include <Audioclient.h>
@@ -114,8 +113,6 @@ public:
 	int Highlight2 = 16;
 	int TempoDivider = 1;
 	
-
-
 	float MinKeyTime = 0.02f;
 	float KeyTimer = 0;
 
@@ -123,50 +120,34 @@ public:
 	float InitTimer = 0;
 	bool InitPressed = false;
 
-
-
 	ImFont* font;
 	ImFont* Largefont;
-
-
 
 	int CursorX = 0;			//Xpos of the channel cursor, not the mouse cursor
 	int CursorY = 0;			//Ypos of the channel cursor, not the mouse cursor
 	int CursorPos = 0;			//This is specifically for the individual elements in the effects chain
 	int PatternIndex = 0;		//This is for the currently scelected index
 
-
-
 	bool ShowSettings = false;
 	
-
-
 	int SelectedInst = 0;
 	int SelectedSample = 0;
 	int SelectedPattern = 0;
 	
-
-
 	bool ShowCredits = false;
 	bool ShowInstrument = false;
 	bool ShowSample = false;
 	bool ShowEcho = false;
 	bool LoadingSample = false;
 
-
-
 	int InstXPadding = 32;
 	int InstYPadding = 72;
-
-
 
 	vector<Instrument> inst;
 	Instrument DefaultInst;
 
 	vector<Sample> samples;
 	Sample DefaultSample;
-
-
 
 	//This is the patterns that is Displayed with
 	vector<Patterns> patterns[8];//Display
@@ -175,12 +156,8 @@ public:
 	vector<Patterns> StoragePatterns;//Storage
 	Patterns DefaultPattern;
 
-
-
 	int VolumeScaleL = 127;	//(0-127)
 	int VolumeScaleR = 127;	//(0-127)
-
-
 
 	//Echo settings
 	int Delay;			//(0-15)
@@ -188,8 +165,6 @@ public:
 	int EchoVolL;		//(0-127)
 	int EchoVolR;		//(0-127)
 	int EchoFilter[8];	//(0-127) Must accumulate to 127 at most!!!!
-
-
 
 	//Enums
 	enum ChannelEditState {

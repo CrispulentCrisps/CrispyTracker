@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include "BRRFile.h"
+#include <vector>
 
 //	
 //	Multi channel instrument
@@ -54,8 +54,6 @@ public:
 	int Decay2;
 	//Release (0-31)
 	int Release;
-
-	BRRFile brr;
 };
 
 #endif // !Instrument
