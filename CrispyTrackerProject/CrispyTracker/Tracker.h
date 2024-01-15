@@ -32,18 +32,17 @@ class Tracker
 public:
 	Tracker();
 	~Tracker();
-
-	
 	
 	int UNIVERSAL_WINDOW_FLAGS = ImGuiWindowFlags_AlwaysAutoResize;
 	int TABLE_FLAGS = ImGuiTableFlags_SizingStretchProp;
 	int TRACKER_AUDIO_BUFFER = 1024;
 	int SPS = 41000;
 	string VERSION = "version: 0.3";
-	int AUDIO_FORMATS = SF_FORMAT_WAV;
+	int AUDIO_FORMATS = SF_FORMAT_WAV | SF_FORMAT_OGG | SF_FORMAT_MPEG_LAYER_III;
 	int FrameCount = 0;
 	int Event;
 	int Currentkey;
+	int CurrentMod;
 	bool IsPressed = false;
 	bool EditingMode = true;
 	bool PlayingMode = false;
@@ -57,8 +56,6 @@ public:
 	vector<Patterns> pattern;
 	int MAX_VALUE = 256;
 
-	
-	
 	ImColor Default = IM_COL32(22, 22, 33, 255);
 	ImColor H2Col = IM_COL32(66, 66, 88, 255);
 	ImColor H1Col = IM_COL32(33, 33, 66, 255);
@@ -102,9 +99,7 @@ public:
 	int ChannelColumn = 0, ChannelRow = 0;
 	bool PlayingTrack;
 
-
-
-	const int TextSize = 11;
+	const int TextSize = 12;
 	const int TextSizeLarge = TextSize*2;
 	int BaseTempo = 150;
 	int Speed1 = 6;
@@ -127,6 +122,14 @@ public:
 	int CursorY = 0;			//Ypos of the channel cursor, not the mouse cursor
 	int CursorPos = 0;			//This is specifically for the individual elements in the effects chain
 	int PatternIndex = 0;		//This is for the currently scelected index
+
+	int SelectionBoxX1 = 0;
+	int SelectionBoxY1 = 0;
+
+	int SelectionBoxX2 = 0;
+	int SelectionBoxY2 = 0;
+
+	bool BoxSelected = false;
 
 	bool ShowSettings = false;
 	
@@ -177,16 +180,12 @@ public:
 
 	int SongLength = 1;
 	int Maxindex = 8;
-
-	
 	
 	//Functions
 	void Initialise(int StartLength);
 	void Run();
 	void CheckInput();
 	void Render();
-
-
 
 	void MenuBar();
 	void CreditsWindow();
@@ -203,11 +202,8 @@ public:
 	void EchoSettings();
 	void SetupInstr();
 
-
-
 	void RunTracker(); //For when the tracker is playing the tune
 	void UpdateRows(); //Sending the audio data to the speakers for every element in the tracker row
-
 
 	void ChannelInput(int CurPos, int x, int y);
 	void LoadSample();
@@ -215,8 +211,6 @@ public:
 	void UpdatePatternIndex(int x, int y);
 	void UpdateAllPatterns();
 	void ChangePatternData(int x, int y, int i);
-	void BRRConverter();
-
 
 	string Authbuf;
 	string Descbuf;
@@ -229,11 +223,9 @@ public:
 		"Delayed (write r on release)"
 	};
 
-	string Credits = "Crispytracker";//Is actually used for the title
+	string Credits = "Crispytracker: " + VERSION;//Is actually used for the title
 
-
-
-	ImVec4 AttackColour = ImVec4(.22, .88, .88, 1);
+	ImVec4 AttackColour = ImVec4(.44, .44, .88, 1);
 	ImVec4 DecayColour = ImVec4(.22, .88, .22, 1);
 	ImVec4 SustainColour = ImVec4(.88, .88, .22, 1);
 	ImVec4 ReleaseColour = ImVec4(.77, .33, .33, 1);

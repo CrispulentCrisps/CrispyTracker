@@ -7,7 +7,6 @@ void Sample::BRRConvert()
 
     printf("\n BLOCKS ALLOCATED:");
     printf(std::to_string(BlockAmount).data());
-    signed char FourBitValues[4];
     signed char CombinedBit = 0;
     for (int i = 0; i < BlockAmount; i++)
     {
@@ -15,6 +14,7 @@ void Sample::BRRConvert()
 
         for (int x = 0; x < 8; x++)
         {
+            //Combined bit is taking 2 4bit vales, shifts the second 4 bits to fit in the byte and not overwrite the first 4 bits
             CombinedBit = ((SampleData[16 * i + 2 * x + 0] >> 12) & 0x0f) | ((SampleData[16 * i + 2 * x + 1] >> 8) & 0xf0);
             brr.DBlocks[i].DataByte[x] = CombinedBit;
         }

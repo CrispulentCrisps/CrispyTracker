@@ -27,7 +27,7 @@ Tracker::~Tracker()
 void Tracker::Initialise(int StartLength)
 {
 	//initialise all the channels
-	for (size_t i = 0; i < 8; i++)
+	for (int i = 0; i < 8; i++)
 	{
 		Channel channel = Channel();
 		channel.SetUp(StartLength);
@@ -64,6 +64,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	cout << "\n FIRST INPUT DONE\n" << key;
 	*/
 	tr->Currentkey = key;
+	tr->CurrentMod = mods;
 	tr->Event = action;
 }
 
@@ -247,7 +248,7 @@ void Tracker::MenuBar()
 		if (ImGui::MenuItem("Credits")) ShowCredits = true;
 		ImGui::EndMenu();
 	}
-	ImGui::Text("	|	%.3f ms/frame (%.1f FPS)", 1000.0 / (ImGui::GetIO().Framerate), (ImGui::GetIO().Framerate));
+	Text("	|	%.3f ms/frame (%.1f FPS)", 1000.0 / (ImGui::GetIO().Framerate), (ImGui::GetIO().Framerate));
 	Text(VERSION.data());
 	EndMainMenuBar();
 
@@ -708,7 +709,6 @@ void Tracker::Channel_View()
 			// the -1 is for the left hand columns index
 			for (int i = -1; i < 8; i++)//X
 			{
-
 				if (i >= 0)
 				{
 					PushStyleColor(ImGuiTableBgTarget_RowBg0,(ImVec4)CursorCol);
@@ -721,7 +721,7 @@ void Tracker::Channel_View()
 				for (int j = -1; j < TrackLength; j++)//Y
 				{
 					// keep this for future debugging
-					
+					/*
 					if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
 					{
 						string str;
@@ -737,12 +737,12 @@ void Tracker::Channel_View()
 						str += to_string(CursorY);
 						SetTooltip(str.data());
 					}
-					
+					*/
 					
 					if (i == -1)
 					{
 						string ind;
-						if (j == -1) ind = "*_*";
+						if (j == -1) ind = "|_|";
 						else ind = to_string(j);
 
 						if (j < 10)
@@ -775,7 +775,11 @@ void Tracker::Channel_View()
 							}
 							else
 							{
-								if (j % Highlight2 == 0)
+								if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 + CursorPos)
+								{
+									col = Editing_H2Col;
+								}
+								else if (j % Highlight2 == 0)
 								{
 									col = H2Col;
 
@@ -847,9 +851,6 @@ void Tracker::Channel_View()
 							}
 							PopID();
 							EndTable();
-						}
-						else
-						{
 						}
 					}
 
@@ -1042,7 +1043,7 @@ void Tracker::Author_View()
 		Text("Author");
 		InputText("##Author", (char*)Authbuf.data(), 1024);
 		Text("Desc");
-		InputTextMultiline("##Desc", (char*)Descbuf.data(), 1024,ImVec2(GetWindowWidth() * 0.65, GetWindowHeight() * 0.9));
+		InputTextMultiline("##Desc", (char*)Descbuf.data(), 1024,ImVec2(GetWindowWidth() * 0.65, GetWindowHeight() * 0.65));
 		End();
 	}
 	else
@@ -1055,33 +1056,39 @@ void Tracker::Info_View()
 {
 	Begin("Information");
 
-	Text("Space left");
-
 	ImDrawList* draw_list = GetWindowDrawList();
-	ImVec2 p = ImGui::GetCursorScreenPos();
+	ImVec2 p = GetCursorScreenPos();
 	int xpos = p.x;
-	int ypos = p.y;
+	int ypos = p.y + TextSize;
 	int StepSize = (xpos - GetWindowWidth()) / inst.size();
 	int MaxRange = 65536;
 	int UsedSpace = (2048 * Delay);
+	int InstrumentSpace = 0;
+	
+	int EchoSpace = UsedSpace;
+	int SampleSpace = 0;
+
 	for (int x = 0; x < samples.size(); x++)
 	{
 		UsedSpace += samples[x].brr.DBlocks.size() * 9;
+		SampleSpace += samples[x].brr.DBlocks.size() * 9;
 	}
 	for (int x = 0; x < inst.size(); x++)
 	{
 		UsedSpace += 9;
+		InstrumentSpace += 9;
 	}
 	int LastPos = 0;
 
 	//Background Rect to show bounds
 	if (UsedSpace > MaxRange)
 	{
+		Text(("Used space: " + to_string(UsedSpace) + " bytes" + " Too much data used!!!").data());
 		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + GetWindowWidth() * 0.95f, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(ReleaseColour), .25f, 0);
-		Text("Too much data!!!");
 	}
 	else
 	{
+		Text(("Used space: " + to_string(UsedSpace) + " bytes").data());
 		UsedSpace = 0;
 		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + GetWindowWidth() * 0.95f, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(H2Col), .25f, 0);
 		
@@ -1110,6 +1117,27 @@ void Tracker::Info_View()
 		LastPos = (UsedSpace * GetWindowWidth() * 0.95f) / MaxRange;
 
 	}
+	for (int i = 0; i < 4; i++)
+	{
+		NewLine();
+	}
+	ypos = GetCursorScreenPos().y - (TextSize*0.125f);
+	xpos = GetCursorScreenPos().x;
+	
+	draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos+TextSize, ypos + TextSize), ColorConvertFloat4ToU32(H2Col), .25f, 0);
+	Text(("  Free: " + to_string(MaxRange - (InstrumentSpace + SampleSpace + EchoSpace)) + " bytes").data());
+
+	ypos = GetCursorScreenPos().y - (TextSize * 0.125f);;
+	draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + TextSize, ypos + TextSize), ColorConvertFloat4ToU32(AttackColour), .25f, 0);
+	Text(("  Instruments: " + to_string(InstrumentSpace) + " bytes").data());
+
+	ypos = GetCursorScreenPos().y - (TextSize * 0.125f);;
+	draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + TextSize, ypos + TextSize), ColorConvertFloat4ToU32(SustainColour), .25f, 0);
+	Text(("  Samples: " + to_string(SampleSpace) + " bytes").data());
+
+	ypos = GetCursorScreenPos().y - (TextSize * 0.125f);;
+	draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + TextSize, ypos + TextSize), ColorConvertFloat4ToU32(DecayColour), .25f, 0);
+	Text(("  Echo: " + to_string(EchoSpace) + " bytes").data());
 
 	End();
 }
@@ -1252,39 +1280,87 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 	if (!IsPressed)
 	{
 		cout << "\nCurrent key: " << Currentkey;
-		if (Currentkey == GLFW_KEY_LEFT)
+		
+		if (CurrentMod == GLFW_MOD_SHIFT)
 		{
-			CursorPos--;
-		}
-		else if (Currentkey == GLFW_KEY_RIGHT)
-		{
-			CursorPos++;
-		}
+			if (!BoxSelected)
+			{
+				SelectionBoxX1 = (CurPos * 5) + x;
+				SelectionBoxY1 = y;
+				BoxSelected = true;
+				SelectionBoxX2 = SelectionBoxX1;
+				SelectionBoxY2 = SelectionBoxY1;
+			}
+			if (Currentkey == GLFW_KEY_LEFT)
+			{
+				CursorPos--;
+				SelectionBoxX2--;
+			}
+			else if (Currentkey == GLFW_KEY_RIGHT)
+			{
+				CursorPos++;
+				SelectionBoxX2++;
+			}
 
-		if (Currentkey == GLFW_KEY_DOWN)
-		{
-			CursorY++;
+			if (Currentkey == GLFW_KEY_DOWN)
+			{
+				CursorY++;
+				SelectionBoxY2++;
+			}
+			else if (Currentkey == GLFW_KEY_UP)
+			{
+				CursorY--;
+				SelectionBoxY2--;
+			}
+			else if (Currentkey == GLFW_KEY_SPACE)
+			{
+				EditingMode = !EditingMode;
+			}
+			else if (Currentkey == GLFW_KEY_ENTER)
+			{
+				PlayingMode = !PlayingMode;
+				EditingMode = false;
+			}
 		}
-		else if (Currentkey == GLFW_KEY_UP)
+		else
 		{
-			CursorY--;
-		}
-		else if (Currentkey == GLFW_KEY_SPACE)
-		{
-			EditingMode = !EditingMode;
-		}
-		else if (Currentkey == GLFW_KEY_ENTER)
-		{
-			PlayingMode = !PlayingMode;
-			EditingMode = false;
-		}
+			if (Currentkey == GLFW_KEY_LEFT)
+			{
+				CursorPos--;
+				BoxSelected = false;
+			}
+			else if (Currentkey == GLFW_KEY_RIGHT)
+			{
+				CursorPos++;
+				BoxSelected = false;
+			}
 
+			if (Currentkey == GLFW_KEY_DOWN)
+			{
+				CursorY++;
+				BoxSelected = false;
+			}
+			else if (Currentkey == GLFW_KEY_UP)
+			{
+				CursorY--;
+				BoxSelected = false;
+			}
+			else if (Currentkey == GLFW_KEY_SPACE)
+			{
+				EditingMode = !EditingMode;
+			}
+			else if (Currentkey == GLFW_KEY_ENTER)
+			{
+				PlayingMode = !PlayingMode;
+				EditingMode = false;
+				BoxSelected = false;
+			}
+		}
 		if (EditingMode)
 		{
+			//For editing the stuff in the subcolumns
 			switch (CurPos)
 			{
-			case -1:
-				break;
 			case NOTE:
 				for (int i = 0; i < 24; i++)
 				{
@@ -1408,13 +1484,6 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 		IsPressed = true;
 	}
 
-	if (CurPos < 0 && CursorX <= 0)
-	{
-		CurPos = 0;
-		CursorX = 0;
-		cout << "CURSOR BOUNDS MET";
-	}
-
 	if (CurPos > VALUE)
 	{
 		CursorX ++;
@@ -1434,11 +1503,25 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 	{
 		CursorY = TrackLength;
 	}
+
+	if (CursorPos < 0 && CursorX == 0)
+	{
+		CursorPos = 0;
+		CurPos = 0;
+		CursorX = 0;
+	}
+	else if (CursorPos > VALUE && CursorX == 7)
+	{
+		CursorPos = VALUE;
+		CurPos = VALUE;
+		CursorX = 7;
+	}
+
 }
 
 void Tracker::LoadSample()
 {
-	ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".wav", ".");
+	ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".wav, .ogg, .mp3", ".");
 	if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
 	{
 		// action if OK
