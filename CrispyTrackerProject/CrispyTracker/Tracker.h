@@ -37,7 +37,7 @@ public:
 	int TABLE_FLAGS = ImGuiTableFlags_SizingStretchProp;
 	int TRACKER_AUDIO_BUFFER = 1024;
 	int SPS = 41000;
-	string VERSION = "version: 0.3";
+	string VERSION = "version: 0.4";
 	int AUDIO_FORMATS = SF_FORMAT_WAV | SF_FORMAT_OGG | SF_FORMAT_MPEG_LAYER_III;
 	int FrameCount = 0;
 	int Event;
@@ -63,6 +63,8 @@ public:
 	
 	ImColor Editing_H2Col = IM_COL32(66, 88, 110, 255);
 	ImColor Editing_H1Col = IM_COL32(33, 66, 88, 255);
+
+	ImColor SelectionBoxCol = IM_COL32(66, 66, 128, 255);
 	
 	
 	int NoteInput[24] = 
@@ -124,9 +126,11 @@ public:
 	int PatternIndex = 0;		//This is for the currently scelected index
 
 	int SelectionBoxX1 = 0;
+	int SelectionBoxSubX1 = 0;
 	int SelectionBoxY1 = 0;
 
 	int SelectionBoxX2 = 0;
+	int SelectionBoxSubX2 = 0;
 	int SelectionBoxY2 = 0;
 
 	bool BoxSelected = false;

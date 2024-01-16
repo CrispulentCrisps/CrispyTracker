@@ -775,11 +775,7 @@ void Tracker::Channel_View()
 							}
 							else
 							{
-								if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 + CursorPos)
-								{
-									col = Editing_H2Col;
-								}
-								else if (j % Highlight2 == 0)
+								if (j % Highlight2 == 0)
 								{
 									col = H2Col;
 
@@ -807,6 +803,18 @@ void Tracker::Channel_View()
 
 							PushID(IDOffset +i+(j*40));
 							//Cursor highlighting
+
+							if (BoxSelected && 
+								j >= SelectionBoxY1 && j <= SelectionBoxY2 && 
+								i >= SelectionBoxX1 && i <= SelectionBoxX2 &&
+							CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+							{
+								TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
+							}
+							else
+							{
+								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+							}
 							if (Selectable(Channels[i].NoteView(j).data(), IsPoint && CursorPos == NOTE, 0, RowVec))
 							{
 								CursorPos = NOTE;
@@ -816,6 +824,17 @@ void Tracker::Channel_View()
 							PopID();
 							PushID(IDOffset + i + (j * 40)+1);
 							TableNextColumn();
+							if (BoxSelected &&
+								j >= SelectionBoxY1 && j <= SelectionBoxY2 &&
+								i >= SelectionBoxX1 && i <= SelectionBoxX2 &&
+								CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+							{
+								TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
+							}
+							else
+							{
+								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+							}
 							if (Selectable(Channels[i].InstrumentView(j).data(), IsPoint && CursorPos == INSTR, 0, RowVec))
 							{
 								CursorPos = INSTR;
@@ -825,6 +844,17 @@ void Tracker::Channel_View()
 							PopID();
 							PushID(IDOffset + i + (j * 40)+2);
 							TableNextColumn();
+							if (BoxSelected &&
+								j >= SelectionBoxY1 && j <= SelectionBoxY2 &&
+								i >= SelectionBoxX1 && i <= SelectionBoxX2 &&
+								CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+							{
+								TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
+							}
+							else
+							{
+								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+							}
 							if (Selectable(Channels[i].VolumeView(j).data(), IsPoint && CursorPos == VOLUME, CursorPos == VOLUME, RowVec))
 							{
 								CursorPos = VOLUME;
@@ -834,6 +864,17 @@ void Tracker::Channel_View()
 							PopID();
 							PushID(IDOffset + i + (j * 40)+3);
 							TableNextColumn();
+							if (BoxSelected &&
+								j >= SelectionBoxY1 && j <= SelectionBoxY2 &&
+								i >= SelectionBoxX1 && i <= SelectionBoxX2 &&
+								CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+							{
+								TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
+							}
+							else
+							{
+								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+							}
 							if (Selectable(Channels[i].EffectView(j).data(), IsPoint && CursorPos == EFFECT, 0, RowVec))
 							{
 								CursorPos = EFFECT;
@@ -843,6 +884,17 @@ void Tracker::Channel_View()
 							PopID();
 							PushID(IDOffset + i + (j * 40)+4);
 							TableNextColumn();
+							if (BoxSelected &&
+								j >= SelectionBoxY1 && j <= SelectionBoxY2 &&
+								i >= SelectionBoxX1 && i <= SelectionBoxX2 &&
+								CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+							{
+								TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
+							}
+							else
+							{
+								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+							}
 							if (Selectable(Channels[i].Effectvalue(j).data(), IsPoint && CursorPos == VALUE, 0, RowVec))
 							{
 								CursorPos = VALUE;
@@ -1073,7 +1125,7 @@ void Tracker::Info_View()
 		UsedSpace += samples[x].brr.DBlocks.size() * 9;
 		SampleSpace += samples[x].brr.DBlocks.size() * 9;
 	}
-	for (int x = 0; x < inst.size(); x++)
+	for (int x = 1; x < inst.size(); x++)
 	{
 		UsedSpace += 9;
 		InstrumentSpace += 9;
@@ -1092,7 +1144,7 @@ void Tracker::Info_View()
 		UsedSpace = 0;
 		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + GetWindowWidth() * 0.95f, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(H2Col), .25f, 0);
 		
-		for (int i = 0; i < inst.size(); i++)
+		for (int i = 1; i < inst.size(); i++)
 		{
 			UsedSpace += 9;//While technically wasting 6 bits here, I can't be bothered
 		}
@@ -1100,6 +1152,7 @@ void Tracker::Info_View()
 		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + (UsedSpace * GetWindowWidth()*0.95f)/ MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(AttackColour));
 		
 		LastPos = (UsedSpace * GetWindowWidth() * 0.95f) / MaxRange;
+		UsedSpace = 0;
 		if (samples.size() > 1)
 		{
 			for (int i = 0; i < samples.size(); i++)
@@ -1285,21 +1338,34 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 		{
 			if (!BoxSelected)
 			{
-				SelectionBoxX1 = (CurPos * 5) + x;
+				SelectionBoxX1 = x;
 				SelectionBoxY1 = y;
-				BoxSelected = true;
 				SelectionBoxX2 = SelectionBoxX1;
 				SelectionBoxY2 = SelectionBoxY1;
+				SelectionBoxSubX1 = CursorPos;
+				SelectionBoxSubX2 = SelectionBoxSubX1;
+				BoxSelected = true;
 			}
+
 			if (Currentkey == GLFW_KEY_LEFT)
 			{
 				CursorPos--;
-				SelectionBoxX2--;
+				SelectionBoxSubX2--;
+				if (SelectionBoxSubX2 < 0)
+				{
+					SelectionBoxX2--;
+					SelectionBoxSubX2 = VALUE;
+				}
 			}
 			else if (Currentkey == GLFW_KEY_RIGHT)
 			{
 				CursorPos++;
-				SelectionBoxX2++;
+				SelectionBoxSubX2++;
+				if (SelectionBoxSubX2 > VALUE)
+				{
+					SelectionBoxX2++;
+					SelectionBoxSubX2 = 0;
+				}
 			}
 
 			if (Currentkey == GLFW_KEY_DOWN)
@@ -1321,6 +1387,8 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 				PlayingMode = !PlayingMode;
 				EditingMode = false;
 			}
+			cout << "\nSelectionBoxSubX1: " << SelectionBoxSubX1 << "\n";
+			cout << "SelectionBoxSubX2: " << SelectionBoxSubX2 << "\n";
 		}
 		else
 		{
@@ -1483,7 +1551,14 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 		}
 		IsPressed = true;
 	}
-
+	if (SelectionBoxX2 < 0)
+	{
+		SelectionBoxX2 = 0;
+	}
+	else if (SelectionBoxX2 > 7)
+	{
+		SelectionBoxX2 = 7;
+	}
 	if (CurPos > VALUE)
 	{
 		CursorX ++;
