@@ -7,7 +7,7 @@ class Patterns
 {
 public:
 	int Index;
-	
+
 	struct Row {
 		int note = 256;
 		int octave = 256;

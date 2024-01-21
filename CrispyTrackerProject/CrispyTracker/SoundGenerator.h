@@ -24,6 +24,9 @@ using namespace std;
 class SoundGenerator
 {
 public:
+	SoundGenerator();
+	Channel ChannelRef[8];
+	
 	int TotalVolume;
 	int Hz;
 	int NoteIndex;//Going from C0 to C8
@@ -35,9 +38,11 @@ public:
 	bool IsPlaying;
 	bool PlayingNoise;
 
-	BYTE* Totalbuffer;
-	SoundGenerator(int TV, int NI, int POS);
+	float TotalbufferLeft = 0;
+	float TotalbufferRight = 0;
+	SoundGenerator(int TV, int NI, int POS, Channel channels[]);
 	void CheckSound(SDL_AudioSpec want, SDL_AudioSpec have, SDL_AudioDeviceID dev, Channel AudioData[]);
+	HRESULT LoadData(UINT count, BYTE* data, DWORD* flags);
 };
 
 #endif // !SoundGenerator

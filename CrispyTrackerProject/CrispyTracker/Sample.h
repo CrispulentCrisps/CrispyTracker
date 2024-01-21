@@ -18,7 +18,6 @@ public:
 	bool Loop = false;
 	int LoopStart = 0;
 	int LoopEnd = 0;
-
 	BRRFile brr;
 
 	void BRRConvert();

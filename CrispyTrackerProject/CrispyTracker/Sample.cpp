@@ -1,5 +1,6 @@
 #include "Sample.h"
 
+//thank you blumba for the bit shift help :D
 void Sample::BRRConvert()
 {
     printf("\n SAMPLE CONVERSION BEGIN\n");

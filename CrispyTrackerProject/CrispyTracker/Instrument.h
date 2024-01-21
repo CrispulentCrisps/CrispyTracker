@@ -1,4 +1,5 @@
 #pragma once
+#include "Sample.h"
 #include <string>
 #include <vector>
 
@@ -17,7 +18,7 @@ public:
 	//Instrument name
 	std::string Name;
 	//Sample pointer
-	int SampleIndex;
+	int SampleIndex = 0;
 
 	//Total volume (will only go from -128 to 127)
 	int Volume;
@@ -54,6 +55,15 @@ public:
 	int Decay2;
 	//Release (0-31)
 	int Release;
+
+	Sample CurrentSample;
+	int CurrentSampleIndex = 0;//This is for the index of the sample within the sample list
+	int CurrentSamplePoint = 0;//This is for the data bytes used in the BRR file
+	signed char CurrentSampleSubPoint = 0;//For the 4 bit samples in the data byte
+	bool StopSample = true;
+
+	void PlaySample();
+	void NextSamplePoint();
 };
 
 #endif // !Instrument

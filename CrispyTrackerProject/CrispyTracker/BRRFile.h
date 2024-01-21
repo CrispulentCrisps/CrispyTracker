@@ -15,7 +15,7 @@ public:
 		unsigned char HeaderByte = 0;
 		
 		//Holds the BRR data per sample block
-		signed char DataByte[8] = { 0,0,0,0,0,0,0,0 };
+		signed char DataByte[8] = { 0,0,0,0,0,0,0,0 };	
 	};
 
 	std::vector<DataBlock> DBlocks;

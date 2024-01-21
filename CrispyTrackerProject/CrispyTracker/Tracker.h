@@ -6,6 +6,8 @@
 #include "Sample.h"
 #include "Instrument.h"
 #include "Patterns.h"
+#include "SoundGenerator.h"
+//#include "snesapu/SNESAPU.h"
 
 #include "Libraries/imgui/backends/imgui_impl_opengl3_loader.h"
 #include "Libraries/glfw-3.3.8/glfw-3.3.8/include/GLFW/glfw3.h"
@@ -53,6 +55,7 @@ public:
 	ImGuiContext* cont = NULL;
 	ImGuiIO io;
 	Channel Channels[8];
+	SoundGenerator SG;
 	vector<Patterns> pattern;
 	int MAX_VALUE = 256;
 
@@ -91,7 +94,6 @@ public:
 	{
 		GLFW_KEY_LEFT, GLFW_KEY_RIGHT, GLFW_KEY_UP, GLFW_KEY_DOWN,
 	};
-	
 	
 	int TrackLength = 64;
 	int YPos;
@@ -214,7 +216,7 @@ public:
 	void DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[]);
 	void UpdatePatternIndex(int x, int y);
 	void UpdateAllPatterns();
-	void ChangePatternData(int x, int y, int i);
+	void ChangePatternData(int x, int y);
 
 	string Authbuf;
 	string Descbuf;
