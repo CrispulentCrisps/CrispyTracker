@@ -1,5 +1,7 @@
 #ifndef SoundGenerator
 
+#define AUDIO_BUFFER 2048
+
 #include <stdio.h>
 
 #if !CT_UNIX
@@ -26,7 +28,6 @@ class SoundGenerator
 {
 public:
 	SoundGenerator();
-	Channel ChannelRef[8];
 	
 	int TotalVolume = 1;
 	int Hz;
@@ -40,12 +41,17 @@ public:
 	bool PlayingNoise;
 
 	float TimeBetweenSamplePoints = 0;
-	float TotalbufferLeft = 0;
-	float TotalbufferRight = 0;
+	float TotalbufferLeft[AUDIO_BUFFER];
+	float TotalbufferRight[AUDIO_BUFFER];
+
+	Channel* ch[8];
+
 	SoundGenerator(int TV, int NI, int POS, Channel channels[]);
 	HRESULT LoadData(UINT count, BYTE* data, DWORD* flags);
-	void MixChannels(Channel ch[8]);
-	void Update(float ElapsedTime, Channel ch[8]);//This should be used for updating the sample index of the channels
+	void MixChannels(int Index);
+	void Update(float ElapsedTime, Channel* ch);//This should be used for updating the sample index of the channels
+	
+	void DEBUG_WriteToFile();
 };
 
 #endif // !SoundGenerator

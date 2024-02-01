@@ -13,37 +13,41 @@ HRESULT SoundGenerator::LoadData(UINT count, BYTE* data, DWORD* flags)
 	float Freq = NVT[NoteIndex];
 	for (int i = 0; i < count; i++)
 	{
-		dp[2 * i + 0] = TotalbufferLeft;//Left ear
-		dp[2 * i + 1] = TotalbufferRight;//Right ear
-		T++;
+		MixChannels(i);
+		dp[2 * i + 0] = TotalbufferLeft[i];//Left ear
+		dp[2 * i + 1] = TotalbufferRight[i];//Right ear
 	}
 	return S_OK;
 }
-void SoundGenerator::MixChannels(Channel ch[8])
+void SoundGenerator::MixChannels(int Index)
 {
 	Sint16 ResultL = 0;
 	Sint16 ResultR = 0;
 	for (int i = 0; i < 8; i++)
 	{
-		ResultL += ch[i].AudioDataL / 8;
-		ResultR += ch[i].AudioDataR / 8;
+		ResultL += ch[i]->AudioDataL / 8;
+		ResultR += ch[i]->AudioDataR / 8;
 	}
-	TotalbufferLeft = ResultL;
-	TotalbufferRight = ResultR;
+	TotalbufferLeft[Index] = ResultL;
+	TotalbufferRight[Index] = ResultR;
 }
 
-void SoundGenerator::Update(float ElapsedTime, Channel ch[8])
+void SoundGenerator::Update(float ElapsedTime, Channel* ch)
 {
 	TimeBetweenSamplePoints += ElapsedTime;
 	for (int i = 0; i < 8; i++)
 	{
-		ch[i].CurrentSamplePointIndex++;
-		if (TimeBetweenSamplePoints > 0.033f)
+		if (TimeBetweenSamplePoints > 0.33)
 		{
 			ch[i].CurrentSamplePointIndex++;
-			TimeBetweenSamplePoints -= 0.033f;
 		}
 	}
+	TimeBetweenSamplePoints -= 0.33f;
+}
+
+void SoundGenerator::DEBUG_WriteToFile()
+{
+
 }
 
 SoundGenerator::SoundGenerator(int TV, int NI, int POS, Channel channels[]) {
@@ -65,8 +69,4 @@ SoundGenerator::SoundGenerator(int TV, int NI, int POS, Channel channels[]) {
 	TotalVolume = TV;
 	NotePos = POS;
     NoteIndex = NI;
-	for (int i = 0; i < 8; i++)
-	{
-		ChannelRef[i] = channels[i];
-	}
 }

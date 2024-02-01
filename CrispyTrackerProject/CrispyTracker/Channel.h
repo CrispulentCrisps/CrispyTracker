@@ -73,7 +73,7 @@ public:
 	bool IsActive;
 
 	void SetUp(int Length);
-	void TickCheck(int RowIndex, vector<Instrument> inst);
+	void TickCheck(int RowIndex, vector<Instrument>& inst);
 	void UpdateChannel(vector<Instrument>& inst, vector<Sample>& samples);
 	string NoteView(int index);
 	string VolumeView(int index);

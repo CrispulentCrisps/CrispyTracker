@@ -57,10 +57,6 @@ void MyAudioCallback(void* userdata, Uint8* stream, int len)
 void Tracker::Run()
 {	
 	SetupInstr();
-	for (int i = 0; i < 8; i++)
-	{
-		SG.ChannelRef[i] = Channels[i];
-	}
 	Emu_APU.APU_Startup();
 	glfwInit();
 	Authbuf.reserve(4096);
@@ -131,7 +127,7 @@ void Tracker::Run()
 		want.freq = 48000;
 		want.format = AUDIO_F32;
 		want.channels = 2;
-		want.samples = 4096;
+		want.samples = AUDIO_BUFFER;//Coming from the SoundGenerator class
 		want.callback = MyAudioCallback;  // you wrote this function elsewhere.
 		want.userdata = &SG;
 		dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
@@ -143,6 +139,10 @@ void Tracker::Run()
 		io.Fonts->Build();
 		ImGui_ImplOpenGL3_CreateFontsTexture();
 		WindowIsGood = true;
+		for (int i = 0; i < 8; i++)
+		{
+			SG.ch[i] = &Channels[i];
+		}
 	}
 
 	ChannelEditState cstate = NOTE;
@@ -1261,15 +1261,6 @@ void Tracker::SetupInstr()
 void Tracker::RunTracker()
 {
 	TickTimer -= GetIO().DeltaTime;
-
-	for (int i = 0; i < 8; i++)
-	{
-		Channels[i].UpdateChannel(inst, samples);
-	}
-	SG.MixChannels(Channels);
-	
-	SG.Update(GetIO().DeltaTime, Channels);
-
 	float BPM = (float)BaseTempo;
 	if (CursorY >= TrackLength-1 && PatternIndex >= patterns->size()-1)
 	{
@@ -1303,10 +1294,15 @@ void Tracker::RunTracker()
 		TickTimer = 2;
 	}
 
-	if (PlayingMode)
+	for (int i = 0; i < 8; i++)
 	{
-
+		//Channels[i].UpdateChannel(inst, samples);
+		Channels[i].AudioDataL = 32767 * sin(FrameCount * (2 * 3.14) * 440 * (1. / 44100.));//Right ear
+		Channels[i].AudioDataR = 32767 * sin(FrameCount * (2 * 3.14) * 440 * (1. / 44100.));//Right ear
+		cout << "\n" << Channels[i].AudioDataR << ": Channel " << i << " Framce Counter: " << FrameCount;
 	}
+
+	SG.Update(GetIO().DeltaTime, Channels);
 }
 
 void Tracker::UpdateRows()
