@@ -3,16 +3,14 @@
 
 #include <SDL_keyboard.h>
 
-#include "Sample.h"
-#include "Instrument.h"
 #include "Patterns.h"
 #include "SoundGenerator.h"
-//#include "snesapu/SNESAPU.h"
+#include "SnesAPUHandler.h"
 
 #include "Libraries/imgui/backends/imgui_impl_opengl3_loader.h"
 #include "Libraries/glfw-3.3.8/glfw-3.3.8/include/GLFW/glfw3.h"
-#include "Libraries/glfw-3.3.8/glfw-3.3.8/include/GLFW/glfw3native.h"
 #include "Libraries/imgui/backends/imgui_impl_glfw.h"
+#include "Libraries/glfw-3.3.8/glfw-3.3.8/include/GLFW/glfw3native.h"
 #include "Libraries/imgui/imgui.h"
 #include "Libraries/imgui/backends/imgui_impl_sdl2.h"
 #include "Libraries/imgui/backends/imgui_impl_opengl3.h"
@@ -34,7 +32,9 @@ class Tracker
 public:
 	Tracker();
 	~Tracker();
-	
+
+	SnesAPUHandler Emu_APU;
+
 	int UNIVERSAL_WINDOW_FLAGS = ImGuiWindowFlags_AlwaysAutoResize;
 	int TABLE_FLAGS = ImGuiTableFlags_SizingStretchProp;
 	int TRACKER_AUDIO_BUFFER = 1024;

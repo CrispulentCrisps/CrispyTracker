@@ -16,6 +16,12 @@
     <Filter Include="imgui">
       <UniqueIdentifier>{45e746df-29d1-4c4d-9474-991b5b01b5c8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\emu">
+      <UniqueIdentifier>{3736ddb1-bca3-41ec-b769-3ec36c83dff8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\emu">
+      <UniqueIdentifier>{a2fc5be8-350f-4144-a2e0-3037387d35ec}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Channel.cpp">
@@ -67,6 +73,33 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Sample.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SnesAPUHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Libraries\emu\dsp.cpp">
+      <Filter>Source Files\emu</Filter>
+    </ClCompile>
+    <ClCompile Include="Libraries\emu\SNES_SPC.cpp">
+      <Filter>Source Files\emu</Filter>
+    </ClCompile>
+    <ClCompile Include="Libraries\emu\SNES_SPC_misc.cpp">
+      <Filter>Source Files\emu</Filter>
+    </ClCompile>
+    <ClCompile Include="Libraries\emu\SNES_SPC_state.cpp">
+      <Filter>Source Files\emu</Filter>
+    </ClCompile>
+    <ClCompile Include="Libraries\emu\spc.cpp">
+      <Filter>Source Files\emu</Filter>
+    </ClCompile>
+    <ClCompile Include="Libraries\emu\SPC_DSP.cpp">
+      <Filter>Source Files\emu</Filter>
+    </ClCompile>
+    <ClCompile Include="Libraries\emu\SPC_Filter.cpp">
+      <Filter>Source Files\emu</Filter>
+    </ClCompile>
+    <ClCompile Include="Effects.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -125,13 +158,52 @@
     <ClInclude Include="Libraries\imgui\backends\imgui_impl_glfw.h">
       <Filter>imgui</Filter>
     </ClInclude>
+    <ClInclude Include="BRRFile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SnesAPUHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Libraries\glfw-3.3.8\glfw-3.3.8\include\GLFW\glfw3.h">
       <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="Libraries\glfw-3.3.8\glfw-3.3.8\include\GLFW\glfw3native.h">
       <Filter>imgui</Filter>
     </ClInclude>
-    <ClInclude Include="BRRFile.h">
+    <ClInclude Include="Libraries\emu\blargg_endian.h">
+      <Filter>Header Files\emu</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\emu\blargg_source.h">
+      <Filter>Header Files\emu</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\emu\dsp.h">
+      <Filter>Header Files\emu</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\emu\SNES_SPC.h">
+      <Filter>Header Files\emu</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\emu\spc.h">
+      <Filter>Header Files\emu</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\emu\SPC_CPU.h">
+      <Filter>Header Files\emu</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\emu\SPC_DSP.h">
+      <Filter>Header Files\emu</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\emu\SPC_Filter.h">
+      <Filter>Header Files\emu</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\emu\blargg_common.h">
+      <Filter>Header Files\emu</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\emu\blargg_config.h">
+      <Filter>Header Files\emu</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Effects.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

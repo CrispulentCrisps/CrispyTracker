@@ -3,10 +3,10 @@
 //thank you blumba for the bit shift help :D
 void Sample::BRRConvert()
 {
-    printf("\n SAMPLE CONVERSION BEGIN\n");
+    printf("/n SAMPLE CONVERSION BEGIN/n");
     int BlockAmount = (SampleData.size()) / 16;
 
-    printf("\n BLOCKS ALLOCATED:");
+    printf("/n BLOCKS ALLOCATED:");
     printf(std::to_string(BlockAmount).data());
     signed char CombinedBit = 0;
     for (int i = 0; i < BlockAmount; i++)
@@ -20,5 +20,5 @@ void Sample::BRRConvert()
             brr.DBlocks[i].DataByte[x] = CombinedBit;
         }
     }
-    printf("\nSAMPLE CONVERSION ENDED\n");
+    printf("/nSAMPLE CONVERSION ENDED/n");
 }

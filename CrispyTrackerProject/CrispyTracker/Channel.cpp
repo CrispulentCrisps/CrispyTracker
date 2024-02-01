@@ -123,7 +123,22 @@ void Channel::SetUp(int Length)
 	}
 }
 
-void Channel::TickCheck()
+void Channel::TickCheck(int RowIndex, vector<Instrument> inst)
 {
+	if (Rows[RowIndex].note != MAX_VALUE && Rows[RowIndex].instrument != MAX_VALUE)
+	{
+		//This is when a note should be played
+		CurrentInstrument = inst[Rows[RowIndex].instrument].Index;
+		CurrentSamplePointIndex = 0;
+	}
+}
 
+void Channel::UpdateChannel(vector<Instrument>& inst, vector<Sample>& samples)
+{
+	//Vector hell
+	if (CurrentInstrument != 0)
+	{
+		AudioDataL = samples[inst[CurrentInstrument].SampleIndex].SampleData[CurrentSamplePointIndex];
+		AudioDataR = samples[inst[CurrentInstrument].SampleIndex].SampleData[CurrentSamplePointIndex];
+	}
 }

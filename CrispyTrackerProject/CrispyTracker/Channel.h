@@ -1,6 +1,7 @@
 #pragma once
 #ifndef Channel
 
+#include "Instrument.h"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -57,19 +58,23 @@ public:
 	//Visible rows
 	vector<Row> Rows;
 
-	Sint16 AudioData;
+	Sint16 AudioDataL;
+	Sint16 AudioDataR;
 	int MarginLeft, MarginRight, MarginTop, MarginBottom;
 	int Index;
 	int Tick;
 	int ChannelLength;
 	int WaveType;
 	int Volume;
-	int ChannelPatternIndex;
+	int ChannelPatternIndex = 0;
+	int CurrentSamplePointIndex = 0;
+	int CurrentInstrument = 0;
 
 	bool IsActive;
 
 	void SetUp(int Length);
-	void TickCheck();
+	void TickCheck(int RowIndex, vector<Instrument> inst);
+	void UpdateChannel(vector<Instrument>& inst, vector<Sample>& samples);
 	string NoteView(int index);
 	string VolumeView(int index);
 	string InstrumentView(int index);

@@ -61,9 +61,6 @@ public:
 	int CurrentSamplePoint = 0;//This is for the data bytes used in the BRR file
 	signed char CurrentSampleSubPoint = 0;//For the 4 bit samples in the data byte
 	bool StopSample = true;
-
-	void PlaySample();
-	void NextSamplePoint();
 };
 
 #endif // !Instrument

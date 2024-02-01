@@ -50,7 +50,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 void MyAudioCallback(void* userdata, Uint8* stream, int len)
 {
-	DWORD    flags;
+	DWORD flags;
 	static_cast<SoundGenerator*>(userdata)->LoadData(len / 8, stream, &flags);
 }
 
@@ -61,9 +61,9 @@ void Tracker::Run()
 	{
 		SG.ChannelRef[i] = Channels[i];
 	}
-	//InitSPC();
+	Emu_APU.APU_Startup();
 	glfwInit();
-	Authbuf.reserve(2048);
+	Authbuf.reserve(4096);
 	Descbuf.reserve(4096);
 	FilePath.reserve(4096);
 
@@ -109,7 +109,7 @@ void Tracker::Run()
 	GetIO().AddKeyEvent(ImGuiKey_Home, false);
 	GetIO().AddKeyEvent(ImGuiKey_End, false);
 	StyleColorsClassic();
-	ImGuiStyle& style = ImGui::GetStyle();
+	ImGuiStyle& style = GetStyle();
 	style.FrameBorderSize = 0.4f;
 	style.WindowRounding = 1.5f;
 	style.FrameRounding = 1.5f;
@@ -275,7 +275,7 @@ void Tracker::CreditsWindow()
 
 	NewLine();
 	Text("Emulator Code:");
-	BulletText("SPC Player");
+	BulletText("snes_spc by John Reagan, fork of the SPC emulation from Blargg");
 
 	NewLine();
 	Text("Driver Code:");
@@ -423,6 +423,7 @@ void Tracker::Instruments()
 			Instrument newinst = DefaultInst;
 			int index = inst.size();
 			newinst.Name += to_string(index);
+			newinst.Index = index;
 			inst.push_back(newinst);
 		}
 		SameLine();
@@ -444,6 +445,7 @@ void Tracker::Instruments()
 			int index = inst.size();
 			Instrument newinst = inst[SelectedInst];
 			newinst.Name += to_string(index);
+			newinst.Index = index;
 			inst.push_back(newinst);
 			cout << inst.size();
 		}
@@ -661,23 +663,17 @@ void Tracker::Instrument_View()
 					
 				}
 
-				NewLine();
 				Text("Special");
 				NewLine();
 				Checkbox("Invert L  ", &inst[SelectedInst].InvL);
-				SameLine();
 				Checkbox("Invert R", &inst[SelectedInst].InvR);
 
-				SameLine();
 				Checkbox("Pitch Mod ", &inst[SelectedInst].PitchMod);
-				SameLine();
 				Checkbox("Echo", &inst[SelectedInst].Echo);
 
-				SameLine();
 				Checkbox("Noise     ", &inst[SelectedInst].Noise);
 				if (inst[SelectedInst].Noise)
 				{
-					SameLine();
 					SliderInt("Noise Freq ", &inst[SelectedInst].NoiseFreq, 0, 31);
 				}
 
@@ -765,7 +761,7 @@ void Tracker::Channel_View()
 					{
 						if (PlayingMode)
 						{
-							double ScrollVal = ((double)CursorY * (double)TrackLength)/((double)TextSize*2-4.5);
+							double ScrollVal = ((double)CursorY * (double)TrackLength)/((double)TextSize*2);
 							SetScrollY(ScrollVal);
 						}
 						//Channel
@@ -1264,8 +1260,15 @@ void Tracker::SetupInstr()
 
 void Tracker::RunTracker()
 {
-
 	TickTimer -= GetIO().DeltaTime;
+
+	for (int i = 0; i < 8; i++)
+	{
+		Channels[i].UpdateChannel(inst, samples);
+	}
+	SG.MixChannels(Channels);
+	
+	SG.Update(GetIO().DeltaTime, Channels);
 
 	float BPM = (float)BaseTempo;
 	if (CursorY >= TrackLength-1 && PatternIndex >= patterns->size()-1)
@@ -1287,25 +1290,31 @@ void Tracker::RunTracker()
 				Channels[i].Rows[j].effectvalue = StoragePatterns[patterns[i][SelectedPattern].Index].SavedRows[j].effectvalue;
 			}
 		}
-
 	}
 	else if (TickTimer < (BPM / (float)TempoDivider))
 	{
 		TickCounter++;
 		if (TickCounter > Speed1)
 		{
-			UpdateRows();
 			CursorY++;
 			UpdateRows();
 			TickCounter = 0;
 		}
 		TickTimer = 2;
 	}
+
+	if (PlayingMode)
+	{
+
+	}
 }
 
 void Tracker::UpdateRows()
 {
-
+	for (int i = 0; i < 8; i++)
+	{
+		Channels[i].TickCheck(CursorY, inst);
+	}
 }
 
 void Tracker::ChannelInput(int CurPos, int x, int y)
@@ -1398,7 +1407,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 				EditingMode = false;
 			}
 			cout << "\nSelectionBoxSubX1: " << SelectionBoxSubX1 << "\n";
-			cout << "SelectionBoxSubX2: " << SelectionBoxSubX2 << "\n";
+			cout << "\nSelectionBoxSubX2: " << SelectionBoxSubX2 << "\n";
 		}
 		else
 		{
@@ -1696,6 +1705,7 @@ void Tracker::LoadSample()
 					cur.LoopEnd = 0;
 					cur.FineTune = 0;
 					SelectedSample = samples.size();
+					cur.SampleIndex = SelectedSample;
 					cur.SampleIndex = SelectedSample;
 					//Assume the file isn't fucked and we can move to the BRR conversion
 					cur.BRRConvert();
