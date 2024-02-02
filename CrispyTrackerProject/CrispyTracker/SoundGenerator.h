@@ -1,6 +1,7 @@
 #ifndef SoundGenerator
 
-#define AUDIO_BUFFER 2048
+#define AUDIO_BUFFER	8192*4
+#define AUDIO_RATE		44100
 
 #include <stdio.h>
 
@@ -33,6 +34,7 @@ public:
 	int Hz;
 	int NoteIndex;//Going from C0 to C8
 	int NotePos;//Position of note in channel
+	int LastBufferPosition = 0;
 	float Tuning;
 
 	float NVT[111];

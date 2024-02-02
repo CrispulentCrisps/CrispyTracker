@@ -9,16 +9,17 @@ SoundGenerator::SoundGenerator()
 
 HRESULT SoundGenerator::LoadData(UINT count, BYTE* data, DWORD* flags)
 {
-	float* dp = (float*)data;
+	Sint16* dp = (Sint16*)data;
 	float Freq = NVT[NoteIndex];
 	for (int i = 0; i < count; i++)
 	{
-		MixChannels(i);
+		LastBufferPosition++ /* % AUDIO_BUFFER*/;
 		dp[2 * i + 0] = TotalbufferLeft[i];//Left ear
 		dp[2 * i + 1] = TotalbufferRight[i];//Right ear
 	}
 	return S_OK;
 }
+
 void SoundGenerator::MixChannels(int Index)
 {
 	Sint16 ResultL = 0;
@@ -30,6 +31,7 @@ void SoundGenerator::MixChannels(int Index)
 	}
 	TotalbufferLeft[Index] = ResultL;
 	TotalbufferRight[Index] = ResultR;
+	//cout << "\nCurrent Buffer: " << ResultL;
 }
 
 void SoundGenerator::Update(float ElapsedTime, Channel* ch)

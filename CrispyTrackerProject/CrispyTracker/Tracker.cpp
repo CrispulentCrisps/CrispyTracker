@@ -123,14 +123,22 @@ void Tracker::Run()
 	}
 	else
 	{
+		SDL_memset(&have, 0, sizeof(have)); /* or SDL_zero(want) */
+		have.freq = AUDIO_RATE;//Coming from the SoundGenerator class
+		have.format = AUDIO_S16;
+		have.channels = 2;
+		have.samples = AUDIO_BUFFER;//Coming from the SoundGenerator class
+		have.userdata = &SG;
+
 		SDL_memset(&want, 0, sizeof(want)); /* or SDL_zero(want) */
-		want.freq = 48000;
-		want.format = AUDIO_F32;
+		want.freq = AUDIO_RATE;//Coming from the SoundGenerator class
+		want.format = AUDIO_S16;
 		want.channels = 2;
 		want.samples = AUDIO_BUFFER;//Coming from the SoundGenerator class
-		want.callback = MyAudioCallback;  // you wrote this function elsewhere.
+		want.callback = MyAudioCallback;
 		want.userdata = &SG;
-		dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+		want.silence = AUDIO_BUFFER;
+		dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
 		const char* err = SDL_GetError();
 		SG.PlayingNoise = true;
 		//Load fonts
@@ -1261,6 +1269,20 @@ void Tracker::SetupInstr()
 void Tracker::RunTracker()
 {
 	TickTimer -= GetIO().DeltaTime;
+
+	for (int x = SG.LastBufferPosition; x < AUDIO_BUFFER; x++)
+	{
+		for (int i = 0; i < 8; i++)
+		{
+			//Channels[i].UpdateChannel(inst, samples);
+			Channels[i].AudioDataL = 32767 * sin((FrameCount + x) * (2 * 3.14) * 440 * (1. / AUDIO_RATE));//Left ear
+			Channels[i].AudioDataR = 32767 * sin((FrameCount + x) * (2 * 3.14) * 440 * (1. / AUDIO_RATE));//Right ear
+			//cout << "\n" << Channels[i].AudioDataR << ": Channel " << i << " Framce Counter: " << FrameCount;
+		}
+		SG.MixChannels(x);
+		SG.Update(GetIO().DeltaTime, Channels);
+	}
+
 	float BPM = (float)BaseTempo;
 	if (CursorY >= TrackLength-1 && PatternIndex >= patterns->size()-1)
 	{
@@ -1293,16 +1315,6 @@ void Tracker::RunTracker()
 		}
 		TickTimer = 2;
 	}
-
-	for (int i = 0; i < 8; i++)
-	{
-		//Channels[i].UpdateChannel(inst, samples);
-		Channels[i].AudioDataL = 32767 * sin(FrameCount * (2 * 3.14) * 440 * (1. / 44100.));//Right ear
-		Channels[i].AudioDataR = 32767 * sin(FrameCount * (2 * 3.14) * 440 * (1. / 44100.));//Right ear
-		cout << "\n" << Channels[i].AudioDataR << ": Channel " << i << " Framce Counter: " << FrameCount;
-	}
-
-	SG.Update(GetIO().DeltaTime, Channels);
 }
 
 void Tracker::UpdateRows()
