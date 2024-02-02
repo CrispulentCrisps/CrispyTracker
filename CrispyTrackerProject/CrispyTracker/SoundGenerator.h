@@ -1,6 +1,6 @@
 #ifndef SoundGenerator
 
-#define AUDIO_BUFFER	8192*4
+#define AUDIO_BUFFER	512
 #define AUDIO_RATE		44100
 
 #include <stdio.h>
@@ -21,7 +21,6 @@
 
 #include <math.h>
 #include <vector>
-
 
 #pragma once
 using namespace std;
