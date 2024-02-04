@@ -1,10 +1,9 @@
 #include "SoundGenerator.h"
 
 int T = 0; //Time value
-const float SampleRate = 48000;
 
-SoundGenerator::SoundGenerator()
-{
+SoundGenerator::SoundGenerator() {
+
 }
 
 HRESULT SoundGenerator::LoadData(UINT count, BYTE* data, DWORD* flags)
@@ -13,13 +12,11 @@ HRESULT SoundGenerator::LoadData(UINT count, BYTE* data, DWORD* flags)
 	float Freq = NVT[NoteIndex];
 	for (int i = 0; i < count; i++)
 	{
-		LastBufferPosition++ /* % AUDIO_BUFFER*/;
-		dp[2 * i + 0] = TotalbufferLeft[i];//Left ear
-		dp[2 * i + 1] = TotalbufferRight[i];//Right ear
+		dp[2 * i + 0] = Totalbuffer[i][0];//Left ear
+		dp[2 * i + 1] = Totalbuffer[i][1];//Right ear
 	}
 	return S_OK;
 }
-
 void SoundGenerator::MixChannels(int Index)
 {
 	Sint16 ResultL = 0;
@@ -29,27 +26,24 @@ void SoundGenerator::MixChannels(int Index)
 		ResultL += ch[i]->AudioDataL / 8;
 		ResultR += ch[i]->AudioDataR / 8;
 	}
-	TotalbufferLeft[Index] = ResultL;
-	TotalbufferRight[Index] = ResultR;
+	Totalbuffer[Index][0] = ResultL;
+	Totalbuffer[Index][1] = ResultR;
 	//cout << "\nCurrent Buffer: " << ResultL;
 }
 
 void SoundGenerator::Update(float ElapsedTime, Channel* ch)
 {
-	TimeBetweenSamplePoints += ElapsedTime;
 	for (int i = 0; i < 8; i++)
 	{
-		if (TimeBetweenSamplePoints > 0.33)
+		if (ch[i].PlayingNote)
 		{
 			ch[i].CurrentSamplePointIndex++;
 		}
+		else
+		{
+			ch[i].CurrentSamplePointIndex = 0;
+		}
 	}
-	TimeBetweenSamplePoints -= 0.33f;
-}
-
-void SoundGenerator::DEBUG_WriteToFile()
-{
-
 }
 
 SoundGenerator::SoundGenerator(int TV, int NI, int POS, Channel channels[]) {

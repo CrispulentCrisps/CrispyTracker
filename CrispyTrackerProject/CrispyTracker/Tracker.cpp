@@ -65,15 +65,6 @@ void Tracker::Run()
 
 	bool PlayingTrack = false;
 	bool WindowIsGood = true;
-
-	SDL_Init(SDL_INIT_AUDIO);
-	have.channels = 1;
-	have.size = TRACKER_AUDIO_BUFFER;
-	have.freq = SPS;
-	have.samples = have.freq / have.channels;
-	have.silence = 1024;
-	have.padding = 512;
-	have.format = AUDIO_S16;
 	//Create window
 #if CT_UNIX
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -123,6 +114,15 @@ void Tracker::Run()
 	}
 	else
 	{
+		SDL_Init(SDL_INIT_AUDIO);
+		have.channels = 2;
+		have.size = TRACKER_AUDIO_BUFFER;
+		have.freq = SPS;
+		have.samples = have.freq / have.channels;
+		have.silence = 0;
+		have.padding = 512;
+		have.format = AUDIO_S16;
+
 		SDL_memset(&have, 0, sizeof(have)); /* or SDL_zero(want) */
 		have.freq = AUDIO_RATE;//Coming from the SoundGenerator class
 		have.format = AUDIO_S16;
@@ -135,11 +135,13 @@ void Tracker::Run()
 		want.format = AUDIO_S16;
 		want.channels = 2;
 		want.samples = AUDIO_BUFFER;//Coming from the SoundGenerator class
-		want.callback = MyAudioCallback;
+		want.callback = NULL;
 		want.userdata = &SG;
 		want.silence = AUDIO_BUFFER;
+
 		dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
 		const char* err = SDL_GetError();
+
 		SG.PlayingNoise = true;
 		//Load fonts
 		font = io.Fonts->AddFontFromFileTTF("fonts/Manaspace.ttf", TextSize, NULL, NULL);
@@ -185,6 +187,11 @@ void Tracker::CheckInput()
 	if (PlayingMode)
 	{
 		RunTracker();
+		
+	}
+	else
+	{
+		SDL_ClearQueuedAudio(dev);
 	}
 }
 
@@ -1269,20 +1276,6 @@ void Tracker::SetupInstr()
 void Tracker::RunTracker()
 {
 	TickTimer -= GetIO().DeltaTime;
-
-	for (int x = SG.LastBufferPosition; x < AUDIO_BUFFER; x++)
-	{
-		for (int i = 0; i < 8; i++)
-		{
-			//Channels[i].UpdateChannel(inst, samples);
-			Channels[i].AudioDataL = 32767 * sin((FrameCount + x) * (2 * 3.14) * 440 * (1. / AUDIO_RATE));//Left ear
-			Channels[i].AudioDataR = 32767 * sin((FrameCount + x) * (2 * 3.14) * 440 * (1. / AUDIO_RATE));//Right ear
-			//cout << "\n" << Channels[i].AudioDataR << ": Channel " << i << " Framce Counter: " << FrameCount;
-		}
-		SG.MixChannels(x);
-		SG.Update(GetIO().DeltaTime, Channels);
-	}
-
 	float BPM = (float)BaseTempo;
 	if (CursorY >= TrackLength-1 && PatternIndex >= patterns->size()-1)
 	{
@@ -1314,6 +1307,25 @@ void Tracker::RunTracker()
 			TickCounter = 0;
 		}
 		TickTimer = 2;
+	}
+
+	for (int x = 0; x < AUDIO_BUFFER; x++)
+	{
+		SG.P++;
+		for (int i = 0; i < 8; i++)
+		{
+			//Channels[i].UpdateChannel(inst, samples);
+			Channels[i].AudioDataL = 32767 * sin((FrameCount + SG.P) * (2 * 3.14) * 440 * (1. / AUDIO_RATE));//Left ear
+			Channels[i].AudioDataR = 32767 * sin((FrameCount + SG.P) * (2 * 3.14) * 440 * (1. / AUDIO_RATE));//Right ear
+			//cout << "\n" << Channels[i].AudioDataR << ": Channel " << i << " Framce Counter: " << FrameCount;
+		}
+		SG.MixChannels(x);
+		SG.Update(GetIO().DeltaTime, Channels);
+	}
+	cout << "\n Audio Buff Queued: " << SDL_GetQueuedAudioSize(dev);
+	if (SDL_GetQueuedAudioSize(dev) < AUDIO_BUFFER * 8)
+	{
+		SDL_QueueAudio(dev, SG.Totalbuffer, sizeof(SG.Totalbuffer));
 	}
 }
 

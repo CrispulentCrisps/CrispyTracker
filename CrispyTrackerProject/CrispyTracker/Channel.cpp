@@ -130,6 +130,7 @@ void Channel::TickCheck(int RowIndex, vector<Instrument>& inst)
 		//This is when a note should be played
 		CurrentInstrument = inst[Rows[RowIndex].instrument].Index;
 		CurrentSamplePointIndex = 0;
+		PlayingNote = true;
 		cout << "\nChannel Hit";
 	}
 }
@@ -138,6 +139,11 @@ void Channel::UpdateChannel(vector<Instrument>& inst, vector<Sample>& samples)
 {
 	if (CurrentInstrument > 0)
 	{
+		if (CurrentSamplePointIndex >= samples[inst[CurrentInstrument].SampleIndex].SampleData.size())
+		{
+			CurrentSamplePointIndex = 0;
+			PlayingNote = false;
+		}
 		//Vector hell
 		AudioDataL = samples[inst[CurrentInstrument].SampleIndex].SampleData[CurrentSamplePointIndex];
 		AudioDataR = samples[inst[CurrentInstrument].SampleIndex].SampleData[CurrentSamplePointIndex];

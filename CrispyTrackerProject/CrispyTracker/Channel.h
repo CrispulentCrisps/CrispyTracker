@@ -70,6 +70,7 @@ public:
 	int CurrentSamplePointIndex = 0;
 	int CurrentInstrument = 0;
 
+	bool PlayingNote;
 	bool IsActive;
 
 	void SetUp(int Length);

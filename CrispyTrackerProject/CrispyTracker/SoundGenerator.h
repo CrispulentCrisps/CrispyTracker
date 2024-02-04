@@ -28,12 +28,11 @@ class SoundGenerator
 {
 public:
 	SoundGenerator();
-	
+
 	int TotalVolume = 1;
 	int Hz;
 	int NoteIndex;//Going from C0 to C8
 	int NotePos;//Position of note in channel
-	int LastBufferPosition = 0;
 	float Tuning;
 
 	float NVT[111];
@@ -42,17 +41,16 @@ public:
 	bool PlayingNoise;
 
 	float TimeBetweenSamplePoints = 0;
-	float TotalbufferLeft[AUDIO_BUFFER];
-	float TotalbufferRight[AUDIO_BUFFER];
+	Sint16 Totalbuffer[AUDIO_BUFFER][2];
 
 	Channel* ch[8];
-
+	void InitAudio(SDL_AudioSpec* w, SDL_AudioSpec* h);
 	SoundGenerator(int TV, int NI, int POS, Channel channels[]);
 	HRESULT LoadData(UINT count, BYTE* data, DWORD* flags);
 	void MixChannels(int Index);
 	void Update(float ElapsedTime, Channel* ch);//This should be used for updating the sample index of the channels
-	
-	void DEBUG_WriteToFile();
+
+	int P = 0;
 };
 
 #endif // !SoundGenerator
