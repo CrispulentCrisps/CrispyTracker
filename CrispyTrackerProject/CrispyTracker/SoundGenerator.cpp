@@ -66,3 +66,18 @@ SoundGenerator::SoundGenerator(int TV, int NI, int POS, Channel channels[]) {
 	NotePos = POS;
     NoteIndex = NI;
 }
+
+void SoundGenerator::DEBUG_Open_File()
+{
+	AudioOutputFile.open("AudioLog.txt");
+}
+
+void SoundGenerator::DEBUG_Close_File()
+{
+	AudioOutputFile.close();
+}
+
+void SoundGenerator::DEBUG_Output_Audio_Buffer_Log(Sint16 AudioData[][2], int Frame, int BufferIndex, int BufferSize)
+{
+	AudioOutputFile << "Frame: " << Frame << " - Index: " << BufferIndex << " - Audio Data L: " << AudioData[BufferIndex][0] << " - Audio Data R: " << AudioData[BufferIndex][1] << " - Buffer Size: " << BufferSize << "\n";
+}

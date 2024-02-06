@@ -15,15 +15,16 @@
 #endif
 
 #include <ctype.h>
-#include <iostream>
 #include <imgui.h>
 #include "Channel.h"
+#include <string>
+#include <iostream>
+#include <fstream>
 
 #include <math.h>
 #include <vector>
 
 #pragma once
-using namespace std;
 class SoundGenerator
 {
 public:
@@ -51,6 +52,14 @@ public:
 	void Update(float ElapsedTime, Channel* ch);//This should be used for updating the sample index of the channels
 
 	int P = 0;
+
+
+	ofstream AudioOutputFile;
+
+	void DEBUG_Open_File();
+	void DEBUG_Close_File();
+
+	void DEBUG_Output_Audio_Buffer_Log(Sint16 AudioData[][2], int Frame, int BufferIndex, int BufferSize);
 };
 
 #endif // !SoundGenerator

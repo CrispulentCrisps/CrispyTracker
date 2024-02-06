@@ -154,10 +154,12 @@ void Tracker::Run()
 			SG.ch[i] = &Channels[i];
 		}
 	}
+	SDL_QueueAudio(dev, SG.Totalbuffer, sizeof(SG.Totalbuffer));
 
 	ChannelEditState cstate = NOTE;
 	//Initialise the tracker
 	Initialise(TrackLength);
+	SG.DEBUG_Open_File();
 	while (running) {
 		if (WindowIsGood) {
 			Render();
@@ -173,6 +175,7 @@ void Tracker::Run()
 	ImGui_ImplOpenGL3_Shutdown();
 	glfwTerminate();
 	SDL_Quit();
+	SG.DEBUG_Close_File();
 }
 
 void Tracker::CheckInput()
@@ -183,7 +186,8 @@ void Tracker::CheckInput()
 	{
 		running = false;
 	}
-
+	
+	//cout << "Playing Mode = " << PlayingMode;
 	if (PlayingMode)
 	{
 		RunTracker();
@@ -1275,6 +1279,27 @@ void Tracker::SetupInstr()
 
 void Tracker::RunTracker()
 {
+
+	cout << "\n Audio Buff Queued: " << SDL_GetQueuedAudioSize(dev);
+	if (SDL_GetQueuedAudioSize(dev) < AUDIO_BUFFER * 8)
+	{
+		for (int x = 0; x < AUDIO_BUFFER; x++)
+		{
+			SG.P++;
+			for (int i = 0; i < 8; i++)
+			{
+				Channels[i].UpdateChannel(inst, samples);
+				//Channels[i].AudioDataL = 2048 * sin((SG.P) * (2 * 3.14) * 440 * (1. / AUDIO_RATE));//Left ear
+				//Channels[i].AudioDataR = 2048 * sin((SG.P) * (2 * 3.14) * 440 * (1. / AUDIO_RATE));//Right ear
+				//cout << "\n" << Channels[i].AudioDataR << ": Channel " << i << " Framce Counter: " << FrameCount;
+			}
+			SG.MixChannels(x);
+			SG.Update(GetIO().DeltaTime, Channels);
+			//SG.DEBUG_Output_Audio_Buffer_Log(SG.Totalbuffer, FrameCount, x, SDL_GetQueuedAudioSize(dev));
+		}
+		SDL_QueueAudio(dev, SG.Totalbuffer, sizeof(SG.Totalbuffer));
+	}
+
 	TickTimer -= GetIO().DeltaTime;
 	float BPM = (float)BaseTempo;
 	if (CursorY >= TrackLength-1 && PatternIndex >= patterns->size()-1)
@@ -1307,25 +1332,6 @@ void Tracker::RunTracker()
 			TickCounter = 0;
 		}
 		TickTimer = 2;
-	}
-
-	for (int x = 0; x < AUDIO_BUFFER; x++)
-	{
-		SG.P++;
-		for (int i = 0; i < 8; i++)
-		{
-			//Channels[i].UpdateChannel(inst, samples);
-			Channels[i].AudioDataL = 32767 * sin((FrameCount + SG.P) * (2 * 3.14) * 440 * (1. / AUDIO_RATE));//Left ear
-			Channels[i].AudioDataR = 32767 * sin((FrameCount + SG.P) * (2 * 3.14) * 440 * (1. / AUDIO_RATE));//Right ear
-			//cout << "\n" << Channels[i].AudioDataR << ": Channel " << i << " Framce Counter: " << FrameCount;
-		}
-		SG.MixChannels(x);
-		SG.Update(GetIO().DeltaTime, Channels);
-	}
-	cout << "\n Audio Buff Queued: " << SDL_GetQueuedAudioSize(dev);
-	if (SDL_GetQueuedAudioSize(dev) < AUDIO_BUFFER * 8)
-	{
-		SDL_QueueAudio(dev, SG.Totalbuffer, sizeof(SG.Totalbuffer));
 	}
 }
 

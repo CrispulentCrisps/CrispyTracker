@@ -1,5 +1,5 @@
 #pragma once
-#ifndef DEBUG
+#ifndef Tracker
 
 #include <SDL_keyboard.h>
 
@@ -17,7 +17,6 @@
 #include "Libraries/ImGuiFileDialog-0.6.5/ImGuiFileDialog.h"
 #include "Libraries/libsndfile/include/sndfile.h"
 
-#include <iostream>
 #if !CT_UNIX
 #include <mmdeviceapi.h>
 #include <Audioclient.h>
@@ -68,8 +67,7 @@ public:
 	ImColor Editing_H1Col = IM_COL32(33, 66, 88, 255);
 
 	ImColor SelectionBoxCol = IM_COL32(66, 66, 128, 255);
-	
-	
+
 	int NoteInput[24] = 
 	{
 		//Lower octave
@@ -236,4 +234,4 @@ public:
 	ImVec4 SustainColour = ImVec4(.88, .88, .22, 1);
 	ImVec4 ReleaseColour = ImVec4(.77, .33, .33, 1);
 };
-#endif // DEBUG
+#endif // Tracker
