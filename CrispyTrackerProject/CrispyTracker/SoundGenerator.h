@@ -37,7 +37,7 @@ public:
 	float Tuning;
 
 	float NVT[111];
-	
+
 	bool IsPlaying;
 	bool PlayingNoise;
 
@@ -45,12 +45,11 @@ public:
 	Sint16 Totalbuffer[AUDIO_BUFFER][2];
 
 	Channel* ch[8];
-	void InitAudio(SDL_AudioSpec* w, SDL_AudioSpec* h);
 	SoundGenerator(int TV, int NI, int POS, Channel channels[]);
 	HRESULT LoadData(UINT count, BYTE* data, DWORD* flags);
 	void MixChannels(int Index);
-	void Update(float ElapsedTime, Channel* ch);//This should be used for updating the sample index of the channels
-
+	void Update(float ElapsedTime, Channel* ch, vector<Sample>& Samples, int YPos, vector<Instrument>& inst);//This should be used for updating the sample index of the channels
+	
 	int P = 0;
 
 

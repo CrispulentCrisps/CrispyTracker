@@ -1280,7 +1280,7 @@ void Tracker::SetupInstr()
 void Tracker::RunTracker()
 {
 
-	cout << "\n Audio Buff Queued: " << SDL_GetQueuedAudioSize(dev);
+	//cout << "\n Audio Buff Queued: " << SDL_GetQueuedAudioSize(dev);
 	if (SDL_GetQueuedAudioSize(dev) < AUDIO_BUFFER * 8)
 	{
 		for (int x = 0; x < AUDIO_BUFFER; x++)
@@ -1294,7 +1294,7 @@ void Tracker::RunTracker()
 				//cout << "\n" << Channels[i].AudioDataR << ": Channel " << i << " Framce Counter: " << FrameCount;
 			}
 			SG.MixChannels(x);
-			SG.Update(GetIO().DeltaTime, Channels);
+			SG.Update(GetIO().DeltaTime, Channels, samples, CursorY, inst);
 			//SG.DEBUG_Output_Audio_Buffer_Log(SG.Totalbuffer, FrameCount, x, SDL_GetQueuedAudioSize(dev));
 		}
 		SDL_QueueAudio(dev, SG.Totalbuffer, sizeof(SG.Totalbuffer));

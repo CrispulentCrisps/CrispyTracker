@@ -31,13 +31,21 @@ void SoundGenerator::MixChannels(int Index)
 	//cout << "\nCurrent Buffer: " << ResultL;
 }
 
-void SoundGenerator::Update(float ElapsedTime, Channel* ch)
+void SoundGenerator::Update(float ElapsedTime, Channel* ch, vector<Sample>& Samples, int YPos, vector<Instrument>& inst)
 {
 	for (int i = 0; i < 8; i++)
 	{
 		if (ch[i].PlayingNote)
 		{
-			ch[i].CurrentSamplePointIndex++;
+			//cout << "\nPhase Accum: " << Phase[i] << " - Channel: " << i;
+			if (ch[i].CurrentSamplePointIndex + pow(2., ch[i].CurrentPlayedNote / 12.) < Samples[inst[ch[i].CurrentInstrument].SampleIndex].SampleData.size())
+			{
+				ch[i].CurrentSamplePointIndex += pow(2., ch[i].CurrentPlayedNote / 12.);
+			}
+			else
+			{
+				ch[i].CurrentSamplePointIndex = Samples[inst[ch[i].CurrentInstrument].SampleIndex].SampleData.size();
+			}
 		}
 		else
 		{

@@ -1,6 +1,8 @@
 #pragma once
 #ifndef Channel
 
+#define RESAMPLE_QUALITY	20
+
 #include "Instrument.h"
 #include <iostream>
 #include <vector>
@@ -13,6 +15,7 @@ using namespace std;
 
 class Channel
 {
+	float sinc(float x) { if (x == 0) return 1; else return sin(M_PI * x) / (M_PI * x); };
 public:
 	int MAX_VALUE = 256;
 	string NoteNames[12] = {
@@ -67,15 +70,20 @@ public:
 	int WaveType;
 	int Volume;
 	int ChannelPatternIndex = 0;
-	int CurrentSamplePointIndex = 0;
+	//fuck it we ball !!
+	//Needs to be float for the Lanczos resampling
+	float CurrentSamplePointIndex = 0;
+	float CurrentPlayedNote = 0;
+
 	int CurrentInstrument = 0;
 
-	bool PlayingNote;
+	bool PlayingNote = false;
 	bool IsActive;
 
 	void SetUp(int Length);
 	void TickCheck(int RowIndex, vector<Instrument>& inst);
 	void UpdateChannel(vector<Instrument>& inst, vector<Sample>& samples);
+	float Resample(vector<Sint16>& SampleData);
 	string NoteView(int index);
 	string VolumeView(int index);
 	string InstrumentView(int index);
