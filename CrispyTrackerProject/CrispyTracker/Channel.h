@@ -81,7 +81,7 @@ public:
 	bool IsActive;
 
 	void SetUp(int Length);
-	void TickCheck(int RowIndex, vector<Instrument>& inst);
+	void TickCheck(int RowIndex, vector<Instrument>& inst, vector<Sample>& samples);
 	void UpdateChannel(vector<Instrument>& inst, vector<Sample>& samples);
 	float Resample(vector<Sint16>& SampleData);
 	string NoteView(int index);

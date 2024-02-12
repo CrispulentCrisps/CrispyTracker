@@ -2,6 +2,9 @@
 #include <vector>
 //https://www.youtube.com/watch?v=bgh5_gxT2eg BRR format source
 //https://snes.nesdev.org/wiki/BRR_samples
+
+using namespace std;
+
 class BRRFile
 {
 public:
@@ -18,6 +21,6 @@ public:
 		signed char DataByte[8] = { 0,0,0,0,0,0,0,0 };	
 	};
 
-	std::vector<DataBlock> DBlocks;
+	vector<DataBlock> DBlocks;
 	DataBlock BlankBlock;
 };

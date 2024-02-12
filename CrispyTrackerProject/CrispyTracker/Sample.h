@@ -10,9 +10,9 @@ public:
 	long PlayingHZ;
 	int NoteOffset = 0;
 	
-	std::string SampleName = "Empty!";
-	std::vector<signed short> SampleData;
-	std::vector<signed short> BRRSampleData;
+	string SampleName = "Empty!";
+	vector<signed short> SampleData;
+	vector<signed short> BRRSampleData;
 	int SampleRate = 0;
 	int FineTune = 0;
 	bool Loop = false;

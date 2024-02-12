@@ -38,9 +38,9 @@ void SoundGenerator::Update(float ElapsedTime, Channel* ch, vector<Sample>& Samp
 		if (ch[i].PlayingNote)
 		{
 			//cout << "\nPhase Accum: " << Phase[i] << " - Channel: " << i;
-			if (ch[i].CurrentSamplePointIndex + pow(2., ch[i].CurrentPlayedNote / 12.) < Samples[inst[ch[i].CurrentInstrument].SampleIndex].SampleData.size())
+			if (ch[i].CurrentSamplePointIndex + (float)pow(2., ch[i].CurrentPlayedNote / 12.) < Samples[inst[ch[i].CurrentInstrument].SampleIndex].SampleData.size())
 			{
-				ch[i].CurrentSamplePointIndex += pow(2., ch[i].CurrentPlayedNote / 12.);
+				ch[i].CurrentSamplePointIndex += (float)pow(2., ch[i].CurrentPlayedNote / 12.);
 			}
 			else
 			{

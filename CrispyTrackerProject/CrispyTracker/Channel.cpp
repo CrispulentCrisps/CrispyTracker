@@ -125,7 +125,7 @@ float Channel::Resample(vector<Sint16>& SampleData)
 	{
 		if (i > 0 && i < SampleData.size())
 		{
-			s += SampleData[i] * sinc(x - i);
+			s += (float)SampleData[i] * sinc(x - i);
 			//cout << "\nResample Accum: " << s;
 		}
 	}
@@ -144,30 +144,43 @@ void Channel::SetUp(int Length)
 	}
 }
 
-void Channel::TickCheck(int RowIndex, vector<Instrument>& inst)
+void Channel::TickCheck(int RowIndex, vector<Instrument>& inst, vector<Sample>& samples)
 {
+	int CurrentSample = inst[CurrentInstrument].SampleIndex;//Dictates the current sample [Here to make the code look cleaner]
 	if (Rows[RowIndex].note != MAX_VALUE && Rows[RowIndex].instrument != MAX_VALUE)
 	{
 		//This is when a note should be played
 		CurrentInstrument = inst[Rows[RowIndex].instrument].Index;
 		CurrentSamplePointIndex = 0;
 		PlayingNote = true;
-		CurrentPlayedNote = Rows[RowIndex].note - 60;//the - 60 is for the offset needed to center the pitch
-		//cout << "\nChannel Hit" << " - Current Note: " << CurrentPlayedNote << " - Actual Note: " << Rows[RowIndex].note;
+		CurrentPlayedNote = (float)Rows[RowIndex].note - 60.0 + samples[CurrentSample].NoteOffset;//the - 60 is for the offset needed to center the pitch
+		cout << "\nChannel Hit" << " - Current Note: " << CurrentPlayedNote << " - Actual Note: " << Rows[RowIndex].note << " - Sample Tuninf: " << pow(2., CurrentPlayedNote / 12.);;
 	}
 }
 	
 void Channel::UpdateChannel(vector<Instrument>& inst, vector<Sample>& samples)
 {
-	if (CurrentInstrument > 0 && samples[inst[CurrentInstrument].SampleIndex].SampleData.size() > 0)
+	int CurrentSample = inst[CurrentInstrument].SampleIndex;//Dictates the current sample [Here to make the code look cleaner]
+
+	if (CurrentInstrument > 0 && samples[CurrentSample].SampleData.size() > 0)
 	{
-		if (CurrentSamplePointIndex >= samples[inst[CurrentInstrument].SampleIndex].SampleData.size())
+		if (samples[CurrentSample].Loop)
 		{
-			CurrentSamplePointIndex = 0;
-			PlayingNote = false;
+			if (CurrentSamplePointIndex >= samples[CurrentSample].LoopEnd)
+			{
+				CurrentSamplePointIndex = samples[CurrentSample].LoopStart;
+			}
+		}
+		else
+		{
+			if (CurrentSamplePointIndex >= samples[CurrentSample].SampleData.size())
+			{
+				CurrentSamplePointIndex = 0;
+				PlayingNote = false;
+			}
 		}
 		//Vector hell
-		AudioDataL = Resample(samples[inst[CurrentInstrument].SampleIndex].SampleData);
-		AudioDataR = Resample(samples[inst[CurrentInstrument].SampleIndex].SampleData);
+		AudioDataL = Resample(samples[CurrentSample].SampleData);
+		AudioDataR = Resample(samples[CurrentSample].SampleData);
 	}
 }

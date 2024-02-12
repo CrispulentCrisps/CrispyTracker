@@ -1023,15 +1023,17 @@ void Tracker::Sample_View()
 			InputText("Sample Name", (char*)samples[SelectedSample].SampleName.data(), 2048);
 			InputInt("Playing HZ", &samples[SelectedSample].SampleRate);
 			InputInt("Fine Tune", (int*) &samples[SelectedSample].FineTune, 1,1);
+			Checkbox("Loop Sample", &samples[SelectedSample].Loop);
 			InputInt("Loop Start", (int*)&samples[SelectedSample].LoopStart,16, 0);
 			InputInt("Loop End", (int*)&samples[SelectedSample].LoopEnd, 16, 0);
 			SliderInt("Note offset", &samples[SelectedSample].NoteOffset, -12, 12);
+			
 			vector<float> SampleView;
-			for (size_t i = 0; i < samples[SelectedSample].SampleData.size(); i++)
+			for (int i = 0; i < samples[SelectedSample].SampleData.size(); i++)
 			{
 				SampleView.push_back(samples[SelectedSample].SampleData[i]);
 			}
-			PlotLines("Waveform", SampleView.data(), (size_t)samples[SelectedSample].SampleData.size(), 0, "Waveform", -32768, 32767, ImVec2(GetWindowWidth() * 0.9, GetWindowHeight() * 0.5));
+			PlotLines("Waveform", SampleView.data(), samples[SelectedSample].SampleData.size(), 0, "Waveform", -32768, 32767, ImVec2(GetWindowWidth() * 0.9, GetWindowHeight() * 0.5));
 			if (Button("Close", ImVec2(64, TextSize * 1.5))) {
 				ShowSample = false;
 			}
@@ -1339,7 +1341,7 @@ void Tracker::UpdateRows()
 {
 	for (int i = 0; i < 8; i++)
 	{
-		Channels[i].TickCheck(CursorY, inst);
+		Channels[i].TickCheck(CursorY, inst, samples);
 	}
 }
 
@@ -1379,7 +1381,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 
 	if (!IsPressed)
 	{
-		cout << "\nCurrent key: " << Currentkey;
+		//cout << "\nCurrent key: " << Currentkey;
 		
 		if (CurrentMod == GLFW_MOD_SHIFT)
 		{
@@ -1517,13 +1519,13 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 						{
 							if (i < 12)
 							{
-								Channels[x].Rows[y].note = i + (12 * (Octave - 1));
-								Channels[x].Rows[y].octave = (Octave - 1);
+								Channels[x].Rows[y].note = i + (12 * (Octave));
+								Channels[x].Rows[y].octave = (Octave);
 							}
 							else
 							{
 								Channels[x].Rows[y].note = i + (12 * Octave);
-								Channels[x].Rows[y].octave = Octave;
+								Channels[x].Rows[y].octave = Octave+1;
 							}
 							if (SelectedInst != 0)
 							{
