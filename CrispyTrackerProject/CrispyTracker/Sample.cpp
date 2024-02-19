@@ -22,3 +22,18 @@ void Sample::BRRConvert()
     }
     printf("/nSAMPLE CONVERSION ENDED/n");
 }
+
+void Sample::LargestPoint()
+{
+    for (int i = 0; i < SampleData.size(); i++)
+    {
+        if (SampleData[i] > HPoint)
+        {
+            HPoint = SampleData[i];
+        }
+        if (SampleData[i] < LPoint)
+        {
+            LPoint = SampleData[i];
+        }
+    }
+}

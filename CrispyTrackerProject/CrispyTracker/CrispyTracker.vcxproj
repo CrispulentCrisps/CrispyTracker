@@ -180,6 +180,9 @@
     <ClCompile Include="Libraries\imgui\imgui_draw.cpp" />
     <ClCompile Include="Libraries\imgui\imgui_tables.cpp" />
     <ClCompile Include="Libraries\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="Libraries\implot-0.16\implot.cpp" />
+    <ClCompile Include="Libraries\implot-0.16\implot_demo.cpp" />
+    <ClCompile Include="Libraries\implot-0.16\implot_items.cpp" />
     <ClCompile Include="Patterns.cpp" />
     <ClCompile Include="Sample.cpp" />
     <ClCompile Include="SnesAPUHandler.cpp" />
@@ -216,6 +219,8 @@
     <ClInclude Include="Libraries\imgui\imstb_rectpack.h" />
     <ClInclude Include="Libraries\imgui\imstb_textedit.h" />
     <ClInclude Include="Libraries\imgui\imstb_truetype.h" />
+    <ClInclude Include="Libraries\implot-0.16\implot.h" />
+    <ClInclude Include="Libraries\implot-0.16\implot_internal.h" />
     <ClInclude Include="Patterns.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Sample.h" />

@@ -16,6 +16,7 @@
 #include "Libraries/imgui/backends/imgui_impl_opengl3.h"
 #include "Libraries/ImGuiFileDialog-0.6.5/ImGuiFileDialog.h"
 #include "Libraries/libsndfile/include/sndfile.h"
+#include "Libraries/implot-0.16/implot.h"
 
 #if !CT_UNIX
 #include <mmdeviceapi.h>
@@ -36,6 +37,7 @@ public:
 
 	int UNIVERSAL_WINDOW_FLAGS = ImGuiWindowFlags_AlwaysAutoResize;
 	int TABLE_FLAGS = ImGuiTableFlags_SizingStretchProp;
+	int IMPLOT_FLAGS = ImPlotFlags_NoFrame | ImPlotFlags_Crosshairs;
 	int TRACKER_AUDIO_BUFFER = 1024;
 	int SPS = 41000;
 	string VERSION = "version: 0.4";
@@ -57,16 +59,6 @@ public:
 	SoundGenerator SG;
 	vector<Patterns> pattern;
 	int MAX_VALUE = 256;
-
-	ImColor Default = IM_COL32(22, 22, 33, 255);
-	ImColor H2Col = IM_COL32(66, 66, 88, 255);
-	ImColor H1Col = IM_COL32(33, 33, 66, 255);
-	ImColor CursorCol = IM_COL32(122, 122, 188, 255);
-	
-	ImColor Editing_H2Col = IM_COL32(66, 88, 110, 255);
-	ImColor Editing_H1Col = IM_COL32(33, 66, 88, 255);
-
-	ImColor SelectionBoxCol = IM_COL32(66, 66, 128, 255);
 
 	int NoteInput[24] = 
 	{
@@ -229,9 +221,27 @@ public:
 
 	string Credits = "Crispytracker: " + VERSION;//Is actually used for the title
 
+	ImColor Default = IM_COL32(22, 22, 33, 255);
+	ImColor H2Col = IM_COL32(66, 66, 88, 255);
+	ImColor H1Col = IM_COL32(33, 33, 66, 255);
+	ImColor CursorCol = IM_COL32(122, 122, 188, 255);
+
+	ImColor Editing_H2Col = IM_COL32(66, 88, 110, 255);
+	ImColor Editing_H1Col = IM_COL32(33, 66, 88, 255);
+
+	ImColor SelectionBoxCol = IM_COL32(66, 66, 128, 255);
+
 	ImVec4 AttackColour = ImVec4(.44, .44, .88, 1);
 	ImVec4 DecayColour = ImVec4(.22, .88, .22, 1);
 	ImVec4 SustainColour = ImVec4(.88, .88, .22, 1);
 	ImVec4 ReleaseColour = ImVec4(.77, .33, .33, 1);
+
+
+	int PlotLineWeight = 1;
+	ImU32 colorDataRGB[3] = { Editing_H2Col, Editing_H1Col, Default };
+	int PlotColours = 0;
+
+	ImAxis x;
+	ImAxis y;
 };
 #endif // Tracker

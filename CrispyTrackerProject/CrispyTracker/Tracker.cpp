@@ -37,6 +37,8 @@ void Tracker::Initialise(int StartLength)
 		patterns[i].push_back(pat);
 		StoragePatterns.push_back(pat);
 	}
+
+	PlotColours = ImPlot::AddColormap("RGBColors", colorDataRGB, 32);
 }
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -83,7 +85,7 @@ void Tracker::Run()
 	//ImGUI setup
 	IMGUI_CHECKVERSION();
 	cont = ImGui::CreateContext();
-
+	ImPlot::CreateContext();
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init();
 
@@ -153,6 +155,9 @@ void Tracker::Run()
 		{
 			SG.ch[i] = &Channels[i];
 		}
+
+		x = ImAxis_X1;
+		y = ImAxis_Y1;
 	}
 	SDL_QueueAudio(dev, SG.Totalbuffer, sizeof(SG.Totalbuffer));
 
@@ -169,7 +174,8 @@ void Tracker::Run()
 	}
 
 	//Destroy window
-	DestroyContext();
+	ImGui::DestroyContext();
+	ImPlot::DestroyContext();
 	glfwDestroyWindow(window);
 	//Quit SDL subsystems
 	ImGui_ImplOpenGL3_Shutdown();
@@ -763,7 +769,7 @@ void Tracker::Channel_View()
 					if (i == -1)
 					{
 						string ind;
-						if (j == -1) ind = "|_|";
+						if (j == -1) ind = "";
 						else ind = to_string(j);
 
 						if (j < 10)
@@ -780,7 +786,7 @@ void Tracker::Channel_View()
 					{
 						if (PlayingMode)
 						{
-							double ScrollVal = ((double)CursorY * (double)TrackLength)/((double)TextSize*2);
+							double ScrollVal = ((double)CursorY * (double)TrackLength)/((double)TextSize*2.0);
 							SetScrollY(ScrollVal);
 						}
 						//Channel
@@ -799,12 +805,10 @@ void Tracker::Channel_View()
 								if (j % Highlight2 == 0)
 								{
 									col = H2Col;
-
 								}
 								else if (j % Highlight1 == 0)
 								{
 									col = H1Col;
-
 								}
 								else
 								{
@@ -944,26 +948,26 @@ void Tracker::Samples()
 {
 	if (Begin("Samples"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-		if (Button("Add", ImVec2(GetWindowWidth() * 0.3, 24)))
+		if (Button("Add", ImVec2(GetWindowWidth() * 0.275, 24)))
 		{
 			LoadingSample = true;
 		}
 		SameLine();
-		if (Button("Delete", ImVec2(GetWindowWidth() * 0.3, 24)) && samples.size() > 1)
+		if (Button("Delete", ImVec2(GetWindowWidth() * 0.275, 24)) && samples.size() > 1)
 		{
 			cout << "SAMPLE LIST SIZE: " << samples.size();
 			if (SelectedSample > samples.size())
 			{
+				samples.erase(samples.begin() + SelectedSample);
 				SelectedSample--;
-				samples.pop_back();
 			}
-			else
+			else if (SelectedSample > 0)
 			{
-				samples.pop_back();
+				samples.erase(samples.begin() + SelectedSample);
 			}
 		}
 		SameLine();
-		if (Button("Copy", ImVec2(GetWindowWidth() * 0.3, 24)) && samples.size() > 1)
+		if (Button("Copy", ImVec2(GetWindowWidth() * 0.275, 24)) && samples.size() > 1)
 		{
 			int index = samples.size();
 			Sample newsamp = samples[SelectedSample];
@@ -987,6 +991,8 @@ void Tracker::Samples()
 					{
 						SelectedSample = i;
 						ShowSample = true;
+						ImPlot::SetNextAxisToFit(x);
+						//cout << "\nSelected Sample: " << SelectedSample;
 					}
 				}
 				else
@@ -1010,6 +1016,7 @@ void Tracker::Samples()
 
 void Tracker::Sample_View()
 {
+	//ImPlot::ShowDemoWindow();
 	if (ShowSample)
 	{
 		if (Begin("Sample view"), true, UNIVERSAL_WINDOW_FLAGS)
@@ -1024,19 +1031,75 @@ void Tracker::Sample_View()
 			InputInt("Playing HZ", &samples[SelectedSample].SampleRate);
 			InputInt("Fine Tune", (int*) &samples[SelectedSample].FineTune, 1,1);
 			Checkbox("Loop Sample", &samples[SelectedSample].Loop);
-			InputInt("Loop Start", (int*)&samples[SelectedSample].LoopStart,16, 0);
+			InputInt("Loop Start", (int*)&samples[SelectedSample].LoopStart, 16, 0);
 			InputInt("Loop End", (int*)&samples[SelectedSample].LoopEnd, 16, 0);
 			SliderInt("Note offset", &samples[SelectedSample].NoteOffset, -12, 12);
-			
-			vector<float> SampleView;
-			for (int i = 0; i < samples[SelectedSample].SampleData.size(); i++)
+			if (samples.size() > 1)
 			{
-				SampleView.push_back(samples[SelectedSample].SampleData[i]);
+				vector<float> LoopView;
+				vector<float> SampleView;
+				for (int i = 0; i < samples[SelectedSample].SampleData.size(); i++)
+				{
+					SampleView.push_back(samples[SelectedSample].SampleData[i]);
+					LoopView.push_back(32767 * 2);
+				}
+				
+				ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2(0, 0));
+				ImPlot::PushStyleVar(ImPlotStyleVar_LineWeight, PlotLineWeight);
+
+				ImPlot::SetNextAxisLimits(y, samples[SelectedSample].LPoint, samples[SelectedSample].HPoint);
+				ImPlot::SetNextAxisLimits(x, 0, samples[SelectedSample].SampleData.size());
+
+				if (ImPlot::BeginPlot("Waveform", ImVec2(GetWindowWidth() * 0.9, GetWindowHeight() * 0.7), IMPLOT_FLAGS)) 
+				{
+					ImPlot::SetupAxis(x, nullptr, ImPlotAxisFlags_NoLabel);
+					ImPlot::SetupAxis(y, nullptr, ImPlotAxisFlags_Lock);
+					ImPlot::PushColormap("RGBColors");
+					ImPlot::PlotLine("Wave Data", SampleView.data(), SampleView.size());
+					ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, .5f * samples[SelectedSample].Loop);
+					
+					if (samples[SelectedSample].LoopEnd > samples[SelectedSample].SampleData.size())
+					{
+						samples[SelectedSample].LoopEnd = samples[SelectedSample].SampleData.size();
+					}
+					else if (samples[SelectedSample].LoopEnd < 16)
+					{
+						samples[SelectedSample].LoopEnd = 16;
+					}
+					else if (samples[SelectedSample].LoopStart < 0)
+					{
+						samples[SelectedSample].LoopStart = 0;
+					}
+
+					if (samples[SelectedSample].LoopEnd % 16 != 0)//Assumes the sample is too large to hold
+					{
+						BeginTooltip();
+						Text("Sample End Loop is not a multiple of 16!!!");
+						EndTooltip();
+					}
+
+					if (samples[SelectedSample].LoopStart % 16 != 0)//Assumes the sample is too large to hold
+					{
+						BeginTooltip();
+						Text("Sample Start Loop is not a multiple of 16!!!");
+						EndTooltip();
+					}
+
+					if (samples[SelectedSample].LoopEnd - samples[SelectedSample].LoopStart > 0)
+					{
+						ImPlot::PlotShaded("Loop Point Shade", LoopView.data(), samples[SelectedSample].LoopEnd - samples[SelectedSample].LoopStart, -INFINITY, 1, samples[SelectedSample].LoopStart, 0, INFINITY);
+					}
+					ImPlot::PopStyleVar();
+					ImPlot::PopColormap();
+					ImPlot::EndPlot();
+				}
+				ImPlot::PopStyleVar();
+				ImPlot::PopStyleVar();
 			}
-			PlotLines("Waveform", SampleView.data(), samples[SelectedSample].SampleData.size(), 0, "Waveform", -32768, 32767, ImVec2(GetWindowWidth() * 0.9, GetWindowHeight() * 0.5));
 			if (Button("Close", ImVec2(64, TextSize * 1.5))) {
 				ShowSample = false;
 			}
+			
 			EndChild();
 			End();
 		}
@@ -1341,7 +1404,7 @@ void Tracker::UpdateRows()
 {
 	for (int i = 0; i < 8; i++)
 	{
-		Channels[i].TickCheck(CursorY, inst, samples);
+		Channels[i].TickCheck(CursorY % TrackLength, inst, samples);
 	}
 }
 
@@ -1519,14 +1582,13 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 						{
 							if (i < 12)
 							{
-								Channels[x].Rows[y].note = i + (12 * (Octave));
 								Channels[x].Rows[y].octave = (Octave);
 							}
 							else
 							{
-								Channels[x].Rows[y].note = i + (12 * Octave);
 								Channels[x].Rows[y].octave = Octave+1;
 							}
+							Channels[x].Rows[y].note = i + (12 * Octave);
 							if (SelectedInst != 0)
 							{
 								Channels[x].Rows[y].instrument = SelectedInst;
@@ -1725,6 +1787,7 @@ void Tracker::LoadSample()
 						*/
 						cur.SampleData.push_back(FileBuffer[i]);
 					}
+					cur.LargestPoint();
 					cur.SampleIndex = SelectedSample;
 					cur.SampleName = "Sample: ";
 					cur.SampleRate = soundinfo.samplerate;
@@ -1745,6 +1808,7 @@ void Tracker::LoadSample()
 					sf_close(file);
 					cout << "\n ERROR: FILE IS EITHER EMPTY OR IS OTHERWISE UNABLE TO LOAD \n ";
 				}
+				ImPlot::SetNextAxisToFit(x);
 			}
 
 		}
