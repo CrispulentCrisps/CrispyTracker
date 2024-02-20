@@ -36,7 +36,7 @@ public:
 	SnesAPUHandler Emu_APU;
 
 	int UNIVERSAL_WINDOW_FLAGS = ImGuiWindowFlags_AlwaysAutoResize;
-	int TABLE_FLAGS = ImGuiTableFlags_SizingStretchProp;
+	int TABLE_FLAGS = ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoPadInnerX;
 	int IMPLOT_FLAGS = ImPlotFlags_NoFrame | ImPlotFlags_Crosshairs;
 	int TRACKER_AUDIO_BUFFER = 1024;
 	int SPS = 41000;

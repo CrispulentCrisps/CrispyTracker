@@ -727,7 +727,6 @@ void Tracker::Channel_View()
 	{
 		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*.9 + (TextSize*8), 0)));
 		{
-		
 			ImVec2 RowVec = ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4);
 			//Actual pattern data
 			TableNextColumn();
@@ -738,7 +737,7 @@ void Tracker::Channel_View()
 			{
 				if (i >= 0)
 				{
-					PushStyleColor(ImGuiTableBgTarget_RowBg0,(ImVec4)CursorCol);
+					PushStyleColor(ImGuiTableBgTarget_RowBg0, (ImVec4)CursorCol);
 					string ChannelTitle = "Pattern: ";
 					ChannelTitle += to_string(patterns[i][SelectedPattern].Index);
 					Text(ChannelTitle.data());
@@ -765,11 +764,11 @@ void Tracker::Channel_View()
 						SetTooltip(str.data());
 					}
 					*/
-					
+
 					if (i == -1)
 					{
 						string ind;
-						if (j == -1) ind = "";
+						if (j == -1) ind = "|_|";
 						else ind = to_string(j);
 
 						if (j < 10)
@@ -786,7 +785,8 @@ void Tracker::Channel_View()
 					{
 						if (PlayingMode)
 						{
-							double ScrollVal = ((double)CursorY * (double)TrackLength)/((double)TextSize*2.0);
+							//double ScrollVal = ((double)CursorY * (double)TrackLength) / ((double)TextSize * 2.0);
+							double ScrollVal = ((double)CursorY / (double)TrackLength) * floor((GetWindowContentRegionMax().y - GetWindowContentRegionMin().y)/2);
 							SetScrollY(ScrollVal);
 						}
 						//Channel
@@ -826,13 +826,10 @@ void Tracker::Channel_View()
 								}
 							}
 
-							PushID(IDOffset +i+(j*40));
+							PushID(IDOffset + i + (j * 40));
 							//Cursor highlighting
 
-							if (BoxSelected && 
-								j >= SelectionBoxY1 && j <= SelectionBoxY2 && 
-								i >= SelectionBoxX1 && i <= SelectionBoxX2 &&
-							CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+							if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
 							{
 								TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
 							}
@@ -847,13 +844,10 @@ void Tracker::Channel_View()
 								CursorY = j;
 							}
 							PopID();
-							PushID(IDOffset + i + (j * 40)+1);
+							PushID(IDOffset + i + (j * 40) + 1);
 							TableNextColumn();
 
-							if (BoxSelected &&
-								j >= SelectionBoxY1 && j <= SelectionBoxY2 &&
-								i >= SelectionBoxX1 && i <= SelectionBoxX2 &&
-								CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+							if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
 							{
 								TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
 							}
@@ -868,13 +862,10 @@ void Tracker::Channel_View()
 								CursorY = j;
 							}
 							PopID();
-							PushID(IDOffset + i + (j * 40)+2);
+							PushID(IDOffset + i + (j * 40) + 2);
 							TableNextColumn();
 
-							if (BoxSelected &&
-								j >= SelectionBoxY1 && j <= SelectionBoxY2 &&
-								i >= SelectionBoxX1 && i <= SelectionBoxX2 &&
-								CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+							if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
 							{
 								TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
 							}
@@ -889,13 +880,10 @@ void Tracker::Channel_View()
 								CursorY = j;
 							}
 							PopID();
-							PushID(IDOffset + i + (j * 40)+3);
+							PushID(IDOffset + i + (j * 40) + 3);
 							TableNextColumn();
 
-							if (BoxSelected &&
-								j >= SelectionBoxY1 && j <= SelectionBoxY2 &&
-								i >= SelectionBoxX1 && i <= SelectionBoxX2 &&
-								CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+							if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
 							{
 								TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
 							}
@@ -910,13 +898,10 @@ void Tracker::Channel_View()
 								CursorY = j;
 							}
 							PopID();
-							PushID(IDOffset + i + (j * 40)+4);
+							PushID(IDOffset + i + (j * 40) + 4);
 							TableNextColumn();
 
-							if (BoxSelected &&
-								j >= SelectionBoxY1 && j <= SelectionBoxY2 &&
-								i >= SelectionBoxX1 && i <= SelectionBoxX2 &&
-								CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+							if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
 							{
 								TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
 							}
@@ -931,14 +916,14 @@ void Tracker::Channel_View()
 								CursorY = j;
 							}
 							PopID();
+
 							EndTable();
 						}
 					}
-
 				}
-				TableNextColumn(); 
+				TableNextColumn();
 			}
-			EndTable();
+			EndTable();//keeps crashing here when it minimises, not a clue why other than EndTable seems to be executed too many times?
 		}
 		End();
 	}
