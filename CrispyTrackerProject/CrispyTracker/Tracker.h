@@ -36,7 +36,7 @@ public:
 	SnesAPUHandler Emu_APU;
 
 	int UNIVERSAL_WINDOW_FLAGS = ImGuiWindowFlags_AlwaysAutoResize;
-	int TABLE_FLAGS = ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_NoPadInnerX;
+	int TABLE_FLAGS = ImGuiTableFlags_SizingStretchProp;
 	int IMPLOT_FLAGS = ImPlotFlags_NoFrame | ImPlotFlags_Crosshairs;
 	int TRACKER_AUDIO_BUFFER = 1024;
 	int SPS = 41000;
@@ -163,7 +163,7 @@ public:
 	int Feedback;		//(0-127)
 	int EchoVolL;		//(0-127)
 	int EchoVolR;		//(0-127)
-	int EchoFilter[8];	//(0-127) Must accumulate to 127 at most!!!!
+	int EchoFilter[8];	//(0-127) Must accumulate to 127 or -128 at most!!!!
 
 	//Enums
 	enum ChannelEditState {
@@ -225,6 +225,11 @@ public:
 	ImColor H2Col = IM_COL32(66, 66, 88, 255);
 	ImColor H1Col = IM_COL32(33, 33, 66, 255);
 	ImColor CursorCol = IM_COL32(122, 122, 188, 255);
+
+	ImColor Dark_Default = IM_COL32(22, 22, 33, 255);
+	ImColor Dark_H2Col = IM_COL32(66, 66, 88, 255);
+	ImColor Dark_H1Col = IM_COL32(33, 33, 66, 255);
+	ImColor Dark_CursorCol = IM_COL32(122, 122, 188, 255);
 
 	ImColor Editing_H2Col = IM_COL32(66, 88, 110, 255);
 	ImColor Editing_H1Col = IM_COL32(33, 66, 88, 255);

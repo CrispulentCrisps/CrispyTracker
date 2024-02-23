@@ -29,10 +29,10 @@ void Tracker::Initialise(int StartLength)
 	for (int i = 0; i < 8; i++)
 	{
 		Channel channel = Channel();
-		channel.SetUp(StartLength);
+		channel.SetUp(256);
 		Channels[i] = channel;
 		Patterns pat = Patterns();
-		pat.SetUp(TrackLength);
+		pat.SetUp(256);
 		pat.Index = i;
 		patterns[i].push_back(pat);
 		StoragePatterns.push_back(pat);
@@ -216,6 +216,7 @@ void Tracker::Render()
 	if (!ShowCredits)
 	{
 		MenuBar();
+		Author_View();
 		//ShowDemoWindow();
 		Patterns_View();
 		Channel_View();
@@ -225,7 +226,6 @@ void Tracker::Render()
 		Sample_View();
 		Settings_View();
 		Misc_View();
-		Author_View();
 		EchoSettings();
 		if (LoadingSample)
 		{
@@ -237,6 +237,7 @@ void Tracker::Render()
 	{
 		CreditsWindow();
 	}
+
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	glfwSwapBuffers(window);
@@ -478,30 +479,32 @@ void Tracker::Instruments()
 		if (inst.size() > 0)
 		{
 			BeginChild("List", ImVec2(GetWindowWidth() - InstXPadding, GetWindowHeight() - InstYPadding), true, UNIVERSAL_WINDOW_FLAGS);
-			BeginTable("InstList", 1, TABLE_FLAGS, ImVec2(GetWindowWidth()*0.75, 24), 24);
-			for (int i = 0; i < inst.size(); i++)
+			if (BeginTable("InstList", 1, TABLE_FLAGS, ImVec2(GetWindowWidth() * 0.75, 24), 24))
 			{
-				PushID(IDOffset);
-				//Show instruments
-				Text(to_string(i).data());
-				SameLine();
-				if (SelectedInst <= inst.size() - 1)
+				for (int i = 0; i < inst.size(); i++)
 				{
-					if (Selectable(inst[i].Name.data(), SelectedInst == i))
+					PushID(IDOffset);
+					//Show instruments
+					Text(to_string(i).data());
+					SameLine();
+					if (SelectedInst <= inst.size() - 1)
 					{
-						SelectedInst = i;
-						ShowInstrument = true;
+						if (Selectable(inst[i].Name.data(), SelectedInst == i))
+						{
+							SelectedInst = i;
+							ShowInstrument = true;
+						}
 					}
+					else
+					{
+						SelectedInst = inst.size();
+					}
+					TableNextColumn();
+					PopID();
+					IDOffset++;
 				}
-				else
-				{
-					SelectedInst = inst.size();
-				}
-				TableNextColumn();
-				PopID();
-				IDOffset++;
+				EndTable();
 			}
-			EndTable();
 			EndChild();
 		}
 		End();
@@ -723,10 +726,19 @@ void Tracker::Instrument_View()
 
 void Tracker::Channel_View()
 {
+	GetStyle().CellPadding.x = 4;
 	if (Begin("Channels"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
+
+		if (PlayingMode)
+		{
+			//God this was painful
+			double ScrollVal = ((double)CursorY / (double)TrackLength) - (24.0 / TrackLength) * ((TextSize + GetStyle().CellPadding.y * 2) * TrackLength);
+			SetScrollY(ScrollVal);
+		}
 		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*.9 + (TextSize*8), 0)));
 		{
+			string ind;
 			ImVec2 RowVec = ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4);
 			//Actual pattern data
 			TableNextColumn();
@@ -765,9 +777,8 @@ void Tracker::Channel_View()
 					}
 					*/
 
-					if (i == -1)
+					if (i == -1)//this is for the index on the leftmost of the screen
 					{
-						string ind;
 						if (j == -1) ind = "|_|";
 						else ind = to_string(j);
 
@@ -779,18 +790,14 @@ void Tracker::Channel_View()
 						{
 							ind += " ";
 						}
-						Selectable(ind.data());
+						if(Selectable(ind.data())) {
+							CursorY = j;
+						}
 					}
 					else if (j > -1)
 					{
-						if (PlayingMode)
-						{
-							//double ScrollVal = ((double)CursorY * (double)TrackLength) / ((double)TextSize * 2.0);
-							double ScrollVal = ((double)CursorY / (double)TrackLength) * floor((GetWindowContentRegionMax().y - GetWindowContentRegionMin().y)/2);
-							SetScrollY(ScrollVal);
-						}
 						//Channel
-						if (BeginTable("RowView", 5, 0))
+						if (BeginTable("RowView", 5, TABLE_FLAGS))
 						{
 							TableNextColumn();
 
@@ -925,8 +932,8 @@ void Tracker::Channel_View()
 			}
 			EndTable();//keeps crashing here when it minimises, not a clue why other than EndTable seems to be executed too many times?
 		}
-		End();
 	}
+	End();
 }
 
 void Tracker::Samples()
@@ -965,8 +972,9 @@ void Tracker::Samples()
 		{
 			BeginChild("SampleList", ImVec2(GetWindowWidth() - InstXPadding, GetWindowHeight() - InstYPadding), true, UNIVERSAL_WINDOW_FLAGS);
 			BeginTable("SampleTable", 1, TABLE_FLAGS, ImVec2(GetWindowWidth() * 0.75, 24), 24);
-			for (char i = 0; i < samples.size(); i++)
+			for (int i = 0; i < samples.size(); i++)
 			{
+				IDOffset++;
 				PushID(IDOffset);
 				Text(to_string(i).data());
 				SameLine();
@@ -986,7 +994,6 @@ void Tracker::Samples()
 				}
 				TableNextColumn();
 				PopID();
-				IDOffset++;
 			}
 			EndTable();
 			EndChild();
@@ -1135,7 +1142,6 @@ void Tracker::Author_View()
 		InputInt("##Base tempo", &BaseTempo,1, 1);
 		Text("Speed");
 		InputInt("##Speed 1", &Speed1, 1, 31);
-		NewLine();
 		Text("Tempo divider");
 		InputInt("##Tempo divider", &TempoDivider,1,1);
 		if (BaseTempo < 1)
@@ -1154,6 +1160,11 @@ void Tracker::Author_View()
 		temp += to_string(BaseTempo / TempoDivider);
 		Text(temp.data());
 		NewLine();
+		Text("Track Length");
+		InputInt("##Track Length", &TrackLength, 1, 16);
+		if (TrackLength > 256) TrackLength = 256;
+		if (TrackLength < 1) TrackLength = 1;
+		NewLine();
 		Text("Highlight 1");
 		InputInt("##Highlight 1", &Highlight1, 1, 1);
 		Text("Highlight 2");
@@ -1170,7 +1181,7 @@ void Tracker::Author_View()
 		Text("Author");
 		InputText("##Author", (char*)Authbuf.data(), 1024);
 		Text("Desc");
-		InputTextMultiline("##Desc", (char*)Descbuf.data(), 1024,ImVec2(GetWindowWidth() * 0.65, GetWindowHeight() * 0.65));
+		InputTextMultiline("##Desc", (char*)Descbuf.data(), 1024,ImVec2(GetWindowWidth() * 0.65, GetWindowHeight() * 0.6));
 		End();
 	}
 	else
@@ -1391,6 +1402,8 @@ void Tracker::UpdateRows()
 	{
 		Channels[i].TickCheck(CursorY % TrackLength, inst, samples);
 	}
+
+	cout << "\nCurrent Value: " << ((double)CursorY - 1.0/(24.0 / (double)TrackLength) / (double)TrackLength) * ((TextSize + GetStyle().CellPadding.y * 2) * TrackLength);
 }
 
 void Tracker::ChannelInput(int CurPos, int x, int y)
