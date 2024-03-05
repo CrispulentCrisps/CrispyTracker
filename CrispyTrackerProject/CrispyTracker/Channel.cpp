@@ -163,8 +163,15 @@ void Channel::UpdateChannel(vector<Instrument>& inst, vector<Sample>& samples)
 	int CurrentSample = inst[CurrentInstrument].SampleIndex;//Dictates the current sample [Here to make the code look cleaner]
 
 	if (CurrentInstrument > 0 && samples[CurrentSample].SampleData.size() > 0)
-	{
-		if (!samples[CurrentSample].Loop)
+	{/*
+		if (samples[CurrentSample].Loop)
+		{
+			if (CurrentSamplePointIndex >= samples[CurrentSample].LoopEnd)
+			{
+				CurrentSamplePointIndex = samples[CurrentSample].LoopStart;
+			}
+		}
+		else if (!samples[CurrentSample].Loop)
 		{
 			if (CurrentSamplePointIndex >= samples[CurrentSample].SampleData.size())
 			{
@@ -174,7 +181,7 @@ void Channel::UpdateChannel(vector<Instrument>& inst, vector<Sample>& samples)
 				cout << "Current Sample - " << CurrentSample;
 			}
 		}
-		//Vector hell
+		*/
 		AudioDataL = Resample(samples[CurrentSample].SampleData);
 		AudioDataR = Resample(samples[CurrentSample].SampleData);
 	}

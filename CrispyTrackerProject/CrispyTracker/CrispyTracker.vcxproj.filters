@@ -111,6 +111,9 @@
     <ClCompile Include="Libraries\implot-0.16\implot_demo.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
+    <ClCompile Include="SettingsManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Channel.h">
@@ -220,6 +223,9 @@
     </ClInclude>
     <ClInclude Include="Libraries\implot-0.16\implot_internal.h">
       <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="SettingsManager.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

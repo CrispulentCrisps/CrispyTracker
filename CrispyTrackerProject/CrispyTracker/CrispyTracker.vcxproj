@@ -96,6 +96,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)Libraries\SDL2\include;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\include;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\include;$(ProjectDir)Libraries\opengl;$(ProjectDir)Libraries;$(ProjectDir)Libraries\emu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>Default</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -185,6 +186,7 @@
     <ClCompile Include="Libraries\implot-0.16\implot_items.cpp" />
     <ClCompile Include="Patterns.cpp" />
     <ClCompile Include="Sample.cpp" />
+    <ClCompile Include="SettingsManager.cpp" />
     <ClCompile Include="SnesAPUHandler.cpp" />
     <ClCompile Include="SoundGenerator.cpp" />
     <ClCompile Include="Source.cpp" />
@@ -224,6 +226,7 @@
     <ClInclude Include="Patterns.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Sample.h" />
+    <ClInclude Include="SettingsManager.h" />
     <ClInclude Include="SnesAPUHandler.h" />
     <ClInclude Include="SoundGenerator.h" />
     <ClInclude Include="Tracker.h" />

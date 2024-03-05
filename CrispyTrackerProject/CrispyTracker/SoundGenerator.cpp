@@ -38,19 +38,20 @@ void SoundGenerator::Update(float ElapsedTime, Channel* ch, vector<Sample>& Samp
 		if (ch[i].PlayingNote)
 		{
 			int ChannelNote = inst[ch[i].CurrentInstrument].SampleIndex;
-			//cout << "\nPhase Accum: " << Phase[i] << " - Channel: " << i;
-			if (ch[i].CurrentSamplePointIndex + (float)pow(2., ch[i].CurrentPlayedNote / 12.) < Samples[ChannelNote].SampleData.size())
+			
+			if (Samples[ChannelNote].Loop)
 			{
-				ch[i].CurrentSamplePointIndex += (float)pow(2., ch[i].CurrentPlayedNote / 12.);
+				if (ch[i].CurrentSamplePointIndex >= Samples[ChannelNote].LoopEnd)
+				{
+					ch[i].CurrentSamplePointIndex = Samples[inst[ch[i].CurrentInstrument].SampleIndex].LoopStart;
+				}
 			}
-			else if (ch[i].CurrentSamplePointIndex >= Samples[ChannelNote].SampleData.size() && Samples[ChannelNote].Loop)
-			{
-				ch[i].CurrentSamplePointIndex = Samples[inst[ch[i].CurrentInstrument].SampleIndex].LoopStart;
-			}
-			else
+			else if (ch[i].CurrentSamplePointIndex >= Samples[ChannelNote].SampleData.size())
 			{
 				ch[i].CurrentSamplePointIndex = Samples[ChannelNote].SampleData.size();
 			}
+			//cout << "\nPhase Accum: " << Phase[i] << " - Channel: " << i;
+			ch[i].CurrentSamplePointIndex += (float)pow(2., ch[i].CurrentPlayedNote / 12.);
 		}
 		else
 		{

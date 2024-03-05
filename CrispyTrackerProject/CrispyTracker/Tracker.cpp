@@ -265,9 +265,9 @@ void Tracker::MenuBar()
 
 	if (BeginMenu("Settings"))
 	{
-		if (Selectable("Echo Settings"))
+		if (ImGui::MenuItem("Export SPC"))
 		{
-			ShowEcho = !ShowEcho;
+			ShowSettings = !ShowSettings;
 		}
 		ImGui::EndMenu();
 	}
@@ -279,6 +279,16 @@ void Tracker::MenuBar()
 		if (ImGui::MenuItem("Credits")) ShowCredits = true;
 		ImGui::EndMenu();
 	}
+	
+	if (BeginMenu("SNES"))
+	{
+		if (Selectable("Echo Settings"))
+		{
+			ShowEcho = !ShowEcho;
+		}
+		ImGui::EndMenu();
+	}
+	
 	Text("	|	%.3f ms/frame (%.1f FPS)", 1000.0 / (ImGui::GetIO().Framerate), (ImGui::GetIO().Framerate));
 	Text(VERSION.data());
 	EndMainMenuBar();
@@ -318,7 +328,7 @@ void Tracker::Patterns_View()
 	{
 		Columns(2);
 
-		if (BeginTable("PatternsTable", 9, TABLE_FLAGS)){
+		if (BeginTable("PatternsTable", 9, TABLE_FLAGS)) {
 			for (int y = 0; y < SongLength; y++)
 			{
 				TableNextRow();
@@ -364,79 +374,80 @@ void Tracker::Patterns_View()
 					TableNextColumn();
 				}
 			}
-		EndTable();
-	}
+			EndTable();
 
-		NextColumn();
-		PushFont(Largefont);
-		if (Button("+", ImVec2(TextSizeLarge, TextSizeLarge)))
-		{
-			for (int i = 0; i < 8; i++)
-			{
-				Patterns pat;
-				pat = DefaultPattern;
-				pat.Index = Maxindex + i;
-				//cout << "\n SavedRows: " << pat.SavedRows.size();
-				patterns[i].push_back(pat);
-				StoragePatterns.push_back(pat);
-			}
-			Maxindex += 8;
-			SongLength++;	
-		}
-		if (IsItemHovered())
-		{
-			PopFont();
-			PushFont(font);
-			SetTooltip("Add a new pattern");
-			PopFont();
+
+			NextColumn();
 			PushFont(Largefont);
-		}
-		if (Button("-", ImVec2(TextSizeLarge, TextSizeLarge)))
-		{
-			if (SongLength > 1)
+			if (Button("+", ImVec2(TextSizeLarge, TextSizeLarge)))
 			{
-				SelectedPattern >= SongLength ? SelectedPattern-- : SelectedPattern = SelectedPattern;
 				for (int i = 0; i < 8; i++)
 				{
-					patterns[i].erase(patterns[i].begin() + SelectedPattern);
+					Patterns pat;
+					pat = DefaultPattern;
+					pat.Index = Maxindex + i;
+					//cout << "\n SavedRows: " << pat.SavedRows.size();
+					patterns[i].push_back(pat);
+					StoragePatterns.push_back(pat);
 				}
-				SongLength--;
+				Maxindex += 8;
+				SongLength++;
 			}
-		}
-		if (IsItemHovered())
-		{
-			PopFont();
-			PushFont(font);
-			SetTooltip("Delete a new pattern");
-			PopFont();
-			PushFont(Largefont);
-		}
-		if (Button("=", ImVec2(TextSizeLarge, TextSizeLarge)))
-		{
-			for (int i = 0; i < 8; i++)
+			if (IsItemHovered())
 			{
-				Patterns pat;
-				pat = patterns[i][SelectedPattern];
-				//cout << "\n SavedRows: " << pat.SavedRows.size();
-				patterns[i].push_back(pat);
+				PopFont();
+				PushFont(font);
+				SetTooltip("Add a new pattern");
+				PopFont();
+				PushFont(Largefont);
 			}
-			Maxindex += 8;
-			SongLength++;
+			if (Button("-", ImVec2(TextSizeLarge, TextSizeLarge)))
+			{
+				if (SongLength > 1)
+				{
+					SelectedPattern >= SongLength ? SelectedPattern-- : SelectedPattern = SelectedPattern;
+					for (int i = 0; i < 8; i++)
+					{
+						patterns[i].erase(patterns[i].begin() + SelectedPattern);
+					}
+					SongLength--;
+				}
+			}
+			if (IsItemHovered())
+			{
+				PopFont();
+				PushFont(font);
+				SetTooltip("Delete a new pattern");
+				PopFont();
+				PushFont(Largefont);
+			}
+			if (Button("=", ImVec2(TextSizeLarge, TextSizeLarge)))
+			{
+				for (int i = 0; i < 8; i++)
+				{
+					Patterns pat;
+					pat = patterns[i][SelectedPattern];
+					//cout << "\n SavedRows: " << pat.SavedRows.size();
+					patterns[i].push_back(pat);
+				}
+				Maxindex += 8;
+				SongLength++;
+			}
+			if (IsItemHovered())
+			{
+				PopFont();
+				PushFont(font);
+				SetTooltip("Copy a selected pattern");
+				PopFont();
+				PushFont(Largefont);
+			}
+			PopFont();
+			End();
 		}
-		if (IsItemHovered())
+		else
 		{
-			PopFont();
-			PushFont(font);
-			SetTooltip("Copy a selected pattern");
-			PopFont();
-			PushFont(Largefont);
+			End();
 		}
-		PopFont();
-		End();
-	}
-	else
-	{
-		End();
 	}
 }
 
@@ -478,7 +489,7 @@ void Tracker::Instruments()
 		//Instrument side bar
 		if (inst.size() > 0)
 		{
-			BeginChild("List", ImVec2(GetWindowWidth() - InstXPadding, GetWindowHeight() - InstYPadding), true, UNIVERSAL_WINDOW_FLAGS);
+			//BeginChild("List", ImVec2(GetWindowWidth() - InstXPadding, GetWindowHeight() - InstYPadding), true, UNIVERSAL_WINDOW_FLAGS);
 			if (BeginTable("InstList", 1, TABLE_FLAGS, ImVec2(GetWindowWidth() * 0.75, 24), 24))
 			{
 				for (int i = 0; i < inst.size(); i++)
@@ -505,7 +516,7 @@ void Tracker::Instruments()
 				}
 				EndTable();
 			}
-			EndChild();
+			//EndChild();
 		}
 		End();
 	}
@@ -729,13 +740,17 @@ void Tracker::Channel_View()
 	GetStyle().CellPadding.x = 4;
 	if (Begin("Channels"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-
 		if (PlayingMode)
 		{
-			//God this was painful
-			double ScrollVal = ((double)CursorY / (double)TrackLength) - (24.0 / TrackLength) * ((TextSize + GetStyle().CellPadding.y * 2) * TrackLength);
+			/* calc steps
+				* Normalise to 0-1
+				* Do something to include the offset for the scroll so the bar is scrolling down when it reaches the middle	
+				* Scale to screen size
+				* Remove padding from scroll
+			*/
+			double ScrollVal = (((double)CursorY / (double)TrackLength)) * ((TextSize + GetStyle().CellPadding.y * 2) * TrackLength) - (GetWindowHeight()/3.0);
 			SetScrollY(ScrollVal);
-		}
+		}	
 		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*.9 + (TextSize*8), 0)));
 		{
 			string ind;
@@ -970,7 +985,7 @@ void Tracker::Samples()
 
 		if (samples.size() > 0)	
 		{
-			BeginChild("SampleList", ImVec2(GetWindowWidth() - InstXPadding, GetWindowHeight() - InstYPadding), true, UNIVERSAL_WINDOW_FLAGS);
+			//BeginChild("SampleList", ImVec2(GetWindowWidth() - InstXPadding, GetWindowHeight() - InstYPadding), true, UNIVERSAL_WINDOW_FLAGS);
 			BeginTable("SampleTable", 1, TABLE_FLAGS, ImVec2(GetWindowWidth() * 0.75, 24), 24);
 			for (int i = 0; i < samples.size(); i++)
 			{
@@ -996,7 +1011,7 @@ void Tracker::Samples()
 				PopID();
 			}
 			EndTable();
-			EndChild();
+			//EndChild();
 		}
 		End();
 	}
@@ -1017,7 +1032,7 @@ void Tracker::Sample_View()
 			{
 				SelectedSample = samples.size() - 1;
 			}
-			BeginChild("SampleTable",ImVec2(GetWindowWidth()*0.95, GetWindowHeight() * 0.85),UNIVERSAL_WINDOW_FLAGS);
+			//BeginChild("SampleTable",ImVec2(GetWindowWidth()*0.95, GetWindowHeight() * 0.85),UNIVERSAL_WINDOW_FLAGS);
 			NextColumn();
 			InputText("Sample Name", (char*)samples[SelectedSample].SampleName.data(), 2048);
 			InputInt("Playing HZ", &samples[SelectedSample].SampleRate);
@@ -1092,7 +1107,7 @@ void Tracker::Sample_View()
 				ShowSample = false;
 			}
 			
-			EndChild();
+			//EndChild();
 			End();
 		}
 		else
@@ -1106,12 +1121,13 @@ void Tracker::Settings_View()
 {
 	if (ShowSettings)
 	{
-		if (Begin("SettingsView"),true, UNIVERSAL_WINDOW_FLAGS)
+		if (Begin("Settings edit"),true, UNIVERSAL_WINDOW_FLAGS)
 		{
-			End();
-		}
-		else
-		{
+			if (BeginTabBar("Appearance"))
+			{
+
+				EndTabBar();
+			}
 			End();
 		}
 	}
@@ -1340,13 +1356,12 @@ void Tracker::SetupInstr()
 
 void Tracker::RunTracker()
 {
-
 	//cout << "\n Audio Buff Queued: " << SDL_GetQueuedAudioSize(dev);
 	if (SDL_GetQueuedAudioSize(dev) < AUDIO_BUFFER * 8)
 	{
 		for (int x = 0; x < AUDIO_BUFFER; x++)
 		{
-			SG.P++;
+			//SG.P++;
 			for (int i = 0; i < 8; i++)
 			{
 				Channels[i].UpdateChannel(inst, samples);
@@ -1403,7 +1418,7 @@ void Tracker::UpdateRows()
 		Channels[i].TickCheck(CursorY % TrackLength, inst, samples);
 	}
 
-	cout << "\nCurrent Value: " << ((double)CursorY - 1.0/(24.0 / (double)TrackLength) / (double)TrackLength) * ((TextSize + GetStyle().CellPadding.y * 2) * TrackLength);
+	//cout << "\nCurrent Value: " << ((double)CursorY - 1.0/(24.0 / (double)TrackLength) / (double)TrackLength) * ((TextSize + GetStyle().CellPadding.y * 2) * TrackLength);
 }
 
 void Tracker::ChannelInput(int CurPos, int x, int y)
