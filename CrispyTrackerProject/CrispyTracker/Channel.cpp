@@ -12,7 +12,21 @@ string Channel::NoteView(int index)
 	}
 	else
 	{
-		return NoteNames[Rows[index].note%12] + to_string(Rows[index].octave);
+		switch (NoteType)
+		{
+		case 0://Sharp
+			return NoteNames[Rows[index].note % 12] + to_string(Rows[index].octave);
+			break;
+		case 1://Flat
+			return NoteNames_FL[Rows[index].note % 12] + to_string(Rows[index].octave);
+			break;
+		case 2://German
+			return NoteNames_GR[Rows[index].note % 12] + to_string(Rows[index].octave);
+			break;
+		default:
+			return NoteNames[Rows[index].note % 12] + to_string(Rows[index].octave);
+			break;
+		}
 	}
 }
 

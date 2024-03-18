@@ -25,6 +25,7 @@
 #include <vector>
 
 #pragma once
+
 class SoundGenerator
 {
 public:

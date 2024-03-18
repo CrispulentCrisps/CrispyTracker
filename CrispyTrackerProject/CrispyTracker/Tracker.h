@@ -3,6 +3,7 @@
 
 #include <SDL_keyboard.h>
 
+#include "SettingsManager.h"
 #include "Patterns.h"
 #include "SoundGenerator.h"
 #include "SnesAPUHandler.h"
@@ -12,7 +13,6 @@
 #include "Libraries/imgui/backends/imgui_impl_glfw.h"
 #include "Libraries/glfw-3.3.8/glfw-3.3.8/include/GLFW/glfw3native.h"
 #include "Libraries/imgui/imgui.h"
-#include "Libraries/imgui/backends/imgui_impl_sdl2.h"
 #include "Libraries/imgui/backends/imgui_impl_opengl3.h"
 #include "Libraries/ImGuiFileDialog-0.6.5/ImGuiFileDialog.h"
 #include "Libraries/libsndfile/include/sndfile.h"
@@ -36,9 +36,11 @@ public:
 	SnesAPUHandler Emu_APU;
 
 	int UNIVERSAL_WINDOW_FLAGS = ImGuiWindowFlags_AlwaysAutoResize;
+	int TAB_FLAGS = ImGuiTabBarFlags_NoCloseWithMiddleMouseButton;
+	int TAB_ITEM_FLAGS = ImGuiTabItemFlags_NoReorder;
 	int TABLE_FLAGS = ImGuiTableFlags_SizingStretchProp;
 	int IMPLOT_FLAGS = ImPlotFlags_NoFrame | ImPlotFlags_Crosshairs;
-	int TRACKER_AUDIO_BUFFER = 1024;
+	int TRACKER_AUDIO_BUFFER = AUDIO_BUFFER;
 	int SPS = 41000;
 	string VERSION = "version: 0.4";
 	int AUDIO_FORMATS = SF_FORMAT_WAV | SF_FORMAT_OGG | SF_FORMAT_MPEG_LAYER_III;
@@ -51,13 +53,20 @@ public:
 	bool PlayingMode = false;
 	float TickTimer = 0;//For when the tracker is running
 	int IDOffset = 0;
-	
+	int FPS = 144;
+	int MAX_FPS = 360;
+
+	//Screen dimension constants
+	int SCREEN_WIDTH = 1920;
+	int SCREEN_HEIGHT = 1080;
+
 	GLFWwindow* window = NULL;
 	ImGuiContext* cont = NULL;
 	ImGuiIO io;
 	Channel Channels[8];
 	SoundGenerator SG;
 	vector<Patterns> pattern;
+	SettingsManager SManager;
 	int MAX_VALUE = 256;
 
 	int NoteInput[24] = 
@@ -92,9 +101,11 @@ public:
 	int Octave = 4;
 	int ChannelColumn = 0, ChannelRow = 0;
 	bool PlayingTrack;
+	bool MoveOnDelete = false;
+	bool MoveByStep = false;
 
-	const int TextSize = 12;
-	const int TextSizeLarge = TextSize*2;
+	int TextSize = 12;
+	int TextSizeLarge = TextSize*2;
 	int BaseTempo = 150;
 	int Speed1 = 6;
 	int TickCounter = 0;
@@ -177,6 +188,8 @@ public:
 	int SongLength = 1;
 	int Maxindex = 8;
 	
+	double ScrollValue();
+
 	//Functions
 	void Initialise(int StartLength);
 	void Run();
@@ -207,9 +220,11 @@ public:
 	void UpdatePatternIndex(int x, int y);
 	void UpdateAllPatterns();
 	void ChangePatternData(int x, int y);
+	void UpdateSettings();
+	void ResetSettings();
 
-	string Authbuf;
-	string Descbuf;
+	string Authbuf = " ";
+	string Descbuf = " ";
 	string FilePath = " ";
 	string FileName = " ";
 	string ADSRNames[4] = {
@@ -242,8 +257,12 @@ public:
 	ImVec4 ReleaseColour = ImVec4(.77, .33, .33, 1);
 
 
+	ImColor Graph_Colour_Line1 = IM_COL32(99, 99, 196, 255);
+	ImColor Graph_Colour_Line2 = IM_COL32(66, 66, 128, 255);
+	ImColor Graph_Colour_Line3 = IM_COL32(33, 33, 64, 255);
+	
 	int PlotLineWeight = 1;
-	ImU32 colorDataRGB[3] = { Editing_H2Col, Editing_H1Col, Default };
+	ImU32 colorDataRGB[3] = { Graph_Colour_Line1, Graph_Colour_Line2, Graph_Colour_Line3 };
 	int PlotColours = 0;
 
 	ImAxis x;

@@ -103,6 +103,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>SDL2.lib;SDL2main.lib;sndfile.lib;glfw3_mt.lib;glfw3dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)Libraries\SDL2\lib\x64;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\imgui\backends;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\lib;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\lib-vc2022;$(ProjectDir)Libraries\opengl;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -122,6 +123,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>SDL2.lib;SDL2main.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)\Libraries\SDL2\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -139,6 +141,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>SDL2.lib;SDL2main.lib;sndfile.lib;glfw3_mt.lib;glfw3dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)Libraries\SDL2\lib\x64;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\imgui\backends;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\lib;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\lib-vc2022;$(ProjectDir)Libraries\opengl;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -158,10 +161,10 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>SDL2.lib;SDL2main.lib;sndfile.lib;glfw3_mt.lib;glfw3dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)Libraries\SDL2\lib\x64;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\imgui\backends;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\lib;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\lib-vc2022;$(ProjectDir)Libraries\opengl;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdl2.cpp" />
     <ClCompile Include="BRRFile.cpp" />
     <ClCompile Include="Channel.cpp" />
     <ClCompile Include="Effects.cpp" />
@@ -193,7 +196,6 @@
     <ClCompile Include="Tracker.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\..\..\Downloads\imgui-docking\imgui-docking\backends\imgui_impl_sdl2.h" />
     <ClInclude Include="BRRFile.h" />
     <ClInclude Include="Channel.h" />
     <ClInclude Include="Effects.h" />
@@ -210,6 +212,7 @@
     <ClInclude Include="Libraries\emu\SPC_Filter.h" />
     <ClInclude Include="Libraries\glfw-3.3.8\glfw-3.3.8\include\GLFW\glfw3.h" />
     <ClInclude Include="Libraries\glfw-3.3.8\glfw-3.3.8\include\GLFW\glfw3native.h" />
+    <ClInclude Include="Libraries\imgui-1.90.4\imgui-1.90.4\imconfig.h" />
     <ClInclude Include="Libraries\ImGuiFileDialog-0.6.5\ImGuiFileDialog.h" />
     <ClInclude Include="Libraries\ImGuiFileDialog-0.6.5\ImGuiFileDialogConfig.h" />
     <ClInclude Include="Libraries\imgui\backends\imgui_impl_glfw.h" />

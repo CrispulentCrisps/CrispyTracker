@@ -4,10 +4,6 @@
 //Universal variables here
 bool running = true;
 
-//Screen dimension constants
-int SCREEN_WIDTH = 1920;
-int SCREEN_HEIGHT = 1080;
-
 //The surface contained by the window
 SDL_Surface* screenSurface = NULL;
 
@@ -21,6 +17,11 @@ Tracker::Tracker()
 Tracker::~Tracker()
 {
 
+}
+
+double Tracker::ScrollValue()
+{
+	return (((double)CursorY / (double)TrackLength)) * ((TextSize + GetStyle().CellPadding.y * 2) * TrackLength) - (GetWindowHeight() / 3.0);;
 }
 
 void Tracker::Initialise(int StartLength)
@@ -39,6 +40,10 @@ void Tracker::Initialise(int StartLength)
 	}
 
 	PlotColours = ImPlot::AddColormap("RGBColors", colorDataRGB, 32);
+
+	SManager.CreateDefaultSettings();
+	SManager.CheckSettingsFolder();
+	UpdateSettings();
 }
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -102,11 +107,11 @@ void Tracker::Run()
 	style.FrameBorderSize = 0.4f;
 	style.WindowRounding = 1.5f;
 	style.FrameRounding = 1.5f;
-	style.Colors[ImGuiCol_WindowBg] = Default;
+	//style.Colors[ImGuiCol_WindowBg] = Default;
 	io = GetIO();
 	io.DisplaySize.x = SCREEN_WIDTH;
 	io.DisplaySize.y = SCREEN_HEIGHT;
-	io.DeltaTime = 1.f / 60.f;	
+	io.DeltaTime = 1.f / FPS;
 	GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
 	if (window == NULL)
@@ -129,17 +134,17 @@ void Tracker::Run()
 		have.freq = AUDIO_RATE;//Coming from the SoundGenerator class
 		have.format = AUDIO_S16;
 		have.channels = 2;
-		have.samples = AUDIO_BUFFER;//Coming from the SoundGenerator class
+		have.samples = TRACKER_AUDIO_BUFFER;//Coming from the SoundGenerator class
 		have.userdata = &SG;
 
 		SDL_memset(&want, 0, sizeof(want)); /* or SDL_zero(want) */
 		want.freq = AUDIO_RATE;//Coming from the SoundGenerator class
 		want.format = AUDIO_S16;
 		want.channels = 2;
-		want.samples = AUDIO_BUFFER;//Coming from the SoundGenerator class
+		want.samples = TRACKER_AUDIO_BUFFER;//Coming from the SoundGenerator class
 		want.callback = NULL;
 		want.userdata = &SG;
-		want.silence = AUDIO_BUFFER;
+		want.silence = TRACKER_AUDIO_BUFFER;
 
 		dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
 		const char* err = SDL_GetError();
@@ -172,7 +177,8 @@ void Tracker::Run()
 		}
 		CheckInput();
 	}
-
+	SManager.CloseSettingsStream();
+	SG.DEBUG_Close_File();
 	//Destroy window
 	ImGui::DestroyContext();
 	ImPlot::DestroyContext();
@@ -181,7 +187,6 @@ void Tracker::Run()
 	ImGui_ImplOpenGL3_Shutdown();
 	glfwTerminate();
 	SDL_Quit();
-	SG.DEBUG_Close_File();
 }
 
 void Tracker::CheckInput()
@@ -265,7 +270,7 @@ void Tracker::MenuBar()
 
 	if (BeginMenu("Settings"))
 	{
-		if (ImGui::MenuItem("Export SPC"))
+		if (ImGui::MenuItem("Show Settings"))
 		{
 			ShowSettings = !ShowSettings;
 		}
@@ -748,8 +753,7 @@ void Tracker::Channel_View()
 				* Scale to screen size
 				* Remove padding from scroll
 			*/
-			double ScrollVal = (((double)CursorY / (double)TrackLength)) * ((TextSize + GetStyle().CellPadding.y * 2) * TrackLength) - (GetWindowHeight()/3.0);
-			SetScrollY(ScrollVal);
+			SetScrollY(ScrollValue());
 		}	
 		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*.9 + (TextSize*8), 0)));
 		{
@@ -850,7 +854,6 @@ void Tracker::Channel_View()
 
 							PushID(IDOffset + i + (j * 40));
 							//Cursor highlighting
-
 							if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
 							{
 								TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
@@ -1121,14 +1124,132 @@ void Tracker::Settings_View()
 {
 	if (ShowSettings)
 	{
-		if (Begin("Settings edit"),true, UNIVERSAL_WINDOW_FLAGS)
+		if (Begin("Settings"), &ShowSettings, UNIVERSAL_WINDOW_FLAGS)
 		{
-			if (BeginTabBar("Appearance"))
+			string ResolutionNames[4] = { "3840x2160", "2560x1440", "1920x1080", "1280x720" };
+			string BufferNames[5] = { "512", "1024", "2048", "4096", "8192" };
+			string NotationNames[3] = { "Sharp", "Flat", "German"};
+
+			if (BeginTabBar("TestTab"))
 			{
+				if (BeginTabItem("Appearance")) 
+				{
+					Text("Screen Resolutions");
+					
+					if (BeginCombo("##Screen Resolutions", ResolutionNames[SManager.CustomData.Res].data()))
+					{
+						for (int i = 0; i < 4; i++)
+						{
+							if (Selectable(ResolutionNames[i].c_str(), i == SManager.CustomData.Res))
+							{
+								switch (i)
+								{
+								case 0:
+									SManager.CustomData.Res = SManager.Res_3840x2160;
+									break;
+								case 1:
+									SManager.CustomData.Res = SManager.Res_2560x1440;
+									break;
+								case 2:
+									SManager.CustomData.Res = SManager.Res_1920x1080;
+									break;
+								case 3:
+									SManager.CustomData.Res = SManager.Res_1280x720;
+									break;
+								}
+							}
+						}
+						EndCombo();
+					}
+					
+					Text("Notation Style");
+
+					if (BeginCombo("##NotationStyle", NotationNames[SManager.CustomData.NStyle].data()))
+					{
+						for (int i = 0; i < 3; i++)
+						{
+							if (Selectable(NotationNames[i].c_str(), i == SManager.CustomData.NStyle))
+							{
+								switch (i)
+								{
+								case 0:
+									SManager.CustomData.NStyle = SManager.SharpStyle;
+									break;
+								case 1:
+									SManager.CustomData.NStyle = SManager.FlatStyle;
+									break;
+								case 2:
+									SManager.CustomData.NStyle = SManager.GermanStyle;
+									break;
+								}
+							}
+						}
+						EndCombo();
+					}
+					EndTabItem();
+
+				}
+
+				if (BeginTabItem("Technical"))
+				{
+					Text("FPS");
+					InputInt("##FPS", &FPS, 1, 1);
+					if (FPS > MAX_FPS) FPS = MAX_FPS; else if (FPS < 1) FPS = 1;
+
+					Text("Audio Buffer Size");
+
+					if (BeginCombo("##Buffer", BufferNames[SManager.CustomData.Buf].data()))
+					{
+						for (int i = 0; i < 5; i++)
+						{
+							if (Selectable(BufferNames[i].c_str(), i == SManager.CustomData.Buf))
+							{
+								switch (i)
+								{
+								case 0:
+									SManager.CustomData.Buf = SManager.Buf_512;
+									break;
+								case 1:
+									SManager.CustomData.Buf = SManager.Buf_1024;
+									break;
+								case 2:
+									SManager.CustomData.Buf = SManager.Buf_2048;
+									break;
+								case 3:
+									SManager.CustomData.Buf = SManager.Buf_4096;
+									break;
+								case 4:
+									SManager.CustomData.Buf = SManager.Buf_8192;
+									break;
+								}
+							}
+						}
+						EndCombo();
+					}
+
+					EndTabItem();
+				}
 
 				EndTabBar();
+
+				SetCursorPosY(GetWindowHeight() - (TextSize + GetStyle().FramePadding.y) * 2);
+
+				SetCursorPosX(GetWindowWidth() - (TextSize + GetStyle().FramePadding.x + 18) * 2);
+				if (Button("Apply"))
+				{
+					UpdateSettings();
+				}
+
+				SameLine();
+				SetCursorPosX(GetWindowWidth() - (TextSize + GetStyle().FramePadding.x + 18) * 4);
+				if (Button("Cancel"))
+				{
+					ResetSettings();
+					ShowSettings = false;
+				}
 			}
 			End();
+
 		}
 	}
 }
@@ -1357,9 +1478,9 @@ void Tracker::SetupInstr()
 void Tracker::RunTracker()
 {
 	//cout << "\n Audio Buff Queued: " << SDL_GetQueuedAudioSize(dev);
-	if (SDL_GetQueuedAudioSize(dev) < AUDIO_BUFFER * 8)
+	if (SDL_GetQueuedAudioSize(dev) < TRACKER_AUDIO_BUFFER * 8)
 	{
-		for (int x = 0; x < AUDIO_BUFFER; x++)
+		for (int x = 0; x < TRACKER_AUDIO_BUFFER; x++)
 		{
 			//SG.P++;
 			for (int i = 0; i < 8; i++)
@@ -1545,12 +1666,26 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 
 			if (Currentkey == GLFW_KEY_DOWN)
 			{
-				CursorY++;
+				if (MoveByStep)
+				{
+					CursorY += Step;
+				}
+				else
+				{
+					CursorY++;
+				}
 				BoxSelected = false;
 			}
 			else if (Currentkey == GLFW_KEY_UP)
 			{
-				CursorY--;
+				if (MoveByStep)
+				{
+					CursorY -= Step;
+				}
+				else
+				{
+					CursorY--;
+				}
 				BoxSelected = false;
 			}
 			else if (Currentkey == GLFW_KEY_SPACE)
@@ -1618,7 +1753,14 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 						else if (Currentkey == GLFW_KEY_DELETE)
 						{
 							Channels[x].Rows[y].note = MAX_VALUE;
-							CursorY += Step;
+							if (MoveOnDelete)
+							{
+								CursorY += Step;
+							}
+							else
+							{
+								CursorY++;
+							}
 							ChangePatternData(x, y);
 							break;
 						}
@@ -1917,4 +2059,34 @@ void Tracker::ChangePatternData(int x, int y)
 	StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[y].volume = Channels[x].Rows[y].volume;
 	StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[y].effect = Channels[x].Rows[y].effect;
 	StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[y].effectvalue = Channels[x].Rows[y].effectvalue;
+}
+
+void Tracker::UpdateSettings()
+{
+	for (int i = 0; i < 8; i++)
+	{
+		Channels[i].NoteType = SManager.CustomData.NStyle;
+		SManager.SetNotation(&Channels[i].NoteType);
+	}
+	SManager.SetBuffer(&TRACKER_AUDIO_BUFFER);
+	SManager.SetResolution(&SCREEN_WIDTH, &SCREEN_HEIGHT);
+	FPS = SManager.CustomData.FPS;
+	TextSize = SManager.CustomData.FontSize;
+	TextSizeLarge = TextSize*2;
+	TrackLength = SManager.CustomData.DefaultTrackSize;
+	MoveOnDelete = SManager.CustomData.DeleteMovesAtStepCount;
+	MoveByStep = SManager.CustomData.CursorMovesAtStepCount;
+}
+
+void Tracker::ResetSettings()
+{
+	SManager.CustomData.Buf = SManager.DefaultData.Buf;
+	SManager.CustomData.NStyle = SManager.DefaultData.NStyle;
+	SManager.CustomData.CursorMovesAtStepCount = SManager.DefaultData.CursorMovesAtStepCount;
+	SManager.CustomData.DefaultTrackSize = SManager.DefaultData.DefaultTrackSize;
+	SManager.CustomData.DeleteMovesAtStepCount = SManager.DefaultData.DeleteMovesAtStepCount;
+	SManager.CustomData.FontSize = SManager.DefaultData.FontSize;
+	SManager.CustomData.FPS = SManager.DefaultData.FPS;
+	SManager.CustomData.Res = SManager.DefaultData.Res;
+	UpdateSettings();
 }

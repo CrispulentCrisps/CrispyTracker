@@ -18,24 +18,29 @@ class Channel
 	float sinc(float x) { if (x == 0) return 1; else return sin(M_PI * x) / (M_PI * x); };
 public:
 	int MAX_VALUE = 256;
+	
+	//Sharp style notation
 	string NoteNames[12] = {
 	"C-", "C#", "D-", "D#",
 	"E-", "F-", "F#", "G-",
 	"G#", "A-", "A#", "B-",
 	};
 
+	//Microtonal notation
 	string NoteNames_MT[12] = {
 	"c-", "c#", "d-", "d#",
 	"e-", "F-", "f#", "g-",
 	"g#", "a-", "a#", "b-",
 	};
 
+	//German style notation
 	string NoteNames_GR[12] = {
 	"C-", "C#", "D-", "D#",	
 	"E-", "F-", "F#", "G-",
 	"G#", "A-", "B-", "H-",
 	};
 
+	//Flat style notation
 	string NoteNames_FL[12] = {
 	"C-", "Db", "D-", "Eb",
 	"E-", "F-", "Gb", "G-",
@@ -74,6 +79,7 @@ public:
 	//Needs to be float for the Lanczos resampling
 	float CurrentSamplePointIndex = 0;
 	float CurrentPlayedNote = 0;
+	int NoteType = 0;//Specifically for notation styling
 
 	int CurrentInstrument = 0;
 
