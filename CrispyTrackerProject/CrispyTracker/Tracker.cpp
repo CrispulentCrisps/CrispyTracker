@@ -44,6 +44,7 @@ void Tracker::Initialise(int StartLength)
 	SManager.CreateDefaultSettings();
 	SManager.CheckSettingsFolder();
 	UpdateSettings();
+	SManager.ReadSettingsFile();
 }
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -268,6 +269,16 @@ void Tracker::MenuBar()
 		ImGui::EndMenu();
 	}
 
+
+	if (BeginMenu("SNES"))
+	{
+		if (Selectable("Echo Settings"))
+		{
+			ShowEcho = !ShowEcho;
+		}
+		ImGui::EndMenu();
+	}
+
 	if (BeginMenu("Settings"))
 	{
 		if (ImGui::MenuItem("Show Settings"))
@@ -282,15 +293,6 @@ void Tracker::MenuBar()
 		ImGui::MenuItem("Effects List");
 		ImGui::MenuItem("Manual");
 		if (ImGui::MenuItem("Credits")) ShowCredits = true;
-		ImGui::EndMenu();
-	}
-	
-	if (BeginMenu("SNES"))
-	{
-		if (Selectable("Echo Settings"))
-		{
-			ShowEcho = !ShowEcho;
-		}
 		ImGui::EndMenu();
 	}
 	
@@ -2066,10 +2068,10 @@ void Tracker::UpdateSettings()
 	for (int i = 0; i < 8; i++)
 	{
 		Channels[i].NoteType = SManager.CustomData.NStyle;
-		SManager.SetNotation(&Channels[i].NoteType);
+		SManager.SetNotation(&Channels[i].NoteType, true);
 	}
-	SManager.SetBuffer(&TRACKER_AUDIO_BUFFER);
-	SManager.SetResolution(&SCREEN_WIDTH, &SCREEN_HEIGHT);
+	SManager.SetBuffer(&TRACKER_AUDIO_BUFFER, true);
+	SManager.SetResolution(&SCREEN_WIDTH, &SCREEN_HEIGHT, true);
 	FPS = SManager.CustomData.FPS;
 	TextSize = SManager.CustomData.FontSize;
 	TextSizeLarge = TextSize*2;

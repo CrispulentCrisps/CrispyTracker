@@ -1,3 +1,10 @@
+//	_____________________________
+//	|		Crispytracker		|
+//	|	   The SNES tracker		|
+//	|		 of all time		|
+//	_____________________________
+//Apologies for the anarchistic coding, I've no idea what I'm doing lmao
+
 #pragma once
 #ifndef Tracker
 

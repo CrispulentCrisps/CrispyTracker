@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <string>
+#include <unordered_map>
 
 #if _WIN32
 #include <Windows.h>
@@ -19,8 +20,8 @@ public:
 
 	enum NotationStyle
 	{
-		SharpStyle  = 0,
-		FlatStyle   = 1,
+		SharpStyle = 0,
+		FlatStyle = 1,
 		GermanStyle = 2,
 	};
 
@@ -38,7 +39,7 @@ public:
 		Res_3840x2160 = 0,
 		Res_2560x1440 = 1,
 		Res_1920x1080 = 2,
-		Res_1280x720  = 3,
+		Res_1280x720 = 3,
 	};
 
 	string FilePath = "";
@@ -47,11 +48,23 @@ public:
 	bool CreateSettings();
 	void CreateDefaultSettings();
 	void CloseSettingsStream();
+	void ReadSettingsFile();
 
-	void SetNotation(int* n);
-	void SetBuffer(int* b);
-	void SetResolution(int* w, int* h);
+	void SetNotation(int* n, bool f);
+	void SetBuffer(int* b, bool f);
+	void SetResolution(int* w, int* h, bool f);
 private:
+
+	const string FileLabels[8] = {
+		"FontSize:",
+		"Notation:",
+		"FPS:",
+		"Resolution:",
+		"Buffer:",
+		"DefaultTrackSize:",
+		"CursorMovesAtStepCount:",
+		"DeleteMovesAtStepCount:",
+	};
 
 	struct SettingsData
 	{
@@ -74,6 +87,10 @@ private:
 	};
 
 	fstream SettingsDatastream;
+	string FileDest = "";
+
+	//Here we determine the setting we want to change from the text in the settings folder
+	unordered_map<string, int> SettingsDict;
 
 public:
 	SettingsData DefaultData;
