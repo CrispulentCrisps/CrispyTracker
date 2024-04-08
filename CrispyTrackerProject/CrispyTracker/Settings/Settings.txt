@@ -1,6 +1,6 @@
 FontSize:12
 Notation:0
-FPS:60
+FPS:120
 Resolution:2
 Buffer:1
 DefaultTrackSize:64

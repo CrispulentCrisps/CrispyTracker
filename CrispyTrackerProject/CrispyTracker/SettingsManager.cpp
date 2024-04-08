@@ -30,7 +30,7 @@ bool SettingsManager::CheckSettingsFolder()
 		}
 		else
 		{
-			CreateSettings();
+			//CreateSettings();
 			printf("\nFOLDER CREATED:");
 			return true;
 		}
