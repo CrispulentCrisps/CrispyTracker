@@ -45,14 +45,21 @@ public:
 	string FilePath = "";
 
 	bool CheckSettingsFolder();
-	bool CreateSettings();
+	bool CreateSettings();//Also acts as a file write
+
 	void CreateDefaultSettings();
 	void CloseSettingsStream();
 	void ReadSettingsFile();
+	void SetDefaultDataToCustom();
+	void SetCustomDataToDefault();
 
-	void SetNotation(int* n, bool f);
-	void SetBuffer(int* b, bool f);
-	void SetResolution(int* w, int* h, bool f);
+	void GetNotation(int& n, bool f);
+	void GetBuffer(int& b, bool f);
+	void GetResolution(int& w, int& h, bool f);
+
+	NotationStyle SetNotation(int index);
+	Resolutions SetResolution(int index);
+	BufferSize SetBuffer(int index);
 private:
 
 	const string FileLabels[8] = {

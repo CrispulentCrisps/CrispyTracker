@@ -149,7 +149,7 @@ float Channel::Resample(vector<Sint16>& SampleData)
 
 void Channel::SetUp(int Length)
 {
-	Row row;
+	Row row = Row();
 	row.note = MAX_VALUE;
 	row.instrument = MAX_VALUE;
 	for (int i = 0; i < Length; i++)
@@ -158,13 +158,13 @@ void Channel::SetUp(int Length)
 	}
 }
 
-void Channel::TickCheck(int RowIndex, vector<Instrument>& inst, vector<Sample>& samples)
+void Channel::TickCheck(int RowIndex, vector<Instrument>& instruments, vector<Sample>& samples)
 {
-	int CurrentSample = inst[CurrentInstrument].SampleIndex;//Dictates the current sample [Here to make the code look cleaner]
+	int CurrentSample = instruments[CurrentInstrument].SampleIndex;//Dictates the current sample [Here to make the code look cleaner]
 	if (Rows[RowIndex].note != MAX_VALUE && Rows[RowIndex].instrument != MAX_VALUE)
 	{
 		//This is when a note should be played
-		CurrentInstrument = inst[Rows[RowIndex].instrument].Index;
+		CurrentInstrument = instruments[Rows[RowIndex].instrument].Index;
 		CurrentSamplePointIndex = 0;
 		PlayingNote = true;
 		CurrentPlayedNote = (float)Rows[RowIndex].note - 60.0 + samples[CurrentSample].NoteOffset;//the - 60 is for the offset needed to center the pitch
@@ -172,9 +172,9 @@ void Channel::TickCheck(int RowIndex, vector<Instrument>& inst, vector<Sample>& 
 	}
 }
 	
-void Channel::UpdateChannel(vector<Instrument>& inst, vector<Sample>& samples)
+void Channel::UpdateChannel(vector<Instrument>& instruments, vector<Sample>& samples)
 {
-	int CurrentSample = inst[CurrentInstrument].SampleIndex;//Dictates the current sample [Here to make the code look cleaner]
+	int CurrentSample = instruments[CurrentInstrument].SampleIndex;//Dictates the current sample [Here to make the code look cleaner]
 
 	if (CurrentInstrument > 0 && samples[CurrentSample].SampleData.size() > 0)
 	{/*

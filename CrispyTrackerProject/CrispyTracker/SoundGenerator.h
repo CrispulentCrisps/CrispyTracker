@@ -1,6 +1,6 @@
 #ifndef SoundGenerator
 
-#define AUDIO_BUFFER	512
+#define AUDIO_BUFFER	1024
 #define AUDIO_RATE		44100
 
 #include <stdio.h>
@@ -23,12 +23,15 @@
 
 #include <math.h>
 #include <vector>
+#include <array>
 
 #pragma once
 
 class SoundGenerator
 {
 public:
+
+	int TRACKER_AUDIO_BUFFER = AUDIO_BUFFER;
 	SoundGenerator();
 
 	int TotalVolume = 1;
@@ -43,14 +46,14 @@ public:
 	bool PlayingNoise;
 
 	float TimeBetweenSamplePoints = 0;
-	Sint16 Totalbuffer[AUDIO_BUFFER][2];
+	vector<array<Sint16, 2>> Totalbuffer;
 
 	Channel* ch[8];
 	SoundGenerator(int TV, int NI, int POS, Channel channels[]);
 	HRESULT LoadData(UINT count, BYTE* data, DWORD* flags);
-	void MixChannels(int Index);
+	void MixChannels(int Index, Channel* ch);
 	void Update(float ElapsedTime, Channel* ch, vector<Sample>& Samples, int YPos, vector<Instrument>& inst);//This should be used for updating the sample index of the channels
-	
+	void SetBufferSize(int Length);
 	int P = 0;
 
 

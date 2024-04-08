@@ -16,12 +16,16 @@ bool SettingsManager::CheckSettingsFolder()
 	//FilePath.resize(FilePath.length() - 17);
 	FilePath.append("\\Settings");
 	printf(FilePath.c_str());
+	FileDest = FilePath.append("\\Settings.txt");
+	printf("\n");
+	printf(FileDest.c_str());
 	if (_mkdir(FilePath.c_str()))
 	{
+		//Checks if the folder exists
 		if (ERROR_ALREADY_EXISTS != GetLastError())
 		{
 			CreateSettings();
-			printf("\nFOLDER ALREADY EXISTS:");
+			printf("\nFOLDER ALREADY EXISTS: (SettingsManager::CheckSettingsFolder())");
 			return true;
 		}
 		else
@@ -42,30 +46,36 @@ bool SettingsManager::CheckSettingsFolder()
 
 bool SettingsManager::CreateSettings()
 {
-	FileDest = FilePath.append("\\Settings.txt");
-	printf("\n");
-	printf(FileDest.c_str());
-	SettingsDatastream.open(FileDest, ios_base::out | ios_base::trunc);
-	if (SettingsDatastream.is_open())
+	ifstream FileCheck(FileDest);
+	if (FileCheck.good())
 	{
-		//Settings should be placed in order within the file
-		printf("\n FILE IS OPEN");
-		SettingsDatastream << FileLabels[0] << DefaultData.FontSize					<< "\n";
-		SettingsDatastream << FileLabels[1] << DefaultData.NStyle					<< "\n";
-		SettingsDatastream << FileLabels[2] << DefaultData.FPS						<< "\n";
-		SettingsDatastream << FileLabels[3] << DefaultData.Res						<< "\n";
-		SettingsDatastream << FileLabels[4] << DefaultData.Buf						<< "\n";
-		SettingsDatastream << FileLabels[5] << DefaultData.DefaultTrackSize			<< "\n";
-		SettingsDatastream << FileLabels[6] << DefaultData.CursorMovesAtStepCount	<< "\n";
-		SettingsDatastream << FileLabels[7] << DefaultData.DeleteMovesAtStepCount	<< "\n";
+		SettingsDatastream.open(FileDest, ios_base::out | ios_base::trunc);
+		if (SettingsDatastream.is_open())
+		{
+			//Settings should be placed in order within the file
+			printf("\n FILE IS OPEN");
+			SettingsDatastream << FileLabels[0] << DefaultData.FontSize << "\n";
+			SettingsDatastream << FileLabels[1] << DefaultData.NStyle << "\n";
+			SettingsDatastream << FileLabels[2] << DefaultData.FPS << "\n";
+			SettingsDatastream << FileLabels[3] << DefaultData.Res << "\n";
+			SettingsDatastream << FileLabels[4] << DefaultData.Buf << "\n";
+			SettingsDatastream << FileLabels[5] << DefaultData.DefaultTrackSize << "\n";
+			SettingsDatastream << FileLabels[6] << DefaultData.CursorMovesAtStepCount << "\n";
+			SettingsDatastream << FileLabels[7] << DefaultData.DeleteMovesAtStepCount << "\n";
 
-		SettingsDatastream.close();
-		return true;
+			SettingsDatastream.close();
+			return true;
+		}
+		else
+		{
+			SettingsDatastream.close();
+			printf("\nERROR: FILE COULD NOT BE CREATED");
+			return false;
+		}
 	}
 	else
 	{
-		printf("\nERROR: FILE COULD NOT BE CREATED");
-		return false;
+		printf("\FILE ALREADY EXISTS (SettingsManager::CreateSettings())");
 	}
 }
 
@@ -79,15 +89,8 @@ void SettingsManager::CreateDefaultSettings()
 	DefaultData.DefaultTrackSize = 64;
 	DefaultData.DeleteMovesAtStepCount = 0;
 	DefaultData.CursorMovesAtStepCount = 0;
-
-	CustomData.FontSize = DefaultData.FontSize;
-	CustomData.NStyle = DefaultData.NStyle;
-	CustomData.FPS = DefaultData.FPS;
-	CustomData.Res = DefaultData.Res;
-	CustomData.Buf = DefaultData.Buf;
-	CustomData.DefaultTrackSize = DefaultData.DefaultTrackSize;
-	CustomData.DeleteMovesAtStepCount = DefaultData.DeleteMovesAtStepCount;
-	CustomData.CursorMovesAtStepCount = CustomData.CursorMovesAtStepCount;
+	
+	CustomData = DefaultData;
 }
 
 void SettingsManager::CloseSettingsStream()
@@ -106,45 +109,69 @@ void SettingsManager::ReadSettingsFile()
 		while (getline(Input, CurrentLine) && BreakCounter < 99)
 		{
 			int CurrentValue = CurrentLine.find(':')+1;
-			
 			if (CurrentValue != string::npos)
 			{
-				int InputValue = atoi((CurrentLine.substr(CurrentLine.length() - CurrentValue, CurrentLine.length())).c_str());
+				int InputValue = atoi(CurrentLine.substr(CurrentValue).c_str());
 				
 				CurrentLine.resize(CurrentValue);
 				
 				if (SettingsDict.find(CurrentLine) != SettingsDict.end())//Assuming we found the element
-				{/*
+				{
 					int CurrentSetting = SettingsDict.at(CurrentLine);
+					cout << "\nCurrent Line: " << CurrentLine;
+					cout << "\nCurrent Setting: " << CurrentSetting;
+					cout << "\nCurrent Input: " << InputValue;
 					switch (CurrentSetting)
 					{
 					case 0:
 						DefaultData.FontSize = InputValue;
 						break;
 					case 1:
-						DefaultData.NStyle;
+						DefaultData.NStyle = SetNotation(InputValue);
 						break;
 					case 2:
 						DefaultData.FPS = InputValue;
 						break;
 					case 3:
+						DefaultData.Res = SetResolution(InputValue);
 						break;
-					}*/
+					case 4:
+						DefaultData.Buf = SetBuffer(InputValue);
+						break;
+					case 5:
+						DefaultData.DefaultTrackSize = InputValue;
+						break;
+					case 6:
+						DefaultData.CursorMovesAtStepCount = InputValue;
+						break;
+					case 7:
+						DefaultData.DeleteMovesAtStepCount = InputValue;
+						break;
+					}
 				}
 				else
 				{
-					cout << "\nERROR: SETTING " << CurrentLine << " CANNOT BE FOUND";
+					cout << "\nERROR: SETTING " << CurrentLine << " CANNOT BE FOUND\n";
 				}
 			}
 			BreakCounter++;
-			printf(CurrentLine.c_str());
+			//printf(CurrentLine.c_str());
 		}
 	}
-
+	SetCustomDataToDefault();
 	Input.close();
 }
 
-void SettingsManager::SetNotation(int* n, bool f)
+void SettingsManager::SetDefaultDataToCustom()
+{
+	DefaultData = CustomData;
+}
+void SettingsManager::SetCustomDataToDefault()
+{
+	CustomData = DefaultData;
+}
+
+void SettingsManager::GetNotation(int& n, bool f)
 {
 	int n_sur = 0;
 	if (f)
@@ -184,10 +211,10 @@ void SettingsManager::SetNotation(int* n, bool f)
 		}
 
 	}
-	n = &n_sur;
+	n = n_sur;
 }
 
-void SettingsManager::SetBuffer(int* b, bool f)
+void SettingsManager::GetBuffer(int& b, bool f)
 {
 	int b_sur = 0;
 	if (f)
@@ -238,10 +265,10 @@ void SettingsManager::SetBuffer(int* b, bool f)
 			break;
 		}
 	}
-	b = &b_sur;
+	b = b_sur;
 }
 
-void SettingsManager::SetResolution(int* w, int* h, bool f)
+void SettingsManager::GetResolution(int& w, int& h, bool f)
 {
 	int w_sur = 0;
 	int h_sur = 0;
@@ -297,6 +324,72 @@ void SettingsManager::SetResolution(int* w, int* h, bool f)
 			break;
 		}
 	}
-	w = &w_sur;
-	h = &h_sur;
+	w = w_sur;
+	h = h_sur;
+}
+
+SettingsManager::NotationStyle SettingsManager::SetNotation(int index)
+{
+	switch (index)
+	{
+	default:
+		return SharpStyle;
+		break;
+	case 0:
+		return SharpStyle;
+		break;
+	case 1:
+		return FlatStyle;
+		break;
+	case 2:
+		return GermanStyle;
+		break;
+	}
+}
+
+SettingsManager::Resolutions SettingsManager::SetResolution(int index)
+{
+	switch (index)
+	{
+	default:
+		return Res_1920x1080;
+		break;
+	case 0:
+		return Res_3840x2160;
+		break;
+	case 1:
+		return Res_2560x1440;
+		break;
+	case 2:
+		return Res_1920x1080;
+		break;
+	case 3:
+		return Res_1280x720;
+		break;
+	}
+}
+
+SettingsManager::BufferSize SettingsManager::SetBuffer(int index)
+{
+	switch (index)
+	{
+	default:
+		return Buf_1024;
+		break;
+	case 0:
+		return Buf_512;
+		break;
+	case 1:
+		return Buf_1024;
+		break;
+	case 2:
+		return Buf_2048;
+		break;
+	case 3:
+		return Buf_4096;
+		break;
+	case 4:
+		return Buf_8192;
+		break;
+	}
 }

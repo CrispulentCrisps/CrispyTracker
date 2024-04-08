@@ -39,12 +39,10 @@ void Tracker::Initialise(int StartLength)
 		StoragePatterns.push_back(pat);
 	}
 
-	PlotColours = ImPlot::AddColormap("RGBColors", colorDataRGB, 32);
-
 	SManager.CreateDefaultSettings();
 	SManager.CheckSettingsFolder();
-	UpdateSettings();
 	SManager.ReadSettingsFile();
+	UpdateSettings();
 }
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -64,13 +62,17 @@ void MyAudioCallback(void* userdata, Uint8* stream, int len)
 
 void Tracker::Run()
 {	
-	SetupInstr();
 	Emu_APU.APU_Startup();
 	glfwInit();
 	Authbuf.reserve(4096);
 	Descbuf.reserve(4096);
 	FilePath.reserve(4096);
 
+	//Initialise the tracker
+	Initialise(TrackLength);
+	SG.SetBufferSize(SG.TRACKER_AUDIO_BUFFER);
+
+	SetupInstr();
 	bool PlayingTrack = false;
 	bool WindowIsGood = true;
 	//Create window
@@ -124,7 +126,7 @@ void Tracker::Run()
 	{
 		SDL_Init(SDL_INIT_AUDIO);
 		have.channels = 2;
-		have.size = TRACKER_AUDIO_BUFFER;
+		have.size = SG.TRACKER_AUDIO_BUFFER;
 		have.freq = SPS;
 		have.samples = have.freq / have.channels;
 		have.silence = 0;
@@ -135,25 +137,25 @@ void Tracker::Run()
 		have.freq = AUDIO_RATE;//Coming from the SoundGenerator class
 		have.format = AUDIO_S16;
 		have.channels = 2;
-		have.samples = TRACKER_AUDIO_BUFFER;//Coming from the SoundGenerator class
+		have.samples = SG.TRACKER_AUDIO_BUFFER;//Coming from the SoundGenerator class
 		have.userdata = &SG;
 
 		SDL_memset(&want, 0, sizeof(want)); /* or SDL_zero(want) */
 		want.freq = AUDIO_RATE;//Coming from the SoundGenerator class
 		want.format = AUDIO_S16;
 		want.channels = 2;
-		want.samples = TRACKER_AUDIO_BUFFER;//Coming from the SoundGenerator class
+		want.samples = SG.TRACKER_AUDIO_BUFFER;//Coming from the SoundGenerator class
 		want.callback = NULL;
 		want.userdata = &SG;
-		want.silence = TRACKER_AUDIO_BUFFER;
+		want.silence = SG.TRACKER_AUDIO_BUFFER;
 
 		dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
 		const char* err = SDL_GetError();
 
 		SG.PlayingNoise = true;
 		//Load fonts
-		font = io.Fonts->AddFontFromFileTTF("fonts/Manaspace.ttf", TextSize, NULL, NULL);
-		Largefont = io.Fonts->AddFontFromFileTTF("fonts/Manaspace.ttf", TextSizeLarge, NULL, NULL);
+		font = io.Fonts->AddFontFromFileTTF(Fontpath.c_str(), TextSize, NULL, NULL);
+		Largefont = io.Fonts->AddFontFromFileTTF(Fontpath.c_str(), TextSizeLarge, NULL, NULL);
 		io.Fonts->Build();
 		ImGui_ImplOpenGL3_CreateFontsTexture();
 		WindowIsGood = true;
@@ -161,19 +163,18 @@ void Tracker::Run()
 		{
 			SG.ch[i] = &Channels[i];
 		}
-
 		x = ImAxis_X1;
 		y = ImAxis_Y1;
+
+		PlotColours = ImPlot::AddColormap("RGBColors", colorDataRGB, 32);
 	}
-	SDL_QueueAudio(dev, SG.Totalbuffer, sizeof(SG.Totalbuffer));
 
 	ChannelEditState cstate = NOTE;
-	//Initialise the tracker
-	Initialise(TrackLength);
 	SG.DEBUG_Open_File();
 	while (running) {
 		if (WindowIsGood) {
 			Render();
+			CheckUpdatables();
 			SDL_PauseAudioDevice(dev, !PlayingMode);
 		}
 		CheckInput();
@@ -190,6 +191,14 @@ void Tracker::Run()
 	SDL_Quit();
 }
 
+void Tracker::CheckUpdatables()
+{
+	if (FontUpdate)
+	{
+		UpdateFont();
+	}
+}
+
 void Tracker::CheckInput()
 {
 	int TuninOff = 48;
@@ -203,7 +212,6 @@ void Tracker::CheckInput()
 	if (PlayingMode)
 	{
 		RunTracker();
-		
 	}
 	else
 	{
@@ -1163,7 +1171,8 @@ void Tracker::Settings_View()
 						}
 						EndCombo();
 					}
-					
+
+					NewLine();
 					Text("Notation Style");
 
 					if (BeginCombo("##NotationStyle", NotationNames[SManager.CustomData.NStyle].data()))
@@ -1188,6 +1197,18 @@ void Tracker::Settings_View()
 						}
 						EndCombo();
 					}
+					NewLine();
+					Text("Font Size:");
+					InputInt("##Fontsize", &SManager.CustomData.FontSize, 1, 1);
+					if (IsWindowHovered())
+					{
+						BeginTooltip();
+						Text("Note: Changes apply ONLY when program is closed\nText size may or may not break some parts of the visual UI, so please take care when changing!");
+						EndTooltip();
+					}
+
+					if (SManager.CustomData.FontSize < 1) SManager.CustomData.FontSize = 1;
+					if (SManager.CustomData.FontSize > 48) SManager.CustomData.FontSize = 48;
 					EndTabItem();
 
 				}
@@ -1198,6 +1219,7 @@ void Tracker::Settings_View()
 					InputInt("##FPS", &FPS, 1, 1);
 					if (FPS > MAX_FPS) FPS = MAX_FPS; else if (FPS < 1) FPS = 1;
 
+					NewLine();
 					Text("Audio Buffer Size");
 
 					if (BeginCombo("##Buffer", BufferNames[SManager.CustomData.Buf].data()))
@@ -1371,13 +1393,13 @@ void Tracker::Info_View()
 		
 		for (int i = 1; i < inst.size(); i++)
 		{
-			UsedSpace += 9;//While technically wasting 6 bits here, I can't be bothered
+			UsedSpace += 9;//While technically wasting 6 bits here, I can't be bothered changing it
 		}
 		//Instruments
 		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + (UsedSpace * GetWindowWidth()*0.95f)/ MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(AttackColour));
 		
 		LastPos = (UsedSpace * GetWindowWidth() * 0.95f) / MaxRange;
-		UsedSpace = 0;
+		//UsedSpace = 0;
 		if (samples.size() > 1)
 		{
 			for (int i = 0; i < samples.size(); i++)
@@ -1388,8 +1410,7 @@ void Tracker::Info_View()
 
 		draw_list->AddRectFilled(ImVec2(xpos + LastPos, ypos), ImVec2(xpos + LastPos + (UsedSpace * GetWindowWidth()*0.95f)/ MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(SustainColour));
 		LastPos = (UsedSpace * GetWindowWidth() * 0.95f) / MaxRange;
-		UsedSpace = 0;
-		UsedSpace += (2048 * Delay);
+		UsedSpace = (2048 * Delay);
 
 		draw_list->AddRectFilled(ImVec2(xpos + LastPos, ypos), ImVec2(xpos + LastPos + (UsedSpace * GetWindowWidth() * 0.95f) / MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(DecayColour));
 		LastPos = (UsedSpace * GetWindowWidth() * 0.95f) / MaxRange;
@@ -1399,6 +1420,7 @@ void Tracker::Info_View()
 	{
 		NewLine();
 	}
+	//Text display for data space
 	ypos = GetCursorScreenPos().y - (TextSize*0.125f);
 	xpos = GetCursorScreenPos().x;
 	
@@ -1477,12 +1499,23 @@ void Tracker::SetupInstr()
 	DefaultPattern.SetUp(TrackLength);
 }
 
+void Tracker::UpdateFont()
+{
+	if ((TextSize - 12.0f) != 0)
+	{
+	}
+	else
+	{
+	}
+	FontUpdate = false;
+}
+
 void Tracker::RunTracker()
 {
 	//cout << "\n Audio Buff Queued: " << SDL_GetQueuedAudioSize(dev);
-	if (SDL_GetQueuedAudioSize(dev) < TRACKER_AUDIO_BUFFER * 8)
+	if (SDL_GetQueuedAudioSize(dev) < SG.TRACKER_AUDIO_BUFFER * 8)
 	{
-		for (int x = 0; x < TRACKER_AUDIO_BUFFER; x++)
+		for (int x = 0; x < SG.TRACKER_AUDIO_BUFFER; x++)
 		{
 			//SG.P++;
 			for (int i = 0; i < 8; i++)
@@ -1492,11 +1525,11 @@ void Tracker::RunTracker()
 				//Channels[i].AudioDataR = 2048 * sin((SG.P) * (2 * 3.14) * 440 * (1. / AUDIO_RATE));//Right ear
 				//cout << "\n" << Channels[i].AudioDataR << ": Channel " << i << " Framce Counter: " << FrameCount;
 			}
-			SG.MixChannels(x);
+			SG.MixChannels(x, Channels);
 			SG.Update(GetIO().DeltaTime, Channels, samples, CursorY, inst);
 			//SG.DEBUG_Output_Audio_Buffer_Log(SG.Totalbuffer, FrameCount, x, SDL_GetQueuedAudioSize(dev));
 		}
-		SDL_QueueAudio(dev, SG.Totalbuffer, sizeof(SG.Totalbuffer));
+		SDL_QueueAudio(dev, &(SG.Totalbuffer[0][0]), sizeof(Sint16) * 2 * SG.Totalbuffer.size());
 	}
 
 	TickTimer -= GetIO().DeltaTime;
@@ -1912,7 +1945,7 @@ void Tracker::LoadSample()
 			soundinfo.format = AUDIO_FORMATS;
 			soundinfo.samplerate = SPS;
 			soundinfo.channels = 1;
-			soundinfo.frames = TRACKER_AUDIO_BUFFER;
+			soundinfo.frames = SG.TRACKER_AUDIO_BUFFER;
 
 			SNDFILE* file = sf_open(FileName.data(), SFM_READ, &soundinfo);
 			if (file)//Loaded right
@@ -1967,9 +2000,7 @@ void Tracker::LoadSample()
 				}
 				ImPlot::SetNextAxisToFit(x);
 			}
-
 		}
-
 		cout << FileName + "\n" + FilePath;
 		// close
 		ImGuiFileDialog::Instance()->Close();
@@ -2068,27 +2099,24 @@ void Tracker::UpdateSettings()
 	for (int i = 0; i < 8; i++)
 	{
 		Channels[i].NoteType = SManager.CustomData.NStyle;
-		SManager.SetNotation(&Channels[i].NoteType, true);
+		SManager.GetNotation(Channels[i].NoteType, true);
 	}
-	SManager.SetBuffer(&TRACKER_AUDIO_BUFFER, true);
-	SManager.SetResolution(&SCREEN_WIDTH, &SCREEN_HEIGHT, true);
+	SManager.GetBuffer(SG.TRACKER_AUDIO_BUFFER, true);
+	SManager.GetResolution(SCREEN_WIDTH, SCREEN_HEIGHT, true);
 	FPS = SManager.CustomData.FPS;
 	TextSize = SManager.CustomData.FontSize;
 	TextSizeLarge = TextSize*2;
 	TrackLength = SManager.CustomData.DefaultTrackSize;
 	MoveOnDelete = SManager.CustomData.DeleteMovesAtStepCount;
 	MoveByStep = SManager.CustomData.CursorMovesAtStepCount;
+	SManager.DefaultData = SManager.CustomData;
+	SG.SetBufferSize(SG.TRACKER_AUDIO_BUFFER);
+	SManager.CreateSettings();
+	FontUpdate = true;
 }
 
 void Tracker::ResetSettings()
 {
-	SManager.CustomData.Buf = SManager.DefaultData.Buf;
-	SManager.CustomData.NStyle = SManager.DefaultData.NStyle;
-	SManager.CustomData.CursorMovesAtStepCount = SManager.DefaultData.CursorMovesAtStepCount;
-	SManager.CustomData.DefaultTrackSize = SManager.DefaultData.DefaultTrackSize;
-	SManager.CustomData.DeleteMovesAtStepCount = SManager.DefaultData.DeleteMovesAtStepCount;
-	SManager.CustomData.FontSize = SManager.DefaultData.FontSize;
-	SManager.CustomData.FPS = SManager.DefaultData.FPS;
-	SManager.CustomData.Res = SManager.DefaultData.Res;
+	SManager.CustomData = SManager.DefaultData;
 	UpdateSettings();
 }

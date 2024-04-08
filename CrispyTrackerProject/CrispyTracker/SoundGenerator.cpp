@@ -17,14 +17,14 @@ HRESULT SoundGenerator::LoadData(UINT count, BYTE* data, DWORD* flags)
 	}
 	return S_OK;
 }
-void SoundGenerator::MixChannels(int Index)
+void SoundGenerator::MixChannels(int Index, Channel* c)
 {
 	Sint16 ResultL = 0;
 	Sint16 ResultR = 0;
 	for (int i = 0; i < 8; i++)
 	{
-		ResultL += ch[i]->AudioDataL / 8;
-		ResultR += ch[i]->AudioDataR / 8;
+		ResultL += c[i].AudioDataL / 8;
+		ResultR += c[i].AudioDataR / 8;
 	}
 	Totalbuffer[Index][0] = ResultL;
 	Totalbuffer[Index][1] = ResultR;
@@ -58,6 +58,12 @@ void SoundGenerator::Update(float ElapsedTime, Channel* ch, vector<Sample>& Samp
 			ch[i].CurrentSamplePointIndex = 0;
 		}
 	}
+}
+
+void SoundGenerator::SetBufferSize(int Length)
+{
+	Totalbuffer.resize(Length);
+	Totalbuffer.resize(Length);
 }
 
 SoundGenerator::SoundGenerator(int TV, int NI, int POS, Channel channels[]) {

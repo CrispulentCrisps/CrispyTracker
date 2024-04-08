@@ -47,9 +47,9 @@ public:
 	int TAB_ITEM_FLAGS = ImGuiTabItemFlags_NoReorder;
 	int TABLE_FLAGS = ImGuiTableFlags_SizingStretchProp;
 	int IMPLOT_FLAGS = ImPlotFlags_NoFrame | ImPlotFlags_Crosshairs;
-	int TRACKER_AUDIO_BUFFER = AUDIO_BUFFER;
 	int SPS = 41000;
 	string VERSION = "version: 0.4";
+	string Fontpath = "fonts/Manaspace.ttf";
 	int AUDIO_FORMATS = SF_FORMAT_WAV | SF_FORMAT_OGG | SF_FORMAT_MPEG_LAYER_III;
 	int FrameCount = 0;
 	int Event;
@@ -160,6 +160,8 @@ public:
 	int InstXPadding = 32;
 	int InstYPadding = 72;
 
+	bool FontUpdate = false;
+
 	vector<Instrument> inst;
 	Instrument DefaultInst;
 
@@ -200,6 +202,7 @@ public:
 	//Functions
 	void Initialise(int StartLength);
 	void Run();
+	void CheckUpdatables();//for updating things outside of "new frames"
 	void CheckInput();
 	void Render();
 
@@ -217,6 +220,7 @@ public:
 	void Info_View();
 	void EchoSettings();
 	void SetupInstr();
+	void UpdateFont();
 
 	void RunTracker(); //For when the tracker is playing the tune
 	void UpdateRows(); //Sending the audio data to the speakers for every element in the tracker row
