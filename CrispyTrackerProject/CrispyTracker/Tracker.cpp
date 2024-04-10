@@ -466,7 +466,7 @@ void Tracker::Patterns_View()
 	}
 }
 
-void Tracker::Instruments()
+void Tracker::Instruments()//Showing the instruments window at the side
 {
 	if (Begin("Instruments"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
@@ -541,7 +541,7 @@ void Tracker::Instruments()
 	}
 }
 
-void Tracker::Instrument_View()
+void Tracker::Instrument_View()//Instrument editor
 {
 	if (ShowInstrument)
 	{	
@@ -1212,6 +1212,14 @@ void Tracker::Settings_View()
 					if (SManager.CustomData.FontSize > 48) SManager.CustomData.FontSize = 48;
 					EndTabItem();
 
+				}
+
+				//For general use of the tracker
+				if (BeginTabItem("User based"))
+				{
+					Checkbox("Move cursor by step count", &MoveByStep);
+					Checkbox("Move cursor on delete", &MoveOnDelete);
+					EndTabItem();
 				}
 
 				if (BeginTabItem("Technical"))
@@ -2108,8 +2116,10 @@ void Tracker::UpdateSettings()
 	TextSize = SManager.CustomData.FontSize;
 	TextSizeLarge = TextSize*2;
 	TrackLength = SManager.CustomData.DefaultTrackSize;
-	MoveOnDelete = SManager.CustomData.DeleteMovesAtStepCount;
-	MoveByStep = SManager.CustomData.CursorMovesAtStepCount;
+	if (MoveOnDelete) SManager.CustomData.DeleteMovesAtStepCount = 1;
+	else SManager.CustomData.DeleteMovesAtStepCount = 0;
+	if (MoveByStep) SManager.CustomData.CursorMovesAtStepCount = 1;
+	else SManager.CustomData.CursorMovesAtStepCount = 0;
 	SManager.DefaultData = SManager.CustomData;
 	SG.SetBufferSize(SG.TRACKER_AUDIO_BUFFER);
 	SManager.CreateSettings();

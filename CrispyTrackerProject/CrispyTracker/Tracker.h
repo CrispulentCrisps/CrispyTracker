@@ -106,13 +106,14 @@ public:
 	int Input;
 	int Step = 1;
 	int Octave = 4;
-	int ChannelColumn = 0, ChannelRow = 0;
+	int ChannelColumn = 0;
+	int ChannelRow = 0;
 	bool PlayingTrack;
 	bool MoveOnDelete = false;
 	bool MoveByStep = false;
 
 	int TextSize = 12;
-	int TextSizeLarge = TextSize*2;
+	int TextSizeLarge = TextSize * 2;
 	int BaseTempo = 150;
 	int Speed1 = 6;
 	int TickCounter = 0;
@@ -122,7 +123,6 @@ public:
 	
 	float MinKeyTime = 0.02f;
 	float KeyTimer = 0;
-
 	float InitKeyTime = 0.5f;
 	float InitTimer = 0;
 	bool InitPressed = false;

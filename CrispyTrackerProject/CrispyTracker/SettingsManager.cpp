@@ -166,6 +166,7 @@ void SettingsManager::SetDefaultDataToCustom()
 {
 	DefaultData = CustomData;
 }
+
 void SettingsManager::SetCustomDataToDefault()
 {
 	CustomData = DefaultData;
