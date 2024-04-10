@@ -6,6 +6,11 @@
 class Sample
 {
 public:
+	enum HByteFlags
+	{
+		EndFlag = 0b00000001,
+		LoopFlag = 0b00000010,
+	};
 	int SampleIndex;
 	long PlayingHZ;
 	int NoteOffset = 0;

@@ -13,6 +13,12 @@ void Sample::BRRConvert()
     {
         brr.DBlocks.push_back(brr.BlankBlock);
 
+        if (BlockAmount == i-1)//Assume we're on the last sample point
+        {
+            brr.DBlocks[i].HeaderByte |= EndFlag;//Assign end flag
+            brr.DBlocks[i].HeaderByte |= 0b00010000;//Shift value should be 1 to avoid the single R-shift that can remove audio data
+        }
+
         for (int x = 0; x < 8; x++)
         {
             //Combined bit is taking 2 4bit vales, shifts the second 4 bits to fit in the byte and not overwrite the first 4 bits

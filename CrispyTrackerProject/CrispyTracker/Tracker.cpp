@@ -1142,6 +1142,7 @@ void Tracker::Settings_View()
 
 			if (BeginTabBar("TestTab"))
 			{
+				//This should be for visual changes
 				if (BeginTabItem("Appearance")) 
 				{
 					Text("Screen Resolutions");
