@@ -18,6 +18,7 @@ short Effect_Flags[8]; //Storing effect flags as a bit field, one for each chann
 #define RETRIGGER		0x0C
 #define BREAK			0x0D
 
+//Instrument settings
 #define ADSR_ENV		0x10
 #define ADSR_TYP		0x11
 #define ADSR_ATK		0x12
@@ -32,7 +33,7 @@ short Effect_Flags[8]; //Storing effect flags as a bit field, one for each chann
 #define PTCHMOD			0x1B
 #define ECHO			0x1C
 
-#define PANBRLLO		0x20
+#define PANBRELLO		0x20
 
 #define ECHO_DEL		0x30
 #define ECHO_FDB		0x31
@@ -47,6 +48,7 @@ short Effect_Flags[8]; //Storing effect flags as a bit field, one for each chann
 #define ECHO_FIL7		0x3A
 #define ECHO_FIL8		0x3B
 
+//Flags for music-code interchange
 #define FLAG_0			0xC0
 #define FLAG_1			0xC1
 #define FLAG_2			0xC2

@@ -42,7 +42,7 @@ void Tracker::Initialise(int StartLength)
 	SManager.CreateDefaultSettings();
 	SManager.CheckSettingsFolder();
 	SManager.ReadSettingsFile();
-	UpdateSettings();
+	UpdateSettings(1);
 }
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -64,9 +64,9 @@ void Tracker::Run()
 {	
 	Emu_APU.APU_Startup();
 	glfwInit();
-	Authbuf.reserve(4096);
-	Descbuf.reserve(4096);
-	FilePath.reserve(4096);
+	Authbuf.reserve(2048 * 8);
+	Descbuf.reserve(2048 * 8);
+	FilePath.reserve(2048 *8);
 
 	//Initialise the tracker
 	Initialise(TrackLength);
@@ -82,11 +82,14 @@ void Tracker::Run()
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #endif
-	window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, Credits.data(), NULL, NULL);
+	window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, Credits.c_str(), NULL, NULL);
 	// Setup Platform/Renderer backends
 
-	glfwMakeContextCurrent(window);	
-	glfwSwapInterval(1); // Enable vsync
+	glfwMakeContextCurrent(window);
+	monitor = glfwGetPrimaryMonitor();
+	float SwapInterval = (float)glfwGetVideoMode(monitor)->refreshRate / (float)FPS;
+	cout << "\nSwapInterval: " << SwapInterval << "\n";
+	glfwSwapInterval(SwapInterval); // Enable vsync
 
 	glfwSetWindowUserPointer(window, this);
 
@@ -191,7 +194,7 @@ void Tracker::Run()
 	SDL_Quit();
 }
 
-void Tracker::CheckUpdatables()
+void Tracker::CheckUpdatables()//for things we cannot update in the rendering loop
 {
 	if (FontUpdate)
 	{
@@ -305,7 +308,7 @@ void Tracker::MenuBar()
 	}
 	
 	Text("	|	%.3f ms/frame (%.1f FPS)", 1000.0 / (ImGui::GetIO().Framerate), (ImGui::GetIO().Framerate));
-	Text(VERSION.data());
+	Text(VERSION.c_str());
 	EndMainMenuBar();
 
 }
@@ -348,7 +351,7 @@ void Tracker::Patterns_View()
 			{
 				TableNextRow();
 				TableNextColumn();
-				if (Selectable(to_string(y).data())) {
+				if (Selectable(to_string(y).c_str())) {
 					SelectedPattern = y;
 					UpdateAllPatterns();
 				}
@@ -369,7 +372,7 @@ void Tracker::Patterns_View()
 				for (int x = 0; x < 8; x++)
 				{
 					PushID(IDOffset);
-					Selectable(to_string(patterns[x][y].Index).data());
+					Selectable(to_string(patterns[x][y].Index).c_str());
 
 					if (IsItemClicked(ImGuiMouseButton_Right)) {
 						patterns[x][y].Index > 0 ? patterns[x][y].Index-- : patterns[x][y].Index = 0;
@@ -470,7 +473,7 @@ void Tracker::Instruments()//Showing the instruments window at the side
 {
 	if (Begin("Instruments"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-		if (Button("Add", ImVec2(GetWindowWidth()*0.3, 24)))
+		if (Button("Add", ImVec2(GetWindowWidth()* 0.275, 24)))
 		{
 			Instrument newinst = DefaultInst;
 			int index = inst.size();
@@ -479,7 +482,7 @@ void Tracker::Instruments()//Showing the instruments window at the side
 			inst.push_back(newinst);
 		}
 		SameLine();
-		if (Button("Delete", ImVec2(GetWindowWidth() * 0.3, 24)) && inst.size() > 1)
+		if (Button("Delete", ImVec2(GetWindowWidth() * 0.275, 24)) && inst.size() > 1)
 		{
 			if (SelectedInst >= inst.size())
 			{
@@ -492,7 +495,7 @@ void Tracker::Instruments()//Showing the instruments window at the side
 			}
 		}		
 		SameLine();
-		if (Button("Copy", ImVec2(GetWindowWidth() * 0.3, 24)) && inst.size() > 1)
+		if (Button("Copy", ImVec2(GetWindowWidth() * 0.275, 24)) && inst.size() > 1)
 		{
 			int index = inst.size();
 			Instrument newinst = inst[SelectedInst];
@@ -505,17 +508,17 @@ void Tracker::Instruments()//Showing the instruments window at the side
 		if (inst.size() > 0)
 		{
 			//BeginChild("List", ImVec2(GetWindowWidth() - InstXPadding, GetWindowHeight() - InstYPadding), true, UNIVERSAL_WINDOW_FLAGS);
-			if (BeginTable("InstList", 1, TABLE_FLAGS, ImVec2(GetWindowWidth() * 0.75, 24), 24))
+			if (BeginTable("InstList", 1, TABLE_FLAGS, ImVec2(GetWindowWidth() * 0.87, 24), 24))
 			{
 				for (int i = 0; i < inst.size(); i++)
 				{
 					PushID(IDOffset);
 					//Show instruments
-					Text(to_string(i).data());
+					Text(to_string(i).c_str());
 					SameLine();
 					if (SelectedInst <= inst.size() - 1)
 					{
-						if (Selectable(inst[i].Name.data(), SelectedInst == i))
+						if (Selectable(inst[i].Name.c_str(), SelectedInst == i))
 						{
 							SelectedInst = i;
 							ShowInstrument = true;
@@ -550,21 +553,21 @@ void Tracker::Instrument_View()//Instrument editor
 			if (SelectedInst <= inst.size() - 1)
 			{
 				PushItemWidth(GetWindowWidth() * .75);
-				InputText("InstName", (char*)inst[SelectedInst].Name.data(), 2048);
+				InputText("InstName", (char*)inst[SelectedInst].Name.c_str(), sizeof(inst[SelectedInst].Name));
 				string PrevText = "Choose a sample";
 
 				if (inst[SelectedInst].SampleIndex < samples.size())
 				{
 					PrevText = samples[inst[SelectedInst].SampleIndex].SampleName;
 				}
-				if (BeginCombo("##Sample", PrevText.data())) {
+				if (BeginCombo("##Sample", PrevText.c_str())) {
 					if (samples.size() > 0)
 					{
 						bool Selected = false;
 						for (int s = 0; s < samples.size(); s++)
 						{
 							Selected = (inst[SelectedInst].SampleIndex == s);
-							if (Selectable(samples[s].SampleName.data(), Selected, 0, ImVec2(GetWindowWidth() * 0.85, TextSize)))
+							if (Selectable(samples[s].SampleName.c_str(), Selected, 0, ImVec2(GetWindowWidth() * 0.85, TextSize)))
 							{
 								inst[SelectedInst].SampleIndex = s;
 							}
@@ -589,7 +592,7 @@ void Tracker::Instrument_View()//Instrument editor
 					Text("Envelope");
 					for (int i = 0; i < 4; i++)
 					{
-						if (RadioButton(ADSRNames[i].data(), &inst[SelectedInst].ADSRType,i))
+						if (RadioButton(ADSRNames[i].c_str(), &inst[SelectedInst].ADSRType,i))
 						{
 							inst[SelectedInst].ADSRType = i;
 						}
@@ -730,14 +733,13 @@ void Tracker::Instrument_View()//Instrument editor
 				{
 					SliderInt("Noise Freq ", &inst[SelectedInst].NoiseFreq, 0, 31);
 				}
-
-				if (Button("Close", ImVec2(64, TextSize*1.5))) {
-					ShowInstrument = false;
-				}
 			}
 			else
 			{
 				//SelectedInst--;
+			}
+			if (Button("Close", ImVec2(64, TextSize * 1.5))) {
+				ShowInstrument = false;
 			}
 			End();
 		}
@@ -781,7 +783,7 @@ void Tracker::Channel_View()
 					PushStyleColor(ImGuiTableBgTarget_RowBg0, (ImVec4)CursorCol);
 					string ChannelTitle = "Pattern: ";
 					ChannelTitle += to_string(patterns[i][SelectedPattern].Index);
-					Text(ChannelTitle.data());
+					Text(ChannelTitle.c_str());
 					PopStyleColor();
 				}
 				//This determines the columns on a given channel [all track lengths are constant between channels]
@@ -802,7 +804,7 @@ void Tracker::Channel_View()
 						str += to_string(CursorX);
 						str += "| CursorY: ";
 						str += to_string(CursorY);
-						SetTooltip(str.data());
+						SetTooltip(str.c_str());
 					}
 					*/
 
@@ -819,7 +821,7 @@ void Tracker::Channel_View()
 						{
 							ind += " ";
 						}
-						if(Selectable(ind.data())) {
+						if(Selectable(ind.c_str())) {
 							CursorY = j;
 						}
 					}
@@ -872,7 +874,7 @@ void Tracker::Channel_View()
 							{
 								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 							}
-							if (Selectable(Channels[i].NoteView(j).data(), IsPoint && CursorPos == NOTE, 0, RowVec))
+							if (Selectable(Channels[i].NoteView(j).c_str(), IsPoint && CursorPos == NOTE, 0, RowVec))
 							{
 								CursorPos = NOTE;
 								CursorX = i;
@@ -890,7 +892,7 @@ void Tracker::Channel_View()
 							{
 								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 							}
-							if (Selectable(Channels[i].InstrumentView(j).data(), IsPoint && CursorPos == INSTR, 0, RowVec))
+							if (Selectable(Channels[i].InstrumentView(j).c_str(), IsPoint && CursorPos == INSTR, 0, RowVec))
 							{
 								CursorPos = INSTR;
 								CursorX = i;
@@ -908,7 +910,7 @@ void Tracker::Channel_View()
 							{
 								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 							}
-							if (Selectable(Channels[i].VolumeView(j).data(), IsPoint && CursorPos == VOLUME, CursorPos == VOLUME, RowVec))
+							if (Selectable(Channels[i].VolumeView(j).c_str(), IsPoint && CursorPos == VOLUME, CursorPos == VOLUME, RowVec))
 							{
 								CursorPos = VOLUME;
 								CursorX = i;
@@ -926,7 +928,7 @@ void Tracker::Channel_View()
 							{
 								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 							}
-							if (Selectable(Channels[i].EffectView(j).data(), IsPoint && CursorPos == EFFECT, 0, RowVec))
+							if (Selectable(Channels[i].EffectView(j).c_str(), IsPoint && CursorPos == EFFECT, 0, RowVec))
 							{
 								CursorPos = EFFECT;
 								CursorX = i;
@@ -944,7 +946,7 @@ void Tracker::Channel_View()
 							{
 								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 							}
-							if (Selectable(Channels[i].Effectvalue(j).data(), IsPoint && CursorPos == VALUE, 0, RowVec))
+							if (Selectable(Channels[i].Effectvalue(j).c_str(), IsPoint && CursorPos == VALUE, 0, RowVec))
 							{
 								CursorPos = VALUE;
 								CursorX = i;
@@ -968,12 +970,12 @@ void Tracker::Samples()
 {
 	if (Begin("Samples"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-		if (Button("Add", ImVec2(GetWindowWidth() * 0.275, 24)))
+		if (Button("Add", ImVec2(GetWindowWidth() * .3, 24)))
 		{
 			LoadingSample = true;
 		}
 		SameLine();
-		if (Button("Delete", ImVec2(GetWindowWidth() * 0.275, 24)) && samples.size() > 1)
+		if (Button("Delete", ImVec2(GetWindowWidth() * .3, 24)) && samples.size() > 1)
 		{
 			cout << "SAMPLE LIST SIZE: " << samples.size();
 			if (SelectedSample > samples.size())
@@ -987,7 +989,7 @@ void Tracker::Samples()
 			}
 		}
 		SameLine();
-		if (Button("Copy", ImVec2(GetWindowWidth() * 0.275, 24)) && samples.size() > 1)
+		if (Button("Copy", ImVec2(GetWindowWidth() * .3, 24)) && samples.size() > 1)
 		{
 			int index = samples.size();
 			Sample newsamp = samples[SelectedSample];
@@ -1004,11 +1006,11 @@ void Tracker::Samples()
 			{
 				IDOffset++;
 				PushID(IDOffset);
-				Text(to_string(i).data());
+				Text(to_string(i).c_str());
 				SameLine();
 				if (SelectedSample <= samples.size() - 1)
 				{
-					if (Selectable(samples[i].SampleName.data(), SelectedSample == i))
+					if (Selectable(samples[i].SampleName.c_str(), SelectedSample == i))
 					{
 						SelectedSample = i;
 						ShowSample = true;
@@ -1047,7 +1049,7 @@ void Tracker::Sample_View()
 			}
 			//BeginChild("SampleTable",ImVec2(GetWindowWidth()*0.95, GetWindowHeight() * 0.85),UNIVERSAL_WINDOW_FLAGS);
 			NextColumn();
-			InputText("Sample Name", (char*)samples[SelectedSample].SampleName.data(), 2048);
+			InputText("Sample Name", (char*)samples[SelectedSample].SampleName.c_str(), sizeof(samples[SelectedSample].SampleName));
 			InputInt("Playing HZ", &samples[SelectedSample].SampleRate);
 			InputInt("Fine Tune", (int*) &samples[SelectedSample].FineTune, 1,1);
 			Checkbox("Loop Sample", &samples[SelectedSample].Loop);
@@ -1147,7 +1149,7 @@ void Tracker::Settings_View()
 				{
 					Text("Screen Resolutions");
 					
-					if (BeginCombo("##Screen Resolutions", ResolutionNames[SManager.CustomData.Res].data()))
+					if (BeginCombo("##Screen Resolutions", ResolutionNames[SManager.CustomData.Res].c_str()))
 					{
 						for (int i = 0; i < 4; i++)
 						{
@@ -1176,7 +1178,7 @@ void Tracker::Settings_View()
 					NewLine();
 					Text("Notation Style");
 
-					if (BeginCombo("##NotationStyle", NotationNames[SManager.CustomData.NStyle].data()))
+					if (BeginCombo("##NotationStyle", NotationNames[SManager.CustomData.NStyle].c_str()))
 					{
 						for (int i = 0; i < 3; i++)
 						{
@@ -1231,7 +1233,7 @@ void Tracker::Settings_View()
 					NewLine();
 					Text("Audio Buffer Size");
 
-					if (BeginCombo("##Buffer", BufferNames[SManager.CustomData.Buf].data()))
+					if (BeginCombo("##Buffer", BufferNames[SManager.CustomData.Buf].c_str()))
 					{
 						for (int i = 0; i < 5; i++)
 						{
@@ -1270,7 +1272,7 @@ void Tracker::Settings_View()
 				SetCursorPosX(GetWindowWidth() - (TextSize + GetStyle().FramePadding.x + 18) * 2);
 				if (Button("Apply"))
 				{
-					UpdateSettings();
+					UpdateSettings(0);
 				}
 
 				SameLine();
@@ -1308,6 +1310,10 @@ void Tracker::Author_View()
 {
 	if (Begin("Author"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
+		Text("Author");
+		InputText("##Author", (char*)Authbuf.c_str(), sizeof(Authbuf));
+
+		NewLine();
 		Text("Base tempo");
 		InputInt("##Base tempo", &BaseTempo,1, 1);
 		Text("Speed");
@@ -1328,7 +1334,7 @@ void Tracker::Author_View()
 		}
 		string temp = "Tempo: ";
 		temp += to_string(BaseTempo / TempoDivider);
-		Text(temp.data());
+		Text(temp.c_str());
 		NewLine();
 		Text("Track Length");
 		InputInt("##Track Length", &TrackLength, 1, 16);
@@ -1348,10 +1354,9 @@ void Tracker::Author_View()
 			Highlight2 = 1;
 		}
 		NewLine();
-		Text("Author");
-		InputText("##Author", (char*)Authbuf.data(), 1024);
 		Text("Desc");
-		InputTextMultiline("##Desc", (char*)Descbuf.data(), 1024,ImVec2(GetWindowWidth() * 0.65, GetWindowHeight() * 0.6));
+		InputTextMultiline("##Desc", (char*)Descbuf.c_str(), sizeof(Descbuf), ImVec2(GetWindowWidth() * 0.65, GetWindowHeight() * 0.4));
+
 		End();
 	}
 	else
@@ -1376,7 +1381,7 @@ void Tracker::Info_View()
 	int EchoSpace = UsedSpace;
 	int SampleSpace = 0;
 
-	for (int x = 0; x < samples.size(); x++)
+	for (int x = 1; x < samples.size(); x++)
 	{
 		UsedSpace += samples[x].brr.DBlocks.size() * 9;
 		SampleSpace += samples[x].brr.DBlocks.size() * 9;
@@ -1384,45 +1389,29 @@ void Tracker::Info_View()
 	for (int x = 1; x < inst.size(); x++)
 	{
 		UsedSpace += 9;
-		InstrumentSpace += 9;
+		InstrumentSpace += 9;//While technically wasting 6 bits here, I can't be bothered changing it
 	}
 	int LastPos = 0;
 
 	//Background Rect to show bounds
 	if (UsedSpace > MaxRange)
 	{
-		Text(("Used space: " + to_string(UsedSpace) + " bytes" + " Too much data used!!!").data());
+		Text(("Used space: " + to_string(UsedSpace) + " bytes" + " Too much data used!!!").c_str());
 		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + GetWindowWidth() * 0.95f, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(ReleaseColour), .25f, 0);
 	}
 	else
 	{
-		Text(("Used space: " + to_string(UsedSpace) + " bytes").data());
-		UsedSpace = 0;
+		Text(("Used space: " + to_string(UsedSpace) + " bytes").c_str());
 		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + GetWindowWidth() * 0.95f, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(H2Col), .25f, 0);
-		
-		for (int i = 1; i < inst.size(); i++)
-		{
-			UsedSpace += 9;//While technically wasting 6 bits here, I can't be bothered changing it
-		}
-		//Instruments
-		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + (UsedSpace * GetWindowWidth()*0.95f)/ MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(AttackColour));
-		
-		LastPos = (UsedSpace * GetWindowWidth() * 0.95f) / MaxRange;
-		//UsedSpace = 0;
-		if (samples.size() > 1)
-		{
-			for (int i = 0; i < samples.size(); i++)
-			{
-				UsedSpace += samples[i].brr.DBlocks.size()*9;
-			}
-		}
 
-		draw_list->AddRectFilled(ImVec2(xpos + LastPos, ypos), ImVec2(xpos + LastPos + (UsedSpace * GetWindowWidth()*0.95f)/ MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(SustainColour));
-		LastPos = (UsedSpace * GetWindowWidth() * 0.95f) / MaxRange;
-		UsedSpace = (2048 * Delay);
+		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + (InstrumentSpace * GetWindowWidth()*0.95f)/ MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(AttackColour));
+		LastPos = (InstrumentSpace * GetWindowWidth() * 0.95f) / MaxRange;
 
-		draw_list->AddRectFilled(ImVec2(xpos + LastPos, ypos), ImVec2(xpos + LastPos + (UsedSpace * GetWindowWidth() * 0.95f) / MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(DecayColour));
-		LastPos = (UsedSpace * GetWindowWidth() * 0.95f) / MaxRange;
+		draw_list->AddRectFilled(ImVec2(xpos + LastPos, ypos), ImVec2(xpos + LastPos + (SampleSpace * GetWindowWidth()*0.95f)/ MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(SustainColour));
+		LastPos += (SampleSpace * GetWindowWidth() * 0.95f) / MaxRange;
+
+		draw_list->AddRectFilled(ImVec2(xpos + LastPos, ypos), ImVec2(xpos + LastPos + (EchoSpace * GetWindowWidth() * 0.95f) / MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(DecayColour));
+		LastPos += (EchoSpace * GetWindowWidth() * 0.95f) / MaxRange;
 
 	}
 	for (int i = 0; i < 4; i++)
@@ -1434,19 +1423,19 @@ void Tracker::Info_View()
 	xpos = GetCursorScreenPos().x;
 	
 	draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos+TextSize, ypos + TextSize), ColorConvertFloat4ToU32(H2Col), .25f, 0);
-	Text(("  Free: " + to_string(MaxRange - (InstrumentSpace + SampleSpace + EchoSpace)) + " bytes").data());
+	Text(("  Free: " + to_string(MaxRange - (InstrumentSpace + SampleSpace + EchoSpace)) + " bytes").c_str());
 
 	ypos = GetCursorScreenPos().y - (TextSize * 0.125f);;
 	draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + TextSize, ypos + TextSize), ColorConvertFloat4ToU32(AttackColour), .25f, 0);
-	Text(("  Instruments: " + to_string(InstrumentSpace) + " bytes").data());
+	Text(("  Instruments: " + to_string(InstrumentSpace) + " bytes").c_str());
 
 	ypos = GetCursorScreenPos().y - (TextSize * 0.125f);;
 	draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + TextSize, ypos + TextSize), ColorConvertFloat4ToU32(SustainColour), .25f, 0);
-	Text(("  Samples: " + to_string(SampleSpace) + " bytes").data());
+	Text(("  Samples: " + to_string(SampleSpace) + " bytes").c_str());
 
 	ypos = GetCursorScreenPos().y - (TextSize * 0.125f);;
 	draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + TextSize, ypos + TextSize), ColorConvertFloat4ToU32(DecayColour), .25f, 0);
-	Text(("  Echo: " + to_string(EchoSpace) + " bytes").data());
+	Text(("  Echo: " + to_string(EchoSpace) + " bytes").c_str());
 
 	End();
 }
@@ -1463,10 +1452,23 @@ void Tracker::EchoSettings()
 			SliderInt("Echo Volume Left", &EchoVolL, -128, 127);
 			SliderInt("Echo Volume Right", &EchoVolR, -128, 127);
 
+			int FilterAccum = 0;
 			Text("Echo filter");
 			for (int i = 0; i < 8; i++)
 			{
-				SliderInt(to_string(i).data(), &EchoFilter[i], -128, 127);
+				FilterAccum += EchoFilter[i];
+				SliderInt(to_string(i).c_str(), &EchoFilter[i], -128, 127);
+			}
+			string FilterText = "Filter total: " + to_string(FilterAccum);
+			if (FilterAccum < -128 || FilterAccum > 127) {
+				PushStyleColor(ImGuiCol_Text, ReleaseColour);
+				FilterText += " Too large a value!";
+				Text(FilterText.c_str());
+				PopStyleColor();
+			}
+			else
+			{
+				Text(FilterText.c_str());
 			}
 			if (Button("Close", ImVec2(64, TextSize * 1.5))) {
 				ShowEcho = false;
@@ -1956,7 +1958,7 @@ void Tracker::LoadSample()
 			soundinfo.channels = 1;
 			soundinfo.frames = SG.TRACKER_AUDIO_BUFFER;
 
-			SNDFILE* file = sf_open(FileName.data(), SFM_READ, &soundinfo);
+			SNDFILE* file = sf_open(FileName.c_str(), SFM_READ, &soundinfo);
 			if (file)//Loaded right
 			{
 				short FileBuffer[65536];
@@ -2020,7 +2022,7 @@ void Tracker::LoadSample()
 void Tracker::DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[])
 {
 	//Thank you AlexMush for the downmixing code :]
-	Sint16 constexpr sampleBufferSize = 8192;
+	Sint16 constexpr sampleBufferSize = 8192*4;
 	int sampleLength = sfinfo.frames / sfinfo.channels;
 	vector<Sint16> sampleBuffer;
 	sampleBuffer.reserve(sampleBufferSize * sfinfo.channels);
@@ -2103,7 +2105,7 @@ void Tracker::ChangePatternData(int x, int y)
 	StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[y].effectvalue = Channels[x].Rows[y].effectvalue;
 }
 
-void Tracker::UpdateSettings()
+void Tracker::UpdateSettings(int w)
 {
 	for (int i = 0; i < 8; i++)
 	{
@@ -2116,10 +2118,16 @@ void Tracker::UpdateSettings()
 	TextSize = SManager.CustomData.FontSize;
 	TextSizeLarge = TextSize*2;
 	TrackLength = SManager.CustomData.DefaultTrackSize;
-	if (MoveOnDelete) SManager.CustomData.DeleteMovesAtStepCount = 1;
-	else SManager.CustomData.DeleteMovesAtStepCount = 0;
-	if (MoveByStep) SManager.CustomData.CursorMovesAtStepCount = 1;
-	else SManager.CustomData.CursorMovesAtStepCount = 0;
+	if (w == 1)
+	{
+		MoveOnDelete = SManager.CustomData.DeleteMovesAtStepCount;
+		MoveByStep = SManager.CustomData.CursorMovesAtStepCount;
+	}
+	else
+	{
+		SManager.CustomData.DeleteMovesAtStepCount = MoveOnDelete;
+		SManager.CustomData.CursorMovesAtStepCount = MoveByStep;
+	}
 	SManager.DefaultData = SManager.CustomData;
 	SG.SetBufferSize(SG.TRACKER_AUDIO_BUFFER);
 	SManager.CreateSettings();
@@ -2129,5 +2137,5 @@ void Tracker::UpdateSettings()
 void Tracker::ResetSettings()
 {
 	SManager.CustomData = SManager.DefaultData;
-	UpdateSettings();
+	UpdateSettings(0);
 }

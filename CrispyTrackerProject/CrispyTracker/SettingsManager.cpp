@@ -119,7 +119,6 @@ void SettingsManager::ReadSettingsFile()
 				{
 					int CurrentSetting = SettingsDict.at(CurrentLine);
 					cout << "\nCurrent Line: " << CurrentLine;
-					cout << "\nCurrent Setting: " << CurrentSetting;
 					cout << "\nCurrent Input: " << InputValue;
 					switch (CurrentSetting)
 					{

@@ -1,6 +1,6 @@
 #ifndef SoundGenerator
 
-#define AUDIO_BUFFER	1024
+#define AUDIO_BUFFER	512
 #define AUDIO_RATE		44100
 
 #include <stdio.h>

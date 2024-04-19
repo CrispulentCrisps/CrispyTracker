@@ -68,6 +68,7 @@ public:
 	int SCREEN_HEIGHT = 1080;
 
 	GLFWwindow* window = NULL;
+	GLFWmonitor* monitor = NULL;
 	ImGuiContext* cont = NULL;
 	ImGuiIO io;
 	Channel Channels[8];
@@ -196,6 +197,8 @@ public:
 
 	int SongLength = 1;
 	int Maxindex = 8;
+
+	int InputCount = 0;//Used for the amount of times a value has been input into the volume, effects or value
 	
 	double ScrollValue();
 
@@ -231,7 +234,7 @@ public:
 	void UpdatePatternIndex(int x, int y);
 	void UpdateAllPatterns();
 	void ChangePatternData(int x, int y);
-	void UpdateSettings();
+	void UpdateSettings(int w);
 	void ResetSettings();
 
 	string Authbuf = " ";
