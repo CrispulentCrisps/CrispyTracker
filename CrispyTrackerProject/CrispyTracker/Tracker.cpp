@@ -749,6 +749,7 @@ void Tracker::Channel_View()
 	GetStyle().CellPadding.x = 4;
 	if (Begin("Channels"), 0, UNIVERSAL_WINDOW_FLAGS)
 	{
+		int paddingsave = GetStyle().FramePadding.x;
 		if (PlayingMode)
 		{
 			/* calc steps
@@ -759,11 +760,10 @@ void Tracker::Channel_View()
 			*/
 			SetScrollY(ScrollValue());
 		}
-
-		if (BeginTable("ChannelView", 9, TABLE_FLAGS, ImVec2(GetWindowWidth() * .9 + (TextSize * 8), 0)));
+		if (BeginTable("ChannelView", 9, ImGuiTableFlags_SizingFixedFit, ImVec2(GetWindowWidth() * .9 + (TextSize * 8), 0)));
 		{
 			string ind;
-			ImVec2 RowVec = ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4);
+			ImVec2 RowVec = ImVec2((GetWindowWidth() / 9.0) / 6.0, (double)TextSize - (TextSize/3.0));
 			//Actual pattern data
 			TableNextColumn();
 
@@ -815,6 +815,7 @@ void Tracker::Channel_View()
 						{
 							ind += " ";
 						}
+
 						if (Selectable(ind.c_str())) {
 							CursorY = j;
 						}
@@ -822,8 +823,17 @@ void Tracker::Channel_View()
 					else if (j > -1)
 					{
 						//Channel
-						if (BeginTable("RowView", 5, TABLE_FLAGS))
+						//the *12 is for the char amount + 1 for spacing
+						ImVec2 sizevec = ImVec2(TextSize*10, RowVec.y);
+						if (BeginTable("RowView", 5, TABLE_FLAGS, sizevec))
 						{
+							ImVec2 NoteSize = ImVec2(TextSize * 2, RowVec.y);
+							ImVec2 MiscSize = ImVec2(TextSize, RowVec.y);
+							TableSetupColumn("note",	ImGuiTableColumnFlags_WidthFixed, 0.0);
+							TableSetupColumn("vol",		ImGuiTableColumnFlags_WidthFixed, 0.0);
+							TableSetupColumn("inst",	ImGuiTableColumnFlags_WidthFixed, 0.0);
+							TableSetupColumn("effe",	ImGuiTableColumnFlags_WidthFixed, 0.0);
+							TableSetupColumn("val",		ImGuiTableColumnFlags_WidthFixed, 0.0);
 							TableNextColumn();
 							//Row Highlighting
 							ImU32 col;
@@ -856,7 +866,6 @@ void Tracker::Channel_View()
 									ChannelInput(CursorPos, i, j);
 								}
 							}
-
 							PushID(IDOffset + i + (j * 40));
 							//Cursor highlighting
 							if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
@@ -867,7 +876,7 @@ void Tracker::Channel_View()
 							{
 								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 							}
-							if (Selectable(Channels[i].NoteView(j).c_str(), IsPoint && CursorPos == NOTE, 0, RowVec))
+							if (Selectable(Channels[i].NoteView(j).c_str(), IsPoint && CursorPos == NOTE, 0, NoteSize))
 							{
 								CursorPos = NOTE;
 								CursorX = i;
@@ -885,7 +894,7 @@ void Tracker::Channel_View()
 							{
 								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 							}
-							if (Selectable(Channels[i].InstrumentView(j).c_str(), IsPoint && CursorPos == INSTR, 0, RowVec))
+							if (Selectable(Channels[i].InstrumentView(j).c_str(), IsPoint && CursorPos == INSTR, 0, MiscSize))
 							{
 								CursorPos = INSTR;
 								CursorX = i;
@@ -903,7 +912,7 @@ void Tracker::Channel_View()
 							{
 								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 							}
-							if (Selectable(Channels[i].VolumeView(j).c_str(), IsPoint && CursorPos == VOLUME, CursorPos == VOLUME, RowVec))
+							if (Selectable(Channels[i].VolumeView(j).c_str(), IsPoint && CursorPos == VOLUME, CursorPos == VOLUME, MiscSize))
 							{
 								CursorPos = VOLUME;
 								CursorX = i;
@@ -921,7 +930,7 @@ void Tracker::Channel_View()
 							{
 								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 							}
-							if (Selectable(Channels[i].EffectView(j).c_str(), IsPoint && CursorPos == EFFECT, 0, RowVec))
+							if (Selectable(Channels[i].EffectView(j).c_str(), IsPoint && CursorPos == EFFECT, 0, MiscSize))
 							{
 								CursorPos = EFFECT;
 								CursorX = i;
@@ -939,7 +948,7 @@ void Tracker::Channel_View()
 							{
 								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 							}
-							if (Selectable(Channels[i].Effectvalue(j).c_str(), IsPoint && CursorPos == VALUE, 0, RowVec))
+							if (Selectable(Channels[i].Effectvalue(j).c_str(), IsPoint && CursorPos == VALUE, 0, MiscSize))
 							{
 								CursorPos = VALUE;
 								CursorX = i;
@@ -954,6 +963,7 @@ void Tracker::Channel_View()
 				TableNextColumn();
 			}
 #pragma endregion
+			GetStyle().FramePadding.x = paddingsave;
 			EndTable();//keeps crashing here when it minimises, not a clue why other than EndTable seems to be executed too many times?
 		}
 	}

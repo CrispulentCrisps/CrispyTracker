@@ -45,7 +45,7 @@ public:
 	int UNIVERSAL_WINDOW_FLAGS = ImGuiWindowFlags_AlwaysAutoResize;
 	int TAB_FLAGS = ImGuiTabBarFlags_NoCloseWithMiddleMouseButton;
 	int TAB_ITEM_FLAGS = ImGuiTabItemFlags_NoReorder;
-	int TABLE_FLAGS = ImGuiTableFlags_SizingStretchProp;
+	int TABLE_FLAGS = ImGuiTableFlags_SizingStretchSame;
 	int IMPLOT_FLAGS = ImPlotFlags_NoFrame | ImPlotFlags_Crosshairs;
 	int SPS = 41000;
 	string VERSION = "version: 0.4";
