@@ -8,12 +8,12 @@
 #pragma once
 #ifndef Tracker
 
-#include <SDL_keyboard.h>
-
 #include "SettingsManager.h"
 #include "Patterns.h"
 #include "SoundGenerator.h"
 #include "SnesAPUHandler.h"
+
+#include <SDL_keyboard.h>
 
 #include "Libraries/imgui/backends/imgui_impl_opengl3_loader.h"
 #include "Libraries/glfw-3.3.8/glfw-3.3.8/include/GLFW/glfw3.h"
@@ -50,7 +50,7 @@ public:
 	int SPS = 41000;
 	string VERSION = "version: 0.4";
 	string Fontpath = "fonts/Manaspace.ttf";
-	int AUDIO_FORMATS = SF_FORMAT_WAV | SF_FORMAT_OGG | SF_FORMAT_MPEG_LAYER_III;
+	int AUDIO_FORMATS = SF_FORMAT_WAV | SF_FORMAT_OGG | SF_FORMAT_MPEG_LAYER_III | SF_FORMAT_MPEG_LAYER_II | SF_FORMAT_MPEG_LAYER_I;
 	int FrameCount = 0;
 	int Event;
 	int Currentkey;
@@ -220,6 +220,7 @@ public:
 	void Settings_View();
 	void Misc_View();
 	void Author_View();
+	void Speed_View();
 	void Info_View();
 	void EchoSettings();
 	void SetupInstr();

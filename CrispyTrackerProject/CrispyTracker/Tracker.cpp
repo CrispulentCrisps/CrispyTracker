@@ -1,6 +1,5 @@
 #include "Tracker.h"
 #include "SoundGenerator.h"
-
 //Universal variables here
 bool running = true;
 
@@ -234,6 +233,7 @@ void Tracker::Render()
 	{
 		MenuBar();
 		Author_View();
+		Speed_View();
 		//ShowDemoWindow();
 		Patterns_View();
 		Channel_View();
@@ -256,8 +256,11 @@ void Tracker::Render()
 	}
 
 	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-	glfwSwapBuffers(window);
+	if (ImGui::GetDrawData() != NULL)
+	{
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		glfwSwapBuffers(window);
+	}
 	glfwWaitEvents();
 	EndFrame();
 }
@@ -315,28 +318,28 @@ void Tracker::MenuBar()
 
 void Tracker::CreditsWindow()
 {
-	Begin("CreditsWindow"), true, UNIVERSAL_WINDOW_FLAGS;
-	PushFont(Largefont);
-	Text("CREDITS");
-	PopFont();
-	NewLine();
-	NewLine();
-	Text("Code:");
-	
-	BulletText("Crisps");
-	BulletText("Alexmush");
-	BulletText("Euly");
+	if (Begin("CreditsWindow"), true, UNIVERSAL_WINDOW_FLAGS) {
+		PushFont(Largefont);
+		Text("CREDITS");
+		PopFont();
+		NewLine();
+		NewLine();
+		Text("Code:");
 
-	NewLine();
-	Text("Emulator Code:");
-	BulletText("snes_spc by John Reagan, fork of the SPC emulation from Blargg");
+		BulletText("Crisps");
+		BulletText("Alexmush");
+		BulletText("Euly");
 
-	NewLine();
-	Text("Driver Code:");
-	BulletText("Kulor");
+		NewLine();
+		Text("Emulator Code:");
+		BulletText("snes_spc by John Reagan, fork of the SPC emulation from Blargg");
 
-	if (Button("Back to editor", ImVec2(128, TextSize * 1.5))) ShowCredits = false;
-	
+		NewLine();
+		Text("Driver Code:");
+		BulletText("Kulor");
+
+		if (Button("Back to editor", ImVec2(128, TextSize * 1.5))) ShowCredits = false;
+	}
 	End();
 }
 
@@ -460,13 +463,9 @@ void Tracker::Patterns_View()
 				PushFont(Largefont);
 			}
 			PopFont();
-			End();
-		}
-		else
-		{
-			End();
 		}
 	}
+	End();
 }
 
 void Tracker::Instruments()//Showing the instruments window at the side
@@ -507,7 +506,6 @@ void Tracker::Instruments()//Showing the instruments window at the side
 		//Instrument side bar
 		if (inst.size() > 0)
 		{
-			//BeginChild("List", ImVec2(GetWindowWidth() - InstXPadding, GetWindowHeight() - InstYPadding), true, UNIVERSAL_WINDOW_FLAGS);
 			if (BeginTable("InstList", 1, TABLE_FLAGS, ImVec2(GetWindowWidth() * 0.87, 24), 24))
 			{
 				for (int i = 0; i < inst.size(); i++)
@@ -534,14 +532,9 @@ void Tracker::Instruments()//Showing the instruments window at the side
 				}
 				EndTable();
 			}
-			//EndChild();
 		}
-		End();
 	}
-	else
-	{
-		End();
-	}
+	End();
 }
 
 void Tracker::Instrument_View()//Instrument editor
@@ -741,13 +734,12 @@ void Tracker::Instrument_View()//Instrument editor
 			if (Button("Close", ImVec2(64, TextSize * 1.5))) {
 				ShowInstrument = false;
 			}
-			End();
 		}
 		else
 		{
 			ShowInstrument = false;
-			End();
 		}
+		End();
 	}
 
 }
@@ -755,25 +747,27 @@ void Tracker::Instrument_View()//Instrument editor
 void Tracker::Channel_View()
 {
 	GetStyle().CellPadding.x = 4;
-	if (Begin("Channels"), true, UNIVERSAL_WINDOW_FLAGS)
+	if (Begin("Channels"), 0, UNIVERSAL_WINDOW_FLAGS)
 	{
 		if (PlayingMode)
 		{
 			/* calc steps
 				* Normalise to 0-1
-				* Do something to include the offset for the scroll so the bar is scrolling down when it reaches the middle	
+				* Do something to include the offset for the scroll so the bar is scrolling down when it reaches the middle
 				* Scale to screen size
 				* Remove padding from scroll
 			*/
 			SetScrollY(ScrollValue());
-		}	
-		if(BeginTable("ChannelView",9, TABLE_FLAGS, ImVec2(GetWindowWidth()*.9 + (TextSize*8), 0)));
+		}
+
+		if (BeginTable("ChannelView", 9, TABLE_FLAGS, ImVec2(GetWindowWidth() * .9 + (TextSize * 8), 0)));
 		{
 			string ind;
 			ImVec2 RowVec = ImVec2((GetWindowWidth() / 9) / 5, TextSize - 4);
 			//Actual pattern data
 			TableNextColumn();
 
+#pragma region ChannelTables
 			// This index is for each individual channel on the snes
 			// the -1 is for the left hand columns index
 			for (int i = -1; i < 8; i++)//X
@@ -821,7 +815,7 @@ void Tracker::Channel_View()
 						{
 							ind += " ";
 						}
-						if(Selectable(ind.c_str())) {
+						if (Selectable(ind.c_str())) {
 							CursorY = j;
 						}
 					}
@@ -831,7 +825,6 @@ void Tracker::Channel_View()
 						if (BeginTable("RowView", 5, TABLE_FLAGS))
 						{
 							TableNextColumn();
-
 							//Row Highlighting
 							ImU32 col;
 							if (EditingMode && j == CursorY || PlayingMode && j == CursorY)
@@ -960,6 +953,7 @@ void Tracker::Channel_View()
 				}
 				TableNextColumn();
 			}
+#pragma endregion
 			EndTable();//keeps crashing here when it minimises, not a clue why other than EndTable seems to be executed too many times?
 		}
 	}
@@ -1000,40 +994,35 @@ void Tracker::Samples()
 
 		if (samples.size() > 0)	
 		{
-			//BeginChild("SampleList", ImVec2(GetWindowWidth() - InstXPadding, GetWindowHeight() - InstYPadding), true, UNIVERSAL_WINDOW_FLAGS);
-			BeginTable("SampleTable", 1, TABLE_FLAGS, ImVec2(GetWindowWidth() * 0.75, 24), 24);
-			for (int i = 0; i < samples.size(); i++)
-			{
-				IDOffset++;
-				PushID(IDOffset);
-				Text(to_string(i).c_str());
-				SameLine();
-				if (SelectedSample <= samples.size() - 1)
+			if (BeginTable("SampleTable", 1, TABLE_FLAGS, ImVec2(GetWindowWidth() * 0.75, 24), 24)) {
+				for (int i = 0; i < samples.size(); i++)
 				{
-					if (Selectable(samples[i].SampleName.c_str(), SelectedSample == i))
+					IDOffset++;
+					PushID(IDOffset);
+					Text(to_string(i).c_str());
+					SameLine();
+					if (SelectedSample <= samples.size() - 1)
 					{
-						SelectedSample = i;
-						ShowSample = true;
-						ImPlot::SetNextAxisToFit(x);
-						//cout << "\nSelected Sample: " << SelectedSample;
+						if (Selectable(samples[i].SampleName.c_str(), SelectedSample == i))
+						{
+							SelectedSample = i;
+							ShowSample = true;
+							ImPlot::SetNextAxisToFit(x);
+							//cout << "\nSelected Sample: " << SelectedSample;
+						}
 					}
+					else
+					{
+						SelectedSample = samples.size() - 1;
+					}
+					TableNextColumn();
+					PopID();
 				}
-				else
-				{
-					SelectedSample = samples.size() - 1;
-				}
-				TableNextColumn();
-				PopID();
+				EndTable();
 			}
-			EndTable();
-			//EndChild();
 		}
-		End();
 	}
-	else
-	{
-		End();
-	}
+	End();
 }
 
 void Tracker::Sample_View()
@@ -1121,14 +1110,8 @@ void Tracker::Sample_View()
 			if (Button("Close", ImVec2(64, TextSize * 1.5))) {
 				ShowSample = false;
 			}
-			
-			//EndChild();
-			End();
 		}
-		else
-		{
-			End();
-		}
+		End();
 	}
 }
 
@@ -1283,9 +1266,8 @@ void Tracker::Settings_View()
 					ShowSettings = false;
 				}
 			}
-			End();
-
 		}
+		End();
 	}
 }
 
@@ -1298,12 +1280,8 @@ void Tracker::Misc_View()
 		Octave > 8 ? Octave = 8 : Octave < 1 ? Octave = 1: Octave;
 		SliderInt("Volume Scale Left", &VolumeScaleL, 0, 127);
 		SliderInt("Volume Scale Right", &VolumeScaleR, 0, 127);
-		End();
 	}
-	else
-	{
-		End();
-	}
+	End();
 }
 
 void Tracker::Author_View()
@@ -1312,14 +1290,22 @@ void Tracker::Author_View()
 	{
 		Text("Author");
 		InputText("##Author", (char*)Authbuf.c_str(), sizeof(Authbuf));
+		Text("Desc");
+		InputTextMultiline("##Desc", (char*)Descbuf.c_str(), sizeof(Descbuf), ImVec2(GetWindowWidth() * 0.65, GetWindowHeight() * 0.7));
+	}
+	End();
+}
 
-		NewLine();
+void Tracker::Speed_View()
+{
+	if (Begin("SpeedView"))
+	{
 		Text("Base tempo");
-		InputInt("##Base tempo", &BaseTempo,1, 1);
+		InputInt("##Base tempo", &BaseTempo, 1, 1);
 		Text("Speed");
 		InputInt("##Speed 1", &Speed1, 1, 31);
 		Text("Tempo divider");
-		InputInt("##Tempo divider", &TempoDivider,1,1);
+		InputInt("##Tempo divider", &TempoDivider, 1, 1);
 		if (BaseTempo < 1)
 		{
 			BaseTempo = 1;
@@ -1353,90 +1339,82 @@ void Tracker::Author_View()
 		{
 			Highlight2 = 1;
 		}
-		NewLine();
-		Text("Desc");
-		InputTextMultiline("##Desc", (char*)Descbuf.c_str(), sizeof(Descbuf), ImVec2(GetWindowWidth() * 0.65, GetWindowHeight() * 0.4));
-
-		End();
 	}
-	else
-	{
-		End();
-	}
+	End();
 }
 
 void Tracker::Info_View()
 {
-	Begin("Information");
-
-	ImDrawList* draw_list = GetWindowDrawList();
-	ImVec2 p = GetCursorScreenPos();
-	int xpos = p.x;
-	int ypos = p.y + TextSize;
-	int StepSize = (xpos - GetWindowWidth()) / inst.size();
-	int MaxRange = 65536;
-	int UsedSpace = (2048 * Delay);
-	int InstrumentSpace = 0;
-	
-	int EchoSpace = UsedSpace;
-	int SampleSpace = 0;
-
-	for (int x = 1; x < samples.size(); x++)
+	if (Begin("Information")) 
 	{
-		UsedSpace += samples[x].brr.DBlocks.size() * 9;
-		SampleSpace += samples[x].brr.DBlocks.size() * 9;
+		ImDrawList* draw_list = GetWindowDrawList();
+		ImVec2 p = GetCursorScreenPos();
+		int xpos = p.x;
+		int ypos = p.y + TextSize;
+		int StepSize = (xpos - GetWindowWidth()) / inst.size();
+		int MaxRange = 65536;
+		int UsedSpace = (2048 * Delay);
+		int InstrumentSpace = 0;
+
+		int EchoSpace = UsedSpace;
+		int SampleSpace = 0;
+
+		for (int x = 1; x < samples.size(); x++)
+		{
+			UsedSpace += samples[x].brr.DBlocks.size() * 9;
+			SampleSpace += samples[x].brr.DBlocks.size() * 9;
+		}
+		for (int x = 1; x < inst.size(); x++)
+		{
+			UsedSpace += 9;
+			InstrumentSpace += 9;//While technically wasting 6 bits here, I can't be bothered changing it
+		}
+		int LastPos = 0;
+
+		//Background Rect to show bounds
+		if (UsedSpace > MaxRange)
+		{
+			Text(("Used space: " + to_string(UsedSpace) + " bytes" + " Too much data used!!!").c_str());
+			draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + GetWindowWidth() * 0.95f, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(ReleaseColour), .25f, 0);
+		}
+		else
+		{
+			Text(("Used space: " + to_string(UsedSpace) + " bytes").c_str());
+			draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + GetWindowWidth() * 0.95f, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(H2Col), .25f, 0);
+
+			draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + (InstrumentSpace * GetWindowWidth() * 0.95f) / MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(AttackColour));
+			LastPos = (InstrumentSpace * GetWindowWidth() * 0.95f) / MaxRange;
+
+			draw_list->AddRectFilled(ImVec2(xpos + LastPos, ypos), ImVec2(xpos + LastPos + (SampleSpace * GetWindowWidth() * 0.95f) / MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(SustainColour));
+			LastPos += (SampleSpace * GetWindowWidth() * 0.95f) / MaxRange;
+
+			draw_list->AddRectFilled(ImVec2(xpos + LastPos, ypos), ImVec2(xpos + LastPos + (EchoSpace * GetWindowWidth() * 0.95f) / MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(DecayColour));
+			LastPos += (EchoSpace * GetWindowWidth() * 0.95f) / MaxRange;
+
+		}
+		for (int i = 0; i < 4; i++)
+		{
+			NewLine();
+		}
+		//Text display for data space
+		ypos = GetCursorScreenPos().y - (TextSize * 0.125f);
+		xpos = GetCursorScreenPos().x;
+
+		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + TextSize, ypos + TextSize), ColorConvertFloat4ToU32(H2Col), .25f, 0);
+		Text(("  Free: " + to_string(MaxRange - (InstrumentSpace + SampleSpace + EchoSpace)) + " bytes").c_str());
+
+		ypos = GetCursorScreenPos().y - (TextSize * 0.125f);;
+		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + TextSize, ypos + TextSize), ColorConvertFloat4ToU32(AttackColour), .25f, 0);
+		Text(("  Instruments: " + to_string(InstrumentSpace) + " bytes").c_str());
+
+		ypos = GetCursorScreenPos().y - (TextSize * 0.125f);;
+		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + TextSize, ypos + TextSize), ColorConvertFloat4ToU32(SustainColour), .25f, 0);
+		Text(("  Samples: " + to_string(SampleSpace) + " bytes").c_str());
+
+		ypos = GetCursorScreenPos().y - (TextSize * 0.125f);;
+		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + TextSize, ypos + TextSize), ColorConvertFloat4ToU32(DecayColour), .25f, 0);
+		Text(("  Echo: " + to_string(EchoSpace) + " bytes").c_str());
 	}
-	for (int x = 1; x < inst.size(); x++)
-	{
-		UsedSpace += 9;
-		InstrumentSpace += 9;//While technically wasting 6 bits here, I can't be bothered changing it
-	}
-	int LastPos = 0;
-
-	//Background Rect to show bounds
-	if (UsedSpace > MaxRange)
-	{
-		Text(("Used space: " + to_string(UsedSpace) + " bytes" + " Too much data used!!!").c_str());
-		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + GetWindowWidth() * 0.95f, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(ReleaseColour), .25f, 0);
-	}
-	else
-	{
-		Text(("Used space: " + to_string(UsedSpace) + " bytes").c_str());
-		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + GetWindowWidth() * 0.95f, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(H2Col), .25f, 0);
-
-		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + (InstrumentSpace * GetWindowWidth()*0.95f)/ MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(AttackColour));
-		LastPos = (InstrumentSpace * GetWindowWidth() * 0.95f) / MaxRange;
-
-		draw_list->AddRectFilled(ImVec2(xpos + LastPos, ypos), ImVec2(xpos + LastPos + (SampleSpace * GetWindowWidth()*0.95f)/ MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(SustainColour));
-		LastPos += (SampleSpace * GetWindowWidth() * 0.95f) / MaxRange;
-
-		draw_list->AddRectFilled(ImVec2(xpos + LastPos, ypos), ImVec2(xpos + LastPos + (EchoSpace * GetWindowWidth() * 0.95f) / MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(DecayColour));
-		LastPos += (EchoSpace * GetWindowWidth() * 0.95f) / MaxRange;
-
-	}
-	for (int i = 0; i < 4; i++)
-	{
-		NewLine();
-	}
-	//Text display for data space
-	ypos = GetCursorScreenPos().y - (TextSize*0.125f);
-	xpos = GetCursorScreenPos().x;
-	
-	draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos+TextSize, ypos + TextSize), ColorConvertFloat4ToU32(H2Col), .25f, 0);
-	Text(("  Free: " + to_string(MaxRange - (InstrumentSpace + SampleSpace + EchoSpace)) + " bytes").c_str());
-
-	ypos = GetCursorScreenPos().y - (TextSize * 0.125f);;
-	draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + TextSize, ypos + TextSize), ColorConvertFloat4ToU32(AttackColour), .25f, 0);
-	Text(("  Instruments: " + to_string(InstrumentSpace) + " bytes").c_str());
-
-	ypos = GetCursorScreenPos().y - (TextSize * 0.125f);;
-	draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + TextSize, ypos + TextSize), ColorConvertFloat4ToU32(SustainColour), .25f, 0);
-	Text(("  Samples: " + to_string(SampleSpace) + " bytes").c_str());
-
-	ypos = GetCursorScreenPos().y - (TextSize * 0.125f);;
-	draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + TextSize, ypos + TextSize), ColorConvertFloat4ToU32(DecayColour), .25f, 0);
-	Text(("  Echo: " + to_string(EchoSpace) + " bytes").c_str());
-
 	End();
 }
 
@@ -1473,8 +1451,8 @@ void Tracker::EchoSettings()
 			if (Button("Close", ImVec2(64, TextSize * 1.5))) {
 				ShowEcho = false;
 			}
-			End();
 		}
+		End();
 	}
 }
 
@@ -1988,7 +1966,6 @@ void Tracker::LoadSample()
 						*/
 						cur.SampleData.push_back(FileBuffer[i]);
 					}
-					cur.LargestPoint();
 					cur.SampleIndex = SelectedSample;
 					cur.SampleName = "Sample: ";
 					cur.SampleRate = soundinfo.samplerate;
@@ -2022,7 +1999,7 @@ void Tracker::LoadSample()
 void Tracker::DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[])
 {
 	//Thank you AlexMush for the downmixing code :]
-	Sint16 constexpr sampleBufferSize = 8192*4;
+	Sint16 constexpr sampleBufferSize = 8192;
 	int sampleLength = sfinfo.frames / sfinfo.channels;
 	vector<Sint16> sampleBuffer;
 	sampleBuffer.reserve(sampleBufferSize * sfinfo.channels);
