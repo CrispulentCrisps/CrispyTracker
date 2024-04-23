@@ -2,16 +2,16 @@
 //	|		Crispytracker		|
 //	|	   The SNES tracker		|
 //	|		 of all time		|
-//	_____________________________
+//	|___________________________|
 //Apologies for the anarchistic coding, I've no idea what I'm doing lmao
 
 #pragma once
 #ifndef Tracker
 
 #include "SettingsManager.h"
-#include "Patterns.h"
 #include "SoundGenerator.h"
 #include "SnesAPUHandler.h"
+#include "FileDef.h"
 
 #include <SDL_keyboard.h>
 

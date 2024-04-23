@@ -63,9 +63,9 @@ void Tracker::Run()
 {	
 	Emu_APU.APU_Startup();
 	glfwInit();
-	Authbuf.reserve(2048 * 8);
-	Descbuf.reserve(2048 * 8);
-	FilePath.reserve(2048 *8);
+	Authbuf.reserve(1024);
+	Descbuf.reserve(1024);
+	FilePath.reserve(1024);
 
 	//Initialise the tracker
 	Initialise(TrackLength);
@@ -110,9 +110,8 @@ void Tracker::Run()
 	StyleColorsClassic();
 	ImGuiStyle& style = GetStyle();
 	style.FrameBorderSize = 0.4f;
-	style.WindowRounding = 1.5f;
-	style.FrameRounding = 1.5f;
-	//style.Colors[ImGuiCol_WindowBg] = Default;
+	style.WindowRounding = .5f;
+	style.FrameRounding = .5f;
 	io = GetIO();
 	io.DisplaySize.x = SCREEN_WIDTH;
 	io.DisplaySize.y = SCREEN_HEIGHT;
@@ -472,7 +471,7 @@ void Tracker::Instruments()//Showing the instruments window at the side
 {
 	if (Begin("Instruments"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-		if (Button("Add", ImVec2(GetWindowWidth()* 0.275, 24)))
+		if (Button("Add", ImVec2(GetWindowWidth() * .3, 24)))
 		{
 			Instrument newinst = DefaultInst;
 			int index = inst.size();
@@ -481,7 +480,7 @@ void Tracker::Instruments()//Showing the instruments window at the side
 			inst.push_back(newinst);
 		}
 		SameLine();
-		if (Button("Delete", ImVec2(GetWindowWidth() * 0.275, 24)) && inst.size() > 1)
+		if (Button("Delete", ImVec2(GetWindowWidth() * .3, 24)) && inst.size() > 1)
 		{
 			if (SelectedInst >= inst.size())
 			{
@@ -494,7 +493,7 @@ void Tracker::Instruments()//Showing the instruments window at the side
 			}
 		}		
 		SameLine();
-		if (Button("Copy", ImVec2(GetWindowWidth() * 0.275, 24)) && inst.size() > 1)
+		if (Button("Copy", ImVec2(GetWindowWidth() * .3, 24)) && inst.size() > 1)
 		{
 			int index = inst.size();
 			Instrument newinst = inst[SelectedInst];
@@ -824,10 +823,10 @@ void Tracker::Channel_View()
 					{
 						//Channel
 						//the *12 is for the char amount + 1 for spacing
-						ImVec2 sizevec = ImVec2(TextSize*10, RowVec.y);
+						ImVec2 sizevec = ImVec2(TextSize*9, RowVec.y);
 						if (BeginTable("RowView", 5, TABLE_FLAGS, sizevec))
 						{
-							ImVec2 NoteSize = ImVec2(TextSize * 2, RowVec.y);
+							ImVec2 NoteSize = ImVec2(TextSize * 1.75, RowVec.y);
 							ImVec2 MiscSize = ImVec2(TextSize, RowVec.y);
 							TableSetupColumn("note",	ImGuiTableColumnFlags_WidthFixed, 0.0);
 							TableSetupColumn("vol",		ImGuiTableColumnFlags_WidthFixed, 0.0);
@@ -881,6 +880,7 @@ void Tracker::Channel_View()
 								CursorPos = NOTE;
 								CursorX = i;
 								CursorY = j;
+								SetScrollY(ScrollValue());
 							}
 							PopID();
 							PushID(IDOffset + i + (j * 40) + 1);
@@ -899,6 +899,7 @@ void Tracker::Channel_View()
 								CursorPos = INSTR;
 								CursorX = i;
 								CursorY = j;
+								SetScrollY(ScrollValue());
 							}
 							PopID();
 							PushID(IDOffset + i + (j * 40) + 2);
@@ -917,6 +918,7 @@ void Tracker::Channel_View()
 								CursorPos = VOLUME;
 								CursorX = i;
 								CursorY = j;
+								SetScrollY(ScrollValue());
 							}
 							PopID();
 							PushID(IDOffset + i + (j * 40) + 3);
@@ -935,6 +937,7 @@ void Tracker::Channel_View()
 								CursorPos = EFFECT;
 								CursorX = i;
 								CursorY = j;
+								SetScrollY(ScrollValue());
 							}
 							PopID();
 							PushID(IDOffset + i + (j * 40) + 4);
@@ -953,6 +956,7 @@ void Tracker::Channel_View()
 								CursorPos = VALUE;
 								CursorX = i;
 								CursorY = j;
+								SetScrollY(ScrollValue());
 							}
 							PopID();
 
@@ -1068,7 +1072,7 @@ void Tracker::Sample_View()
 				ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2(0, 0));
 				ImPlot::PushStyleVar(ImPlotStyleVar_LineWeight, PlotLineWeight);
 
-				ImPlot::SetNextAxisLimits(y, samples[SelectedSample].LPoint, samples[SelectedSample].HPoint);
+				ImPlot::SetNextAxisLimits(y, -32768, 32767);
 				ImPlot::SetNextAxisLimits(x, 0, samples[SelectedSample].SampleData.size());
 
 				if (ImPlot::BeginPlot("Waveform", ImVec2(GetWindowWidth() * 0.9, GetWindowHeight() * 0.7), IMPLOT_FLAGS)) 
@@ -1196,12 +1200,6 @@ void Tracker::Settings_View()
 					NewLine();
 					Text("Font Size:");
 					InputInt("##Fontsize", &SManager.CustomData.FontSize, 1, 1);
-					if (IsWindowHovered())
-					{
-						BeginTooltip();
-						Text("Note: Changes apply ONLY when program is closed\nText size may or may not break some parts of the visual UI, so please take care when changing!");
-						EndTooltip();
-					}
 
 					if (SManager.CustomData.FontSize < 1) SManager.CustomData.FontSize = 1;
 					if (SManager.CustomData.FontSize > 48) SManager.CustomData.FontSize = 48;
@@ -1267,7 +1265,12 @@ void Tracker::Settings_View()
 				{
 					UpdateSettings(0);
 				}
-
+				if (IsItemHovered())
+				{
+					BeginTooltip();
+					Text("Note: Changes apply ONLY when program is closed\nText size may or may not break some parts of the visual UI, so please take care when changing!");
+					EndTooltip();
+				}
 				SameLine();
 				SetCursorPosX(GetWindowWidth() - (TextSize + GetStyle().FramePadding.x + 18) * 4);
 				if (Button("Cancel"))
@@ -1296,7 +1299,7 @@ void Tracker::Misc_View()
 
 void Tracker::Author_View()
 {
-	if (Begin("Author"), true, UNIVERSAL_WINDOW_FLAGS)
+	if (Begin("Author"), 0, UNIVERSAL_WINDOW_FLAGS)
 	{
 		Text("Author");
 		InputText("##Author", (char*)Authbuf.c_str(), sizeof(Authbuf));
@@ -1308,7 +1311,7 @@ void Tracker::Author_View()
 
 void Tracker::Speed_View()
 {
-	if (Begin("SpeedView"))
+	if (Begin("SpeedView",0, UNIVERSAL_WINDOW_FLAGS))
 	{
 		Text("Base tempo");
 		InputInt("##Base tempo", &BaseTempo, 1, 1);
@@ -1787,6 +1790,8 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 						else if (Currentkey == GLFW_KEY_DELETE)
 						{
 							Channels[x].Rows[y].note = MAX_VALUE;
+							Channels[x].Rows[y].instrument = MAX_VALUE;
+
 							if (MoveOnDelete)
 							{
 								CursorY += Step;
@@ -1939,7 +1944,7 @@ void Tracker::LoadSample()
 		{
 			FileName = ImGuiFileDialog::Instance()->GetFilePathName();
 			FilePath = ImGuiFileDialog::Instance()->GetCurrentPath();
-			cout << "\n" + FileName + "\n" + FilePath;
+			cout << "\n" + FileName + "\n" + FilePath + "\n";
 			SF_INFO soundinfo;
 			soundinfo.format = AUDIO_FORMATS;
 			soundinfo.samplerate = SPS;
@@ -1976,8 +1981,10 @@ void Tracker::LoadSample()
 						*/
 						cur.SampleData.push_back(FileBuffer[i]);
 					}
+					
 					cur.SampleIndex = SelectedSample;
-					cur.SampleName = "Sample: ";
+					FileName.erase(0, FilePath.length()+1);
+					cur.SampleName = FileName;
 					cur.SampleRate = soundinfo.samplerate;
 					cur.Loop = false;
 					cur.LoopStart = 0;

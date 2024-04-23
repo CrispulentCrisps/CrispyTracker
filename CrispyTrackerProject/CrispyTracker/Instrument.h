@@ -12,6 +12,8 @@
 class Instrument
 {
 public:
+	Instrument();
+	~Instrument();
 	//Overall data size is 8 bytes and 2 bits
 	//Instrument index
 	int Index;

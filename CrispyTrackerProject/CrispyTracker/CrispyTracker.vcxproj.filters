@@ -221,6 +221,9 @@
     <ClInclude Include="Libraries\imgui\imgui.h">
       <Filter>imgui</Filter>
     </ClInclude>
+    <ClInclude Include="FileDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Libraries\imgui\LICENSE.txt">

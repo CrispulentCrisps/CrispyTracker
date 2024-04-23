@@ -199,6 +199,7 @@
     <ClInclude Include="BRRFile.h" />
     <ClInclude Include="Channel.h" />
     <ClInclude Include="Effects.h" />
+    <ClInclude Include="FileDef.h" />
     <ClInclude Include="Instrument.h" />
     <ClInclude Include="Libraries\emu\blargg_common.h" />
     <ClInclude Include="Libraries\emu\blargg_config.h" />
