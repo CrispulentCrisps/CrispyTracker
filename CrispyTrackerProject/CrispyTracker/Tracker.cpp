@@ -109,9 +109,9 @@ void Tracker::Run()
 	GetIO().AddKeyEvent(ImGuiKey_End, false);
 	StyleColorsClassic();
 	ImGuiStyle& style = GetStyle();
-	style.FrameBorderSize = 0.4f;
-	style.WindowRounding = .5f;
-	style.FrameRounding = .5f;
+	style.FrameBorderSize = 0.1f;
+	style.WindowRounding = .1f;
+	style.FrameRounding = .1f;
 	io = GetIO();
 	io.DisplaySize.x = SCREEN_WIDTH;
 	io.DisplaySize.y = SCREEN_HEIGHT;
@@ -272,23 +272,12 @@ void Tracker::MenuBar()
 		ImGui::MenuItem("Load");
 		ImGui::MenuItem("Save");
 		ImGui::MenuItem("Save As");
-		ImGui::MenuItem("Export Wav");
-		ImGui::MenuItem("Export SPC");
+		ImGui::MenuItem("Export");
 		ImGui::EndMenu();
 	}
 
 	if (BeginMenu("Edit"))
 	{
-		ImGui::EndMenu();
-	}
-
-
-	if (BeginMenu("SNES"))
-	{
-		if (Selectable("Echo Settings"))
-		{
-			ShowEcho = !ShowEcho;
-		}
 		ImGui::EndMenu();
 	}
 
@@ -308,7 +297,18 @@ void Tracker::MenuBar()
 		if (ImGui::MenuItem("Credits")) ShowCredits = true;
 		ImGui::EndMenu();
 	}
-	
+
+
+	if (BeginMenu("SNES"))
+	{
+		if (Selectable("Echo Settings"))
+		{
+			ShowEcho = !ShowEcho;
+		}
+
+		ImGui::EndMenu();
+	}
+
 	Text("	|	%.3f ms/frame (%.1f FPS)", 1000.0 / (ImGui::GetIO().Framerate), (ImGui::GetIO().Framerate));
 	Text(VERSION.c_str());
 	EndMainMenuBar();
@@ -745,6 +745,7 @@ void Tracker::Instrument_View()//Instrument editor
 
 void Tracker::Channel_View()
 {
+	float padsize = GetStyle().CellPadding.x;
 	GetStyle().CellPadding.x = 4;
 	if (Begin("Channels"), 0, UNIVERSAL_WINDOW_FLAGS)
 	{
@@ -759,13 +760,12 @@ void Tracker::Channel_View()
 			*/
 			SetScrollY(ScrollValue());
 		}
-		if (BeginTable("ChannelView", 9, ImGuiTableFlags_SizingFixedFit, ImVec2(GetWindowWidth() * .9 + (TextSize * 8), 0)));
+		if (BeginTable("ChannelView", 9, ImGuiTableFlags_SizingFixedFit, ImVec2(GetWindowWidth() * .9 + (TextSize * 8), 0)) != NULL)
 		{
 			string ind;
 			ImVec2 RowVec = ImVec2((GetWindowWidth() / 9.0) / 6.0, (double)TextSize - (TextSize/3.0));
 			//Actual pattern data
 			TableNextColumn();
-
 #pragma region ChannelTables
 			// This index is for each individual channel on the snes
 			// the -1 is for the left hand columns index
@@ -967,11 +967,11 @@ void Tracker::Channel_View()
 				TableNextColumn();
 			}
 #pragma endregion
-			GetStyle().FramePadding.x = paddingsave;
-			EndTable();//keeps crashing here when it minimises, not a clue why other than EndTable seems to be executed too many times?
+			EndTable();//keeps crashing here when it minimises, seems one table fails when the window is small enough
 		}
 	}
 	End();
+	GetStyle().CellPadding.x = padsize;
 }
 
 void Tracker::Samples()

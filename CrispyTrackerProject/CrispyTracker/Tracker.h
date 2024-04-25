@@ -3,7 +3,9 @@
 //	|	   The SNES tracker		|
 //	|		 of all time		|
 //	|___________________________|
+// 
 //Apologies for the anarchistic coding, I've no idea what I'm doing lmao
+//
 
 #pragma once
 #ifndef Tracker
@@ -251,9 +253,9 @@ public:
 
 	string Credits = "Crispytracker: " + VERSION;//Is actually used for the title
 
-	ImColor Default = IM_COL32(22, 22, 33, 255);
+	ImColor Default = IM_COL32(22, 22, 44, 255);
 	ImColor H2Col = IM_COL32(66, 66, 88, 255);
-	ImColor H1Col = IM_COL32(33, 33, 66, 255);
+	ImColor H1Col = IM_COL32(44, 44, 66, 255);
 	ImColor CursorCol = IM_COL32(122, 122, 188, 255);
 
 	ImColor Dark_Default = IM_COL32(22, 22, 33, 255);

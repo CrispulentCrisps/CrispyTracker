@@ -140,7 +140,6 @@ float Channel::Resample(vector<Sint16>& SampleData)
 		if (i > 0 && i < SampleData.size())
 		{
 			s += (float)SampleData[i] * sinc(x - i);
-			//cout << "\nResample Accum: " << s;
 		}
 	}
 
