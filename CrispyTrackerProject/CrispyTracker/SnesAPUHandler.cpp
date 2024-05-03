@@ -6,7 +6,7 @@ void SnesAPUHandler::APU_Startup()
 	spc_init_rom(Spc, IPL_ROM);
 	spc_dsp_new();
 	spc_reset(Spc);
-	spc_mute_voices(Spc, 0b00000000);
+	spc_mute_voices(Spc, 0b10000000);
 }
 
 void SnesAPUHandler::APU_Update(spc_sample_t Output)

@@ -66,11 +66,9 @@ void Tracker::Run()
 	Authbuf.reserve(1024);
 	Descbuf.reserve(1024);
 	FilePath.reserve(1024);
-
 	//Initialise the tracker
 	Initialise(TrackLength);
 	SG.SetBufferSize(SG.TRACKER_AUDIO_BUFFER);
-
 	SetupInstr();
 	bool PlayingTrack = false;
 	bool WindowIsGood = true;
@@ -243,6 +241,10 @@ void Tracker::Render()
 		Settings_View();
 		Misc_View();
 		EchoSettings();
+		if (ShowExport)
+		{
+			Export_View();
+		}
 		if (LoadingSample)
 		{
 			LoadSample();
@@ -270,9 +272,11 @@ void Tracker::MenuBar()
 	if (BeginMenu("File"))
 	{
 		ImGui::MenuItem("Load");
-		ImGui::MenuItem("Save");
-		ImGui::MenuItem("Save As");
-		ImGui::MenuItem("Export");
+		ImGui::MenuItem("Save...");
+		ImGui::MenuItem("Save As...");
+		if (Selectable("Export...")) {
+			ShowExport = true;
+		}
 		ImGui::EndMenu();
 	}
 
@@ -1352,6 +1356,16 @@ void Tracker::Speed_View()
 		{
 			Highlight2 = 1;
 		}
+		NewLine();
+		Text("Region");
+		for (int n = 0; n < 2; n++)
+		{
+			bool Selected = (SelectedRegion == n);
+			if (RadioButton(RegionNames[n].c_str(), Selected)) {
+				SelectedRegion = n;
+				reg = (Region)SelectedRegion;
+			}
+		}
 	}
 	End();
 }
@@ -1510,6 +1524,121 @@ void Tracker::UpdateFont()
 	{
 	}
 	FontUpdate = false;
+}
+
+void Tracker::Export_View()
+{
+	string TypeNames[3] = { "WAV","MP3","OGG"};
+	string TechnicalTypeNames[3] = {"SPC","ASM","SHVC" };
+	string Qualitynames[8] = { "8KHz","11KHz","16KHz","22KHz","24KHz","32KHz","44KHz","48KHz" };
+	string DepthName[2] = { "8 bit", "16 bit"};
+	string SignName[2] = { "Unsigned", "Signed"};
+	ImVec2 center = GetMainViewport()->GetCenter();
+	SetNextWindowPos(center, 0, ImVec2(0.5f, 0.5f));
+	if(Begin("Export", 0, UNIVERSAL_WINDOW_FLAGS)){
+		if (BeginTabBar("Audio"), TAB_FLAGS) {
+			if (BeginTabItem("Audio Export", 0, TAB_ITEM_FLAGS)) {
+				Text("Export Type");
+				if (BeginCombo("##Export Type", TypeNames[SelectedExportType].c_str())) {
+					for (int x = 0; x < 3; x++)
+					{
+						bool Selected = (SelectedExportType == x);
+						if (Selectable(TypeNames[x].c_str(), Selected))
+						{
+							SelectedExportType = x;
+						}
+						if (Selected)
+						{
+							SetItemDefaultFocus();
+						}
+					}
+					EndCombo();
+				}
+				NewLine();
+				Text("Export Quality");
+				if (BeginCombo("##Export Quality", Qualitynames[SelectedQualityType].c_str())) {
+					for (int x = 0; x < 8; x++)
+					{
+						bool Selected = (SelectedQualityType == x);
+						if (Selectable(Qualitynames[x].c_str(), Selected))
+						{
+							SelectedQualityType = x;
+						}
+						if (Selected)
+						{
+							SetItemDefaultFocus();
+						}
+					}
+					EndCombo();
+				}
+				NewLine();
+				Text("Bit Depth");
+				for (int n = 0; n < 2; n++)
+				{
+					bool Selected = (SelectedDepthType == n);
+					if (RadioButton(DepthName[n].c_str(), Selected)) {
+						SelectedDepthType = n;
+					}
+					SameLine();
+				}
+				NewLine();
+				Text("Bit Sign");
+				for (int n = 0; n < 2; n++)
+				{
+					bool Selected = (SelectedSignType == n);
+					if (RadioButton(SignName[n].c_str(), Selected)) {
+						SelectedSignType = n;
+					}
+					SameLine();
+				}
+
+				EndTabItem();
+			}
+			if (BeginTabItem("Technical Export",0, TAB_FLAGS))
+			{
+				Text("Export Type");
+				if (BeginCombo("##Export Type", TechnicalTypeNames[SelectedTechnicalType].c_str())) {
+					for (int x = 0; x < 3; x++)
+					{
+						bool Selected = (SelectedTechnicalType == x);
+						if (Selectable(TechnicalTypeNames[x].c_str(), Selected))
+						{
+							SelectedTechnicalType = x;
+						}
+						if (Selected)
+						{
+							SetItemDefaultFocus();
+						}
+					}
+					EndCombo();
+				}
+
+				NewLine();
+				Text("Address");
+				if (SPC_ADDR > 65535) {
+					SPC_ADDR = 65535;
+				}
+				if (SPC_ADDR < 0) {
+					SPC_ADDR = 0;
+				}
+				InputInt("##addr", (int*)&SPC_ADDR, 0x10, 0x1000);
+				EndTabItem();
+			}
+			NewLine();
+			NewLine();
+			ImVec2 size = ImVec2(GetWindowWidth() * 0.45, TextSize * 1.5);
+			if (Button("CANCEL", size)) {
+				ShowExport = false;
+			}
+			SameLine();
+			if (Button("EXPORT", size)) {
+
+			}
+
+			EndTabBar();
+		}
+	}
+	End();
 }
 
 void Tracker::RunTracker()

@@ -3,7 +3,7 @@
 typedef struct Module {
 	std::string AuthorName;
 	std::string TrackName;
-	std::string TracDesc;
+	std::string TrakcDesc;
 	std::vector<Sample> samples;
 	std::vector<Instrument> inst;
 	std::vector<Patterns> patterns;

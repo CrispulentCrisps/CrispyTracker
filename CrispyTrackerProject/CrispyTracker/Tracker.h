@@ -32,6 +32,7 @@
 #include <Audioclient.h>
 #endif
 #include <math.h>
+#include <stdio.h>
 
 using namespace std;
 using namespace ImGui;
@@ -104,6 +105,16 @@ public:
 		GLFW_KEY_LEFT, GLFW_KEY_RIGHT, GLFW_KEY_UP, GLFW_KEY_DOWN,
 	};
 	
+	enum Region {
+		PAL = 0,
+		NTSC = 1,
+	};
+
+	bool ShowExport = false;
+	int SelectedRegion = 0;
+	string RegionNames[2] = { "PAL/SECAM", "NTSC" };
+	Region reg;
+
 	int TrackLength = 64;
 	int YPos;
 	int Input;
@@ -202,6 +213,50 @@ public:
 
 	int InputCount = 0;//Used for the amount of times a value has been input into the volume, effects or value
 	
+	enum ExportTypes {
+		WAV = 0,
+		MP3 = 1,
+		OGG = 2,
+		SPC = 3,
+		ASM = 4,
+		UEN = 5,//SHVC-CORE, by KULOR
+	};
+
+	enum ExportSign
+	{
+		UNSIGNED = 0,
+		SIGNED = 1,
+	};
+
+	enum ExportDepth
+	{
+		EIGHT = 0,
+		SIXTEEN = 1,
+	};
+
+	//Assuming it's an export for 
+	enum ExportQuality {
+		KHZ_8 = 0,
+		KHZ_11 = 1,
+		KHZ_16 = 2,
+		KHZ_22 = 3,
+		KHZ_24 = 4,
+		KHZ_32 = 5,
+		KHZ_44 = 6,
+		KHZ_48 = 7,
+	};
+
+	ExportTypes E_Type;
+	ExportTypes E_Sign;
+	ExportTypes E_Depth;
+	ExportTypes E_Quality;
+	int SelectedExportType = 0;
+	int SelectedTechnicalType = 0;
+	int SelectedSignType = 0;
+	int SelectedDepthType = 0;
+	int SelectedQualityType = 0;
+	int SPC_ADDR = 0x1000;
+	
 	double ScrollValue();
 
 	//Functions
@@ -227,6 +282,7 @@ public:
 	void EchoSettings();
 	void SetupInstr();
 	void UpdateFont();
+	void Export_View();
 
 	void RunTracker(); //For when the tracker is playing the tune
 	void UpdateRows(); //Sending the audio data to the speakers for every element in the tracker row
