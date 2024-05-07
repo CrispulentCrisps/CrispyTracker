@@ -12,7 +12,6 @@
 
 #include "SettingsManager.h"
 #include "SoundGenerator.h"
-#include "SnesAPUHandler.h"
 #include "FileDef.h"
 
 #include <SDL_keyboard.h>
@@ -42,8 +41,6 @@ class Tracker
 public:
 	Tracker();
 	~Tracker();
-
-	SnesAPUHandler Emu_APU;
 
 	int UNIVERSAL_WINDOW_FLAGS = ImGuiWindowFlags_AlwaysAutoResize;
 	int TAB_FLAGS = ImGuiTabBarFlags_NoCloseWithMiddleMouseButton;
@@ -104,12 +101,12 @@ public:
 	{
 		GLFW_KEY_LEFT, GLFW_KEY_RIGHT, GLFW_KEY_UP, GLFW_KEY_DOWN,
 	};
-	
+	/*
 	enum Region {
 		PAL = 0,
 		NTSC = 1,
 	};
-
+	*/
 	bool ShowExport = false;
 	int SelectedRegion = 0;
 	string RegionNames[2] = { "PAL/SECAM", "NTSC" };
@@ -255,7 +252,6 @@ public:
 	int SelectedSignType = 0;
 	int SelectedDepthType = 0;
 	int SelectedQualityType = 0;
-	int SPC_ADDR = 0x1000;
 	
 	double ScrollValue();
 

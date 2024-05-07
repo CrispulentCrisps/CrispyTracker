@@ -61,7 +61,7 @@ void MyAudioCallback(void* userdata, Uint8* stream, int len)
 
 void Tracker::Run()
 {	
-	Emu_APU.APU_Startup();
+	SG.Emu_APU.APU_Startup();
 	glfwInit();
 	Authbuf.reserve(1024);
 	Descbuf.reserve(1024);
@@ -1615,13 +1615,13 @@ void Tracker::Export_View()
 
 				NewLine();
 				Text("Address");
-				if (SPC_ADDR > 65535) {
-					SPC_ADDR = 65535;
+				if (SG.Emu_APU.SONG_ADDR > 65535) {
+					SG.Emu_APU.SONG_ADDR = 65535;
 				}
-				if (SPC_ADDR < 0) {
-					SPC_ADDR = 0;
+				if (SG.Emu_APU.SONG_ADDR < 0) {
+					SG.Emu_APU.SONG_ADDR = 0;
 				}
-				InputInt("##addr", (int*)&SPC_ADDR, 0x10, 0x1000);
+				InputInt("##addr", (int*)&SG.Emu_APU.SONG_ADDR, 0x10, 0x1000);
 				EndTabItem();
 			}
 			NewLine();
@@ -1660,6 +1660,7 @@ void Tracker::RunTracker()
 			SG.Update(GetIO().DeltaTime, Channels, samples, CursorY, inst);
 			//SG.DEBUG_Output_Audio_Buffer_Log(SG.Totalbuffer, FrameCount, x, SDL_GetQueuedAudioSize(dev));
 		}
+		SG.Emu_APU.APU_Update(&SG.Totalbuffer[0][0]);
 		SDL_QueueAudio(dev, &(SG.Totalbuffer[0][0]), sizeof(Sint16) * 2 * SG.Totalbuffer.size());
 	}
 

@@ -25,12 +25,14 @@
 #include <vector>
 #include <array>
 
+#include "SnesAPUHandler.h"
+
 #pragma once
 
 class SoundGenerator
 {
 public:
-
+	SnesAPUHandler Emu_APU;
 	int TRACKER_AUDIO_BUFFER = AUDIO_BUFFER;
 	SoundGenerator();
 

@@ -3,11 +3,24 @@
 #include "emu/dsp.h"
 #include "emu/spc.h"
 
+#define MAX_CLOCK_DSP 1024000
+#define CLOCK_TICK_PAL 20480
+#define CLOCK_TICK_NTSC 17067
+
+
+
+enum Region {
+    PAL = 0,
+    NTSC = 1,
+};
+
 class SnesAPUHandler
 {
 public:
     SNES_SPC* Spc = spc_new();
-    unsigned int SONG_ADDR = 0x1000;
+    spc_dsp_t* Dsp = spc_dsp_new();
+    unsigned int SONG_ADDR = 0x10000;
+    
     const unsigned char IPL_ROM[64] = {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -18,8 +31,14 @@ public:
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
     };//How useful
+    
+    const unsigned char* DSP_MEMORY[65536];
+    spc_time_t ClockBase = 1024000;
+    Region reg;
+    
     void APU_Startup();
-    void APU_Update(spc_sample_t Output);
+    void APU_Update(spc_sample_t* Output);
+    void APU_Run();
     void APU_Kill();
     void APU_COM();
 };
