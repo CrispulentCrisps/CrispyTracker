@@ -770,7 +770,6 @@ void Tracker::Channel_View()
 			ImVec2 RowVec = ImVec2((GetWindowWidth() / 9.0) / 6.0, (double)TextSize - (TextSize/3.0));
 			//Actual pattern data
 			TableNextColumn();
-#pragma region ChannelTables
 			// This index is for each individual channel on the snes
 			// the -1 is for the left hand columns index
 			for (int i = -1; i < 8; i++)//X
@@ -970,7 +969,6 @@ void Tracker::Channel_View()
 				}
 				TableNextColumn();
 			}
-#pragma endregion
 			EndTable();//keeps crashing here when it minimises, seems one table fails when the window is small enough
 		}
 	}
@@ -1364,6 +1362,7 @@ void Tracker::Speed_View()
 			if (RadioButton(RegionNames[n].c_str(), Selected)) {
 				SelectedRegion = n;
 				reg = (Region)SelectedRegion;
+				SG.Emu_APU.reg = (Region)SelectedRegion;
 			}
 		}
 	}
@@ -1660,7 +1659,8 @@ void Tracker::RunTracker()
 			SG.Update(GetIO().DeltaTime, Channels, samples, CursorY, inst);
 			//SG.DEBUG_Output_Audio_Buffer_Log(SG.Totalbuffer, FrameCount, x, SDL_GetQueuedAudioSize(dev));
 		}
-		SG.Emu_APU.APU_Update(&SG.Totalbuffer[0][0]);
+		SG.Emu_APU.APU_Update(&SG.Totalbuffer[0][0], SG.TRACKER_AUDIO_BUFFER);
+		SG.Emu_APU.APU_Run(&SG.Totalbuffer[0][0], SG.TRACKER_AUDIO_BUFFER);
 		SDL_QueueAudio(dev, &(SG.Totalbuffer[0][0]), sizeof(Sint16) * 2 * SG.Totalbuffer.size());
 	}
 

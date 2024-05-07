@@ -292,6 +292,8 @@ public:
 	void UpdateSettings(int w);
 	void ResetSettings();
 
+	void DEBUG_EMU();
+
 	string Authbuf = " ";
 	string Descbuf = " ";
 	string FilePath = " ";
