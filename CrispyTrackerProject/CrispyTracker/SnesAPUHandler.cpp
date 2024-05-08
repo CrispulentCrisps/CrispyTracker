@@ -18,36 +18,40 @@ void SnesAPUHandler::APU_Update(spc_sample_t* Output, int BufferSize)
 	if (reg == PAL)
 	{
 		ClockBase -= CLOCK_TICK_PAL;
+
+		if (ClockBase < CLOCK_TICK_PAL)
+		{
+			ClockBase += MAX_CLOCK_DSP;
+			spc_dsp_run(Spc, ClockBase);
+			spc_end_frame(Spc, ClockBase);
+		}
 	}
 	else
 	{
 		ClockBase -= CLOCK_TICK_NTSC;
-	}
 
-	if (ClockBase == 0)
-	{
-		ClockBase = MAX_CLOCK_DSP;
-		spc_dsp_run(Spc, ClockBase);
-		spc_end_frame(Spc, ClockBase);
+		if (ClockBase < CLOCK_TICK_NTSC)
+		{
+			ClockBase += MAX_CLOCK_DSP;
+			spc_dsp_run(Spc, ClockBase);
+			spc_end_frame(Spc, ClockBase);
+		}
 	}
 
 	//spc_dsp_read(Dsp, 0x7F);
 	//spc_dsp_write(Dsp, 0x7F, 0xF);
 
-	if (spc_sample_count(Spc) < BufferSize)
-	{
-		spc_set_output(Spc, Output, BufferSize);
-	}
-	if (spc_dsp_sample_count(Dsp) < BufferSize)
-	{
-		spc_dsp_set_output(Spc, Output, BufferSize);
-	}
+	spc_dsp_set_output(Spc, Output, BufferSize);
+	spc_set_output(Spc, Output, BufferSize);
+	
+	//spc_dsp_set_output(Spc, Output, BufferSize);
+	//spc_set_output(Spc, Output, BufferSize);
 }
 
 void SnesAPUHandler::APU_Run(spc_sample_t* Output, int BufSize)
 {
+	spc_play(Spc, BufSize, Output);
 	spc_filter_run(Filter, Output, BufSize);
-	//spc_play(Spc,BufSize,Output);
 }
 
 void SnesAPUHandler::APU_Kill()
