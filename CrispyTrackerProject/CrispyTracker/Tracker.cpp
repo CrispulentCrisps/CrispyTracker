@@ -1660,7 +1660,7 @@ void Tracker::RunTracker()
 			//SG.DEBUG_Output_Audio_Buffer_Log(SG.Totalbuffer, FrameCount, x, SDL_GetQueuedAudioSize(dev));
 		}
 		SG.Emu_APU.APU_Update(&SG.Totalbuffer[0][0], SG.TRACKER_AUDIO_BUFFER);
-		SG.Emu_APU.APU_Run(&SG.Totalbuffer[0][0], SG.TRACKER_AUDIO_BUFFER);
+		//SG.Emu_APU.APU_Run(&SG.Totalbuffer[0][0], SG.TRACKER_AUDIO_BUFFER);
 		SDL_QueueAudio(dev, &(SG.Totalbuffer[0][0]), sizeof(Sint16) * 2 * SG.Totalbuffer.size());
 	}
 
