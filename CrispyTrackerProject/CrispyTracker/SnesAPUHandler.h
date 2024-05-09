@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <vector>
+#include "Instrument.h"
 #include "emu/dsp.h"
 #include "emu/spc.h"
 
@@ -45,6 +46,15 @@
 #define SPC_c1              0xFE
 #define SPC_c2              0xFF
 
+//
+//  Memory layout
+//  0000 - 00EF |   Zeropage
+//  00F0 - 00FF |   CPU registers 
+//  0100 - 01FF |   Stackpage
+//  0200 - FFBF |   RAM
+//  FFC0 - FFFF |   IPL ROM
+//
+
 enum Region {
     PAL = 0,
     NTSC = 1,
@@ -56,6 +66,8 @@ public:
     SNES_SPC* Spc = spc_new();
     spc_dsp_t* Dsp = spc_dsp_new();
     SPC_Filter* Filter = spc_filter_new();
+
+    Instrument* ChannelInst[8];
 
     struct DSP_Ch_Reg {
         unsigned char vol_l;
@@ -83,12 +95,20 @@ public:
     };
     
     const unsigned char* DSP_MEMORY[65536];
+    const unsigned char* Sample_Dir_Table[1024];
     spc_time_t ClockBase = MAX_CLOCK_DSP;
     Region reg;
     
     void APU_Startup();
     void APU_Update(spc_sample_t* Output, int BufferSize);
+    void APU_Grab_Channel_Status(Instrument* inst, int currrentchannel);
     //void APU_Run(spc_sample_t* Output, int BufSize);
     void APU_Kill();
     void APU_COM();
+    void APU_Set_Sample_Directory(std::vector<Sample>& samp);
+    void APU_Evaluate_BRR_Loop(Sample* sample, int LoopPoint);
+    void APU_Evaluate_BRR_End(Sample* sample, int EndPoint);
+    
+    bool APU_Set_Master_Vol(signed char vol);
+    bool APU_Set_Echo_Vol_l(signed char vol);
 };

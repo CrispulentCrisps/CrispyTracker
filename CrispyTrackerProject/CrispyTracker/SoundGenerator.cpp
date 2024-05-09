@@ -35,8 +35,11 @@ void SoundGenerator::Update(float ElapsedTime, Channel* ch, vector<Sample>& Samp
 {
 	for (int i = 0; i < 8; i++)
 	{
-		if (ch[i].PlayingNote)
+		if (ch[i].Tickcheck)
 		{
+			Emu_APU.APU_Grab_Channel_Status(&inst[ch[i].CurrentInstrument], i);
+			ch[i].Tickcheck = false;
+			/*
 			int ChannelNote = inst[ch[i].CurrentInstrument].SampleIndex;
 			
 			if (Samples[ChannelNote].Loop)
@@ -52,10 +55,11 @@ void SoundGenerator::Update(float ElapsedTime, Channel* ch, vector<Sample>& Samp
 			}
 			//cout << "\nPhase Accum: " << Phase[i] << " - Channel: " << i;
 			ch[i].CurrentSamplePointIndex += (float)pow(2., ch[i].CurrentPlayedNote / 12.);
+			*/
 		}
 		else
 		{
-			ch[i].CurrentSamplePointIndex = 0;
+			//ch[i].CurrentSamplePointIndex = 0;
 		}
 	}
 }

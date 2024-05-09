@@ -159,6 +159,7 @@ void Channel::SetUp(int Length)
 
 void Channel::TickCheck(int RowIndex, vector<Instrument>& instruments, vector<Sample>& samples)
 {
+	Tickcheck = true;
 	int CurrentSample = instruments[CurrentInstrument].SampleIndex;//Dictates the current sample [Here to make the code look cleaner]
 	if (Rows[RowIndex].note != MAX_VALUE && Rows[RowIndex].instrument != MAX_VALUE)
 	{
@@ -176,7 +177,9 @@ void Channel::UpdateChannel(vector<Instrument>& instruments, vector<Sample>& sam
 	int CurrentSample = instruments[CurrentInstrument].SampleIndex;//Dictates the current sample [Here to make the code look cleaner]
 
 	if (CurrentInstrument > 0 && samples[CurrentSample].SampleData.size() > 0)
-	{/*
+	{
+
+		/*
 		if (samples[CurrentSample].Loop)
 		{
 			if (CurrentSamplePointIndex >= samples[CurrentSample].LoopEnd)

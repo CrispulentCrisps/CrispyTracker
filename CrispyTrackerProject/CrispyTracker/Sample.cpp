@@ -3,7 +3,7 @@
 //thank you Blumba for the bit shift help :D
 void Sample::BRRConvert()
 {
-    printf("/n SAMPLE CONVERSION BEGIN/n");
+    printf("\n SAMPLE CONVERSION BEGIN\n");
     int BlockAmount = (SampleData.size()) / 16;
 
     printf("/n BLOCKS ALLOCATED:");
@@ -26,7 +26,7 @@ void Sample::BRRConvert()
             brr.DBlocks[i].DataByte[x] = CombinedBit;
         }
     }
-    printf("/nSAMPLE CONVERSION ENDED/n");
+    printf("\nSAMPLE CONVERSION ENDED\n");
 }
 
 void Sample::LargestPoint()

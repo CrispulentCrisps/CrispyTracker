@@ -85,6 +85,7 @@ public:
 
 	bool PlayingNote = false;
 	bool IsActive;
+	bool Tickcheck = false;
 
 	void SetUp(int Length);
 	void TickCheck(int RowIndex, vector<Instrument>& instruments, vector<Sample>& samples);

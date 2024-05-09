@@ -22,7 +22,6 @@
 #include <fstream>
 
 #include <math.h>
-#include <vector>
 #include <array>
 
 #include "SnesAPUHandler.h"

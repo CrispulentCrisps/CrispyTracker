@@ -61,7 +61,6 @@ void MyAudioCallback(void* userdata, Uint8* stream, int len)
 
 void Tracker::Run()
 {	
-	SG.Emu_APU.APU_Startup();
 	glfwInit();
 	Authbuf.reserve(1024);
 	Descbuf.reserve(1024);
@@ -69,6 +68,7 @@ void Tracker::Run()
 	//Initialise the tracker
 	Initialise(TrackLength);
 	SG.SetBufferSize(SG.TRACKER_AUDIO_BUFFER);
+	SG.Emu_APU.APU_Startup();
 	SetupInstr();
 	bool PlayingTrack = false;
 	bool WindowIsGood = true;
@@ -1008,7 +1008,7 @@ void Tracker::Samples()
 			cout << samples.size();
 		}
 
-		if (samples.size() > 0)	
+		if (samples.size() > 0)
 		{
 			if (BeginTable("SampleTable", 1, TABLE_FLAGS, ImVec2(GetWindowWidth() * 0.75, 24), 24)) {
 				for (int i = 0; i < samples.size(); i++)
@@ -1056,10 +1056,14 @@ void Tracker::Sample_View()
 			NextColumn();
 			InputText("Sample Name", (char*)samples[SelectedSample].SampleName.c_str(), sizeof(samples[SelectedSample].SampleName));
 			InputInt("Playing HZ", &samples[SelectedSample].SampleRate);
-			InputInt("Fine Tune", (int*) &samples[SelectedSample].FineTune, 1,1);
+			InputInt("Fine Tune", (int*)&samples[SelectedSample].FineTune, 1, 1);
 			Checkbox("Loop Sample", &samples[SelectedSample].Loop);
-			InputInt("Loop Start", (int*)&samples[SelectedSample].LoopStart, 16, 0);
-			InputInt("Loop End", (int*)&samples[SelectedSample].LoopEnd, 16, 0);
+			if (InputInt("Loop Start", (int*)&samples[SelectedSample].LoopStart, 16, 0)) {
+				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopStart);
+			}
+			if(InputInt("Loop End", (int*)&samples[SelectedSample].LoopEnd, 16, 0)){
+				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
+			}
 			SliderInt("Note offset", &samples[SelectedSample].NoteOffset, -12, 12);
 			if (samples.size() > 1)
 			{
@@ -1293,8 +1297,9 @@ void Tracker::Misc_View()
 		InputInt("Step", &Step, 1, 8);
 		InputInt("Octave", &Octave, 1, 8);
 		Octave > 8 ? Octave = 8 : Octave < 1 ? Octave = 1: Octave;
-		SliderInt("Volume Scale Left", &VolumeScaleL, 0, 127);
-		SliderInt("Volume Scale Right", &VolumeScaleR, 0, 127);
+		if(SliderInt("Master Volume", &VolumeScale, -128, 127)) {
+			assert(SG.Emu_APU.APU_Set_Master_Vol(VolumeScale));
+		}
 	}
 	End();
 }
@@ -2126,6 +2131,7 @@ void Tracker::LoadSample()
 					//Assume the file isn't fucked and we can move to the BRR conversion
 					cur.BRRConvert();
 					samples.push_back(cur);
+					SG.Emu_APU.APU_Set_Sample_Directory(samples);
 					sf_close(file);
 				}
 				else

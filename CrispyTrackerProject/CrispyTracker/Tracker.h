@@ -186,8 +186,7 @@ public:
 	vector<Patterns> StoragePatterns;//Storage
 	Patterns DefaultPattern;
 
-	int VolumeScaleL = 127;	//(0-127)
-	int VolumeScaleR = 127;	//(0-127)
+	int VolumeScale = 127;	//(0-127)
 
 	//Echo settings
 	int Delay;			//(0-15)
