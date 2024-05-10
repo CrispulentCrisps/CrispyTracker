@@ -193,7 +193,7 @@ public:
 	int Feedback;		//(0-127)
 	int EchoVolL;		//(0-127)
 	int EchoVolR;		//(0-127)
-	int EchoFilter[8];	//(0-127) Must accumulate to 127 or -128 at most!!!!
+	int EchoFilter[8];	//(-128-127) Must accumulate to 127 or -128 at most/least respectively!!!!
 
 	//Enums
 	enum ChannelEditState {

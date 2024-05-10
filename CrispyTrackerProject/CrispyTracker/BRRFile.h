@@ -8,7 +8,7 @@ using namespace std;
 class BRRFile
 {
 public:
-	unsigned short SampleDir = 0; //Defines star and loop point
+	unsigned short SampleDir = 0; //Defines space in memory
 
 	struct DataBlock{
 		//0000 - Shift Values [quantisation step]

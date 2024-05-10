@@ -15,7 +15,7 @@ void Sample::BRRConvert()
 
         if (BlockAmount == i-1)//Assume we're on the last sample point
         {
-            brr.DBlocks[i].HeaderByte |= EndFlag;//Assign end flag
+            brr.DBlocks[i].HeaderByte = EndFlag;//Assign end flag
             brr.DBlocks[i].HeaderByte |= 0b00010000;//Shift value should be 1 to avoid the single R-shift that can remove audio data
         }
 

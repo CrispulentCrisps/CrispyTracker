@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 #include <vector>
-#include "Instrument.h"
+#include "Channel.h"
 #include "emu/dsp.h"
 #include "emu/spc.h"
 
@@ -46,13 +46,16 @@
 #define SPC_c1              0xFE
 #define SPC_c2              0xFF
 
+#define Sample_Dir_Page     0xDD00
+#define Sample_Mem_Page     0x0200
+
 //
 //  Memory layout
-//  0000 - 00EF |   Zeropage
-//  00F0 - 00FF |   CPU registers 
-//  0100 - 01FF |   Stackpage
-//  0200 - FFBF |   RAM
-//  FFC0 - FFFF |   IPL ROM
+//  0000 - 00EF     |   Zeropage
+//  00F0 - 00FF     |   CPU registers 
+//  0100 - 01FF     |   Stackpage
+//  0200 - FFBF     |   RAM
+//  FFC0 - FFFF     |   IPL ROM
 //
 
 enum Region {
@@ -73,7 +76,7 @@ public:
         unsigned char vol_l;
         unsigned char vol_r;
         unsigned char pit_l;
-        unsigned char pit_r;
+        unsigned char pit_h;
         unsigned char scrn;
         unsigned char adsr_1;
         unsigned char adsr_2;
@@ -85,6 +88,7 @@ public:
     DSP_Ch_Reg ChannelRegs[8];
 
     unsigned int SONG_ADDR = 0x10000;
+
     const unsigned char IPL_ROM[64] = {
     0xcd, 0xef, 0xbd, 0xe8, 0x00, 0xc6, 0x1d, 0xd0, 0xfc, 0x8f, 0xaa, 0xf4,
     0x8f, 0xbb, 0xf5, 0x78, 0xcc, 0xf4, 0xd0, 0xfb, 0x2f, 0x19, 0xeb, 0xf4,
@@ -94,21 +98,25 @@ public:
     0x00, 0x00, 0xc0, 0xff
     };
     
-    const unsigned char* DSP_MEMORY[65536];
-    const unsigned char* Sample_Dir_Table[1024];
+    unsigned char DSP_MEMORY[65536];
+
     spc_time_t ClockBase = MAX_CLOCK_DSP;
+    
     Region reg;
     
+    bool KON_arr[8];
+
     void APU_Startup();
     void APU_Update(spc_sample_t* Output, int BufferSize);
-    void APU_Grab_Channel_Status(Instrument* inst, int currrentchannel);
+    void APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int ypos);
     //void APU_Run(spc_sample_t* Output, int BufSize);
     void APU_Kill();
     void APU_COM();
+    void APU_Set_Sample_Memory(std::vector<Sample>& samp);
     void APU_Set_Sample_Directory(std::vector<Sample>& samp);
     void APU_Evaluate_BRR_Loop(Sample* sample, int LoopPoint);
     void APU_Evaluate_BRR_End(Sample* sample, int EndPoint);
     
     bool APU_Set_Master_Vol(signed char vol);
-    bool APU_Set_Echo_Vol_l(signed char vol);
+    void APU_Set_Echo(unsigned char dtime, int* coef);
 };

@@ -22,6 +22,7 @@ public:
 	int FineTune = 0;
 	bool Loop = false;
 	int LoopStart = 0;
+	int LoopStartAddr = 0;
 	int LoopEnd = 0;
 	int HPoint = 0;
 	int LPoint = 0;

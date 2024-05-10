@@ -1062,7 +1062,7 @@ void Tracker::Sample_View()
 				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopStart);
 			}
 			if(InputInt("Loop End", (int*)&samples[SelectedSample].LoopEnd, 16, 0)){
-				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
+				SG.Emu_APU.APU_Evaluate_BRR_End(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
 			}
 			SliderInt("Note offset", &samples[SelectedSample].NoteOffset, -12, 12);
 			if (samples.size() > 1)
@@ -1455,7 +1455,9 @@ void Tracker::EchoSettings()
 	{
 		if (Begin("EchoSettings"),true, UNIVERSAL_WINDOW_FLAGS)
 		{
-			SliderInt("Delay", &Delay, 0, 15);
+			if(SliderInt("Delay", &Delay, 0, 15)) {
+				SG.Emu_APU.APU_Set_Echo(Delay, EchoFilter);
+			}
 			SliderInt("Feedback", &Feedback, 0, 127);
 
 			SliderInt("Echo Volume Left", &EchoVolL, -128, 127);
@@ -1466,7 +1468,9 @@ void Tracker::EchoSettings()
 			for (int i = 0; i < 8; i++)
 			{
 				FilterAccum += EchoFilter[i];
-				SliderInt(to_string(i).c_str(), &EchoFilter[i], -128, 127);
+				if(SliderInt(to_string(i).c_str(), &EchoFilter[i], -128, 127)) {
+					SG.Emu_APU.APU_Set_Echo(Delay, EchoFilter);
+				}
 			}
 			string FilterText = "Filter total: " + to_string(FilterAccum);
 			if (FilterAccum < -128 || FilterAccum > 127) {
@@ -2131,6 +2135,7 @@ void Tracker::LoadSample()
 					//Assume the file isn't fucked and we can move to the BRR conversion
 					cur.BRRConvert();
 					samples.push_back(cur);
+					SG.Emu_APU.APU_Set_Sample_Memory(samples);
 					SG.Emu_APU.APU_Set_Sample_Directory(samples);
 					sf_close(file);
 				}
