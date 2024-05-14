@@ -48,6 +48,8 @@
 
 #define Sample_Dir_Page     0xDD00
 #define Sample_Mem_Page     0x0200
+#define Echo_Mem_Page       0xEE00
+#define IPL_ROM_Page        0xFFC0
 
 //
 //  Memory layout
@@ -105,6 +107,8 @@ public:
     Region reg;
     
     bool KON_arr[8];
+
+    int LastSamplePoint;
 
     void APU_Startup();
     void APU_Update(spc_sample_t* Output, int BufferSize);

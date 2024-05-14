@@ -106,7 +106,7 @@ public:
 		int hidden_env;         // used by GAIN mode 7, very obscure quirk
         uint8_t t_envx_out;
 	};
-private:
+public:
 	enum { brr_block_size = 9 };
 	struct state_t
 	{

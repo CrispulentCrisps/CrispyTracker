@@ -39,7 +39,7 @@ string Channel::VolumeView(int index)
 	else
 	{
 		char buf[10];
-		sprintf_s(buf, "%X", Rows[index].volume);
+		sprintf_s(buf, "%02X", Rows[index].volume);
 		return buf;
 	}
 }
@@ -53,7 +53,7 @@ string Channel::InstrumentView(int index)
 	else
 	{
 		char buf[10];
-		sprintf_s(buf, "%X", Rows[index].instrument);
+		sprintf_s(buf, "%02X", Rows[index].instrument);
 		return buf;
 	}
 }
@@ -67,7 +67,7 @@ string Channel::EffectView(int index)
 	else
 	{
 		char buf[10];
-		sprintf_s(buf, "%X", Rows[index].effect);
+		sprintf_s(buf, "%02X", Rows[index].effect);
 		return buf;
 	}
 }
@@ -81,7 +81,7 @@ string Channel::Effectvalue(int index)
 	else
 	{
 		char buf[10];
-		sprintf_s(buf, "%X", Rows[index].effectvalue);
+		sprintf_s(buf, "%02X", Rows[index].effectvalue);
 		return buf;
 	}
 }

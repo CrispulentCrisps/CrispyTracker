@@ -17,7 +17,6 @@ public:
 	
 	string SampleName = "Empty!";
 	vector<signed short> SampleData;
-	vector<signed short> BRRSampleData;
 	int SampleRate = 0;
 	int FineTune = 0;
 	bool Loop = false;

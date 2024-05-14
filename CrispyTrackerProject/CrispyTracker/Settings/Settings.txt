@@ -1,8 +1,8 @@
 FontSize:12
 Notation:0
-FPS:120
+FPS:144
 Resolution:2
-Buffer:1
+Buffer:0
 DefaultTrackSize:64
 CursorMovesAtStepCount:0
-DeleteMovesAtStepCount:0
+DeleteMovesAtStepCount:1

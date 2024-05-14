@@ -48,7 +48,7 @@ public:
 	int TABLE_FLAGS = ImGuiTableFlags_SizingStretchSame;
 	int IMPLOT_FLAGS = ImPlotFlags_NoFrame | ImPlotFlags_Crosshairs;
 	int SPS = 44100;
-	string VERSION = "version: 0.4";
+	string VERSION = "version: 0.5";
 	string Fontpath = "fonts/Manaspace.ttf";
 	int AUDIO_FORMATS = SF_FORMAT_WAV | SF_FORMAT_OGG | SF_FORMAT_MPEG_LAYER_III | SF_FORMAT_MPEG_LAYER_II | SF_FORMAT_MPEG_LAYER_I;
 	int FrameCount = 0;
@@ -137,6 +137,9 @@ public:
 	float InitKeyTime = 0.5f;
 	float InitTimer = 0;
 	bool InitPressed = false;
+
+	bool ShowEmuDebug = false;
+	int MemCols = 32;
 
 	ImFont* font;
 	ImFont* Largefont;
@@ -291,7 +294,7 @@ public:
 	void UpdateSettings(int w);
 	void ResetSettings();
 
-	void DEBUG_EMU();
+	void EmuDebugWindow();
 
 	string Authbuf = " ";
 	string Descbuf = " ";
@@ -330,6 +333,11 @@ public:
 	ImColor Graph_Colour_Line1 = IM_COL32(99, 99, 196, 255);
 	ImColor Graph_Colour_Line2 = IM_COL32(66, 66, 128, 255);
 	ImColor Graph_Colour_Line3 = IM_COL32(33, 33, 64, 255);
+
+	ImColor ReservedColour = IM_COL32(255, 255, 255, 255);
+	ImColor InstColour = IM_COL32(88, 88, 196, 255);
+	ImColor SampColour = IM_COL32(144, 144, 255, 255);
+	ImColor EchoColour = IM_COL32(44, 44, 128, 255);
 	
 	int PlotLineWeight = 1;
 	ImU32 colorDataRGB[3] = { Graph_Colour_Line1, Graph_Colour_Line2, Graph_Colour_Line3 };

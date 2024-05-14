@@ -160,6 +160,7 @@ void Tracker::Run()
 		WindowIsGood = true;
 		for (int i = 0; i < 8; i++)
 		{
+			Channels[i].Index = i;
 			SG.ch[i] = &Channels[i];
 		}
 		x = ImAxis_X1;
@@ -249,6 +250,10 @@ void Tracker::Render()
 		{
 			LoadSample();
 		}
+		if (ShowEmuDebug)
+		{
+			EmuDebugWindow();
+		}
 		Info_View();
 	}
 	else
@@ -309,7 +314,10 @@ void Tracker::MenuBar()
 		{
 			ShowEcho = !ShowEcho;
 		}
-
+		if (Selectable("Memory Debug"))
+		{
+			ShowEmuDebug = !ShowEmuDebug;
+		}
 		ImGui::EndMenu();
 	}
 
@@ -1384,12 +1392,13 @@ void Tracker::Info_View()
 		int ypos = p.y + TextSize;
 		int StepSize = (xpos - GetWindowWidth()) / inst.size();
 		int MaxRange = 65536;
+		int ReservedSpace = Sample_Mem_Page;
 		int UsedSpace = (2048 * Delay);
 		int InstrumentSpace = 0;
 
 		int EchoSpace = UsedSpace;
 		int SampleSpace = 0;
-
+		int BoxHeight = 64;
 		for (int x = 1; x < samples.size(); x++)
 		{
 			UsedSpace += samples[x].brr.DBlocks.size() * 9;
@@ -1400,51 +1409,102 @@ void Tracker::Info_View()
 			UsedSpace += 9;
 			InstrumentSpace += 9;//While technically wasting 6 bits here, I can't be bothered changing it
 		}
+		UsedSpace += ReservedSpace;
 		int LastPos = 0;
 
 		//Background Rect to show bounds
 		if (UsedSpace > MaxRange)
 		{
 			Text(("Used space: " + to_string(UsedSpace) + " bytes" + " Too much data used!!!").c_str());
-			draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + GetWindowWidth() * 0.95f, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(ReleaseColour), .25f, 0);
+			draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + GetWindowWidth() * 0.95f, ypos + BoxHeight), ColorConvertFloat4ToU32(ReleaseColour), .25f, 0);
 		}
 		else
 		{
+			int UsedSpaceBounds = (UsedSpace * GetWindowWidth() * 0.95f) / MaxRange;
+
 			Text(("Used space: " + to_string(UsedSpace) + " bytes").c_str());
-			draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + GetWindowWidth() * 0.95f, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(H2Col), .25f, 0);
+			draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + GetWindowWidth() * 0.95f, ypos + BoxHeight), ColorConvertFloat4ToU32(H2Col), .25f, 0);
+			if (GetIO().MousePos.x > xpos + UsedSpaceBounds && GetIO().MousePos.x < xpos + GetWindowWidth() * 0.95f)
+			{
+				if (GetIO().MousePos.y > ypos && GetIO().MousePos.y < ypos + BoxHeight)
+				{
+					BeginTooltip();
+					Text("Empty Space");
+					EndTooltip();
+				}
+			}
+			draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + (ReservedSpace * GetWindowWidth() * 0.95f) / MaxRange , ypos + BoxHeight), ColorConvertFloat4ToU32(ReservedColour), .25f, 0);
+			LastPos += (ReservedSpace * GetWindowWidth() * 0.95f) / MaxRange;
+			if (GetIO().MousePos.x > xpos && GetIO().MousePos.x < xpos + (ReservedSpace * GetWindowWidth() * 0.95f) / MaxRange)
+			{
+				if (GetIO().MousePos.y > ypos && GetIO().MousePos.y < ypos + BoxHeight)
+				{
+					BeginTooltip();
+					Text("Reserved Space");
+					string byteamount = to_string(ReservedSpace);
+					byteamount += " bytes";
+					Text(byteamount.c_str());
+					EndTooltip();
+				}
+			}
+			draw_list->AddRectFilled(ImVec2(xpos + LastPos, ypos), ImVec2(xpos + LastPos + (SG.Emu_APU.LastSamplePoint * GetWindowWidth() * 0.95f) / MaxRange, ypos + BoxHeight), ColorConvertFloat4ToU32(SampColour), .25f, 0);
+			if (GetIO().MousePos.x > xpos + LastPos && GetIO().MousePos.x < xpos + LastPos + (SG.Emu_APU.LastSamplePoint * GetWindowWidth() * 0.95f) / MaxRange)
+			{
+				if (GetIO().MousePos.y > ypos && GetIO().MousePos.y < ypos + BoxHeight)
+				{
+					BeginTooltip();
+					Text("Sample Space");
+					string byteamount = to_string(SG.Emu_APU.LastSamplePoint);
+					byteamount += " bytes";
+					Text(byteamount.c_str());
+					EndTooltip();
+				}
+			}
+			LastPos += (SG.Emu_APU.LastSamplePoint * GetWindowWidth() * 0.95f) / MaxRange;
 
-			draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + (InstrumentSpace * GetWindowWidth() * 0.95f) / MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(AttackColour));
-			LastPos = (InstrumentSpace * GetWindowWidth() * 0.95f) / MaxRange;
+			draw_list->AddRectFilled(ImVec2(xpos + LastPos, ypos), ImVec2(xpos + LastPos + (InstrumentSpace * GetWindowWidth() * 0.95f) / MaxRange, ypos + BoxHeight), ColorConvertFloat4ToU32(InstColour), .25f, 0);
+			if (GetIO().MousePos.x > xpos + LastPos && GetIO().MousePos.x < xpos + LastPos + (InstrumentSpace * GetWindowWidth() * 0.95f) / MaxRange)
+			{
+				if (GetIO().MousePos.y > ypos && GetIO().MousePos.y < ypos + BoxHeight)
+				{
+					BeginTooltip();
+					Text("Instrument Space");
+					string byteamount = to_string(InstrumentSpace);
+					byteamount += " bytes";
+					Text(byteamount.c_str());
+					EndTooltip();
+				}
+			}
+			LastPos += (InstrumentSpace * GetWindowWidth() * 0.95f) / MaxRange;
 
-			draw_list->AddRectFilled(ImVec2(xpos + LastPos, ypos), ImVec2(xpos + LastPos + (SampleSpace * GetWindowWidth() * 0.95f) / MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(SustainColour));
-			LastPos += (SampleSpace * GetWindowWidth() * 0.95f) / MaxRange;
-
-			draw_list->AddRectFilled(ImVec2(xpos + LastPos, ypos), ImVec2(xpos + LastPos + (EchoSpace * GetWindowWidth() * 0.95f) / MaxRange, ypos + GetWindowHeight() * 0.35f), ColorConvertFloat4ToU32(DecayColour));
+			draw_list->AddRectFilled(ImVec2(xpos + LastPos, ypos), ImVec2(xpos + LastPos + (EchoSpace * GetWindowWidth() * 0.95f) / MaxRange, ypos + BoxHeight), ColorConvertFloat4ToU32(EchoColour), .25f, 0);
+			if (GetIO().MousePos.x > xpos + LastPos && GetIO().MousePos.x < xpos + LastPos + (EchoSpace * GetWindowWidth() * 0.95f) / MaxRange)
+			{
+				if (GetIO().MousePos.y > ypos && GetIO().MousePos.y < ypos + BoxHeight)
+				{
+					BeginTooltip();
+					Text("Echo Space");
+					string byteamount = to_string(EchoSpace);
+					byteamount += " bytes";
+					Text(byteamount.c_str());
+					EndTooltip();
+				}
+			}
 			LastPos += (EchoSpace * GetWindowWidth() * 0.95f) / MaxRange;
 
+			/*
+			if (GetIO().MousePos.x > xpos + LastPos && GetIO().MousePos.x < xpos + (LastPos - GetWindowWidth() * 0.95f))
+			{
+				if (GetIO().MousePos.y > ypos && GetIO().MousePos.y < ypos + BoxHeight)
+				{
+					BeginTooltip();
+					Text("Empty Space");
+					EndTooltip();
+				}
+			}
+			*/
+
 		}
-		for (int i = 0; i < 4; i++)
-		{
-			NewLine();
-		}
-		//Text display for data space
-		ypos = GetCursorScreenPos().y - (TextSize * 0.125f);
-		xpos = GetCursorScreenPos().x;
-
-		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + TextSize, ypos + TextSize), ColorConvertFloat4ToU32(H2Col), .25f, 0);
-		Text(("  Free: " + to_string(MaxRange - (InstrumentSpace + SampleSpace + EchoSpace)) + " bytes").c_str());
-
-		ypos = GetCursorScreenPos().y - (TextSize * 0.125f);;
-		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + TextSize, ypos + TextSize), ColorConvertFloat4ToU32(AttackColour), .25f, 0);
-		Text(("  Instruments: " + to_string(InstrumentSpace) + " bytes").c_str());
-
-		ypos = GetCursorScreenPos().y - (TextSize * 0.125f);;
-		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + TextSize, ypos + TextSize), ColorConvertFloat4ToU32(SustainColour), .25f, 0);
-		Text(("  Samples: " + to_string(SampleSpace) + " bytes").c_str());
-
-		ypos = GetCursorScreenPos().y - (TextSize * 0.125f);;
-		draw_list->AddRectFilled(ImVec2(xpos, ypos), ImVec2(xpos + TextSize, ypos + TextSize), ColorConvertFloat4ToU32(DecayColour), .25f, 0);
-		Text(("  Echo: " + to_string(EchoSpace) + " bytes").c_str());
 	}
 	End();
 }
@@ -1516,7 +1576,6 @@ void Tracker::SetupInstr()
 	DefaultSample.LoopStart = 0;
 	DefaultSample.LoopEnd = 0;
 	DefaultSample.SampleData.clear();
-	DefaultSample.BRRSampleData.clear();
 	samples.push_back(DefaultSample);
 
 	DefaultPattern.Index = 0;
@@ -1668,9 +1727,9 @@ void Tracker::RunTracker()
 			SG.Update(GetIO().DeltaTime, Channels, samples, CursorY, inst);
 			//SG.DEBUG_Output_Audio_Buffer_Log(SG.Totalbuffer, FrameCount, x, SDL_GetQueuedAudioSize(dev));
 		}
-		SG.Emu_APU.APU_Update(&SG.Totalbuffer[0][0], SG.TRACKER_AUDIO_BUFFER);
+		SG.Emu_APU.APU_Update(SG.Totalbuffer[0].data(), 2 * SG.TRACKER_AUDIO_BUFFER);
 		//SG.Emu_APU.APU_Run(&SG.Totalbuffer[0][0], SG.TRACKER_AUDIO_BUFFER);
-		SDL_QueueAudio(dev, &(SG.Totalbuffer[0][0]), sizeof(Sint16) * 2 * SG.Totalbuffer.size());
+		SDL_QueueAudio(dev, SG.Totalbuffer[0].data(), sizeof(Sint16) * 2 * SG.TRACKER_AUDIO_BUFFER);
 	}
 
 	TickTimer -= GetIO().DeltaTime;
@@ -2131,10 +2190,10 @@ void Tracker::LoadSample()
 					cur.FineTune = 0;
 					SelectedSample = samples.size();
 					cur.SampleIndex = SelectedSample;
-					cur.SampleIndex = SelectedSample;
 					//Assume the file isn't fucked and we can move to the BRR conversion
 					cur.BRRConvert();
 					samples.push_back(cur);
+					//Memory shit
 					SG.Emu_APU.APU_Set_Sample_Memory(samples);
 					SG.Emu_APU.APU_Set_Sample_Directory(samples);
 					sf_close(file);
@@ -2273,4 +2332,25 @@ void Tracker::ResetSettings()
 {
 	SManager.CustomData = SManager.DefaultData;
 	UpdateSettings(0);
+}
+
+void Tracker::EmuDebugWindow()
+{
+	if (Begin("Debug",0))
+	{
+		if (BeginChild("##MemoryMap", ImVec2(GetWindowWidth() * .66, GetWindowHeight() * .66))) 
+		{
+			int MaxRows = 65355 / (2.0 * MemCols);
+			for (int y = 0; y < MaxRows; y++)
+			{
+				for (int x = 0; x < MemCols; x++)
+				{
+					SameLine();
+				}
+				NewLine();
+			}
+			EndChild();
+		}
+	}
+	End();
 }
