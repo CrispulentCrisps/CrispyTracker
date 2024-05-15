@@ -340,10 +340,12 @@ void Tracker::CreditsWindow()
 		BulletText("Crisps");
 		BulletText("Alexmush");
 		BulletText("Euly");
+		BulletText("Tim4242");
 
 		NewLine();
 		Text("Emulator Code:");
 		BulletText("snes_spc by John Reagan, fork of the SPC emulation from Blargg");
+		BulletText("BRRTools by Optiroc");
 
 		NewLine();
 		Text("Driver Code:");
@@ -1515,13 +1517,12 @@ void Tracker::EchoSettings()
 	{
 		if (Begin("EchoSettings"),true, UNIVERSAL_WINDOW_FLAGS)
 		{
+			SliderInt("Echo Volume Left", &EchoVol, -128, 127);
+
 			if(SliderInt("Delay", &Delay, 0, 15)) {
-				SG.Emu_APU.APU_Set_Echo(Delay, EchoFilter);
+				SG.Emu_APU.APU_Set_Echo(Delay, EchoFilter, EchoVol);
 			}
 			SliderInt("Feedback", &Feedback, 0, 127);
-
-			SliderInt("Echo Volume Left", &EchoVolL, -128, 127);
-			SliderInt("Echo Volume Right", &EchoVolR, -128, 127);
 
 			int FilterAccum = 0;
 			Text("Echo filter");
@@ -1529,20 +1530,11 @@ void Tracker::EchoSettings()
 			{
 				FilterAccum += EchoFilter[i];
 				if(SliderInt(to_string(i).c_str(), &EchoFilter[i], -128, 127)) {
-					SG.Emu_APU.APU_Set_Echo(Delay, EchoFilter);
+					SG.Emu_APU.APU_Set_Echo(Delay, EchoFilter, EchoVol);
 				}
 			}
 			string FilterText = "Filter total: " + to_string(FilterAccum);
-			if (FilterAccum < -128 || FilterAccum > 127) {
-				PushStyleColor(ImGuiCol_Text, ReleaseColour);
-				FilterText += " Too large a value!";
-				Text(FilterText.c_str());
-				PopStyleColor();
-			}
-			else
-			{
-				Text(FilterText.c_str());
-			}
+			Text(FilterText.c_str());
 			if (Button("Close", ImVec2(64, TextSize * 1.5))) {
 				ShowEcho = false;
 			}
@@ -1723,7 +1715,7 @@ void Tracker::RunTracker()
 				//Channels[i].AudioDataR = 2048 * sin((SG.P) * (2 * 3.14) * 440 * (1. / AUDIO_RATE));//Right ear
 				//cout << "\n" << Channels[i].AudioDataR << ": Channel " << i << " Framce Counter: " << FrameCount;
 			}
-			SG.MixChannels(x, Channels);
+			//SG.MixChannels(x, Channels);
 			SG.Update(GetIO().DeltaTime, Channels, samples, CursorY, inst);
 			//SG.DEBUG_Output_Audio_Buffer_Log(SG.Totalbuffer, FrameCount, x, SDL_GetQueuedAudioSize(dev));
 		}

@@ -97,7 +97,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)Libraries\SDL2\include;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\include;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\include;$(ProjectDir)Libraries\opengl;$(ProjectDir)Libraries;$(ProjectDir)Libraries\emu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>Default</LanguageStandard>
-      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -136,7 +136,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir)Libraries\SDL2\include;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\include;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\include;$(ProjectDir)Libraries\opengl;$(ProjectDir)Libraries;$(ProjectDir)Libraries\emu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>Default</LanguageStandard>
-      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -171,6 +171,8 @@
     <ClCompile Include="Channel.cpp" />
     <ClCompile Include="Effects.cpp" />
     <ClCompile Include="Instrument.cpp" />
+    <ClCompile Include="Libraries\BRRtools\BRRtools-master\src\brr.c" />
+    <ClCompile Include="Libraries\BRRtools\BRRtools-master\src\brr_encoder.c" />
     <ClCompile Include="Libraries\emu\dsp.cpp" />
     <ClCompile Include="Libraries\emu\SNES_SPC.cpp" />
     <ClCompile Include="Libraries\emu\SNES_SPC_misc.cpp" />
@@ -203,6 +205,8 @@
     <ClInclude Include="Effects.h" />
     <ClInclude Include="FileDef.h" />
     <ClInclude Include="Instrument.h" />
+    <ClInclude Include="Libraries\BRRtools\BRRtools-master\src\brr.h" />
+    <ClInclude Include="Libraries\BRRtools\BRRtools-master\src\common.h" />
     <ClInclude Include="Libraries\emu\blargg_common.h" />
     <ClInclude Include="Libraries\emu\blargg_config.h" />
     <ClInclude Include="Libraries\emu\blargg_endian.h" />

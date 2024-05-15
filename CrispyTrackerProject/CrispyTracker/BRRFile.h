@@ -22,5 +22,4 @@ public:
 	};
 
 	vector<DataBlock> DBlocks;
-	DataBlock BlankBlock;
 };

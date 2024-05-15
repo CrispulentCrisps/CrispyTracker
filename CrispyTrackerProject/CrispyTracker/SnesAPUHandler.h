@@ -5,6 +5,12 @@
 #include "emu/dsp.h"
 #include "emu/spc.h"
 
+// References
+// 
+// https://snes.nesdev.org/wiki/S-SMP#P
+// https://problemkaputt.de/fullsnes.htm#snesapumemoryandiomap
+//
+
 #define MAX_CLOCK_DSP       1024000
 
 #define GLOBAL_mvol_l       0x0C
@@ -107,12 +113,14 @@ public:
     Region reg;
     
     bool KON_arr[8];
+    bool ECHO_arr[8];
 
     int LastSamplePoint;
 
     void APU_Startup();
     void APU_Update(spc_sample_t* Output, int BufferSize);
     void APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int ypos);
+    void APU_Evaluate_Channel_Regs(Channel* ch);
     //void APU_Run(spc_sample_t* Output, int BufSize);
     void APU_Kill();
     void APU_COM();
@@ -122,5 +130,5 @@ public:
     void APU_Evaluate_BRR_End(Sample* sample, int EndPoint);
     
     bool APU_Set_Master_Vol(signed char vol);
-    void APU_Set_Echo(unsigned char dtime, int* coef);
+    void APU_Set_Echo(unsigned char dtime, int* coef, signed char dfb);
 };

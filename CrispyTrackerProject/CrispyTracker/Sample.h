@@ -1,5 +1,7 @@
 #pragma once
+#include "BRRtools/BRRtools-master/src/brr.h"
 #include "BRRFile.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string>
 
@@ -12,6 +14,7 @@ public:
 		LoopFlag = 0b00000010,
 	};
 	int SampleIndex;
+	int SampleADDR;
 	long PlayingHZ;
 	int NoteOffset = 0;
 	
@@ -28,5 +31,5 @@ public:
 	BRRFile brr;
 
 	void BRRConvert();
-	void LargestPoint();
+	unsigned char FindSampleIndex();
 };

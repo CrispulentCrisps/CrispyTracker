@@ -22,6 +22,9 @@
     <Filter Include="Header Files\emu">
       <UniqueIdentifier>{a2fc5be8-350f-4144-a2e0-3037387d35ec}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\BRRTools">
+      <UniqueIdentifier>{de48984a-9492-404a-851f-d868c5200739}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Channel.cpp">
@@ -110,6 +113,12 @@
     </ClCompile>
     <ClCompile Include="Libraries\imgui\imgui.cpp">
       <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Libraries\BRRtools\BRRtools-master\src\brr.c">
+      <Filter>Header Files\BRRTools</Filter>
+    </ClCompile>
+    <ClCompile Include="Libraries\BRRtools\BRRtools-master\src\brr_encoder.c">
+      <Filter>Header Files\BRRTools</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -223,6 +232,12 @@
     </ClInclude>
     <ClInclude Include="FileDef.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\BRRtools\BRRtools-master\src\brr.h">
+      <Filter>Header Files\BRRTools</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\BRRtools\BRRtools-master\src\common.h">
+      <Filter>Header Files\BRRTools</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

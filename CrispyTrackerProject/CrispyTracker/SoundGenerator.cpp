@@ -17,19 +17,6 @@ HRESULT SoundGenerator::LoadData(UINT count, BYTE* data, DWORD* flags)
 	}
 	return S_OK;
 }
-void SoundGenerator::MixChannels(int Index, Channel* c)
-{
-	Sint16 ResultL = 0;
-	Sint16 ResultR = 0;
-	for (int i = 0; i < 8; i++)
-	{
-		ResultL += c[i].AudioDataL / 8;
-		ResultR += c[i].AudioDataR / 8;
-	}
-	Totalbuffer[Index][0] = ResultL;
-	Totalbuffer[Index][1] = ResultR;
-	//cout << "\nCurrent Buffer: " << ResultL;
-}
 
 void SoundGenerator::Update(float ElapsedTime, Channel* ch, vector<Sample>& Samples, int YPos, vector<Instrument>& inst)
 {
@@ -62,6 +49,7 @@ void SoundGenerator::Update(float ElapsedTime, Channel* ch, vector<Sample>& Samp
 		{
 			//ch[i].CurrentSamplePointIndex = 0;
 		}
+		Emu_APU.APU_Evaluate_Channel_Regs(ch);
 	}
 }
 
