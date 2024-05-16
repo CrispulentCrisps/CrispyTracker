@@ -1517,7 +1517,7 @@ void Tracker::EchoSettings()
 	{
 		if (Begin("EchoSettings"),true, UNIVERSAL_WINDOW_FLAGS)
 		{
-			SliderInt("Echo Volume Left", &EchoVol, -128, 127);
+			SliderInt("Echo Volume", &EchoVol, -128, 127);
 
 			if(SliderInt("Delay", &Delay, 0, 15)) {
 				SG.Emu_APU.APU_Set_Echo(Delay, EchoFilter, EchoVol);

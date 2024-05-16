@@ -192,9 +192,9 @@ public:
 	int VolumeScale = 127;	//(0-127)
 
 	//Echo settings
-	int Delay;			//(0-15)
-	int Feedback;		//(0-127)
-	int EchoVol;		//(0-127)
+	int Delay = 0;		//(0-15)
+	int Feedback = 64;	//(0-127)
+	int EchoVol = 127;	//(0-127)
 	int EchoFilter[8];	//(-128-127) Must accumulate to 127 or -128 at most/least respectively!!!!
 
 	//Enums

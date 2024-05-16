@@ -39,12 +39,13 @@ void SnesAPUHandler::APU_Startup()
 	spc_dsp_write(Dsp, GLOBAL_mvol_l, 0x7F);
 	spc_dsp_write(Dsp, GLOBAL_mvol_r, 0x7F);
 
+	spc_dsp_write(Dsp, GLOBAL_esa, 0x00);
+	spc_dsp_write(Dsp, GLOBAL_edl, 0x00);
 	spc_dsp_write(Dsp, GLOBAL_flg, 0b00000000);
+
 	spc_dsp_write(Dsp, GLOBAL_pmon, 0b00000000);
 	spc_dsp_write(Dsp, GLOBAL_non, 0b00000000);
 	spc_dsp_write(Dsp, GLOBAL_eon, 0b00000000);
-	spc_dsp_write(Dsp, GLOBAL_esa, 0x00);
-	spc_dsp_write(Dsp, GLOBAL_edl, 0x00);
 	spc_dsp_write(Dsp, GLOBAL_endx, 0x00);
 	spc_dsp_write(Dsp, GLOBAL_efb, 0x00);
 
@@ -110,15 +111,8 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 			spc_dsp_write(Dsp, ChannelRegs[id].vol_l, 0x7F);
 			spc_dsp_write(Dsp, ChannelRegs[id].vol_r, 0x7F);
 			spc_dsp_write(Dsp, ChannelRegs[id].scrn, inst->CurrentSample.SampleADDR);//Issues arising from incorrect data pointing in sample memory
-			
-			if (inst->Echo)
-			{
-				ECHO_arr[id] = true;
-			}
-			else
-			{
-				ECHO_arr[id] = false;
-			}
+
+			spc_dsp_write(Dsp, GLOBAL_eon, (int)inst->Echo << id);
 		
 		}
 
@@ -255,6 +249,7 @@ void SnesAPUHandler::APU_Set_Echo(unsigned char dtime, int* coef, signed char df
 {
 	spc_dsp_write(Dsp, GLOBAL_edl, dtime);
 	spc_dsp_write(Dsp, GLOBAL_efb, dfb);
+	spc_dsp_write(Dsp, GLOBAL_esa, Echo_Buffer_Addr >> 8);
 	spc_dsp_write(Dsp, GLOBAL_c0, coef[0]);
 	spc_dsp_write(Dsp, GLOBAL_c1, coef[1]);
 	spc_dsp_write(Dsp, GLOBAL_c2, coef[2]);
@@ -263,4 +258,7 @@ void SnesAPUHandler::APU_Set_Echo(unsigned char dtime, int* coef, signed char df
 	spc_dsp_write(Dsp, GLOBAL_c5, coef[5]);
 	spc_dsp_write(Dsp, GLOBAL_c6, coef[6]);
 	spc_dsp_write(Dsp, GLOBAL_c7, coef[7]);
+	spc_dsp_soft_reset(Dsp);
+	spc_dsp_write(Dsp, GLOBAL_flg, 0x0);
+
 }
