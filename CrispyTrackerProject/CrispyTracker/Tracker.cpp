@@ -69,6 +69,7 @@ void Tracker::Run()
 	Initialise(TrackLength);
 	SG.SetBufferSize(SG.TRACKER_AUDIO_BUFFER);
 	SG.Emu_APU.APU_Startup();
+	SG.Emu_APU.APU_Init_Echo();
 	SetupInstr();
 	bool PlayingTrack = false;
 	bool WindowIsGood = true;
@@ -161,7 +162,6 @@ void Tracker::Run()
 		for (int i = 0; i < 8; i++)
 		{
 			Channels[i].Index = i;
-			SG.ch[i] = &Channels[i];
 		}
 		x = ImAxis_X1;
 		y = ImAxis_Y1;
@@ -1000,12 +1000,12 @@ void Tracker::Samples()
 			cout << "SAMPLE LIST SIZE: " << samples.size();
 			if (SelectedSample > samples.size())
 			{
-				samples.erase(samples.begin() + SelectedSample);
+				samples.erase((samples.begin() + 1) + SelectedSample);
 				SelectedSample--;
 			}
 			else if (SelectedSample > 0)
 			{
-				samples.erase(samples.begin() + SelectedSample);
+				samples.erase((samples.begin()+1) + SelectedSample);
 			}
 		}
 		SameLine();
@@ -1067,12 +1067,17 @@ void Tracker::Sample_View()
 			InputText("Sample Name", (char*)samples[SelectedSample].SampleName.c_str(), sizeof(samples[SelectedSample].SampleName));
 			InputInt("Playing HZ", &samples[SelectedSample].SampleRate);
 			InputInt("Fine Tune", (int*)&samples[SelectedSample].FineTune, 1, 1);
-			Checkbox("Loop Sample", &samples[SelectedSample].Loop);
+			if (Checkbox("Loop Sample", &samples[SelectedSample].Loop)) {
+				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
+				SG.Emu_APU.APU_Set_Sample_Memory(samples);
+			}
 			if (InputInt("Loop Start", (int*)&samples[SelectedSample].LoopStart, 16, 0)) {
-				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopStart);
+				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
+				SG.Emu_APU.APU_Set_Sample_Memory(samples);
 			}
 			if(InputInt("Loop End", (int*)&samples[SelectedSample].LoopEnd, 16, 0)){
-				SG.Emu_APU.APU_Evaluate_BRR_End(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
+				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
+				SG.Emu_APU.APU_Set_Sample_Memory(samples);
 			}
 			SliderInt("Note offset", &samples[SelectedSample].NoteOffset, -12, 12);
 			if (samples.size() > 1)
@@ -1520,9 +1525,11 @@ void Tracker::EchoSettings()
 			SliderInt("Echo Volume", &EchoVol, -128, 127);
 
 			if(SliderInt("Delay", &Delay, 0, 15)) {
-				SG.Emu_APU.APU_Set_Echo(Delay, EchoFilter, EchoVol);
+				SG.Emu_APU.APU_Set_Echo(Delay, EchoFilter, Feedback, EchoVol);
 			}
-			SliderInt("Feedback", &Feedback, 0, 127);
+			if(SliderInt("Feedback", &Feedback, 0, 127)) {
+				SG.Emu_APU.APU_Set_Echo(Delay, EchoFilter, Feedback, EchoVol);
+			}
 
 			int FilterAccum = 0;
 			Text("Echo filter");
@@ -1530,7 +1537,7 @@ void Tracker::EchoSettings()
 			{
 				FilterAccum += EchoFilter[i];
 				if(SliderInt(to_string(i).c_str(), &EchoFilter[i], -128, 127)) {
-					SG.Emu_APU.APU_Set_Echo(Delay, EchoFilter, EchoVol);
+					SG.Emu_APU.APU_Set_Echo(Delay, EchoFilter, Feedback, EchoVol);
 				}
 			}
 			string FilterText = "Filter total: " + to_string(FilterAccum);
@@ -2188,6 +2195,7 @@ void Tracker::LoadSample()
 					//Memory shit
 					SG.Emu_APU.APU_Set_Sample_Memory(samples);
 					SG.Emu_APU.APU_Set_Sample_Directory(samples);
+					SG.Emu_APU.APU_Evaluate_BRR_Loop(&cur, cur.LoopEnd);
 					sf_close(file);
 				}
 				else

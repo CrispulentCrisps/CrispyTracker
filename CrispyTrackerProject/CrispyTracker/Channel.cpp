@@ -168,7 +168,7 @@ void Channel::TickCheck(int RowIndex, vector<Instrument>& instruments, vector<Sa
 		CurrentSamplePointIndex = 0;
 		PlayingNote = true;
 		CurrentPlayedNote = (float)Rows[RowIndex].note - 60.0 + samples[CurrentSample].NoteOffset;//the - 60 is for the offset needed to center the pitch
-		//cout << "\nChannel Hit" << " - Current Note: " << CurrentPlayedNote << " - Actual Note: " << Rows[RowIndex].note << " - Sample Tuninf: " << pow(2., CurrentPlayedNote / 12.);;
+		cout << "\nChannel Hit" << "\nCurrent Note: " << CurrentPlayedNote << "\nCurrent Row " << RowIndex;
 	}
 }
 	
@@ -178,26 +178,6 @@ void Channel::UpdateChannel(vector<Instrument>& instruments, vector<Sample>& sam
 
 	if (CurrentInstrument > 0 && samples[CurrentSample].SampleData.size() > 0)
 	{
-
-		/*
-		if (samples[CurrentSample].Loop)
-		{
-			if (CurrentSamplePointIndex >= samples[CurrentSample].LoopEnd)
-			{
-				CurrentSamplePointIndex = samples[CurrentSample].LoopStart;
-			}
-		}
-		else if (!samples[CurrentSample].Loop)
-		{
-			if (CurrentSamplePointIndex >= samples[CurrentSample].SampleData.size())
-			{
-				CurrentSamplePointIndex = 0;
-				PlayingNote = false;
-				CurrentPlayedNote = 0;
-				cout << "Current Sample - " << CurrentSample;
-			}
-		}
-		*/
 		AudioDataL = Resample(samples[CurrentSample].SampleData);
 		AudioDataR = Resample(samples[CurrentSample].SampleData);
 	}

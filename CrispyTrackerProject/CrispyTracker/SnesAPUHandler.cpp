@@ -1,5 +1,6 @@
 #include "SnesAPUHandler.h"
 
+//Boots up the emulation core
 void SnesAPUHandler::APU_Startup()
 {
 	//Starting up the DSP and SPC that the emu will use
@@ -13,6 +14,7 @@ void SnesAPUHandler::APU_Startup()
 	spc_dsp_init(Dsp, DSP_MEMORY);
 	spc_dsp_reset(Dsp);
 
+	//Setting up the per channel registers for the SPC
 	for (int i = 0; i < 8; i++)
 	{
 		ChannelRegs[i].vol_l = (i * 16);
@@ -27,15 +29,18 @@ void SnesAPUHandler::APU_Startup()
 		ChannelRegs[i].outx = (i * 16) + 9;
 	}
 
+	//Reset KON
 	for (int i = 0; i < 8; i++)
 	{
 		KON_arr[i] = false;
 	}
+	//Setup the registers
 	spc_dsp_write(Dsp, GLOBAL_dir, Sample_Dir_Page >> 8);
 
 	spc_dsp_write(Dsp, GLOBAL_kon, 0x00);
 	spc_dsp_write(Dsp, GLOBAL_kof, 0x00);
 
+	//Reset volume
 	spc_dsp_write(Dsp, GLOBAL_mvol_l, 0x7F);
 	spc_dsp_write(Dsp, GLOBAL_mvol_r, 0x7F);
 
@@ -50,11 +55,12 @@ void SnesAPUHandler::APU_Startup()
 	spc_dsp_write(Dsp, GLOBAL_efb, 0x00);
 
 }
-
+//Update loop for the DSP
 void SnesAPUHandler::APU_Update(spc_sample_t* Output, int BufferSize)
 {
 	//spc_set_output(Spc, Output, BufferSize);
 
+	//This is to match the 32KHz the SNES outputs compared to the 44.1KHz the tracker outputs
 	int ClockCycleRound = (BufferSize / 44100.0) * MAX_CLOCK_DSP;
 	int InterbufSize = (ClockCycleRound / 16);
 	if (InterbufSize % 2 == 1) InterbufSize++;
@@ -66,7 +72,7 @@ void SnesAPUHandler::APU_Update(spc_sample_t* Output, int BufferSize)
 
 	spc_dsp_run(Dsp, ClockCycleRound);
 
-	cout << "\nSample Count: " << spc_dsp_sample_count(Dsp);
+	//cout << "\nSample Count: " << spc_dsp_sample_count(Dsp);
 
 	float StepCount = 0;
 	float MaxBufNeeded = spc_dsp_sample_count(Dsp);
@@ -79,6 +85,7 @@ void SnesAPUHandler::APU_Update(spc_sample_t* Output, int BufferSize)
 	spc_filter_run(Filter, Output, BufferSize);
 }
 
+//Updating the registers of the DSP to reflect the changes in the track as it goes by
 void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int ypos)
 {
 	int currentnote = ch->Rows[ypos].note * ch->Rows[ypos].octave;
@@ -127,28 +134,20 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 	}
 }
 
+//Intended to do general writes to the CPU independent of the current channel
 void SnesAPUHandler::APU_Evaluate_Channel_Regs(Channel* ch)
 {
-	spc_dsp_write(Dsp, GLOBAL_eon, (int)ECHO_arr);
+	//spc_dsp_write(Dsp, GLOBAL_eon, (int)ECHO_arr);
 }
 
-/*
-void SnesAPUHandler::APU_Run(spc_sample_t* Output, int BufSize)
-{
-	//spc_play(Spc, BufSize, Output);
-	spc_filter_run(Filter, Output, BufSize);
-}
-*/
+//Delete SPC & DSP instance
 void SnesAPUHandler::APU_Kill()
 {
 	spc_delete(Spc);
+	spc_dsp_delete(Dsp);
 }
 
-void SnesAPUHandler::APU_COM()
-{
-	//Communicate between the CPU and SPC
-}
-
+//Writes all sample data into memory from [Sample_Mem_Page]
 void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 {
 	int AddrOff = 0;
@@ -182,6 +181,7 @@ void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 	LastSamplePoint = AddrOff;
 }
 
+//Sets up the DIR page for interfacing with samples
 void SnesAPUHandler::APU_Set_Sample_Directory(std::vector<Sample>& samp)
 {
 	//sets the sample directory at 0xDD00
@@ -202,40 +202,44 @@ void SnesAPUHandler::APU_Set_Sample_Directory(std::vector<Sample>& samp)
 		CurrentDir += DirSize;
 	}
 }
-
+//Formatting the BRR END and LOOP flags
 void SnesAPUHandler::APU_Evaluate_BRR_Loop(Sample* sample, int LoopPoint)
 {
-	//Sets the loop
-	int BlockPos = LoopPoint >> 4;
-	for (int x = BlockPos -1; x < BlockPos + 1; x++)
+	int LoopBlockPos = LoopPoint / 16;
+	for (int x = 0; x < sample->brr.DBlocks.size(); x++)
 	{
-		if (x <= sample->brr.DBlocks.size() && x > 0)
+		if (x == LoopBlockPos && LoopBlockPos != 0)//Assuming we've hit the loop point
 		{
-			if (x == BlockPos)sample->brr.DBlocks[x].HeaderByte |= sample->LoopFlag;
-			else sample->brr.DBlocks[x].HeaderByte &= sample->LoopFlag;
+			sample->brr.DBlocks[x].HeaderByte |= sample->LoopFlag | sample->EndFlag;
+		}
+		else if (x == sample->brr.DBlocks.size()-1)//Assuming we've hit the end of the BRR blocks
+		{
+			sample->brr.DBlocks[x].HeaderByte |= sample->EndFlag;
+		}
+		else //Assume it's a standard block that needs no flags attached
+		{
+			sample->brr.DBlocks[x].HeaderByte &= ~(sample->LoopFlag | sample->EndFlag);
 		}
 	}
+
+	APU_Evaluate_BRR_Loop_Start(sample);
 }
 
-void SnesAPUHandler::APU_Evaluate_BRR_End(Sample* sample, int EndPoint)
+//Writes the loop start point to the DIR page
+void SnesAPUHandler::APU_Evaluate_BRR_Loop_Start(Sample* sample)
 {
-	int BlockPos = EndPoint >> 4;
-	for (int x = BlockPos - 1; x < BlockPos + 1; x++)
-	{
-		if (x <= sample->brr.DBlocks.size() && x > 0)
-		{
-			if (x == BlockPos)sample->brr.DBlocks[x].HeaderByte |= sample->EndFlag;
-			else sample->brr.DBlocks[x].HeaderByte &= sample->EndFlag;
-		}
-	}
+	sample->LoopStartAddr = sample->brr.SampleDir + (sample->LoopStart/16) * 9;
+	DSP_MEMORY[Sample_Dir_Page + (sample->SampleIndex * 4) + 2] = sample->LoopStartAddr & 0xFF;
+	DSP_MEMORY[Sample_Dir_Page + (sample->SampleIndex * 4) + 3] = (sample->LoopStartAddr >> 8) & 0xFF;
 }
 
+//Sets master volume of the track
 bool SnesAPUHandler::APU_Set_Master_Vol(signed char vol)
 {
 	if (vol >= -128 && vol <= 127)
 	{
-		//spc_dsp_write(Dsp, GLOBAL_mvol_l, vol);
-		//spc_dsp_write(Dsp, GLOBAL_mvol_r, vol);
+		spc_dsp_write(Dsp, GLOBAL_mvol_l, vol);
+		spc_dsp_write(Dsp, GLOBAL_mvol_r, vol);
 		return true;
 	}
 	else
@@ -245,11 +249,14 @@ bool SnesAPUHandler::APU_Set_Master_Vol(signed char vol)
 	}
 }
 
-void SnesAPUHandler::APU_Set_Echo(unsigned char dtime, int* coef, signed char dfb)
+//Update the echo registers
+void SnesAPUHandler::APU_Set_Echo(unsigned int dtime, int* coef, signed int dfb, signed int dvol)
 {
+	spc_dsp_write(Dsp, GLOBAL_evol_l, dvol);
+	spc_dsp_write(Dsp, GLOBAL_evol_r, dvol);
 	spc_dsp_write(Dsp, GLOBAL_edl, dtime);
 	spc_dsp_write(Dsp, GLOBAL_efb, dfb);
-	spc_dsp_write(Dsp, GLOBAL_esa, Echo_Buffer_Addr >> 8);
+	spc_dsp_write(Dsp, GLOBAL_esa, (0xF000 - (dtime*0x0800)) >> 8);//Sets the location of the echo buffer
 	spc_dsp_write(Dsp, GLOBAL_c0, coef[0]);
 	spc_dsp_write(Dsp, GLOBAL_c1, coef[1]);
 	spc_dsp_write(Dsp, GLOBAL_c2, coef[2]);
@@ -259,6 +266,25 @@ void SnesAPUHandler::APU_Set_Echo(unsigned char dtime, int* coef, signed char df
 	spc_dsp_write(Dsp, GLOBAL_c6, coef[6]);
 	spc_dsp_write(Dsp, GLOBAL_c7, coef[7]);
 	spc_dsp_soft_reset(Dsp);
-	spc_dsp_write(Dsp, GLOBAL_flg, 0x0);
+	spc_dsp_write(Dsp, GLOBAL_flg, 0);//Flag used to update the EDL and ESA regs
+}
 
+//Initialises the echo values
+void SnesAPUHandler::APU_Init_Echo()
+{
+	spc_dsp_write(Dsp, GLOBAL_evol_l, 96);
+	spc_dsp_write(Dsp, GLOBAL_evol_r, 96);
+	spc_dsp_write(Dsp, GLOBAL_edl, 0);
+	spc_dsp_write(Dsp, GLOBAL_efb, 64);
+	spc_dsp_write(Dsp, GLOBAL_esa, (0xF000 - 0x0800) >> 8);//Sets the location of the echo buffer
+	spc_dsp_write(Dsp, GLOBAL_c0, 127);
+	spc_dsp_write(Dsp, GLOBAL_c1, 0);
+	spc_dsp_write(Dsp, GLOBAL_c2, 0);
+	spc_dsp_write(Dsp, GLOBAL_c3, 0);
+	spc_dsp_write(Dsp, GLOBAL_c4, 0);
+	spc_dsp_write(Dsp, GLOBAL_c5, 0);
+	spc_dsp_write(Dsp, GLOBAL_c6, 0);
+	spc_dsp_write(Dsp, GLOBAL_c7, 0);
+	spc_dsp_soft_reset(Dsp);
+	spc_dsp_write(Dsp, GLOBAL_flg, 0);//Flag used to update the EDL and ESA regs
 }

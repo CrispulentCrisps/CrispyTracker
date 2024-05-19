@@ -54,13 +54,13 @@
 
 #define Sample_Dir_Page     0xDD00
 #define Sample_Mem_Page     0x0200
-#define Echo_Mem_Page       0xEE00
+#define Echo_Buffer_Addr    0xEE00
 #define IPL_ROM_Page        0xFFC0
 
 //
 //  Memory layout
 //  0000 - 00EF     |   Zeropage
-//  00F0 - 00FF     |   CPU registers 
+//  00F0 - 00FF     |   CPU registers
 //  0100 - 01FF     |   Stackpage
 //  0200 - FFBF     |   RAM
 //  FFC0 - FFFF     |   IPL ROM
@@ -123,12 +123,12 @@ public:
     void APU_Evaluate_Channel_Regs(Channel* ch);
     //void APU_Run(spc_sample_t* Output, int BufSize);
     void APU_Kill();
-    void APU_COM();
     void APU_Set_Sample_Memory(std::vector<Sample>& samp);
     void APU_Set_Sample_Directory(std::vector<Sample>& samp);
     void APU_Evaluate_BRR_Loop(Sample* sample, int LoopPoint);
-    void APU_Evaluate_BRR_End(Sample* sample, int EndPoint);
+    void APU_Evaluate_BRR_Loop_Start(Sample* sample);
     
     bool APU_Set_Master_Vol(signed char vol);
-    void APU_Set_Echo(unsigned char dtime, int* coef, signed char dfb);
+    void APU_Set_Echo(unsigned int dtime, int* coef, signed int dfb, signed int dvol);
+    void APU_Init_Echo();
 };

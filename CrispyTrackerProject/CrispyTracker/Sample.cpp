@@ -1,6 +1,6 @@
 #include "Sample.h"
 
-//thank you Blumba for the bit shift help :D
+//Converts samples into BRR format
 void Sample::BRRConvert()
 {
     BRRFile::DataBlock BlankBlock = {0};
@@ -37,9 +37,4 @@ void Sample::BRRConvert()
         }
     }
     printf("\nSAMPLE CONVERSION ENDED\n");
-}
-
-unsigned char Sample::FindSampleIndex()
-{
-    return 0;
 }

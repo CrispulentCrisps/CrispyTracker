@@ -77,6 +77,8 @@ public:
 	SettingsManager SManager;
 	int MAX_VALUE = 256;
 
+#pragma region Keyboard Controls
+	//Inputting notes
 	int NoteInput[24] = 
 	{
 		//Lower octave
@@ -89,29 +91,28 @@ public:
 		GLFW_KEY_6, GLFW_KEY_Y, GLFW_KEY_7, GLFW_KEY_U,
 	};
 
+	//Hexadecimal Inputs
 	int VolInput[16] =
 	{
 		GLFW_KEY_0, GLFW_KEY_1, GLFW_KEY_2, GLFW_KEY_3, 
 		GLFW_KEY_4, GLFW_KEY_5, GLFW_KEY_6, GLFW_KEY_7, 
 		GLFW_KEY_8, GLFW_KEY_9, GLFW_KEY_A, GLFW_KEY_B, 
 		GLFW_KEY_C, GLFW_KEY_D, GLFW_KEY_E, GLFW_KEY_F,
-	};//Should really be called Hex Input but I can't be bothered :]
+	};
 	
 	int ArrowInput[4] =
 	{
 		GLFW_KEY_LEFT, GLFW_KEY_RIGHT, GLFW_KEY_UP, GLFW_KEY_DOWN,
 	};
-	/*
-	enum Region {
-		PAL = 0,
-		NTSC = 1,
-	};
-	*/
-	bool ShowExport = false;
+#pragma endregion
+
+	//Regional
 	int SelectedRegion = 0;
 	string RegionNames[2] = { "PAL/SECAM", "NTSC" };
 	Region reg;
+	//
 
+	//Tracker Controls
 	int TrackLength = 64;
 	int YPos;
 	int Input;
@@ -122,63 +123,80 @@ public:
 	bool PlayingTrack;
 	bool MoveOnDelete = false;
 	bool MoveByStep = false;
+	//
 
+	//Fonts/Text
+	ImFont* font;
+	ImFont* Largefont;
 	int TextSize = 12;
 	int TextSizeLarge = TextSize * 2;
+	//
+
+	//TrackerSpeed
 	int BaseTempo = 150;
 	int Speed1 = 6;
 	int TickCounter = 0;
+	int TempoDivider = 1;
+	//
+
+	//Track visuals
 	int Highlight1 = 4;
 	int Highlight2 = 16;
-	int TempoDivider = 1;
+	//
 	
+	//Key Timings
 	float MinKeyTime = 0.02f;
 	float KeyTimer = 0;
 	float InitKeyTime = 0.5f;
 	float InitTimer = 0;
 	bool InitPressed = false;
+	//
 
 	bool ShowEmuDebug = false;
 	int MemCols = 32;
 
-	ImFont* font;
-	ImFont* Largefont;
-
+	//Tracker Cursor
 	int CursorX = 0;			//Xpos of the channel cursor, not the mouse cursor
 	int CursorY = 0;			//Ypos of the channel cursor, not the mouse cursor
 	int CursorPos = 0;			//This is specifically for the individual elements in the effects chain
 	int PatternIndex = 0;		//This is for the currently scelected index
+	//
 
+	//Selection box functionality
 	int SelectionBoxX1 = 0;
 	int SelectionBoxSubX1 = 0;
 	int SelectionBoxY1 = 0;
-
 	int SelectionBoxX2 = 0;
 	int SelectionBoxSubX2 = 0;
 	int SelectionBoxY2 = 0;
-
 	bool BoxSelected = false;
 
+	//
 	bool ShowSettings = false;
-	
+
+	//Selected items
 	int SelectedInst = 0;
 	int SelectedSample = 0;
 	int SelectedPattern = 0;
-	
+
+	//Window States
 	bool ShowCredits = false;
 	bool ShowInstrument = false;
 	bool ShowSample = false;
 	bool ShowEcho = false;
 	bool LoadingSample = false;
 
+	//Visual padding
 	int InstXPadding = 32;
 	int InstYPadding = 72;
 
 	bool FontUpdate = false;
 
+	//Instruments
 	vector<Instrument> inst;
 	Instrument DefaultInst;
-
+	
+	//Samples
 	vector<Sample> samples;
 	Sample DefaultSample;
 
@@ -253,8 +271,9 @@ public:
 	int SelectedSignType = 0;
 	int SelectedDepthType = 0;
 	int SelectedQualityType = 0;
+	bool ShowExport = false;
 	
-	double ScrollValue();
+	double ScrollValue();//Returns the position scrolled down the tracker
 
 	//Functions
 	void Initialise(int StartLength);
@@ -263,6 +282,7 @@ public:
 	void CheckInput();
 	void Render();
 
+	//Rendering
 	void MenuBar();
 	void CreditsWindow();
 	void Patterns_View();
@@ -280,6 +300,7 @@ public:
 	void SetupInstr();
 	void UpdateFont();
 	void Export_View();
+	//
 
 	void RunTracker(); //For when the tracker is playing the tune
 	void UpdateRows(); //Sending the audio data to the speakers for every element in the tracker row
@@ -307,7 +328,8 @@ public:
 	};
 
 	string Credits = "Crispytracker: " + VERSION;//Is actually used for the title
-
+	
+	//Visuals
 	ImColor Default = IM_COL32(22, 22, 44, 255);
 	ImColor H2Col = IM_COL32(66, 66, 88, 255);
 	ImColor H1Col = IM_COL32(44, 44, 66, 255);

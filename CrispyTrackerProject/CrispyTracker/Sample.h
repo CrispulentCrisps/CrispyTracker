@@ -31,5 +31,4 @@ public:
 	BRRFile brr;
 
 	void BRRConvert();
-	unsigned char FindSampleIndex();
 };

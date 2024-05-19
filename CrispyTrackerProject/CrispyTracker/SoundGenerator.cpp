@@ -6,6 +6,7 @@ SoundGenerator::SoundGenerator() {
 
 }
 
+//Used for loading data into the audio queue for the program
 HRESULT SoundGenerator::LoadData(UINT count, BYTE* data, DWORD* flags)
 {
 	Sint16* dp = (Sint16*)data;
@@ -18,6 +19,7 @@ HRESULT SoundGenerator::LoadData(UINT count, BYTE* data, DWORD* flags)
 	return S_OK;
 }
 
+//Update the registers for the emulation
 void SoundGenerator::Update(float ElapsedTime, Channel* ch, vector<Sample>& Samples, int YPos, vector<Instrument>& inst)
 {
 	for (int i = 0; i < 8; i++)
@@ -53,12 +55,14 @@ void SoundGenerator::Update(float ElapsedTime, Channel* ch, vector<Sample>& Samp
 	}
 }
 
+//Updates buffer size for the audio buffer
 void SoundGenerator::SetBufferSize(int Length)
 {
 	Totalbuffer.resize(Length);
 	Totalbuffer.resize(Length);
 }
 
+//Creates pitch table
 SoundGenerator::SoundGenerator(int TV, int NI, int POS, Channel channels[]) {
     PlayingNoise == false;
 	//A=440
@@ -80,16 +84,19 @@ SoundGenerator::SoundGenerator(int TV, int NI, int POS, Channel channels[]) {
     NoteIndex = NI;
 }
 
+//Debugs the audio flow to find errors and inconsistencies
 void SoundGenerator::DEBUG_Open_File()
 {
 	AudioOutputFile.open("AudioLog.txt");
 }
 
+//Closes debug file
 void SoundGenerator::DEBUG_Close_File()
 {
 	AudioOutputFile.close();
 }
 
+//Outputs the current audio buffer for the passed buffer to a text file
 void SoundGenerator::DEBUG_Output_Audio_Buffer_Log(Sint16 AudioData[][2], int Frame, int BufferIndex, int BufferSize)
 {
 	AudioOutputFile << "Frame: " << Frame << " - Index: " << BufferIndex << " - Audio Data L: " << AudioData[BufferIndex][0] << " - Audio Data R: " << AudioData[BufferIndex][1] << " - Buffer Size: " << BufferSize << "\n";
