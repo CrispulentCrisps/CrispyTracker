@@ -2193,9 +2193,9 @@ void Tracker::LoadSample()
 					cur.BRRConvert();
 					samples.push_back(cur);
 					//Memory shit
+					SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
 					SG.Emu_APU.APU_Set_Sample_Memory(samples);
 					SG.Emu_APU.APU_Set_Sample_Directory(samples);
-					SG.Emu_APU.APU_Evaluate_BRR_Loop(&cur, cur.LoopEnd);
 					sf_close(file);
 				}
 				else

@@ -125,8 +125,17 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 
 		KONResult = KON_arr[id] << id;
 		cout << "\nKONResult = " << (int)KONResult;
-		spc_dsp_write(Dsp, GLOBAL_kon, KONResult);
-		spc_dsp_write(Dsp, GLOBAL_kof, 0x0);
+		if (KONResult != 0)
+		{
+			spc_dsp_write(Dsp, GLOBAL_kon, KONResult);
+		}
+		else
+		{
+			if (spc_dsp_read(Dsp, GLOBAL_endx) << id)
+			{
+				spc_dsp_write(Dsp, GLOBAL_kof, (1 << id));
+			}
+		}
 	}
 	else if (currentnote == 257)//Assuming this is an OFF command
 	{
@@ -161,6 +170,11 @@ void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 				if (samp[i].LoopStart / 16 == j)
 				{
 					samp[i].LoopStartAddr = Sample_Mem_Page + AddrOff;
+				}
+
+				if (j == samp[i].brr.DBlocks.size() - 1)
+				{
+					cout << "Hallo :D";
 				}
 
 				DSP_MEMORY[Sample_Mem_Page + AddrOff] = samp[i].brr.DBlocks[j].HeaderByte;
