@@ -290,6 +290,20 @@ void Tracker::MenuBar()
 		ImGui::EndMenu();
 	}
 
+
+	if (BeginMenu("SNES"))
+	{
+		if (Selectable("Echo Settings"))
+		{
+			ShowEcho = !ShowEcho;
+		}
+		if (Selectable("Memory Debug"))
+		{
+			ShowEmuDebug = !ShowEmuDebug;
+		}
+		ImGui::EndMenu();
+	}
+
 	if (BeginMenu("Settings"))
 	{
 		if (ImGui::MenuItem("Show Settings"))
@@ -304,20 +318,6 @@ void Tracker::MenuBar()
 		ImGui::MenuItem("Effects List");
 		ImGui::MenuItem("Manual");
 		if (ImGui::MenuItem("Credits")) ShowCredits = true;
-		ImGui::EndMenu();
-	}
-
-
-	if (BeginMenu("SNES"))
-	{
-		if (Selectable("Echo Settings"))
-		{
-			ShowEcho = !ShowEcho;
-		}
-		if (Selectable("Memory Debug"))
-		{
-			ShowEmuDebug = !ShowEmuDebug;
-		}
 		ImGui::EndMenu();
 	}
 
@@ -1709,6 +1709,8 @@ void Tracker::Export_View()
 
 void Tracker::RunTracker()
 {
+	//Update audio buffer
+
 	//cout << "\n Audio Buff Queued: " << SDL_GetQueuedAudioSize(dev);
 	if (SDL_GetQueuedAudioSize(dev) < SG.TRACKER_AUDIO_BUFFER * 8)
 	{
@@ -1731,6 +1733,7 @@ void Tracker::RunTracker()
 		SDL_QueueAudio(dev, SG.Totalbuffer[0].data(), sizeof(Sint16) * 2 * SG.TRACKER_AUDIO_BUFFER);
 	}
 
+	//Upate the row index based off of tick timing
 	TickTimer -= GetIO().DeltaTime;
 	float BPM = (float)BaseTempo;
 	if (CursorY >= TrackLength-1 && PatternIndex >= patterns->size()-1)
@@ -2000,6 +2003,38 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 							ChangePatternData(x, y);
 							break;
 						}
+						else if(Currentkey == GLFW_KEY_GRAVE_ACCENT)//Release
+						{
+							Channels[x].Rows[y].note = RELEASE_COMMAND;
+							Channels[x].Rows[y].instrument = MAX_VALUE;
+
+							if (MoveOnDelete)
+							{
+								CursorY += Step;
+							}
+							else
+							{
+								CursorY++;
+							}
+							ChangePatternData(x, y);
+							break;
+						}
+						else if (Currentkey == GLFW_KEY_1)//Stop
+						{
+							Channels[x].Rows[y].note = STOP_COMMAND;
+							Channels[x].Rows[y].instrument = MAX_VALUE;
+
+							if (MoveOnDelete)
+							{
+								CursorY += Step;
+							}
+							else
+							{
+								CursorY++;
+							}
+							ChangePatternData(x, y);
+							break;
+						}
 					}
 					break;
 
@@ -2026,7 +2061,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 					{
 						if (Currentkey == VolInput[i])
 						{
-							Channels[x].Rows[y].volume = Channels[x].EvaluateHexInput(i, y, 127, VOLUME);
+							Channels[x].Rows[y].volume = Channels[x].EvaluateHexInput(i, y, 255, VOLUME);
 							ChangePatternData(x, y);
 							break;
 						}
@@ -2133,7 +2168,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 
 void Tracker::LoadSample()
 {
-	ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".wav, .ogg, .mp3", ".");
+	ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".wav, .ogg, .mp3m .raw", ".");
 	if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
 	{
 		// action if OK

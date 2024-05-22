@@ -100,13 +100,6 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 		unsigned char KONResult = 0;
 		KON_arr[id] = true;
 
-		//Do some fuckery with the pitch register
-		if (!inst->Noise)//We don't need to calculate pitches if we are playing noise
-		{
-			spc_dsp_write(Dsp, ChannelRegs[id].pit_l, 0x00);//Just a test at C-4
-			spc_dsp_write(Dsp, ChannelRegs[id].pit_h, 0x10);
-		}
-
 		spc_dsp_write(Dsp, ChannelRegs[id].adsr_1,0b00001111);
 		spc_dsp_write(Dsp, ChannelRegs[id].adsr_2,0xFF);
 		spc_dsp_write(Dsp, ChannelRegs[id].gain,0x7F);
@@ -118,20 +111,33 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 			spc_dsp_write(Dsp, ChannelRegs[id].vol_l, 0x7F);
 			spc_dsp_write(Dsp, ChannelRegs[id].vol_r, 0x7F);
 			spc_dsp_write(Dsp, ChannelRegs[id].scrn, inst->CurrentSample.SampleADDR);//Issues arising from incorrect data pointing in sample memory
-
 			spc_dsp_write(Dsp, GLOBAL_eon, (int)inst->Echo << id);
-		
+
+			//Do some fuckery with the pitch register
+			if (!inst->Noise)//We don't need to calculate pitches if we are playing noise
+			{
+				//spc_dsp_write(Dsp, ChannelRegs[id].pit_l, 0x00);//Just a test at C-4
+				//spc_dsp_write(Dsp, ChannelRegs[id].pit_h, 0x10);
+			
+				int Pitch = inst->BRR_Pitch(StartValues[(currentnote % 12) << ch->Rows[ypos].octave]);
+				spc_dsp_write(Dsp, ChannelRegs[id].pit_l, 0x00);
+				spc_dsp_write(Dsp, ChannelRegs[id].pit_h, 0x10);
+			}
+
 		}
 
 		KONResult = KON_arr[id] << id;
-		cout << "\nKONResult = " << (int)KONResult;
-		if (KONResult != 0)
+		if (KONResult != 0)//Assuming we've hit a key
 		{
 			spc_dsp_write(Dsp, GLOBAL_kon, KONResult);
 		}
-		else
+		else//Assuming we haven't hit a key
 		{
-			if (spc_dsp_read(Dsp, GLOBAL_endx) << id)
+			if (ch->Rows[ypos].note == RELEASE_COMMAND)
+			{
+				spc_dsp_write(Dsp, GLOBAL_kof, (1 << id));
+			}
+			else if (spc_dsp_read(Dsp, GLOBAL_endx) << id && !inst->CurrentSample.Loop)//Assuming the sample has hit the end flag WITHOUT the loop flag
 			{
 				spc_dsp_write(Dsp, GLOBAL_kof, (1 << id));
 			}
@@ -174,7 +180,7 @@ void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 
 				if (j == samp[i].brr.DBlocks.size() - 1)
 				{
-					cout << "Hallo :D";
+					cout << "\n\nHallo :D\n";
 				}
 
 				DSP_MEMORY[Sample_Mem_Page + AddrOff] = samp[i].brr.DBlocks[j].HeaderByte;
@@ -266,11 +272,16 @@ bool SnesAPUHandler::APU_Set_Master_Vol(signed char vol)
 //Update the echo registers
 void SnesAPUHandler::APU_Set_Echo(unsigned int dtime, int* coef, signed int dfb, signed int dvol)
 {
+	//int EchoAddr = (0xFFFF - (dtime * 0x0800)) >> 8;
+	int EchoAddr = (0xFF00 - (dtime * 0x0800)) >> 8;
+	char buf[10];
+	sprintf_s(buf, "%04X", EchoAddr);
+	cout << "\nEcho Addr: " << buf;
 	spc_dsp_write(Dsp, GLOBAL_evol_l, dvol);
 	spc_dsp_write(Dsp, GLOBAL_evol_r, dvol);
 	spc_dsp_write(Dsp, GLOBAL_edl, dtime);
 	spc_dsp_write(Dsp, GLOBAL_efb, dfb);
-	spc_dsp_write(Dsp, GLOBAL_esa, (0xF000 - (dtime*0x0800)) >> 8);//Sets the location of the echo buffer
+	spc_dsp_write(Dsp, GLOBAL_esa, EchoAddr);//Sets the location of the echo buffer
 	spc_dsp_write(Dsp, GLOBAL_c0, coef[0]);
 	spc_dsp_write(Dsp, GLOBAL_c1, coef[1]);
 	spc_dsp_write(Dsp, GLOBAL_c2, coef[2]);
@@ -290,7 +301,7 @@ void SnesAPUHandler::APU_Init_Echo()
 	spc_dsp_write(Dsp, GLOBAL_evol_r, 96);
 	spc_dsp_write(Dsp, GLOBAL_edl, 0);
 	spc_dsp_write(Dsp, GLOBAL_efb, 64);
-	spc_dsp_write(Dsp, GLOBAL_esa, (0xF000 - 0x0800) >> 8);//Sets the location of the echo buffer
+	spc_dsp_write(Dsp, GLOBAL_esa, (0xFFFF - 0x0800) >> 8);//Sets the location of the echo buffer
 	spc_dsp_write(Dsp, GLOBAL_c0, 127);
 	spc_dsp_write(Dsp, GLOBAL_c1, 0);
 	spc_dsp_write(Dsp, GLOBAL_c2, 0);

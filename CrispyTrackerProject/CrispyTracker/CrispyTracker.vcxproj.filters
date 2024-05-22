@@ -239,6 +239,9 @@
     <ClInclude Include="Libraries\BRRtools\BRRtools-master\src\common.h">
       <Filter>Header Files\BRRTools</Filter>
     </ClInclude>
+    <ClInclude Include="Macros.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Libraries\imgui\LICENSE.txt">

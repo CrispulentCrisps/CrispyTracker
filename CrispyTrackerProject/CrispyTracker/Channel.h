@@ -3,6 +3,7 @@
 
 #define RESAMPLE_QUALITY	20
 
+#include "Macros.h"
 #include "Instrument.h"
 #include <iostream>
 #include <vector>
@@ -17,7 +18,7 @@ class Channel
 {
 	float sinc(float x) { if (x == 0) return 1; else return sin(M_PI * x) / (M_PI * x); };
 public:
-	int MAX_VALUE = 256;
+	int MAX_VALUE = NULL_COMMAND;
 	
 	//Sharp style notation
 	string NoteNames[12] = {
@@ -55,12 +56,12 @@ public:
 	};
 
 	struct Row {
-		int note = 256;
+		int note = NULL_COMMAND;
 		int octave = 0;
-		int instrument = 256;
-		int volume = 256;
-		int effect = 256;
-		int effectvalue = 256;
+		int instrument = NULL_COMMAND;
+		int volume = NULL_COMMAND;
+		int effect = NULL_COMMAND;
+		int effectvalue = NULL_COMMAND;
 	};
 	
 	//Visible rows

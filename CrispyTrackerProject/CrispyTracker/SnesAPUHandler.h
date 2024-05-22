@@ -52,7 +52,7 @@
 #define SPC_c1              0xFE
 #define SPC_c2              0xFF
 
-#define Sample_Dir_Page     0xDD00
+#define Sample_Dir_Page     0xFF00
 #define Sample_Mem_Page     0x0200
 #define Echo_Buffer_Addr    0xEE00
 #define IPL_ROM_Page        0xFFC0

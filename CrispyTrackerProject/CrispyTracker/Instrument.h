@@ -9,6 +9,12 @@
 
 #ifndef Instrument
 
+const double StartValues[12] = {
+16.35, 17.32, 18.35, 19.45,
+20.60, 21.83, 32.12, 24.50,
+25.96, 27.50, 29.14, 30.87
+};
+
 class Instrument
 {
 public:
@@ -63,6 +69,8 @@ public:
 	int CurrentSamplePoint = 0;//This is for the data bytes used in the BRR file
 	signed char CurrentSampleSubPoint = 0;//For the 4 bit samples in the data byte
 	bool StopSample = true;
+
+	short BRR_Pitch(double pit);
 };
 
 #endif // !Instrument

@@ -10,6 +10,14 @@ string Channel::NoteView(int index)
 	{
 		return "---";
 	}
+	else if (Rows[index].note == STOP_COMMAND)
+	{
+		return "OFF";
+	}
+	else if (Rows[index].note == RELEASE_COMMAND)
+	{
+		return "!!!";
+	}
 	else
 	{
 		switch (NoteType)
@@ -108,7 +116,7 @@ int Channel::EvaluateHexInput(int input, int index, int max, int valuetype)
 		break;
 	}
 
-	if (input == 0 || ModValue > max)
+	if (ModValue > max)
 	{
 		surrogate = 0;
 	}
@@ -121,7 +129,8 @@ int Channel::EvaluateHexInput(int input, int index, int max, int valuetype)
 	
 	if (surrogate > max && surrogate != 256)
 	{
-		surrogate = 127;
+		ModValue = 0;
+		surrogate = input;
 	}
 	return surrogate;
 }

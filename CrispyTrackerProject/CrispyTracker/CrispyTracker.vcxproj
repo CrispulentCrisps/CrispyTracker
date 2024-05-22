@@ -233,6 +233,7 @@
     <ClInclude Include="Libraries\imgui\imstb_truetype.h" />
     <ClInclude Include="Libraries\implot-0.16\implot.h" />
     <ClInclude Include="Libraries\implot-0.16\implot_internal.h" />
+    <ClInclude Include="Macros.h" />
     <ClInclude Include="Patterns.h" />
     <ClInclude Include="Sample.h" />
     <ClInclude Include="SettingsManager.h" />

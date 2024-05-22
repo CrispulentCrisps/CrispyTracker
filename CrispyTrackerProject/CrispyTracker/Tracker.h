@@ -50,7 +50,7 @@ public:
 	int SPS = 44100;
 	string VERSION = "version: 0.5";
 	string Fontpath = "fonts/Manaspace.ttf";
-	int AUDIO_FORMATS = SF_FORMAT_WAV | SF_FORMAT_OGG | SF_FORMAT_MPEG_LAYER_III | SF_FORMAT_MPEG_LAYER_II | SF_FORMAT_MPEG_LAYER_I;
+	int AUDIO_FORMATS = SF_FORMAT_WAV | SF_FORMAT_OGG | SF_FORMAT_MPEG_LAYER_III | SF_FORMAT_RAW;
 	int FrameCount = 0;
 	int Event;
 	int Currentkey;
@@ -75,7 +75,7 @@ public:
 	SoundGenerator SG;
 	vector<Patterns> pattern;
 	SettingsManager SManager;
-	int MAX_VALUE = 256;
+	int MAX_VALUE = NULL_COMMAND;
 
 #pragma region Keyboard Controls
 	//Inputting notes
