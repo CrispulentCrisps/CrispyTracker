@@ -133,4 +133,8 @@ public:
     void APU_Init_Echo();
 
     void APU_AudioStop();
+
+    void APU_Debug_Dump_BRR();
+    void APU_Debug_Dump_DIR();
+    void APU_Debug_Dump_SPC();
 };

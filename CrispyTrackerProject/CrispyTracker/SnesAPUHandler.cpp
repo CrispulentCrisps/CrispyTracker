@@ -213,7 +213,7 @@ void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 			}
 		}
 	}
-	LastSamplePoint = AddrOff;
+	LastSamplePoint = Sample_Mem_Page + AddrOff;
 }
 
 //Sets up the DIR page for interfacing with samples
@@ -334,4 +334,37 @@ void SnesAPUHandler::APU_AudioStop()
 	{
 		spc_dsp_write(Dsp, GLOBAL_kof, 1 << i);
 	}
+}
+
+void SnesAPUHandler::APU_Debug_Dump_BRR()
+{
+	string filename = "BRR_Dump.bin";
+	ofstream BRRFile(filename, ios::binary);
+	for (int x = Sample_Mem_Page; x < LastSamplePoint; x++)
+	{
+		BRRFile << DSP_MEMORY[x];
+	}
+	BRRFile.close();
+}
+
+void SnesAPUHandler::APU_Debug_Dump_DIR()
+{
+	string filename = "DIR_Dump.bin";
+	ofstream BRRFile(filename, ios::binary);
+	for (int x = Sample_Dir_Page; x < 0xFFFF; x++)
+	{
+		BRRFile << DSP_MEMORY[x];
+	}
+	BRRFile.close();
+}
+
+void SnesAPUHandler::APU_Debug_Dump_SPC()
+{
+	string filename = "SPC_Dump.bin";
+	ofstream BRRFile(filename, ios::binary);
+	for (int x = 0; x < 65536; x++)
+	{
+		BRRFile << DSP_MEMORY[x];
+	}
+	BRRFile.close();
 }

@@ -2371,20 +2371,19 @@ void Tracker::ResetSettings()
 
 void Tracker::EmuDebugWindow()
 {
-	if (Begin("Debug",0))
+	if (Begin("Debug", 0))
 	{
-		if (BeginChild("##MemoryMap", ImVec2(GetWindowWidth() * .66, GetWindowHeight() * .66))) 
+		if (Button("Dump SPC"))
 		{
-			int MaxRows = 65355 / (2.0 * MemCols);
-			for (int y = 0; y < MaxRows; y++)
-			{
-				for (int x = 0; x < MemCols; x++)
-				{
-					SameLine();
-				}
-				NewLine();
-			}
-			EndChild();
+			SG.Emu_APU.APU_Debug_Dump_SPC();
+		}
+		if (Button("Dump BRR"))
+		{
+			SG.Emu_APU.APU_Debug_Dump_BRR();
+		}
+		if (Button("Dump DIR"))
+		{
+			SG.Emu_APU.APU_Debug_Dump_DIR();
 		}
 	}
 	End();

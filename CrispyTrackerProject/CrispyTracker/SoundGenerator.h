@@ -18,8 +18,6 @@
 #include <imgui.h>
 #include "Channel.h"
 #include <string>
-#include <iostream>
-#include <fstream>
 
 #include <math.h>
 #include <array>
