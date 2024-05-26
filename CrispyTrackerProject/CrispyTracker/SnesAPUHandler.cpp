@@ -224,7 +224,6 @@ void SnesAPUHandler::APU_Set_Sample_Directory(std::vector<Sample>& samp)
 	for (int i = 0; i < samp.size(); i++)
 	{
 		int DirSize = 4;
-		//samp[i].brr.SampleDir = CurrentDir + DirSize;
 
 		DSP_MEMORY[Sample_Dir_Page + CurrentDir] = samp[i].brr.SampleDir & 0xFF;//Low byte of directory
 		DSP_MEMORY[Sample_Dir_Page + CurrentDir + 1] = (samp[i].brr.SampleDir >> 8) & 0xFF;//High byte of the directory
@@ -263,7 +262,7 @@ void SnesAPUHandler::APU_Evaluate_BRR_Loop(Sample* sample, int LoopPoint)
 //Writes the loop start point to the DIR page
 void SnesAPUHandler::APU_Evaluate_BRR_Loop_Start(Sample* sample)
 {
-	sample->LoopStartAddr = sample->brr.SampleDir + (sample->LoopStart/16) * 9;
+	sample->LoopStartAddr = (sample->brr.SampleDir + (sample->LoopStart/16) * 9);
 	DSP_MEMORY[Sample_Dir_Page + (sample->SampleIndex * 4) + 2] = sample->LoopStartAddr & 0xFF;
 	DSP_MEMORY[Sample_Dir_Page + (sample->SampleIndex * 4) + 3] = (sample->LoopStartAddr >> 8) & 0xFF;
 }
