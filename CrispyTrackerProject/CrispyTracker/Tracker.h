@@ -58,6 +58,7 @@ public:
 	bool IsPressed = false;
 	bool EditingMode = true;
 	bool PlayingMode = false;
+	bool AudioStopped = false;
 	float TickTimer = 0;//For when the tracker is running
 	int IDOffset = 0;
 	int FPS = 144;

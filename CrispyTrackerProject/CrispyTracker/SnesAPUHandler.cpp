@@ -100,28 +100,43 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 		unsigned char KONResult = 0;
 		KON_arr[id] = true;
 
-		spc_dsp_write(Dsp, ChannelRegs[id].adsr_1,0b00001111);
-		spc_dsp_write(Dsp, ChannelRegs[id].adsr_2,0xFF);
+		int ADSR1 = 0;
+		int ADSR2 = 0;
+
+		if (inst->EnvelopeUsed)
+		{
+			ADSR1 += (1<<7);
+			ADSR1 += (inst->Decay << 4);
+			ADSR1 += (inst->Attack);
+
+			ADSR2 += (inst->Sustain << 5);
+			ADSR2 += (inst->Release);
+		}
+
+		spc_dsp_write(Dsp, ChannelRegs[id].adsr_1, ADSR1);
+		spc_dsp_write(Dsp, ChannelRegs[id].adsr_2, ADSR2);
 		spc_dsp_write(Dsp, ChannelRegs[id].gain,0x7F);
 
 		if (currentinst < 256)
 		{
 			//spc_dsp_write(Dsp, ChannelRegs[id].vol_l, (inst->LPan) * (inst->Volume / 127.0));
 			//spc_dsp_write(Dsp, ChannelRegs[id].vol_r, (inst->RPan) * (inst->Volume / 127.0));
-			spc_dsp_write(Dsp, ChannelRegs[id].vol_l, 0x7F);
-			spc_dsp_write(Dsp, ChannelRegs[id].vol_r, 0x7F);
+			spc_dsp_write(Dsp, ChannelRegs[id].vol_l, inst->Volume);
+			spc_dsp_write(Dsp, ChannelRegs[id].vol_r, inst->Volume);
 			spc_dsp_write(Dsp, ChannelRegs[id].scrn, inst->CurrentSample.SampleADDR);//Issues arising from incorrect data pointing in sample memory
 			spc_dsp_write(Dsp, GLOBAL_eon, (int)inst->Echo << id);
 
 			//Do some fuckery with the pitch register
 			if (!inst->Noise)//We don't need to calculate pitches if we are playing noise
-			{
-				//spc_dsp_write(Dsp, ChannelRegs[id].pit_l, 0x00);//Just a test at C-4
-				//spc_dsp_write(Dsp, ChannelRegs[id].pit_h, 0x10);
-			
+			{			
 				int Pitch = inst->BRR_Pitch(StartValues[(currentnote % 12) << ch->Rows[ypos].octave]);
-				spc_dsp_write(Dsp, ChannelRegs[id].pit_l, 0x00);
-				spc_dsp_write(Dsp, ChannelRegs[id].pit_h, 0x10);
+				spc_dsp_write(Dsp, ChannelRegs[id].pit_l, Pitch);
+				spc_dsp_write(Dsp, ChannelRegs[id].pit_h, Pitch >> 8);
+			}
+			else
+			{
+				spc_dsp_write(Dsp, GLOBAL_non, inst->Noise << id);
+				spc_dsp_write(Dsp, GLOBAL_flg, inst->NoiseFreq);
 			}
 
 		}
@@ -194,7 +209,7 @@ void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 			}
 			else
 			{
-				cout << "\nERROR: SAMPLE MEMORY EXCEEDS 64K";
+				cout << "\nERROR: ATTEMPTING TO OVERWRITE IPL ROM\nADDR-OFF: " << AddrOff << "\nBRR BLOCK: " << j;
 			}
 		}
 	}
@@ -211,8 +226,8 @@ void SnesAPUHandler::APU_Set_Sample_Directory(std::vector<Sample>& samp)
 		int DirSize = 4;
 		//samp[i].brr.SampleDir = CurrentDir + DirSize;
 
-		DSP_MEMORY[Sample_Dir_Page + CurrentDir] = samp[i].brr.SampleDir & 0xFF;//Low byte of start
-		DSP_MEMORY[Sample_Dir_Page + CurrentDir + 1] = (samp[i].brr.SampleDir >> 8) & 0xFF;//High byte of the start
+		DSP_MEMORY[Sample_Dir_Page + CurrentDir] = samp[i].brr.SampleDir & 0xFF;//Low byte of directory
+		DSP_MEMORY[Sample_Dir_Page + CurrentDir + 1] = (samp[i].brr.SampleDir >> 8) & 0xFF;//High byte of the directory
 
 		DSP_MEMORY[Sample_Dir_Page + CurrentDir + 2] = samp[i].LoopStartAddr & 0xFF;//High byte of the start
 		DSP_MEMORY[Sample_Dir_Page + CurrentDir + 3] = (samp[i].LoopStartAddr >> 8) & 0xFF;//High byte of the start
@@ -312,4 +327,12 @@ void SnesAPUHandler::APU_Init_Echo()
 	spc_dsp_write(Dsp, GLOBAL_c7, 0);
 	spc_dsp_soft_reset(Dsp);
 	spc_dsp_write(Dsp, GLOBAL_flg, 0);//Flag used to update the EDL and ESA regs
+}
+
+void SnesAPUHandler::APU_AudioStop()
+{
+	for (int i = 0; i < 8; i++)
+	{
+		spc_dsp_write(Dsp, GLOBAL_kof, 1 << i);
+	}
 }

@@ -175,7 +175,7 @@ void Tracker::Run()
 		if (WindowIsGood) {
 			Render();
 			CheckUpdatables();
-			SDL_PauseAudioDevice(dev, !PlayingMode);
+			SDL_PauseAudioDevice(dev, false);
 		}
 		CheckInput();
 	}

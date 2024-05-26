@@ -131,4 +131,6 @@ public:
     bool APU_Set_Master_Vol(signed char vol);
     void APU_Set_Echo(unsigned int dtime, int* coef, signed int dfb, signed int dvol);
     void APU_Init_Echo();
+
+    void APU_AudioStop();
 };
