@@ -111,9 +111,6 @@ public:
     spc_time_t ClockBase = MAX_CLOCK_DSP;
     
     Region reg;
-    
-    bool KON_arr[8];
-    bool ECHO_arr[8];
 
     int LastSamplePoint;
 

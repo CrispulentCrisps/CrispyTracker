@@ -587,6 +587,10 @@ void Tracker::Instrument_View()//Instrument editor
 				}
 
 				SliderInt("Volume", &inst[SelectedInst].Volume, 0, 127);
+
+				NewLine();
+				SliderInt("Left   ", &inst[SelectedInst].LPan, 0, 127);
+				SliderInt("Right", &inst[SelectedInst].RPan, 0, 127);
 				SliderInt("Gain", &inst[SelectedInst].Gain, 0, 255);
 
 				Checkbox("Envelope used", &inst[SelectedInst].EnvelopeUsed);
@@ -718,11 +722,6 @@ void Tracker::Instrument_View()//Instrument editor
 						float PlotBuff[256];
 						PlotLines("##Envelope output", PlotArr, 64, 0, "Envelope output", 0, 32, ImVec2(GetWindowWidth() * 0.75, GetWindowHeight() * 0.25));
 					}
-
-					NewLine();
-					SliderInt("Left   ", &inst[SelectedInst].LPan, 0, 127);
-					SameLine();
-					SliderInt("Right", &inst[SelectedInst].RPan, 0, 127);
 					
 				}
 
@@ -1107,14 +1106,20 @@ void Tracker::Sample_View()
 					if (samples[SelectedSample].LoopEnd > samples[SelectedSample].SampleData.size())
 					{
 						samples[SelectedSample].LoopEnd = samples[SelectedSample].SampleData.size();
+						SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
+						SG.Emu_APU.APU_Set_Sample_Memory(samples);
 					}
 					else if (samples[SelectedSample].LoopEnd < 16)
 					{
 						samples[SelectedSample].LoopEnd = 16;
+						SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
+						SG.Emu_APU.APU_Set_Sample_Memory(samples);
 					}
 					else if (samples[SelectedSample].LoopStart < 0)
 					{
 						samples[SelectedSample].LoopStart = 0;
+						SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
+						SG.Emu_APU.APU_Set_Sample_Memory(samples);
 					}
 
 					if (samples[SelectedSample].LoopEnd % 16 != 0)//Assumes the sample is too large to hold

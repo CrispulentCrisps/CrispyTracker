@@ -28,12 +28,6 @@ void SnesAPUHandler::APU_Startup()
 		ChannelRegs[i].envx = (i * 16) + 8;
 		ChannelRegs[i].outx = (i * 16) + 9;
 	}
-
-	//Reset KON
-	for (int i = 0; i < 8; i++)
-	{
-		KON_arr[i] = false;
-	}
 	//Setup the registers
 	spc_dsp_write(Dsp, GLOBAL_dir, Sample_Dir_Page >> 8);
 
@@ -97,9 +91,6 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 
 	if (currentnote < 256 && currentnote != 0)//Assuming it's not a reserved note
 	{
-		unsigned char KONResult = 0;
-		KON_arr[id] = true;
-
 		int ADSR1 = 0;
 		int ADSR2 = 0;
 
@@ -119,48 +110,43 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 
 		if (currentinst < 256)
 		{
-			//spc_dsp_write(Dsp, ChannelRegs[id].vol_l, (inst->LPan) * (inst->Volume / 127.0));
-			//spc_dsp_write(Dsp, ChannelRegs[id].vol_r, (inst->RPan) * (inst->Volume / 127.0));
-			spc_dsp_write(Dsp, ChannelRegs[id].vol_l, inst->Volume);
-			spc_dsp_write(Dsp, ChannelRegs[id].vol_r, inst->Volume);
-			spc_dsp_write(Dsp, ChannelRegs[id].scrn, inst->CurrentSample.SampleADDR);//Issues arising from incorrect data pointing in sample memory
+			spc_dsp_write(Dsp, ChannelRegs[id].vol_l, (inst->LPan) * (inst->Volume / 127.0));
+			spc_dsp_write(Dsp, ChannelRegs[id].vol_r, (inst->RPan) * (inst->Volume / 127.0));
+			spc_dsp_write(Dsp, ChannelRegs[id].scrn, inst->CurrentSample.SampleADDR);
 			spc_dsp_write(Dsp, GLOBAL_eon, (int)inst->Echo << id);
 
-			//Do some fuckery with the pitch register
 			if (!inst->Noise)//We don't need to calculate pitches if we are playing noise
 			{			
 				int Pitch = inst->BRR_Pitch(StartValues[(currentnote % 12) << ch->Rows[ypos].octave]);
 				spc_dsp_write(Dsp, ChannelRegs[id].pit_l, Pitch);
 				spc_dsp_write(Dsp, ChannelRegs[id].pit_h, Pitch >> 8);
 			}
-			else
+			else //Do some fuckery with the pitch register
 			{
 				spc_dsp_write(Dsp, GLOBAL_non, inst->Noise << id);
 				spc_dsp_write(Dsp, GLOBAL_flg, inst->NoiseFreq);
 			}
-
 		}
 
-		KONResult = KON_arr[id] << id;
-		if (KONResult != 0)//Assuming we've hit a key
+		if (ch->Rows[ypos].note != RELEASE_COMMAND && ch->Rows[ypos].note != STOP_COMMAND)//Assuming we've hit a key
 		{
-			spc_dsp_write(Dsp, GLOBAL_kon, KONResult);
+			spc_dsp_write(Dsp, GLOBAL_kon, 1 << id);
 		}
 		else//Assuming we haven't hit a key
 		{
 			if (ch->Rows[ypos].note == RELEASE_COMMAND)
 			{
-				spc_dsp_write(Dsp, GLOBAL_kof, (1 << id));
+				spc_dsp_write(Dsp, GLOBAL_kof, 1 << id);
 			}
 			else if (spc_dsp_read(Dsp, GLOBAL_endx) << id && !inst->CurrentSample.Loop)//Assuming the sample has hit the end flag WITHOUT the loop flag
 			{
-				spc_dsp_write(Dsp, GLOBAL_kof, (1 << id));
+				spc_dsp_write(Dsp, GLOBAL_kof, 1 << id);
 			}
 		}
 	}
-	else if (currentnote == 257)//Assuming this is an OFF command
+	else if (currentnote == STOP_COMMAND)//Assuming this is an OFF command
 	{
-		KON_arr[id] = false;
+		//Do OFF command shit here
 	}
 }
 
@@ -181,7 +167,7 @@ void SnesAPUHandler::APU_Kill()
 void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 {
 	int AddrOff = 0;
-	for (int i = 0; i < samp.size(); i++)//Total samples
+	for (int i = 1; i < samp.size(); i++)//Total samples
 	{
 		samp[i].brr.SampleDir = Sample_Mem_Page + AddrOff;
 		for (int j = 0; j < samp[i].brr.DBlocks.size(); j++)//BRR Block Index
@@ -191,11 +177,6 @@ void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 				if (samp[i].LoopStart / 16 == j)
 				{
 					samp[i].LoopStartAddr = Sample_Mem_Page + AddrOff;
-				}
-
-				if (j == samp[i].brr.DBlocks.size() - 1)
-				{
-					cout << "\n\nHallo :D\n";
 				}
 
 				DSP_MEMORY[Sample_Mem_Page + AddrOff] = samp[i].brr.DBlocks[j].HeaderByte;
@@ -221,7 +202,7 @@ void SnesAPUHandler::APU_Set_Sample_Directory(std::vector<Sample>& samp)
 {
 	//sets the sample directory at 0xDD00
 	int CurrentDir = 0;
-	for (int i = 0; i < samp.size(); i++)
+	for (int i = 1; i < samp.size(); i++)
 	{
 		int DirSize = 4;
 
