@@ -120,6 +120,9 @@
     <ClCompile Include="Libraries\BRRtools\BRRtools-master\src\brr_encoder.c">
       <Filter>Header Files\BRRTools</Filter>
     </ClCompile>
+    <ClCompile Include="FileHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Channel.h">
@@ -240,6 +243,9 @@
       <Filter>Header Files\BRRTools</Filter>
     </ClInclude>
     <ClInclude Include="Macros.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FileHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

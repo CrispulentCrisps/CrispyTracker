@@ -170,6 +170,7 @@
     <ClCompile Include="BRRFile.cpp" />
     <ClCompile Include="Channel.cpp" />
     <ClCompile Include="Effects.cpp" />
+    <ClCompile Include="FileHandler.cpp" />
     <ClCompile Include="Instrument.cpp" />
     <ClCompile Include="Libraries\BRRtools\BRRtools-master\src\brr.c" />
     <ClCompile Include="Libraries\BRRtools\BRRtools-master\src\brr_encoder.c" />
@@ -204,6 +205,7 @@
     <ClInclude Include="Channel.h" />
     <ClInclude Include="Effects.h" />
     <ClInclude Include="FileDef.h" />
+    <ClInclude Include="FileHandler.h" />
     <ClInclude Include="Instrument.h" />
     <ClInclude Include="Libraries\BRRtools\BRRtools-master\src\brr.h" />
     <ClInclude Include="Libraries\BRRtools\BRRtools-master\src\common.h" />

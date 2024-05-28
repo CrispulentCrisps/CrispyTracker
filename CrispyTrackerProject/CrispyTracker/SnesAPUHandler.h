@@ -124,7 +124,7 @@ public:
     void APU_Set_Sample_Directory(std::vector<Sample>& samp);
     void APU_Evaluate_BRR_Loop(Sample* sample, int LoopPoint);
     void APU_Evaluate_BRR_Loop_Start(Sample* sample);
-    
+
     bool APU_Set_Master_Vol(signed char vol);
     void APU_Set_Echo(unsigned int dtime, int* coef, signed int dfb, signed int dvol);
     void APU_Init_Echo();

@@ -7,8 +7,5 @@ typedef struct Module {
 	std::vector<Sample> samples;
 	std::vector<Instrument> inst;
 	std::vector<Patterns> patterns;
-};
-
-typedef struct Inst {
-
+	char dsp_mem[65536];
 };

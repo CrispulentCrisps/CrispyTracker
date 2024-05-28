@@ -1,11 +1,8 @@
 #pragma once
 #include "Sample.h"
+#include <iostream>
 #include <string>
 #include <vector>
-
-//	
-//	Multi channel instrument
-//	
 
 #ifndef Instrument
 

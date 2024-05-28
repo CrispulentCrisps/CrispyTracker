@@ -79,34 +79,35 @@ void SnesAPUHandler::APU_Update(spc_sample_t* Output, int BufferSize)
 	spc_filter_run(Filter, Output, BufferSize);
 }
 
+
 //Updating the registers of the DSP to reflect the changes in the track as it goes by
 void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int ypos)
 {
 	int currentnote = ch->Rows[ypos].note * ch->Rows[ypos].octave;
+	int currentoctave = ch->Rows[ypos].octave;
 	int currentinst = ch->Rows[ypos].instrument;
 	int currentvol = ch->Rows[ypos].volume;
 	int currenteffect = ch->Rows[ypos].effect;
 	int currentvalue = ch->Rows[ypos].effectvalue;
 	int id = ch->Index;
 
-	if (currentnote < 256 && currentnote != 0)//Assuming it's not a reserved note
+	if (currentnote < STOP_COMMAND && currentnote != 0)//Assuming it's not a reserved note
 	{
 		int ADSR1 = 0;
 		int ADSR2 = 0;
 
-		if (inst->EnvelopeUsed)
-		{
-			ADSR1 += (1<<7);
-			ADSR1 += (inst->Decay << 4);
-			ADSR1 += (inst->Attack);
+		ADSR1 += ((int)inst->EnvelopeUsed << 7);
+		ADSR1 += (inst->Decay << 4);
+		ADSR1 += (inst->Attack);
 
-			ADSR2 += (inst->Sustain << 5);
-			ADSR2 += (inst->Release);
-		}
+		ADSR2 += (inst->Sustain << 5);
+		ADSR2 += (inst->Release);
 
 		spc_dsp_write(Dsp, ChannelRegs[id].adsr_1, ADSR1);
 		spc_dsp_write(Dsp, ChannelRegs[id].adsr_2, ADSR2);
 		spc_dsp_write(Dsp, ChannelRegs[id].gain,0x7F);
+
+		spc_dsp_write(Dsp, GLOBAL_pmon, inst->PitchMod << id);//May or may not work
 
 		if (currentinst < 256)
 		{
@@ -116,8 +117,9 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 			spc_dsp_write(Dsp, GLOBAL_eon, (int)inst->Echo << id);
 
 			if (!inst->Noise)//We don't need to calculate pitches if we are playing noise
-			{			
-				int Pitch = inst->BRR_Pitch(StartValues[(currentnote % 12) << ch->Rows[ypos].octave]);
+			{
+				cout << "\nCurrent Note: " << (currentnote / currentoctave) % 12 << "\nCurrent Octave: " << currentoctave;
+				short Pitch = inst->BRR_Pitch(StartValues[((currentnote / currentoctave) % 12)]	* (1 << currentoctave));
 				spc_dsp_write(Dsp, ChannelRegs[id].pit_l, Pitch);
 				spc_dsp_write(Dsp, ChannelRegs[id].pit_h, Pitch >> 8);
 			}
