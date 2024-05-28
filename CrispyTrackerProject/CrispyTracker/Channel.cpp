@@ -22,6 +22,7 @@ string Channel::NoteView(int index)
 	{
 		switch (NoteType)
 		{
+		default:
 		case 0://Sharp
 			return NoteNames[Rows[index].note % 12] + to_string(Rows[index].octave);
 			break;
@@ -30,9 +31,6 @@ string Channel::NoteView(int index)
 			break;
 		case 2://German
 			return NoteNames_GR[Rows[index].note % 12] + to_string(Rows[index].octave);
-			break;
-		default:
-			return NoteNames[Rows[index].note % 12] + to_string(Rows[index].octave);
 			break;
 		}
 	}
