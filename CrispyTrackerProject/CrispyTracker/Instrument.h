@@ -8,7 +8,7 @@
 
 const double StartValues[12] = {
 16.35, 17.32, 18.35, 19.45,
-20.60, 21.83, 32.12, 24.50,
+20.60, 21.83, 23.12, 24.50,
 25.96, 27.50, 29.14, 30.87
 };
 
@@ -67,7 +67,7 @@ public:
 	signed char CurrentSampleSubPoint = 0;//For the 4 bit samples in the data byte
 	bool StopSample = true;
 
-	short BRR_Pitch(double pit);
+	uint16_t BRR_Pitch(uint16_t pit);
 };
 
 #endif // !Instrument

@@ -576,6 +576,7 @@ void Tracker::Instrument_View()//Instrument editor
 							if (Selectable(samples[s].SampleName.c_str(), Selected, 0, ImVec2(GetWindowWidth() * 0.85, TextSize)))
 							{
 								inst[SelectedInst].SampleIndex = s;
+								inst[SelectedInst].CurrentSample = samples[s];
 							}
 							if (Selected)
 							{
@@ -1898,7 +1899,6 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 				{
 					for (int w = SelectionBoxY1; w < SelectionBoxY2+1; w++)
 					{
-
 						if (z % 5 == NOTE) Channels[(z / 5)].Rows[w].note = MAX_VALUE;
 						if (z % 5 == INSTR) Channels[(z / 5)].Rows[w].instrument = MAX_VALUE;
 						if (z % 5 == VOLUME) Channels[(z / 5)].Rows[w].volume = MAX_VALUE;
@@ -1921,6 +1921,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 						if (CurrentKey == NoteInput[i])
 						{
 							Channels[x].Rows[y].note = i + (12 * Octave);
+							(i < 12) ? Channels[x].Rows[y].octave = Octave : Channels[x].Rows[y].octave = Octave+1;
 							if (SelectedInst) Channels[x].Rows[y].instrument = SelectedInst;
 							//Channels[x].Rows[y].S_Note = Channels[x].NoteNames[Channels[x].Rows[y].note % 12] + to_string(Channels[x].Rows[y].octave);
 							CursorY += Step;

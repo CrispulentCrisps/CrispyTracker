@@ -167,8 +167,7 @@ void Channel::TickCheck(int RowIndex, vector<Instrument>& instruments, vector<Sa
 		CurrentInstrument = instruments[Rows[RowIndex].instrument].Index;
 		CurrentSamplePointIndex = 0;
 		PlayingNote = true;
-		CurrentPlayedNote = (float)Rows[RowIndex].note - 60.0 + samples[CurrentSample].NoteOffset;//the - 60 is for the offset needed to center the pitch
-		cout << "\nChannel Hit" << "\nCurrent Note: " << CurrentPlayedNote << "\nCurrent Row " << RowIndex;
+		cout << "\nChannel Hit!" << "\nCurrent Note: " << Rows[RowIndex].note << "\nCurrent Row " << RowIndex;
 	}
 }
 	

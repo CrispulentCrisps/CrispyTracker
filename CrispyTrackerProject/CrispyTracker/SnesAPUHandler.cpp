@@ -109,7 +109,7 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 
 		spc_dsp_write(Dsp, GLOBAL_pmon, inst->PitchMod << id);//May or may not work
 
-		if (currentinst < 256)
+		if (currentinst < 256 && currentinst != 0)
 		{
 			spc_dsp_write(Dsp, ChannelRegs[id].vol_l, (inst->LPan) * (inst->Volume / 127.0));
 			spc_dsp_write(Dsp, ChannelRegs[id].vol_r, (inst->RPan) * (inst->Volume / 127.0));
@@ -118,8 +118,8 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 
 			if (!inst->Noise)//We don't need to calculate pitches if we are playing noise
 			{
-				cout << "\nCurrent Note: " << (currentnote / currentoctave) % 12 << "\nCurrent Octave: " << currentoctave;
-				short Pitch = inst->BRR_Pitch(StartValues[((currentnote / currentoctave) % 12)]	* (1 << currentoctave));
+				cout << "\nStart Value: " << StartValues[currentnote % 12] << "\nShifted Value: " << StartValues[currentnote % 12] * (1 << currentoctave);
+				uint16_t Pitch = inst->BRR_Pitch(StartValues[currentnote%12] * (1<<currentoctave));
 				spc_dsp_write(Dsp, ChannelRegs[id].pit_l, Pitch);
 				spc_dsp_write(Dsp, ChannelRegs[id].pit_h, Pitch >> 8);
 			}

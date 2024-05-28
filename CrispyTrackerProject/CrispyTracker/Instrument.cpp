@@ -10,9 +10,11 @@ Instrument::~Instrument()
 }
 
 //Calculates the pitch of a sample based off of a pitch in Hz
-short Instrument::BRR_Pitch(double pit)
+uint16_t Instrument::BRR_Pitch(uint16_t pit)
 {
-	short ReturnVal = (pit / CurrentSample.SampleRate) * 0x1000;
-
-	return ReturnVal;
+	if (pit != 0)
+	{
+		cout << "\n\npit: " << pit << "\nPitch calc: " << (pit / (uint16_t)CurrentSample.SampleRate) * 0x1000;
+		return (pit / (uint16_t)CurrentSample.SampleRate) * 0x1000;
+	}
 }
