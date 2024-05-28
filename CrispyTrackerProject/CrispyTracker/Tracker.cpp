@@ -48,7 +48,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 {
 	ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
 	Tracker* tr = static_cast<Tracker*>(glfwGetWindowUserPointer(window));
-	tr->Currentkey = key;
+	tr->CurrentKey = key;
 	tr->CurrentMod = mods;
 	tr->Event = action;
 }
@@ -1799,17 +1799,10 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 			IsPressed = false;
 			InitPressed = true;
 		}
+		else if (InitTimer > InitKeyTime)
+			KeyTimer += GetIO().DeltaTime;
 		else
-		{
-			if (InitTimer > InitKeyTime)
-			{
-				KeyTimer += GetIO().DeltaTime;
-			}
-			else
-			{
-				InitTimer += GetIO().DeltaTime;
-			}
-		}
+			InitTimer += GetIO().DeltaTime;
 	}
 	else
 	{
@@ -1820,135 +1813,92 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 
 	if (!IsPressed)
 	{
-		//cout << "\nCurrent key: " << Currentkey;
+		//cout << "\nCurrent key: " << CurrentKey;
 		
-		if (CurrentMod == GLFW_MOD_SHIFT)
+		if (CurrentMod & GLFW_MOD_SHIFT)
 		{
 			if (!BoxSelected)
 			{
-				SelectionBoxX1 = x;
-				SelectionBoxY1 = y;
-				SelectionBoxX2 = SelectionBoxX1;
-				SelectionBoxY2 = SelectionBoxY1;
-				SelectionBoxSubX1 = CursorPos;
-				SelectionBoxSubX2 = SelectionBoxSubX1;
+				SelectionBoxX1 = SelectionBoxX2 = x;
+				SelectionBoxY1 = SelectionBoxY2 = y;
+				SelectionBoxSubX1 = SelectionBoxSubX2 = CursorPos;
 				BoxSelected = true;
 			}
 
-			if (Currentkey == GLFW_KEY_LEFT)
-			{
+			switch (CurrentKey) {
+			case GLFW_KEY_LEFT:
 				CursorPos--;
-				SelectionBoxSubX2--;
-				if (SelectionBoxSubX2 < 0)
-				{
-					SelectionBoxSubX2 = 0;
-				}
-			}
-			else if (Currentkey == GLFW_KEY_RIGHT)
-			{
+				SelectionBoxSubX2 = max(SelectionBoxSubX2 - 1, 0);
+				break;
+			case GLFW_KEY_RIGHT:
 				CursorPos++;
-				SelectionBoxSubX2++;
-				if (SelectionBoxSubX2 > 40)
-				{
-					SelectionBoxSubX2 = 40;
-				}
-			}
-
-			if (Currentkey == GLFW_KEY_DOWN)
-			{
+				SelectionBoxSubX2 = min(SelectionBoxSubX2 + 1, 40);
+				break;
+			case GLFW_KEY_DOWN:
 				CursorY++;
 				SelectionBoxY2++;
-			}
-			else if (Currentkey == GLFW_KEY_UP)
-			{
+				break;
+			case GLFW_KEY_UP:
 				CursorY--;
 				SelectionBoxY2--;
-			}
-			else if (Currentkey == GLFW_KEY_SPACE)
-			{
-				EditingMode = !EditingMode;
-			}
-			else if (Currentkey == GLFW_KEY_ENTER)
-			{
-				PlayingMode = !PlayingMode;
-				EditingMode = false;
+				break;
 			}
 			cout << "\nSelectionBoxSubX1: " << SelectionBoxSubX1 << "\n";
 			cout << "\nSelectionBoxSubX2: " << SelectionBoxSubX2 << "\n";
 		}
 		else
 		{
-			if (Currentkey == GLFW_KEY_HOME)
-			{
+			switch (CurrentKey) {
+			case GLFW_KEY_HOME:
 				CursorY = 0;
-			}
-			else if (Currentkey == GLFW_KEY_END)
-			{
-				CursorY = TrackLength-1;
-			}
-			else if (Currentkey == GLFW_KEY_PAGE_UP)
-			{
+				break;
+			case GLFW_KEY_END:
+				CursorY = TrackLength - 1;
+				break;
+			case GLFW_KEY_PAGE_UP:
 				CursorY -= 16;
-			}
-			else if (Currentkey == GLFW_KEY_PAGE_DOWN)
-			{
+				break;
+			case GLFW_KEY_PAGE_DOWN:
 				CursorY += 16;
-			}
-
-			if (Currentkey == GLFW_KEY_LEFT)
-			{
+				break;
+			case GLFW_KEY_LEFT:
 				CursorPos--;
 				BoxSelected = false;
-			}
-			else if (Currentkey == GLFW_KEY_RIGHT)
-			{
+				break;
+			case GLFW_KEY_RIGHT:
 				CursorPos++;
 				BoxSelected = false;
-			}
-
-			if (Currentkey == GLFW_KEY_DOWN)
-			{
-				if (MoveByStep)
-				{
-					CursorY += Step;
-				}
-				else
-				{
-					CursorY++;
-				}
+				break;
+			case GLFW_KEY_DOWN:
+				CursorY += (MoveByStep) ? Step : 1;
 				BoxSelected = false;
-			}
-			else if (Currentkey == GLFW_KEY_UP)
-			{
-				if (MoveByStep)
-				{
-					CursorY -= Step;
-				}
-				else
-				{
-					CursorY--;
-				}
+				break;
+			case GLFW_KEY_UP:
+				CursorY -= (MoveByStep) ? Step : 1;
 				BoxSelected = false;
-			}
-			else if (Currentkey == GLFW_KEY_SPACE)
-			{
-				EditingMode = !EditingMode;
-			}
-			else if (Currentkey == GLFW_KEY_ENTER)
-			{
-				PlayingMode = !PlayingMode;
-				EditingMode = false;
-				BoxSelected = false;
+				break;
 			}
 		}
+
+		switch (CurrentKey) {
+		case GLFW_KEY_SPACE:
+			EditingMode = !EditingMode;
+			break;
+		case GLFW_KEY_ENTER:
+			PlayingMode = !PlayingMode;
+			EditingMode = false;
+			break;
+		}
+
 		if (EditingMode)
 		{
-			if (BoxSelected && Currentkey == GLFW_KEY_DELETE)
+			if (BoxSelected && CurrentKey == GLFW_KEY_DELETE)
 			{
 				for (int z = SelectionBoxSubX1 + (SelectionBoxX1 * 5); z < (SelectionBoxSubX2 + (SelectionBoxX2 * 5))+1; z++)
 				{
 					for (int w = SelectionBoxY1; w < SelectionBoxY2+1; w++)
 					{
+
 						if (z % 5 == NOTE) Channels[(z / 5)].Rows[w].note = MAX_VALUE;
 						if (z % 5 == INSTR) Channels[(z / 5)].Rows[w].instrument = MAX_VALUE;
 						if (z % 5 == VOLUME) Channels[(z / 5)].Rows[w].volume = MAX_VALUE;
@@ -1968,75 +1918,36 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 				case NOTE:
 					for (int i = 0; i < 24; i++)
 					{
-						if (Currentkey == NoteInput[i])
+						if (CurrentKey == NoteInput[i])
 						{
-							if (i < 12)
-							{
-								Channels[x].Rows[y].octave = (Octave);
-							}
-							else
-							{
-								Channels[x].Rows[y].octave = Octave+1;
-							}
 							Channels[x].Rows[y].note = i + (12 * Octave);
-							if (SelectedInst != 0)
-							{
-								Channels[x].Rows[y].instrument = SelectedInst;
-							}
+							if (SelectedInst) Channels[x].Rows[y].instrument = SelectedInst;
 							//Channels[x].Rows[y].S_Note = Channels[x].NoteNames[Channels[x].Rows[y].note % 12] + to_string(Channels[x].Rows[y].octave);
 							CursorY += Step;
-							if (CursorY >= TrackLength)
-							{
-								CursorY = TrackLength - 1;
-							}
 							ChangePatternData(x, y);
 							break;
 						}
-						else if (Currentkey == GLFW_KEY_DELETE)
+						else if (CurrentKey == GLFW_KEY_DELETE)
 						{
-							Channels[x].Rows[y].note = MAX_VALUE;
-							Channels[x].Rows[y].instrument = MAX_VALUE;
-
-							if (MoveOnDelete)
-							{
-								CursorY += Step;
-							}
-							else
-							{
-								CursorY++;
-							}
+							Channels[x].Rows[y].note = NULL_COMMAND;
+							Channels[x].Rows[y].instrument = NULL_COMMAND;
+							CursorY += (MoveOnDelete) ? Step : 1;
 							ChangePatternData(x, y);
 							break;
 						}
-						else if(Currentkey == GLFW_KEY_GRAVE_ACCENT)//Release
+						else if(CurrentKey == GLFW_KEY_GRAVE_ACCENT)//Release
 						{
 							Channels[x].Rows[y].note = RELEASE_COMMAND;
-							Channels[x].Rows[y].instrument = MAX_VALUE;
-
-							if (MoveOnDelete)
-							{
-								CursorY += Step;
-							}
-							else
-							{
-								CursorY++;
-							}
+							Channels[x].Rows[y].instrument = NULL_COMMAND;
+							CursorY += (MoveOnDelete) ? Step : 1;
 							ChangePatternData(x, y);
 							break;
 						}
-						else if (Currentkey == GLFW_KEY_1)//Stop
+						else if (CurrentKey == GLFW_KEY_1)//Stop
 						{
 							Channels[x].Rows[y].note = STOP_COMMAND;
-							Channels[x].Rows[y].instrument = MAX_VALUE;
-
-							if (MoveOnDelete)
-							{
-								CursorY += Step;
-							}
-							else
-							{
-								CursorY++;
-							}
+							Channels[x].Rows[y].instrument = NULL_COMMAND;
+							CursorY += (MoveOnDelete) ? Step : 1;
 							ChangePatternData(x, y);
 							break;
 						}
@@ -2046,13 +1957,13 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 				case INSTR:
 					for (int i = 0; i < 16; i++)
 					{
-						if (Currentkey == VolInput[i])
+						if (CurrentKey == VolInput[i])
 						{
-							Channels[x].Rows[y].instrument = Channels[x].EvaluateHexInput(i, y, 127, INSTR);
+							Channels[x].Rows[y].instrument = Channels[x].EvaluateHexInput(i, y, MAX_INSTRUMENT, INSTR);
 							ChangePatternData(x, y);
 							break;
 						}
-						else if (Currentkey == GLFW_KEY_DELETE)
+						else if (CurrentKey == GLFW_KEY_DELETE)
 						{
 							Channels[x].Rows[y].instrument = MAX_VALUE;
 							CursorY += Step;
@@ -2064,13 +1975,13 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 				case VOLUME:
 					for (int i = 0; i < 16; i++)
 					{
-						if (Currentkey == VolInput[i])
+						if (CurrentKey == VolInput[i])
 						{
-							Channels[x].Rows[y].volume = Channels[x].EvaluateHexInput(i, y, 255, VOLUME);
+							Channels[x].Rows[y].volume = Channels[x].EvaluateHexInput(i, y, MAX_VOLUME, VOLUME);
 							ChangePatternData(x, y);
 							break;
 						}
-						else if (Currentkey == GLFW_KEY_DELETE)
+						else if (CurrentKey == GLFW_KEY_DELETE)
 						{
 							Channels[x].Rows[y].volume = MAX_VALUE;
 							CursorY += Step;
@@ -2082,13 +1993,13 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 				case EFFECT:
 					for (int i = 0; i < 16; i++)
 					{
-						if (Currentkey == VolInput[i])
+						if (CurrentKey == VolInput[i])
 						{
-							Channels[x].Rows[y].effect = Channels[x].EvaluateHexInput(i, y, 255, EFFECT);
+							Channels[x].Rows[y].effect = Channels[x].EvaluateHexInput(i, y, MAX_EFFECT, EFFECT);
 							ChangePatternData(x, y);
 							break;
 						}
-						else if (Currentkey == GLFW_KEY_DELETE)
+						else if (CurrentKey == GLFW_KEY_DELETE)
 						{
 							Channels[x].Rows[y].effect = MAX_VALUE;
 							CursorY += Step;
@@ -2100,13 +2011,13 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 				case VALUE:
 					for (int i = 0; i < 16; i++)
 					{
-						if (Currentkey == VolInput[i])
+						if (CurrentKey == VolInput[i])
 						{
-							Channels[x].Rows[y].effectvalue = Channels[x].EvaluateHexInput(i, y, 255, VALUE);
+							Channels[x].Rows[y].effectvalue = Channels[x].EvaluateHexInput(i, y, MAX_EFFECT_VALUE, VALUE);
 							ChangePatternData(x, y);
 							break;
 						}
-						else if (Currentkey == GLFW_KEY_DELETE)
+						else if (CurrentKey == GLFW_KEY_DELETE)
 						{
 							Channels[x].Rows[y].effectvalue = MAX_VALUE;
 							CursorY += Step;

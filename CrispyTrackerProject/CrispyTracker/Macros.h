@@ -5,6 +5,12 @@
 #define RELEASE_COMMAND 257		//Puts the instrument in the release state
 #define NULL_COMMAND 258		//Empty =section in rows, denoted with .. or ...
 
+//Maximum column values
+#define MAX_INSTRUMENT 127
+#define MAX_VOLUME 255
+#define MAX_EFFECT 255
+#define MAX_EFFECT_VALUE 255
+
 //File handling
 #define FILE_EXT "ctf"
 

@@ -53,7 +53,7 @@ public:
 	int AUDIO_FORMATS = SF_FORMAT_WAV | SF_FORMAT_OGG | SF_FORMAT_MPEG_LAYER_III | SF_FORMAT_RAW;
 	int FrameCount = 0;
 	int Event;
-	int Currentkey;
+	int CurrentKey;
 	int CurrentMod;
 	bool IsPressed = false;
 	bool EditingMode = true;
@@ -80,7 +80,7 @@ public:
 
 #pragma region Keyboard Controls
 	//Inputting notes
-	int NoteInput[24] = 
+	const int NoteInput[24] = 
 	{
 		//Lower octave
 		GLFW_KEY_Z, GLFW_KEY_S, GLFW_KEY_X, GLFW_KEY_D,
@@ -93,7 +93,7 @@ public:
 	};
 
 	//Hexadecimal Inputs
-	int VolInput[16] =
+	const int VolInput[16] =
 	{
 		GLFW_KEY_0, GLFW_KEY_1, GLFW_KEY_2, GLFW_KEY_3, 
 		GLFW_KEY_4, GLFW_KEY_5, GLFW_KEY_6, GLFW_KEY_7, 
@@ -101,7 +101,7 @@ public:
 		GLFW_KEY_C, GLFW_KEY_D, GLFW_KEY_E, GLFW_KEY_F,
 	};
 	
-	int ArrowInput[4] =
+	const int ArrowInput[4] =
 	{
 		GLFW_KEY_LEFT, GLFW_KEY_RIGHT, GLFW_KEY_UP, GLFW_KEY_DOWN,
 	};
