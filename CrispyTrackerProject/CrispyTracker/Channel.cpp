@@ -38,7 +38,7 @@ string Channel::NoteView(int index)
 
 string Channel::VolumeView(int index)
 {
-	if (Rows[index].volume == MAX_VALUE)
+	if (Rows[index].volume == NULL_COMMAND)
 	{
 		return "..";
 	}
@@ -52,7 +52,7 @@ string Channel::VolumeView(int index)
 
 string Channel::InstrumentView(int index)
 {
-	if (Rows[index].instrument == MAX_VALUE)
+	if (Rows[index].instrument == NULL_COMMAND)
 	{
 		return "..";
 	}
@@ -66,7 +66,7 @@ string Channel::InstrumentView(int index)
 
 string Channel::EffectView(int index)
 {
-	if (Rows[index].effect == MAX_VALUE)
+	if (Rows[index].effect == NULL_COMMAND)
 	{
 		return "..";
 	}
@@ -80,7 +80,7 @@ string Channel::EffectView(int index)
 
 string Channel::Effectvalue(int index)
 {
-	if (Rows[index].effectvalue == MAX_VALUE)
+	if (Rows[index].effectvalue == NULL_COMMAND)
 	{
 		return "..";
 	}
@@ -95,42 +95,35 @@ string Channel::Effectvalue(int index)
 int Channel::EvaluateHexInput(int input, int index, int max, int valuetype)
 {
 	//Value type gets the subcolumn in the given row
-	int surrogate = 0;
-	int ModValue = 0;
+	int NewValue = 0;
+	int CurrentValue = 0;
 
 	switch (valuetype)
 	{
 	case 1:
-		ModValue = Rows[index].instrument;
+		CurrentValue = Rows[index].instrument;
 		break;
 	case 2:
-		ModValue = Rows[index].volume;
+		CurrentValue = Rows[index].volume;
 		break;
 	case 3:
-		ModValue = Rows[index].effect;
+		CurrentValue = Rows[index].effect;
 		break;
 	case 4:
-		ModValue = Rows[index].effectvalue;
+		CurrentValue = Rows[index].effectvalue;
 		break;
 	}
 
-	if (ModValue > max)
+	if (CurrentValue <= max)
 	{
-		surrogate = 0;
+		NewValue = ((CurrentValue & 0x0f) << 4) + input;
 	}
-	else
-	{
-		surrogate = ((ModValue & 0x0f) << 4) + input;
-	}
-
 	//Clamp input
-	
-	if (surrogate > max && surrogate != 256)
+	else if (NewValue != 256)
 	{
-		ModValue = 0;
-		surrogate = input;
+		NewValue = input;
 	}
-	return surrogate;
+	return NewValue;
 }
 
 float Channel::Resample(vector<Sint16>& SampleData)
