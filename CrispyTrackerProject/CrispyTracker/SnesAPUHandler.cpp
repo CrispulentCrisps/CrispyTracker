@@ -48,6 +48,27 @@ void SnesAPUHandler::APU_Startup()
 	spc_dsp_write(Dsp, GLOBAL_endx, 0x00);
 	spc_dsp_write(Dsp, GLOBAL_efb, 0x00);
 
+	//Calculate pitch table
+	//Current issue is the tuning seems to be off C and closer to G (b/2)
+	int addroff = 0;
+	for (int x = 0; x < 9; x++)
+	{
+		std::cout << "\n Octave: " << x << " ";
+		for (int y = 0; y < 12; y++)
+		{
+			float exactpitch = StartValues[y] * (1 << x);
+			PitchTable.push_back((uint16_t)(exactpitch));
+			std::cout << PitchTable[y + (12 * x)] << ",";
+
+			//Write pitch table to memory as reference, last entry is at 0x01D7
+			//DSP_MEMORY[Pitch_Table_Page + addroff] = PitchTable[y + (12 * x)] & 0xFF;
+			//DSP_MEMORY[Pitch_Table_Page + addroff + 1] = (PitchTable[y + (12 * x)] >> 8) & 0xFF;
+			addroff += 2;
+		}
+		std::cout << "\n";
+	}
+
+
 }
 //Update loop for the DSP
 void SnesAPUHandler::APU_Update(spc_sample_t* Output, int BufferSize)
@@ -58,21 +79,20 @@ void SnesAPUHandler::APU_Update(spc_sample_t* Output, int BufferSize)
 	int ClockCycleRound = (BufferSize / 44100.0) * MAX_CLOCK_DSP;
 	int InterbufSize = (ClockCycleRound / 16);
 	if (InterbufSize % 2 == 1) InterbufSize++;
-	std::vector<spc_sample_t> InterBuf(InterbufSize * 2);
+	vector< array<spc_sample_t, 2> > InterBuf(InterbufSize * 2);
 
-	//spc_dsp_write(Dsp, GLOBAL_kon, 0xFF);
-
-	spc_dsp_set_output(Dsp, InterBuf.data(), InterBuf.size());
+	spc_dsp_set_output(Dsp, (spc_sample_t*)InterBuf.data(), InterBuf.size());
 
 	spc_dsp_run(Dsp, ClockCycleRound);
 
-	//cout << "\nSample Count: " << spc_dsp_sample_count(Dsp);
-
 	float StepCount = 0;
 	float MaxBufNeeded = spc_dsp_sample_count(Dsp);
-	for (int x = 0; x < BufferSize; x++)
+	for (int x = 0; x < BufferSize; x += 2)
 	{
-		Output[x] = InterBuf[(int)round(StepCount)];
+		for (int y = 0; y < 2; y++)
+		{
+			Output[x + y] = InterBuf[(int)round(StepCount)][y];
+		}
 		StepCount += MaxBufNeeded / (float)BufferSize;
 	}
 
@@ -83,7 +103,7 @@ void SnesAPUHandler::APU_Update(spc_sample_t* Output, int BufferSize)
 //Updating the registers of the DSP to reflect the changes in the track as it goes by
 void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int ypos)
 {
-	int currentnote = ch->Rows[ypos].note * ch->Rows[ypos].octave;
+	int currentnote = ch->Rows[ypos].note;
 	int currentoctave = ch->Rows[ypos].octave;
 	int currentinst = ch->Rows[ypos].instrument;
 	int currentvol = ch->Rows[ypos].volume;
@@ -111,19 +131,18 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 
 		if (currentinst < 256 && currentinst != 0)
 		{
-			spc_dsp_write(Dsp, ChannelRegs[id].vol_l, (inst->LPan) * (inst->Volume / 127.0));
-			spc_dsp_write(Dsp, ChannelRegs[id].vol_r, (inst->RPan) * (inst->Volume / 127.0));
+			spc_dsp_write(Dsp, ChannelRegs[id].vol_l, 127 * (inst->LPan / 127.0) * (inst->Volume / 127.0));
+			spc_dsp_write(Dsp, ChannelRegs[id].vol_r, 127 * (inst->RPan / 127.0) * (inst->Volume / 127.0));
 			spc_dsp_write(Dsp, ChannelRegs[id].scrn, inst->CurrentSample.SampleADDR);
 			spc_dsp_write(Dsp, GLOBAL_eon, (int)inst->Echo << id);
 
-			if (!inst->Noise)//We don't need to calculate pitches if we are playing noise
+			if (!inst->Noise)//Do some fuckery with the pitch register
 			{
-				cout << "\nStart Value: " << StartValues[currentnote % 12] << "\nShifted Value: " << StartValues[currentnote % 12] * (1 << currentoctave);
-				uint16_t Pitch = inst->BRR_Pitch(StartValues[currentnote%12] * (1<<currentoctave));
-				spc_dsp_write(Dsp, ChannelRegs[id].pit_l, Pitch);
-				spc_dsp_write(Dsp, ChannelRegs[id].pit_h, Pitch >> 8);
+				uint16_t Pitch = inst->BRR_Pitch(StartValues[currentnote % 12] * (1 << currentoctave));
+				spc_dsp_write(Dsp, ChannelRegs[id].pit_l, Pitch & 0xFF);
+				spc_dsp_write(Dsp, ChannelRegs[id].pit_h, (Pitch >> 8) & 0xFF);
 			}
-			else //Do some fuckery with the pitch register
+			else //We don't need to calculate pitches if we are playing noise
 			{
 				spc_dsp_write(Dsp, GLOBAL_non, inst->Noise << id);
 				spc_dsp_write(Dsp, GLOBAL_flg, inst->NoiseFreq);
@@ -174,7 +193,7 @@ void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 		samp[i].brr.SampleDir = Sample_Mem_Page + AddrOff;
 		for (int j = 0; j < samp[i].brr.DBlocks.size(); j++)//BRR Block Index
 		{
-			if (AddrOff < IPL_ROM_Page)
+			if (AddrOff < Echo_Buffer_Addr)
 			{
 				if (samp[i].LoopStart / 16 == j)
 				{
@@ -214,7 +233,7 @@ void SnesAPUHandler::APU_Set_Sample_Directory(std::vector<Sample>& samp)
 		DSP_MEMORY[Sample_Dir_Page + CurrentDir + 2] = samp[i].LoopStartAddr & 0xFF;//High byte of the start
 		DSP_MEMORY[Sample_Dir_Page + CurrentDir + 3] = (samp[i].LoopStartAddr >> 8) & 0xFF;//High byte of the start
 
-		samp[i].SampleADDR = i;
+		samp[i].SampleADDR = i-1;
 
 		CurrentDir += DirSize;
 	}
@@ -225,7 +244,7 @@ void SnesAPUHandler::APU_Evaluate_BRR_Loop(Sample* sample, int LoopPoint)
 	int LoopBlockPos = LoopPoint / 16;
 	for (int x = 0; x < sample->brr.DBlocks.size(); x++)
 	{
-		if (x == LoopBlockPos && LoopBlockPos != 0)//Assuming we've hit the loop point
+		if (x == LoopBlockPos && sample->Loop)//Assuming we've hit the loop point
 		{
 			sample->brr.DBlocks[x].HeaderByte |= sample->LoopFlag | sample->EndFlag;
 		}
@@ -346,6 +365,17 @@ void SnesAPUHandler::APU_Debug_Dump_SPC()
 	string filename = "SPC_Dump.bin";
 	ofstream BRRFile(filename, ios::binary);
 	for (int x = 0; x < 65536; x++)
+	{
+		BRRFile << DSP_MEMORY[x];
+	}
+	BRRFile.close();
+}
+
+void SnesAPUHandler::APU_Debug_Dump_PIT()
+{
+	string filename = "PIT_Dump.bin";
+	ofstream BRRFile(filename, ios::binary);
+	for (int x = Pitch_Table_Page; x < Sample_Mem_Page; x++)
 	{
 		BRRFile << DSP_MEMORY[x];
 	}

@@ -29,27 +29,6 @@ void SoundGenerator::Update(float ElapsedTime, Channel* ch, vector<Sample>& Samp
 			ch[i].Index = i;
 			Emu_APU.APU_Grab_Channel_Status(&ch[i], &inst[ch[i].CurrentInstrument], YPos);
 			ch[i].Tickcheck = false;
-			/*
-			int ChannelNote = inst[ch[i].CurrentInstrument].SampleIndex;
-			
-			if (Samples[ChannelNote].Loop)
-			{
-				if (ch[i].CurrentSamplePointIndex >= Samples[ChannelNote].LoopEnd)
-				{
-					ch[i].CurrentSamplePointIndex = Samples[inst[ch[i].CurrentInstrument].SampleIndex].LoopStart;
-				}
-			}
-			else if (ch[i].CurrentSamplePointIndex >= Samples[ChannelNote].SampleData.size())
-			{
-				ch[i].CurrentSamplePointIndex = Samples[ChannelNote].SampleData.size();
-			}
-			//cout << "\nPhase Accum: " << Phase[i] << " - Channel: " << i;
-			ch[i].CurrentSamplePointIndex += (float)pow(2., ch[i].CurrentPlayedNote / 12.);
-			*/
-		}
-		else
-		{
-			//ch[i].CurrentSamplePointIndex = 0;
 		}
 		Emu_APU.APU_Evaluate_Channel_Regs(ch);
 	}
@@ -65,20 +44,6 @@ void SoundGenerator::SetBufferSize(int Length)
 //Creates pitch table
 SoundGenerator::SoundGenerator(int TV, int NI, int POS, Channel channels[]) {
     PlayingNoise == false;
-	//A=440
-	float StartValues[12] = {
-		16.35, 17.32, 18.35, 19.45,
-		20.60, 21.83, 32.12, 24.50,
-		25.96, 27.50, 29.14, 30.87
-	};
-	for (int i = 0; i < 9; i++)
-	{
-		for (int j = 0; j < 12; j++)
-		{
-			NVT[(i * 12) + j] = StartValues[j] * (1 << i);
-		}
-	}
-
 	TotalVolume = TV;
 	NotePos = POS;
     NoteIndex = NI;

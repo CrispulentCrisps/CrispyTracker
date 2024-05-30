@@ -17,7 +17,6 @@ using namespace std;
 
 class Channel
 {
-	float sinc(float x) { if (x == 0) return 1; else return sin(M_PI * x) / (M_PI * x); };
 public:
 	int MAX_VALUE = NULL_COMMAND;
 	
@@ -115,9 +114,6 @@ Empty parts can be represented with -
 
 Off commands can be shown as =
 
-May or may not keep hexidecimal
-
-Audio bytes should be sent to an accumulator to then play every channels sound
 */
 
 #endif // !Channel

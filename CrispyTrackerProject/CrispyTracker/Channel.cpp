@@ -126,26 +126,6 @@ int Channel::EvaluateHexInput(int input, int index, int max, int valuetype)
 	return NewValue;
 }
 
-float Channel::Resample(vector<Sint16>& SampleData)
-{
-	//https://en.wikipedia.org/wiki/Lanczos_resampling using this for the resample method
-	//<3 Wikipedia my beloved <3
-
-	float s = 0;
-	int a = RESAMPLE_QUALITY;
-	float x = CurrentSamplePointIndex;
-
-	for (int i = (int)x - a; i <= (int)x + a; i++)
-	{
-		if (i > 0 && i < SampleData.size())
-		{
-			s += (float)SampleData[i] * sinc(x - i);
-		}
-	}
-
-	return s;
-}
-
 void Channel::SetUp(int Length)
 {
 	Row row = Row();
@@ -168,16 +148,5 @@ void Channel::TickCheck(int RowIndex, vector<Instrument>& instruments, vector<Sa
 		CurrentSamplePointIndex = 0;
 		PlayingNote = true;
 		cout << "\nChannel Hit!" << "\nCurrent Note: " << Rows[RowIndex].note << "\nCurrent Row " << RowIndex;
-	}
-}
-	
-void Channel::UpdateChannel(vector<Instrument>& instruments, vector<Sample>& samples)
-{
-	int CurrentSample = instruments[CurrentInstrument].SampleIndex;//Dictates the current sample [Here to make the code look cleaner]
-
-	if (CurrentInstrument > 0 && samples[CurrentSample].SampleData.size() > 0)
-	{
-		AudioDataL = Resample(samples[CurrentSample].SampleData);
-		AudioDataR = Resample(samples[CurrentSample].SampleData);
 	}
 }

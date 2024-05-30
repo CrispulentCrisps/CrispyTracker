@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <vector>
+#include <array>
 #include "Channel.h"
 #include "emu/dsp.h"
 #include "emu/spc.h"
@@ -52,10 +53,10 @@
 #define SPC_c1              0xFE
 #define SPC_c2              0xFF
 
-#define Sample_Dir_Page     0xFF00
+#define Pitch_Table_Page    0x0100
 #define Sample_Mem_Page     0x0200
 #define Echo_Buffer_Addr    0xEE00
-#define IPL_ROM_Page        0xFFC0
+#define Sample_Dir_Page     0xFF00
 
 //
 //  Memory layout
@@ -77,8 +78,6 @@ public:
     SNES_SPC* Spc = spc_new();
     spc_dsp_t* Dsp = spc_dsp_new();
     SPC_Filter* Filter = spc_filter_new();
-
-    Instrument* ChannelInst[8];
 
     struct DSP_Ch_Reg {
         unsigned char vol_l;
@@ -114,6 +113,8 @@ public:
 
     int LastSamplePoint;
 
+    std::vector<uint16_t> PitchTable;
+
     void APU_Startup();
     void APU_Update(spc_sample_t* Output, int BufferSize);
     void APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int ypos);
@@ -134,4 +135,5 @@ public:
     void APU_Debug_Dump_BRR();
     void APU_Debug_Dump_DIR();
     void APU_Debug_Dump_SPC();
+    void APU_Debug_Dump_PIT();
 };

@@ -20,6 +20,12 @@ Tracker::~Tracker()
 
 double Tracker::ScrollValue()
 {
+	/* calc steps
+		* Normalise to 0-1
+		* Do something to include the offset for the scroll so the bar is scrolling down when it reaches the middle
+		* Scale to screen size
+		* Remove padding from scroll
+	*/
 	return (((double)CursorY / (double)TrackLength)) * ((TextSize + GetStyle().CellPadding.y * 2) * TrackLength) - (GetWindowHeight() / 3.0);;
 }
 
@@ -31,6 +37,7 @@ void Tracker::Initialise(int StartLength)
 		Channel channel = Channel();
 		channel.SetUp(256);
 		Channels[i] = channel;
+		Channels[i].Index = i;
 		Patterns pat = Patterns();
 		pat.SetUp(256);
 		pat.Index = i;
@@ -55,7 +62,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 void MyAudioCallback(void* userdata, Uint8* stream, int len)
 {
-	DWORD flags;
+	DWORD flags = 0;
 	static_cast<SoundGenerator*>(userdata)->LoadData(len / 8, stream, &flags);
 }
 
@@ -242,18 +249,14 @@ void Tracker::Render()
 		Settings_View();
 		Misc_View();
 		EchoSettings();
-		if (ShowExport)
-		{
-			Export_View();
-		}
-		if (LoadingSample)
-		{
-			LoadSample();
-		}
-		if (ShowEmuDebug)
-		{
-			EmuDebugWindow();
-		}
+		if (ShowExport)	Export_View();
+		
+		if (LoadingSample) LoadSample();
+		
+		if (ShowEmuDebug) EmuDebugWindow();
+
+		if (ShowError) ErrorWindow();
+
 		Info_View();
 	}
 	else
@@ -766,12 +769,6 @@ void Tracker::Channel_View()
 		int paddingsave = GetStyle().FramePadding.x;
 		if (PlayingMode)
 		{
-			/* calc steps
-				* Normalise to 0-1
-				* Do something to include the offset for the scroll so the bar is scrolling down when it reaches the middle
-				* Scale to screen size
-				* Remove padding from scroll
-			*/
 			SetScrollY(ScrollValue());
 		}
 		if (BeginTable("ChannelView", 9, ImGuiTableFlags_SizingFixedFit, ImVec2(GetWindowWidth() * .9 + (TextSize * 8), 0)) != NULL)
@@ -1000,12 +997,12 @@ void Tracker::Samples()
 			cout << "SAMPLE LIST SIZE: " << samples.size();
 			if (SelectedSample > samples.size())
 			{
-				samples.erase((samples.begin() + 1) + SelectedSample);
+				samples.erase((samples.begin()) + SelectedSample);
 				SelectedSample--;
 			}
 			else if (SelectedSample > 0)
 			{
-				samples.erase((samples.begin()+1) + SelectedSample);
+				samples.erase((samples.begin()) + SelectedSample);
 			}
 		}
 		SameLine();
@@ -1104,7 +1101,7 @@ void Tracker::Sample_View()
 					ImPlot::PlotLine("Wave Data", SampleView.data(), SampleView.size());
 					ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, .5f * samples[SelectedSample].Loop);
 					
-					if (samples[SelectedSample].LoopEnd > samples[SelectedSample].SampleData.size())
+					if (samples[SelectedSample].LoopEnd > samples[SelectedSample].brr.DBlocks.size()*16)
 					{
 						samples[SelectedSample].LoopEnd = samples[SelectedSample].SampleData.size();
 						SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
@@ -1713,29 +1710,17 @@ void Tracker::Export_View()
 	End();
 }
 
+//Core updates to the tracker state
 void Tracker::RunTracker()
 {
 	//Update audio buffer
-
-	//cout << "\n Audio Buff Queued: " << SDL_GetQueuedAudioSize(dev);
 	if (SDL_GetQueuedAudioSize(dev) < SG.TRACKER_AUDIO_BUFFER * 8)
 	{
 		for (int x = 0; x < SG.TRACKER_AUDIO_BUFFER; x++)
 		{
-			//SG.P++;
-			for (int i = 0; i < 8; i++)
-			{
-				Channels[i].UpdateChannel(inst, samples);
-				//Channels[i].AudioDataL = 2048 * sin((SG.P) * (2 * 3.14) * 440 * (1. / AUDIO_RATE));//Left ear
-				//Channels[i].AudioDataR = 2048 * sin((SG.P) * (2 * 3.14) * 440 * (1. / AUDIO_RATE));//Right ear
-				//cout << "\n" << Channels[i].AudioDataR << ": Channel " << i << " Framce Counter: " << FrameCount;
-			}
-			//SG.MixChannels(x, Channels);
 			SG.Update(GetIO().DeltaTime, Channels, samples, CursorY, inst);
-			//SG.DEBUG_Output_Audio_Buffer_Log(SG.Totalbuffer, FrameCount, x, SDL_GetQueuedAudioSize(dev));
 		}
 		SG.Emu_APU.APU_Update(SG.Totalbuffer[0].data(), 2 * SG.TRACKER_AUDIO_BUFFER);
-		//SG.Emu_APU.APU_Run(&SG.Totalbuffer[0][0], SG.TRACKER_AUDIO_BUFFER);
 		SDL_QueueAudio(dev, SG.Totalbuffer[0].data(), sizeof(Sint16) * 2 * SG.TRACKER_AUDIO_BUFFER);
 	}
 
@@ -2120,34 +2105,35 @@ void Tracker::LoadSample()
 					cur = DefaultSample;
 					for (int i = 0; i < AudioLen/soundinfo.channels; i++)
 					{
-						//cout << "\n" << i;
-						/*
-						cout << " " << FileBuffer[i];
-						if (i % 8 == 1)
-						{
-							cout << "\n";
-						}
-						*/
 						cur.SampleData.push_back(FileBuffer[i]);
 					}
-					
-					cur.SampleIndex = SelectedSample;
-					FileName.erase(0, FilePath.length()+1);
-					cur.SampleName = FileName;
-					cur.SampleRate = soundinfo.samplerate;
-					cur.Loop = false;
-					cur.LoopStart = 0;
-					cur.LoopEnd = 0;
-					cur.FineTune = 0;
-					SelectedSample = samples.size();
-					cur.SampleIndex = SelectedSample;
-					//Assume the file isn't fucked and we can move to the BRR conversion
-					cur.BRRConvert();
-					samples.push_back(cur);
-					//Memory shit
-					SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-					SG.Emu_APU.APU_Set_Sample_Memory(samples);
-					SG.Emu_APU.APU_Set_Sample_Directory(samples);
+
+					if (cur.SampleData.size() < 16)//Assuming we have an invalid sample
+					{
+						ErrorMessage = FILE_ERORR_03;
+						ShowError = true;
+					}
+					else //Assume we have a valid sample
+					{
+						cur.SampleIndex = SelectedSample;
+						FileName.erase(0, FilePath.length() + 1);
+						cur.SampleName = FileName;
+						cur.SampleRate = soundinfo.samplerate;
+						cur.Loop = false;
+						cur.LoopStart = 0;
+						cur.LoopEnd = 0;
+						cur.FineTune = 0;
+						SelectedSample = samples.size();
+						cur.SampleIndex = SelectedSample;
+						//Assume the file isn't fucked and we can move to the BRR conversion
+						cur.BRRConvert();
+						samples.push_back(cur);
+						//Memory shit
+						SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
+						SG.Emu_APU.APU_Evaluate_BRR_Loop_Start(&samples[SelectedSample]);
+						SG.Emu_APU.APU_Set_Sample_Memory(samples);
+						SG.Emu_APU.APU_Set_Sample_Directory(samples);
+					}
 					sf_close(file);
 				}
 				else
@@ -2302,6 +2288,34 @@ void Tracker::EmuDebugWindow()
 		{
 			SG.Emu_APU.APU_Debug_Dump_DIR();
 		}
+		if (Button("Dump Pitch Table"))
+		{
+			SG.Emu_APU.APU_Debug_Dump_PIT();
+		}
+	}
+	End();
+}
+
+static void TextCentered(std::string text) {
+	auto windowWidth = ImGui::GetWindowSize().x;
+	auto textWidth = ImGui::CalcTextSize(text.c_str()).x;
+
+	ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
+	ImGui::Text(text.c_str());
+}
+
+void Tracker::ErrorWindow()
+{
+	SetNextWindowPos(GetMainViewport()->GetCenter(), 0, ImVec2(0.5f, 0.5f));
+	if(Begin("ERROR", 0, UNIVERSAL_WINDOW_FLAGS)) {
+		TextCentered("AN ERROR HAS OCCURED");
+		NewLine();
+		TextCentered(ErrorMessage);
+		NewLine();
+		if (Button("Close", ImVec2(64, TextSize * 1.5))) {
+			ShowError = false;
+		}
+
 	}
 	End();
 }

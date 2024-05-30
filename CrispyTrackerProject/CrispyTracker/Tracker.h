@@ -274,6 +274,11 @@ public:
 	int SelectedQualityType = 0;
 	bool ShowExport = false;
 	
+	//Error handling
+	bool ShowError = false;
+	string ErrorMessage;
+	//
+
 	double ScrollValue();//Returns the position scrolled down the tracker
 
 	//Functions
@@ -316,6 +321,8 @@ public:
 	void ResetSettings();
 
 	void EmuDebugWindow();
+
+	void ErrorWindow();
 
 	string Authbuf = " ";
 	string Descbuf = " ";

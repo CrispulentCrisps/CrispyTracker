@@ -14,7 +14,10 @@ uint16_t Instrument::BRR_Pitch(uint16_t pit)
 {
 	if (pit != 0)
 	{
-		cout << "\n\npit: " << pit << "\nPitch calc: " << (pit / (uint16_t)CurrentSample.SampleRate) * 0x1000;
-		return (pit / (uint16_t)CurrentSample.SampleRate) * 0x1000;
+		int SampleDiff = 32000.0 - CurrentSample.SampleRate;
+		float pitval = pit * (SampleDiff / 4096.0);
+		if (SampleDiff < 0) pitval = pit * (-SampleDiff / 4096.0);
+		//return 0x1000;
+		return (uint16_t)(pitval);
 	}
 }

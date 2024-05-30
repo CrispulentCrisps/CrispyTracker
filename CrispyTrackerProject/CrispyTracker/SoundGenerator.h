@@ -20,7 +20,6 @@
 #include <string>
 
 #include <math.h>
-#include <array>
 
 #include "SnesAPUHandler.h"
 
