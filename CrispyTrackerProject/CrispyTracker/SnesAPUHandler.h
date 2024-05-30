@@ -53,8 +53,8 @@
 #define SPC_c1              0xFE
 #define SPC_c2              0xFF
 
-#define Pitch_Table_Page    0x0100
-#define Sample_Mem_Page     0x0200
+#define Flag_Effect_Page    0x0200
+#define Sample_Mem_Page     0x0210
 #define Echo_Buffer_Addr    0xEE00
 #define Sample_Dir_Page     0xFF00
 
@@ -114,6 +114,8 @@ public:
     int LastSamplePoint;
 
     std::vector<uint16_t> PitchTable;
+    
+    EffectsHandler EffectHandle;
 
     void APU_Startup();
     void APU_Update(spc_sample_t* Output, int BufferSize);
@@ -125,6 +127,7 @@ public:
     void APU_Set_Sample_Directory(std::vector<Sample>& samp);
     void APU_Evaluate_BRR_Loop(Sample* sample, int LoopPoint);
     void APU_Evaluate_BRR_Loop_Start(Sample* sample);
+    void APU_Write_Flag_Mem(uint16_t* flags);
 
     bool APU_Set_Master_Vol(signed char vol);
     void APU_Set_Echo(unsigned int dtime, int* coef, signed int dfb, signed int dvol);
@@ -135,5 +138,5 @@ public:
     void APU_Debug_Dump_BRR();
     void APU_Debug_Dump_DIR();
     void APU_Debug_Dump_SPC();
-    void APU_Debug_Dump_PIT();
+    void APU_Debug_Dump_FLG();
 };

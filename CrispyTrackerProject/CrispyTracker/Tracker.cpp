@@ -2288,9 +2288,9 @@ void Tracker::EmuDebugWindow()
 		{
 			SG.Emu_APU.APU_Debug_Dump_DIR();
 		}
-		if (Button("Dump Pitch Table"))
+		if (Button("Dump Flag Table"))
 		{
-			SG.Emu_APU.APU_Debug_Dump_PIT();
+			SG.Emu_APU.APU_Debug_Dump_FLG();
 		}
 	}
 	End();

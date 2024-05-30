@@ -269,6 +269,16 @@ void SnesAPUHandler::APU_Evaluate_BRR_Loop_Start(Sample* sample)
 	DSP_MEMORY[Sample_Dir_Page + (sample->SampleIndex * 4) + 3] = (sample->LoopStartAddr >> 8) & 0xFF;
 }
 
+void SnesAPUHandler::APU_Write_Flag_Mem(uint16_t* flags)
+{
+	int addroff = 0;
+	for (int x = 0; x < 16; x++)
+	{
+		DSP_MEMORY[Flag_Effect_Page+addroff] = flags[x];
+		addroff++;
+	}
+}
+
 //Sets master volume of the track
 bool SnesAPUHandler::APU_Set_Master_Vol(signed char vol)
 {
@@ -371,11 +381,11 @@ void SnesAPUHandler::APU_Debug_Dump_SPC()
 	BRRFile.close();
 }
 
-void SnesAPUHandler::APU_Debug_Dump_PIT()
+void SnesAPUHandler::APU_Debug_Dump_FLG()
 {
-	string filename = "PIT_Dump.bin";
+	string filename = "FLG_Dump.bin";
 	ofstream BRRFile(filename, ios::binary);
-	for (int x = Pitch_Table_Page; x < Sample_Mem_Page; x++)
+	for (int x = Flag_Effect_Page; x < Sample_Mem_Page; x++)
 	{
 		BRRFile << DSP_MEMORY[x];
 	}

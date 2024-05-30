@@ -5,6 +5,7 @@
 
 #include "Macros.h"
 #include "Instrument.h"
+#include "Effects.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
