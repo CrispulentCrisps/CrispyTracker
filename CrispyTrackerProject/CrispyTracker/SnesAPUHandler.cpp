@@ -127,7 +127,7 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 		spc_dsp_write(Dsp, ChannelRegs[id].adsr_2, ADSR2);
 		spc_dsp_write(Dsp, ChannelRegs[id].gain,0x7F);
 
-		spc_dsp_write(Dsp, GLOBAL_pmon, inst->PitchMod << id);//May or may not work
+		spc_dsp_write(Dsp, GLOBAL_pmon, inst->PitchMod << id);
 
 		if (currentinst < 256 && currentinst != 0)
 		{
@@ -138,7 +138,8 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 
 			if (!inst->Noise)//Do some fuckery with the pitch register
 			{
-				uint16_t Pitch = inst->BRR_Pitch(StartValues[currentnote % 12] * (1 << currentoctave));
+				uint16_t Pitch = inst->BRR_Pitch(pow(2.0, (currentnote - 48 + inst->NoteOff) / 12.0));
+
 				spc_dsp_write(Dsp, ChannelRegs[id].pit_l, Pitch & 0xFF);
 				spc_dsp_write(Dsp, ChannelRegs[id].pit_h, (Pitch >> 8) & 0xFF);
 			}
@@ -152,6 +153,9 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 		if (ch->Rows[ypos].note != RELEASE_COMMAND && ch->Rows[ypos].note != STOP_COMMAND)//Assuming we've hit a key
 		{
 			spc_dsp_write(Dsp, GLOBAL_kon, 1 << id);
+			int kofcheck = spc_dsp_read(Dsp, GLOBAL_kof);
+			kofcheck &= ~(1 << id);
+			spc_dsp_write(Dsp, GLOBAL_kof, kofcheck);
 		}
 		else//Assuming we haven't hit a key
 		{
@@ -238,6 +242,7 @@ void SnesAPUHandler::APU_Set_Sample_Directory(std::vector<Sample>& samp)
 		CurrentDir += DirSize;
 	}
 }
+
 //Formatting the BRR END and LOOP flags
 void SnesAPUHandler::APU_Evaluate_BRR_Loop(Sample* sample, int LoopPoint)
 {
@@ -340,12 +345,14 @@ void SnesAPUHandler::APU_Init_Echo()
 	spc_dsp_write(Dsp, GLOBAL_flg, 0);//Flag used to update the EDL and ESA regs
 }
 
-void SnesAPUHandler::APU_AudioStop()
+void SnesAPUHandler::APU_Audio_Stop()
 {
-	for (int i = 0; i < 8; i++)
-	{
-		spc_dsp_write(Dsp, GLOBAL_kof, 1 << i);
-	}
+	spc_dsp_write(Dsp, GLOBAL_kof, 0xFF);
+}
+
+void SnesAPUHandler::APU_Audio_Start()
+{
+	spc_dsp_write(Dsp, GLOBAL_kof, 0x00);
 }
 
 void SnesAPUHandler::APU_Debug_Dump_BRR()

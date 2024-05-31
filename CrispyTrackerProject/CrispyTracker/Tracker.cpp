@@ -252,8 +252,6 @@ void Tracker::Render()
 		if (ShowExport)	Export_View();
 		
 		if (LoadingSample) LoadSample();
-		
-		if (ShowEmuDebug) EmuDebugWindow();
 
 		if (ShowError) ErrorWindow();
 
@@ -300,9 +298,21 @@ void Tracker::MenuBar()
 		{
 			ShowEcho = !ShowEcho;
 		}
-		if (Selectable("Memory Debug"))
+		if (Selectable("Dump SPC"))
 		{
-			ShowEmuDebug = !ShowEmuDebug;
+			SG.Emu_APU.APU_Debug_Dump_SPC();
+		}
+		if (Selectable("Dump BRR"))
+		{
+			SG.Emu_APU.APU_Debug_Dump_BRR();
+		}
+		if (Selectable("Dump DIR"))
+		{
+			SG.Emu_APU.APU_Debug_Dump_DIR();
+		}
+		if (Selectable("Dump Flag Table"))
+		{
+			SG.Emu_APU.APU_Debug_Dump_FLG();
 		}
 		ImGui::EndMenu();
 	}
@@ -596,6 +606,8 @@ void Tracker::Instrument_View()//Instrument editor
 				SliderInt("Left   ", &inst[SelectedInst].LPan, 0, 127);
 				SliderInt("Right", &inst[SelectedInst].RPan, 0, 127);
 				SliderInt("Gain", &inst[SelectedInst].Gain, 0, 255);
+
+				SliderInt("Note offset", &inst[SelectedInst].NoteOff, -12, 12);
 
 				Checkbox("Envelope used", &inst[SelectedInst].EnvelopeUsed);
 				ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.33);
@@ -1076,7 +1088,6 @@ void Tracker::Sample_View()
 				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
 				SG.Emu_APU.APU_Set_Sample_Memory(samples);
 			}
-			SliderInt("Note offset", &samples[SelectedSample].NoteOffset, -12, 12);
 			if (samples.size() > 1)
 			{
 				vector<float> LoopView;
@@ -1312,9 +1323,9 @@ void Tracker::Misc_View()
 {
 	if (Begin("MiscView"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-		InputInt("Step", &Step, 1, 8);
 		InputInt("Octave", &Octave, 1, 8);
-		Octave > 8 ? Octave = 8 : Octave < 1 ? Octave = 1: Octave;
+		InputInt("Step", &Step, 1, 8);
+		Octave > 8 ? Octave = 8 : Octave < 0 ? Octave = 0: Octave;
 		if(SliderInt("Master Volume", &VolumeScale, -128, 127)) {
 			assert(SG.Emu_APU.APU_Set_Master_Vol(VolumeScale));
 		}
@@ -1716,10 +1727,7 @@ void Tracker::RunTracker()
 	//Update audio buffer
 	if (SDL_GetQueuedAudioSize(dev) < SG.TRACKER_AUDIO_BUFFER * 8)
 	{
-		for (int x = 0; x < SG.TRACKER_AUDIO_BUFFER; x++)
-		{
-			SG.Update(GetIO().DeltaTime, Channels, samples, CursorY, inst);
-		}
+		SG.Update(GetIO().DeltaTime, Channels, samples, CursorY, inst);
 		SG.Emu_APU.APU_Update(SG.Totalbuffer[0].data(), 2 * SG.TRACKER_AUDIO_BUFFER);
 		SDL_QueueAudio(dev, SG.Totalbuffer[0].data(), sizeof(Sint16) * 2 * SG.TRACKER_AUDIO_BUFFER);
 	}
@@ -1870,8 +1878,9 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 		case GLFW_KEY_SPACE:
 			EditingMode = !EditingMode;
 			break;
-		case GLFW_KEY_ENTER:
+		case GLFW_KEY_ENTER://Controls if the tracker is in "Play" mode
 			PlayingMode = !PlayingMode;
+			if (!PlayingMode) SG.Emu_APU.APU_Audio_Stop();
 			EditingMode = false;
 			break;
 		}
@@ -2270,30 +2279,6 @@ void Tracker::ResetSettings()
 {
 	SManager.CustomData = SManager.DefaultData;
 	UpdateSettings(0);
-}
-
-void Tracker::EmuDebugWindow()
-{
-	if (Begin("Debug", 0))
-	{
-		if (Button("Dump SPC"))
-		{
-			SG.Emu_APU.APU_Debug_Dump_SPC();
-		}
-		if (Button("Dump BRR"))
-		{
-			SG.Emu_APU.APU_Debug_Dump_BRR();
-		}
-		if (Button("Dump DIR"))
-		{
-			SG.Emu_APU.APU_Debug_Dump_DIR();
-		}
-		if (Button("Dump Flag Table"))
-		{
-			SG.Emu_APU.APU_Debug_Dump_FLG();
-		}
-	}
-	End();
 }
 
 static void TextCentered(std::string text) {

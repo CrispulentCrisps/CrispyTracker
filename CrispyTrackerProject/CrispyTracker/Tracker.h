@@ -320,8 +320,6 @@ public:
 	void UpdateSettings(int w);
 	void ResetSettings();
 
-	void EmuDebugWindow();
-
 	void ErrorWindow();
 
 	string Authbuf = " ";

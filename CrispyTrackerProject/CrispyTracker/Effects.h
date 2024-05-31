@@ -80,8 +80,8 @@ enum EffectFlags {
 #define PORT_UP_CTRL	0xE1//Portamento up controlled
 #define PORT_DOWN_CTRL	0xE2//Portamento down controlled
 
-#define PANL			0xE8//Global L
-#define PANR			0xE9//Global R
+#define GLOABL_PANL		0xE8//Global L
+#define GLOABL_PANR		0xE9//Global R
 #define GLOBAL_VOL		0xEA//Global Volume
 
 #define END				0xFF//Ends the track

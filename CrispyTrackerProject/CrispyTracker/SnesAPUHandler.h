@@ -53,8 +53,8 @@
 #define SPC_c1              0xFE
 #define SPC_c2              0xFF
 
-#define Flag_Effect_Page    0x0200
-#define Sample_Mem_Page     0x0210
+#define Flag_Effect_Page    0xDD00
+#define Sample_Mem_Page     0x0200
 #define Echo_Buffer_Addr    0xEE00
 #define Sample_Dir_Page     0xFF00
 
@@ -133,7 +133,8 @@ public:
     void APU_Set_Echo(unsigned int dtime, int* coef, signed int dfb, signed int dvol);
     void APU_Init_Echo();
 
-    void APU_AudioStop();
+    void APU_Audio_Stop();
+    void APU_Audio_Start();
 
     void APU_Debug_Dump_BRR();
     void APU_Debug_Dump_DIR();

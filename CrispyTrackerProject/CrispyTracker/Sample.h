@@ -16,7 +16,6 @@ public:
 	int SampleIndex;
 	int SampleADDR;
 	long PlayingHZ;
-	int NoteOffset = 0;
 	
 	string SampleName = "Empty!";
 	vector<signed short> SampleData;
