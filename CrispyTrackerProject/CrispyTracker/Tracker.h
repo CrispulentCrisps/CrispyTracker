@@ -148,7 +148,7 @@ public:
 	//Key Timings
 	float MinKeyTime = 0.02f;
 	float KeyTimer = 0;
-	float InitKeyTime = 0.5f;
+	float InitKeyTime = 0.3f;
 	float InitTimer = 0;
 	bool InitPressed = false;
 	//
@@ -236,7 +236,6 @@ public:
 		OGG = 2,
 		SPC = 3,
 		ASM = 4,
-		UEN = 5,//SHVC-CORE, by KULOR
 	};
 
 	enum ExportSign
@@ -251,7 +250,7 @@ public:
 		SIXTEEN = 1,
 	};
 
-	//Assuming it's an export for 
+	//Assuming it's an export for audio
 	enum ExportQuality {
 		KHZ_8 = 0,
 		KHZ_11 = 1,
@@ -264,20 +263,22 @@ public:
 	};
 
 	ExportTypes E_Type;
-	ExportTypes E_Sign;
-	ExportTypes E_Depth;
-	ExportTypes E_Quality;
-	int SelectedExportType = 0;
+	ExportSign E_Sign;
+	ExportDepth E_Depth;
+	ExportQuality E_Quality;
+	int SelectedExportType = 2;
 	int SelectedTechnicalType = 0;
-	int SelectedSignType = 0;
-	int SelectedDepthType = 0;
-	int SelectedQualityType = 0;
+	int SelectedSignType = 1;
+	int SelectedDepthType = 1;
+	int SelectedQualityType = 7;
 	bool ShowExport = false;
 	
 	//Error handling
 	bool ShowError = false;
 	string ErrorMessage;
 	//
+
+	bool ShowDSPDebugger = false;
 
 	double ScrollValue();//Returns the position scrolled down the tracker
 
@@ -310,6 +311,8 @@ public:
 
 	void RunTracker(); //For when the tracker is playing the tune
 	void UpdateRows(); //Sending the audio data to the speakers for every element in the tracker row
+	void UpdateTicks(); //Updating any tick based effects
+	void UpdateAudioBuffer();
 
 	void ChannelInput(int CurPos, int x, int y);
 	void LoadSample();
@@ -321,6 +324,7 @@ public:
 	void ResetSettings();
 
 	void ErrorWindow();
+	void DSPDebugWindow();
 
 	string Authbuf = " ";
 	string Descbuf = " ";
@@ -336,6 +340,7 @@ public:
 	string Credits = "Crispytracker: " + VERSION;//Is actually used for the title
 	
 	//Visuals
+	ImColor WindowBG = IM_COL32(11, 11, 22, 255);
 	ImColor Default = IM_COL32(22, 22, 44, 255);
 	ImColor H2Col = IM_COL32(66, 66, 88, 255);
 	ImColor H1Col = IM_COL32(44, 44, 66, 255);

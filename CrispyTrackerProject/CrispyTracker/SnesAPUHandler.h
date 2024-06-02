@@ -64,7 +64,6 @@
 //  00F0 - 00FF     |   CPU registers
 //  0100 - 01FF     |   Stackpage
 //  0200 - FFBF     |   RAM
-//  FFC0 - FFFF     |   IPL ROM
 //
 
 enum Region {
@@ -121,7 +120,8 @@ public:
     void APU_Update(spc_sample_t* Output, int BufferSize);
     void APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int ypos);
     void APU_Evaluate_Channel_Regs(Channel* ch);
-    //void APU_Run(spc_sample_t* Output, int BufSize);
+    void APU_Play_Note_Editor(Channel* ch, Instrument* inst, int note, bool IsOn);
+
     void APU_Kill();
     void APU_Set_Sample_Memory(std::vector<Sample>& samp);
     void APU_Set_Sample_Directory(std::vector<Sample>& samp);
@@ -136,8 +136,13 @@ public:
     void APU_Audio_Stop();
     void APU_Audio_Start();
 
+    int APU_Return_Cycle_Since_Last_Frame();
+
     void APU_Debug_Dump_BRR();
     void APU_Debug_Dump_DIR();
     void APU_Debug_Dump_SPC();
     void APU_Debug_Dump_FLG();
+
+    int APU_Debug_KON_State();
+    int APU_Debug_KOF_State();
 };

@@ -114,10 +114,12 @@ void Tracker::Run()
 	GetIO().AddKeyEvent(ImGuiKey_Home, false);
 	GetIO().AddKeyEvent(ImGuiKey_End, false);
 	StyleColorsClassic();
-	ImGuiStyle& style = GetStyle();
-	style.FrameBorderSize = 0.1f;
-	style.WindowRounding = .1f;
-	style.FrameRounding = .1f;
+	ImGuiStyle* style = &GetStyle();
+	style->Colors[ImGuiCol_WindowBg] = WindowBG;
+	style->FrameBorderSize = 0.1f;
+	style->WindowRounding = .1f;
+	style->FrameRounding = .1f;
+
 	io = GetIO();
 	io.DisplaySize.x = SCREEN_WIDTH;
 	io.DisplaySize.y = SCREEN_HEIGHT;
@@ -214,6 +216,8 @@ void Tracker::CheckInput()
 	{
 		running = false;
 	}
+
+	UpdateAudioBuffer();
 	
 	//cout << "Playing Mode = " << PlayingMode;
 	if (PlayingMode)
@@ -222,7 +226,7 @@ void Tracker::CheckInput()
 	}
 	else
 	{
-		SDL_ClearQueuedAudio(dev);
+		//SDL_ClearQueuedAudio(dev);
 	}
 }
 
@@ -254,6 +258,8 @@ void Tracker::Render()
 		if (LoadingSample) LoadSample();
 
 		if (ShowError) ErrorWindow();
+		
+		if (ShowDSPDebugger) DSPDebugWindow();
 
 		Info_View();
 	}
@@ -288,6 +294,10 @@ void Tracker::MenuBar()
 
 	if (BeginMenu("Edit"))
 	{
+		if (ImGui::MenuItem("Show Settings"))
+		{
+			ShowSettings = !ShowSettings;
+		}
 		ImGui::EndMenu();
 	}
 
@@ -310,18 +320,13 @@ void Tracker::MenuBar()
 		{
 			SG.Emu_APU.APU_Debug_Dump_DIR();
 		}
-		if (Selectable("Dump Flag Table"))
+		if (Selectable("Dump FLG"))
 		{
 			SG.Emu_APU.APU_Debug_Dump_FLG();
 		}
-		ImGui::EndMenu();
-	}
-
-	if (BeginMenu("Settings"))
-	{
-		if (ImGui::MenuItem("Show Settings"))
+		if (Selectable("DSP regs"))
 		{
-			ShowSettings = !ShowSettings;
+			ShowDSPDebugger = !ShowDSPDebugger;
 		}
 		ImGui::EndMenu();
 	}
@@ -603,7 +608,7 @@ void Tracker::Instrument_View()//Instrument editor
 				SliderInt("Volume", &inst[SelectedInst].Volume, 0, 127);
 
 				NewLine();
-				SliderInt("Left   ", &inst[SelectedInst].LPan, 0, 127);
+				SliderInt("Left", &inst[SelectedInst].LPan, 0, 127);
 				SliderInt("Right", &inst[SelectedInst].RPan, 0, 127);
 				SliderInt("Gain", &inst[SelectedInst].Gain, 0, 255);
 
@@ -649,17 +654,21 @@ void Tracker::Instrument_View()//Instrument editor
 							0, 0, 0, 0, 0, 0, 0, 0
 						};
 
-						for (int i = 0; i < inst[SelectedInst].Attack; i++)
+						float attackaccum = 0;
+						for (int i = 0; i < 15 - inst[SelectedInst].Attack; i++)
 						{
-							PlotArr[i] = (float)i / (inst[SelectedInst].Attack + 1)*32;
+							PlotArr[i] = attackaccum;
+							attackaccum += (32.0 / (float)(15.0 - inst[SelectedInst].Attack));
 						}
-						PlotArr[inst[SelectedInst].Attack] = 32;
+						PlotArr[15 - inst[SelectedInst].Attack] = 32;
 						
-						int PreviousPoint = inst[SelectedInst].Attack+1;
+						int PreviousPoint = 16 - inst[SelectedInst].Attack;
 
-						for (int j = PreviousPoint; j < PreviousPoint+(8-inst[SelectedInst].Decay); j++)
+						float decayaccum = 32;
+						for (int j = PreviousPoint; j < PreviousPoint+(7-inst[SelectedInst].Decay); j++)
 						{
-							PlotArr[j] = ((inst[SelectedInst].Decay*4)/(((float)j + 1 - PreviousPoint))) + (inst[SelectedInst].Sustain*4);
+							decayaccum -= (32.0 - inst[SelectedInst].Sustain) / 7.0 / (float)inst[SelectedInst].Decay;
+							PlotArr[j] = decayaccum;
 						}
 						
 						PreviousPoint += (8 - inst[SelectedInst].Decay);
@@ -804,25 +813,6 @@ void Tracker::Channel_View()
 				//This determines the columns on a given channel [all track lengths are constant between channels]
 				for (int j = -1; j < TrackLength; j++)//Y
 				{
-					// keep this for future debugging
-					/*
-					if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-					{
-						string str;
-						str = "i: ";
-						str += to_string(i);
-						str += "| j: ";
-						str += to_string(j);
-						str += "| CurPos: ";
-						str += to_string(CursorPos);
-						str += "\nCursorX: ";
-						str += to_string(CursorX);
-						str += "| CursorY: ";
-						str += to_string(CursorY);
-						SetTooltip(str.c_str());
-					}
-					*/
-
 					if (i == -1)//this is for the index on the leftmost of the screen
 					{
 						if (j == -1) ind = "|_|";
@@ -1349,32 +1339,24 @@ void Tracker::Speed_View()
 {
 	if (Begin("SpeedView",0, UNIVERSAL_WINDOW_FLAGS))
 	{
-		Text("Base tempo");
-		InputInt("##Base tempo", &BaseTempo, 1, 1);
 		Text("Speed");
 		InputInt("##Speed 1", &Speed1, 1, 31);
 		Text("Tempo divider");
 		InputInt("##Tempo divider", &TempoDivider, 1, 1);
-		if (BaseTempo < 1)
-		{
-			BaseTempo = 1;
-		}
-		if (TempoDivider < 1)
-		{
-			TempoDivider = 1;
-		}
-		if (Speed1 < 1)
-		{
-			Speed1 = 1;
-		}
+		
+		if (TempoDivider < 1) TempoDivider = 1;
+		if (Speed1 < 1)	Speed1 = 1;
+
 		string temp = "Tempo: ";
 		temp += to_string(BaseTempo / TempoDivider);
 		Text(temp.c_str());
 		NewLine();
 		Text("Track Length");
 		InputInt("##Track Length", &TrackLength, 1, 16);
+		
 		if (TrackLength > 256) TrackLength = 256;
 		if (TrackLength < 1) TrackLength = 1;
+		
 		NewLine();
 		Text("Highlight 1");
 		InputInt("##Highlight 1", &Highlight1, 1, 1);
@@ -1388,6 +1370,7 @@ void Tracker::Speed_View()
 		{
 			Highlight2 = 1;
 		}
+		/*
 		NewLine();
 		Text("Region");
 		for (int n = 0; n < 2; n++)
@@ -1398,7 +1381,7 @@ void Tracker::Speed_View()
 				reg = (Region)SelectedRegion;
 				SG.Emu_APU.reg = (Region)SelectedRegion;
 			}
-		}
+		}*/
 	}
 	End();
 }
@@ -1512,18 +1495,6 @@ void Tracker::Info_View()
 				}
 			}
 			LastPos += (EchoSpace * GetWindowWidth() * 0.95f) / MaxRange;
-
-			/*
-			if (GetIO().MousePos.x > xpos + LastPos && GetIO().MousePos.x < xpos + (LastPos - GetWindowWidth() * 0.95f))
-			{
-				if (GetIO().MousePos.y > ypos && GetIO().MousePos.y < ypos + BoxHeight)
-				{
-					BeginTooltip();
-					Text("Empty Space");
-					EndTooltip();
-				}
-			}
-			*/
 
 		}
 	}
@@ -1678,7 +1649,7 @@ void Tracker::Export_View()
 			{
 				Text("Export Type");
 				if (BeginCombo("##Export Type", TechnicalTypeNames[SelectedTechnicalType].c_str())) {
-					for (int x = 0; x < 3; x++)
+					for (int x = 0; x < 2; x++)
 					{
 						bool Selected = (SelectedTechnicalType == x);
 						if (Selectable(TechnicalTypeNames[x].c_str(), Selected))
@@ -1694,6 +1665,7 @@ void Tracker::Export_View()
 				}
 
 				NewLine();
+				/*
 				Text("Address");
 				if (SG.Emu_APU.SONG_ADDR > 65535) {
 					SG.Emu_APU.SONG_ADDR = 65535;
@@ -1702,6 +1674,7 @@ void Tracker::Export_View()
 					SG.Emu_APU.SONG_ADDR = 0;
 				}
 				InputInt("##addr", (int*)&SG.Emu_APU.SONG_ADDR, 0x10, 0x1000);
+				*/
 				EndTabItem();
 			}
 			NewLine();
@@ -1712,7 +1685,6 @@ void Tracker::Export_View()
 			}
 			SameLine();
 			if (Button("EXPORT", size)) {
-
 			}
 
 			EndTabBar();
@@ -1724,18 +1696,11 @@ void Tracker::Export_View()
 //Core updates to the tracker state
 void Tracker::RunTracker()
 {
-	//Update audio buffer
-	if (SDL_GetQueuedAudioSize(dev) < SG.TRACKER_AUDIO_BUFFER * 8)
-	{
-		SG.Update(GetIO().DeltaTime, Channels, samples, CursorY, inst);
-		SG.Emu_APU.APU_Update(SG.Totalbuffer[0].data(), 2 * SG.TRACKER_AUDIO_BUFFER);
-		SDL_QueueAudio(dev, SG.Totalbuffer[0].data(), sizeof(Sint16) * 2 * SG.TRACKER_AUDIO_BUFFER);
-	}
-
 	//Upate the row index based off of tick timing
-	TickTimer -= GetIO().DeltaTime;
-	float BPM = (float)BaseTempo;
-	if (CursorY >= TrackLength-1 && PatternIndex >= patterns->size()-1)
+	
+	TickTimer -= SG.Emu_APU.APU_Return_Cycle_Since_Last_Frame();
+
+	if (CursorY >= TrackLength - 1 && PatternIndex >= patterns->size() - 1)
 	{
 		PlayingMode = false;
 	}
@@ -1743,28 +1708,32 @@ void Tracker::RunTracker()
 	{
 		CursorY = 0;
 		SelectedPattern++;
+		PatternIndex++;
+		int currentindex = 0;
 		for (int i = 0; i < 8; i++)
 		{
+			currentindex = patterns[i][SelectedPattern].Index;
 			for (int j = 0; j < TrackLength; j++)
 			{
-				Channels[i].Rows[j].note = StoragePatterns[patterns[i][SelectedPattern].Index].SavedRows[j].note;
-				Channels[i].Rows[j].instrument = StoragePatterns[patterns[i][SelectedPattern].Index].SavedRows[j].instrument;
-				Channels[i].Rows[j].volume = StoragePatterns[patterns[i][SelectedPattern].Index].SavedRows[j].volume;
-				Channels[i].Rows[j].effect = StoragePatterns[patterns[i][SelectedPattern].Index].SavedRows[j].effect;
-				Channels[i].Rows[j].effectvalue = StoragePatterns[patterns[i][SelectedPattern].Index].SavedRows[j].effectvalue;
+				Channels[i].Rows[j].note =			StoragePatterns[currentindex].SavedRows[j].note;
+				Channels[i].Rows[j].instrument =	StoragePatterns[currentindex].SavedRows[j].instrument;
+				Channels[i].Rows[j].volume =		StoragePatterns[currentindex].SavedRows[j].volume;
+				Channels[i].Rows[j].effect =		StoragePatterns[currentindex].SavedRows[j].effect;
+				Channels[i].Rows[j].effectvalue =	StoragePatterns[currentindex].SavedRows[j].effectvalue;
 			}
 		}
 	}
-	else if (TickTimer < (BPM / (float)TempoDivider))
+	else if (TickTimer < 0)
 	{
+		TickTimer = 32000.0 / (float)BaseTempo * TempoDivider;
 		TickCounter++;
-		if (TickCounter > Speed1)
+		if (TickCounter > Speed1 * TempoDivider)
 		{
 			CursorY++;
 			UpdateRows();
 			TickCounter = 0;
 		}
-		TickTimer = 2;
+		UpdateTicks();
 	}
 }
 
@@ -1776,6 +1745,21 @@ void Tracker::UpdateRows()
 	}
 
 	//cout << "\nCurrent Value: " << ((double)CursorY - 1.0/(24.0 / (double)TrackLength) / (double)TrackLength) * ((TextSize + GetStyle().CellPadding.y * 2) * TrackLength);
+}
+
+void Tracker::UpdateTicks()
+{
+
+}
+//Update audio buffer, also runs SPC and DSP emulation
+void Tracker::UpdateAudioBuffer()
+{
+	if (SDL_GetQueuedAudioSize(dev) < SG.TRACKER_AUDIO_BUFFER * 8)
+	{
+		SG.Update(GetIO().DeltaTime, Channels, samples, CursorY, inst);
+		SG.Emu_APU.APU_Update(SG.Totalbuffer[0].data(), 2 * SG.TRACKER_AUDIO_BUFFER);
+		SDL_QueueAudio(dev, SG.Totalbuffer[0].data(), sizeof(Sint16) * 2 * SG.TRACKER_AUDIO_BUFFER);
+	}
 }
 
 void Tracker::ChannelInput(int CurPos, int x, int y)
@@ -1845,15 +1829,19 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 			switch (CurrentKey) {
 			case GLFW_KEY_HOME:
 				CursorY = 0;
+				SetScrollY(ScrollValue());
 				break;
 			case GLFW_KEY_END:
 				CursorY = TrackLength - 1;
+				SetScrollY(ScrollValue());
 				break;
 			case GLFW_KEY_PAGE_UP:
 				CursorY -= 16;
+				SetScrollY(ScrollValue());
 				break;
 			case GLFW_KEY_PAGE_DOWN:
 				CursorY += 16;
+				SetScrollY(ScrollValue());
 				break;
 			case GLFW_KEY_LEFT:
 				CursorPos--;
@@ -1880,11 +1868,22 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 			break;
 		case GLFW_KEY_ENTER://Controls if the tracker is in "Play" mode
 			PlayingMode = !PlayingMode;
-			if (!PlayingMode) SG.Emu_APU.APU_Audio_Stop();
+			if (!PlayingMode) {
+				SG.Emu_APU.APU_Audio_Stop();
+				SG.Emu_APU.APU_Audio_Start();
+			}
 			EditingMode = false;
 			break;
 		}
 
+		for (int i = 0; i < 24; i++)
+		{
+			if (CurrentKey == NoteInput[i])
+			{
+				SG.Emu_APU.APU_Play_Note_Editor(&Channels[CursorX], &inst[SelectedInst], i + (12 * Octave), true);
+			}
+		}
+		
 		if (EditingMode)
 		{
 			if (BoxSelected && CurrentKey == GLFW_KEY_DELETE)
@@ -2032,6 +2031,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 				}
 			}
 		}
+		
 		IsPressed = true;
 	}
 	if (SelectionBoxX2 < 0)
@@ -2301,6 +2301,22 @@ void Tracker::ErrorWindow()
 			ShowError = false;
 		}
 
+	}
+	End();
+}
+
+void Tracker::DSPDebugWindow()
+{
+	if(Begin("DSP Debug Window", 0)) {
+		Text("DSP regs");
+		NewLine();
+		Text("KON: ");
+		SameLine();
+		Text(to_string(SG.Emu_APU.APU_Debug_KON_State()).data());
+		NewLine();
+		Text("KOF: ");
+		SameLine();
+		Text(to_string(SG.Emu_APU.APU_Debug_KOF_State()).data());
 	}
 	End();
 }

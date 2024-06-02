@@ -59,7 +59,6 @@ void SnesAPUHandler::APU_Startup()
 			float exactpitch = StartValues[y] * (1 << x);
 			PitchTable.push_back((uint16_t)(exactpitch));
 			std::cout << PitchTable[y + (12 * x)] << ",";
-
 			//Write pitch table to memory as reference, last entry is at 0x01D7
 			//DSP_MEMORY[Pitch_Table_Page + addroff] = PitchTable[y + (12 * x)] & 0xFF;
 			//DSP_MEMORY[Pitch_Table_Page + addroff + 1] = (PitchTable[y + (12 * x)] >> 8) & 0xFF;
@@ -79,11 +78,12 @@ void SnesAPUHandler::APU_Update(spc_sample_t* Output, int BufferSize)
 	int ClockCycleRound = (BufferSize / 44100.0) * MAX_CLOCK_DSP;
 	int InterbufSize = (ClockCycleRound / 16);
 	if (InterbufSize % 2 == 1) InterbufSize++;
-	vector< array<spc_sample_t, 2> > InterBuf(InterbufSize * 2);
+	vector<array<spc_sample_t, 2>> InterBuf(InterbufSize * 2);
 
 	spc_dsp_set_output(Dsp, (spc_sample_t*)InterBuf.data(), InterBuf.size());
 
 	spc_dsp_run(Dsp, ClockCycleRound);
+	//spc_end_frame(Spc, ClockCycleRound);
 
 	float StepCount = 0;
 	float MaxBufNeeded = spc_dsp_sample_count(Dsp);
@@ -131,10 +131,12 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 
 		if (currentinst < 256 && currentinst != 0)
 		{
-			spc_dsp_write(Dsp, ChannelRegs[id].vol_l, 127 * (inst->LPan / 127.0) * (inst->Volume / 127.0));
-			spc_dsp_write(Dsp, ChannelRegs[id].vol_r, 127 * (inst->RPan / 127.0) * (inst->Volume / 127.0));
+			spc_dsp_write(Dsp, ChannelRegs[id].vol_l, (127 * (inst->LPan / 127.0) * (inst->Volume / 127.0)) * (inst->InvL ? -1 : 1));
+			spc_dsp_write(Dsp, ChannelRegs[id].vol_r, (127 * (inst->RPan / 127.0) * (inst->Volume / 127.0)) * (inst->InvR ? -1 : 1));
 			spc_dsp_write(Dsp, ChannelRegs[id].scrn, inst->CurrentSample.SampleADDR);
 			spc_dsp_write(Dsp, GLOBAL_eon, (int)inst->Echo << id);
+
+			spc_dsp_write(Dsp, GLOBAL_non, inst->Noise << id);
 
 			if (!inst->Noise)//Do some fuckery with the pitch register
 			{
@@ -145,7 +147,6 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 			}
 			else //We don't need to calculate pitches if we are playing noise
 			{
-				spc_dsp_write(Dsp, GLOBAL_non, inst->Noise << id);
 				spc_dsp_write(Dsp, GLOBAL_flg, inst->NoiseFreq);
 			}
 		}
@@ -179,6 +180,64 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 void SnesAPUHandler::APU_Evaluate_Channel_Regs(Channel* ch)
 {
 	//spc_dsp_write(Dsp, GLOBAL_eon, (int)ECHO_arr);
+}
+
+void SnesAPUHandler::APU_Play_Note_Editor(Channel* ch, Instrument* inst, int note, bool IsOn)
+{
+	int currentnote = note;
+	int id = ch->Index;
+
+	if (currentnote < STOP_COMMAND && currentnote != 0)//Assuming it's not a reserved note
+	{
+		int ADSR1 = 0;
+		int ADSR2 = 0;
+
+		ADSR1 += ((int)inst->EnvelopeUsed << 7);
+		ADSR1 += (inst->Decay << 4);
+		ADSR1 += (inst->Attack);
+
+		ADSR2 += (inst->Sustain << 5);
+		ADSR2 += (inst->Release);
+
+		spc_dsp_write(Dsp, ChannelRegs[id].adsr_1, ADSR1);
+		spc_dsp_write(Dsp, ChannelRegs[id].adsr_2, ADSR2);
+		spc_dsp_write(Dsp, ChannelRegs[id].gain, 0x7F);
+
+		spc_dsp_write(Dsp, GLOBAL_pmon, inst->PitchMod << id);
+
+		spc_dsp_write(Dsp, ChannelRegs[id].vol_l, (127 * (inst->LPan / 127.0) * (inst->Volume / 127.0)) * (inst->InvL ? -1 : 1));
+		spc_dsp_write(Dsp, ChannelRegs[id].vol_r, (127 * (inst->RPan / 127.0) * (inst->Volume / 127.0)) * (inst->InvR ? -1 : 1));
+		spc_dsp_write(Dsp, ChannelRegs[id].scrn, inst->CurrentSample.SampleADDR);
+		spc_dsp_write(Dsp, GLOBAL_eon, (int)inst->Echo << id);
+
+		spc_dsp_write(Dsp, GLOBAL_non, inst->Noise << id);
+		if (!inst->Noise)//Do some fuckery with the pitch register
+		{
+			uint16_t Pitch = inst->BRR_Pitch(pow(2.0, (currentnote - 48 + inst->NoteOff) / 12.0));
+
+			spc_dsp_write(Dsp, ChannelRegs[id].pit_l, Pitch & 0xFF);
+			spc_dsp_write(Dsp, ChannelRegs[id].pit_h, (Pitch >> 8) & 0xFF);
+		}
+		else //We don't need to calculate pitches if we are playing noise
+		{
+			spc_dsp_write(Dsp, GLOBAL_flg, inst->NoiseFreq);
+		}
+
+		if (IsOn)
+		{
+			spc_dsp_write(Dsp, GLOBAL_kon, 1 << id);
+			int kofcheck = spc_dsp_read(Dsp, GLOBAL_kof);
+			kofcheck &= ~(1 << id);
+			spc_dsp_write(Dsp, GLOBAL_kof, kofcheck);
+		}
+		else
+		{
+			spc_dsp_write(Dsp, GLOBAL_kof, 1 << id);
+			int kofcheck = spc_dsp_read(Dsp, GLOBAL_kon);
+			kofcheck &= ~(1 << id);
+			spc_dsp_write(Dsp, GLOBAL_kon, kofcheck);
+		}
+	}
 }
 
 //Delete SPC & DSP instance
@@ -348,11 +407,18 @@ void SnesAPUHandler::APU_Init_Echo()
 void SnesAPUHandler::APU_Audio_Stop()
 {
 	spc_dsp_write(Dsp, GLOBAL_kof, 0xFF);
+	spc_dsp_write(Dsp, GLOBAL_kon, 0x00);
 }
 
 void SnesAPUHandler::APU_Audio_Start()
 {
 	spc_dsp_write(Dsp, GLOBAL_kof, 0x00);
+	spc_dsp_write(Dsp, GLOBAL_kon, 0x00);
+}
+
+int SnesAPUHandler::APU_Return_Cycle_Since_Last_Frame()
+{
+	return spc_dsp_sample_count(Dsp) * 32;//32 samples per cycle
 }
 
 void SnesAPUHandler::APU_Debug_Dump_BRR()
@@ -397,4 +463,14 @@ void SnesAPUHandler::APU_Debug_Dump_FLG()
 		BRRFile << DSP_MEMORY[x];
 	}
 	BRRFile.close();
+}
+
+int SnesAPUHandler::APU_Debug_KON_State()
+{
+	return spc_dsp_read(Dsp, GLOBAL_kon);
+}
+
+int SnesAPUHandler::APU_Debug_KOF_State()
+{
+	return spc_dsp_read(Dsp, GLOBAL_kof);
 }
