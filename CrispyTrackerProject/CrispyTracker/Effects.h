@@ -2,16 +2,14 @@
 #include <iostream>
 
 enum EffectFlags {
-	arp_flag = 1,
-	port_up_flag = 2,
-	port_dw_flag = 4,
-	vibrato_flag = 8,
-	tremo_flag = 16,
-	panbrello_flag = 32,
-	volslide_flag = 64,
-	port_to_flag = 128,
-	port_up_ctrl_flag = 256,
-	port_dw_ctrl_flag = 512,
+	arp_flag = 1,				//Flag for arpeggio
+	port_flag = 2,				//Shared between portamento up and down
+	vibrato_flag = 4,			//Flag for vibrato
+	tremo_flag = 8,				//Flag for tremolando
+	panbrello_flag = 16,		//Flag for panbrello
+	volslide_flag = 32,			//Flag for volume sliding
+	port_to_flag = 64,			//Flag of portamento to note
+	port_ctrl_flag = 128,		//Flag for controlled portamento, shared between up and down
 };
 
 #define ARPEGGIO		0x00
@@ -159,5 +157,5 @@ public:
 	EffectFlags flags;
 	uint16_t Effect_Flags[8]; //Storing effect flags as a bit field, one for each channel: Currently this would store 16 possible effects at once
 	
-	uint16_t SPC_Flags[16]; //Stores the current value for the flag effects
+	uint8_t SPC_Flags[8]; //Stores the current value for the flag effects
 };

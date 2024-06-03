@@ -665,19 +665,22 @@ void Tracker::Instrument_View()//Instrument editor
 						int PreviousPoint = 16 - inst[SelectedInst].Attack;
 
 						float decayaccum = 32;
-						for (int j = PreviousPoint; j < PreviousPoint+(7-inst[SelectedInst].Decay); j++)
+						float base = inst[SelectedInst].Sustain * 4.57142857143;
+						for (int j = PreviousPoint; j < PreviousPoint+(8-inst[SelectedInst].Decay); j++)
 						{
-							decayaccum -= (32.0 - inst[SelectedInst].Sustain) / 7.0 / (float)inst[SelectedInst].Decay;
+							decayaccum -= ((32.0 - base) / (8.0 - inst[SelectedInst].Decay));
 							PlotArr[j] = decayaccum;
 						}
 						
 						PreviousPoint += (8 - inst[SelectedInst].Decay);
 						
-						for (int k = PreviousPoint; k < PreviousPoint+inst[SelectedInst].Release; k++)
+						float relaccum = base;
+						for (int k = PreviousPoint; k < PreviousPoint + (32 - inst[SelectedInst].Release); k++)
 						{
 							if (inst[SelectedInst].Sustain > 0)
 							{
-								PlotArr[k] = (inst[SelectedInst].Sustain * 4) - ((((float)k - PreviousPoint)*32) / inst[SelectedInst].Release);
+								relaccum -= (base / (32 - inst[SelectedInst].Release));
+								PlotArr[k] = relaccum;
 							}
 							else
 							{
@@ -725,9 +728,10 @@ void Tracker::Instrument_View()//Instrument editor
 
 						int PreviousPoint = inst[SelectedInst].Attack + 1;
 
+						int decaccum = 32;
 						for (int j = PreviousPoint; j < PreviousPoint + (8 - inst[SelectedInst].Decay); j++)
 						{
-							PlotArr[j] = ((inst[SelectedInst].Decay * 4) / (((float)j - PreviousPoint + 1))) + (inst[SelectedInst].Sustain * 4);
+							PlotArr[j] = decaccum;
 						}
 
 						PreviousPoint += (8 - inst[SelectedInst].Decay);
@@ -759,10 +763,6 @@ void Tracker::Instrument_View()//Instrument editor
 				Checkbox("Echo", &inst[SelectedInst].Echo);
 
 				Checkbox("Noise     ", &inst[SelectedInst].Noise);
-				if (inst[SelectedInst].Noise)
-				{
-					SliderInt("Noise Freq ", &inst[SelectedInst].NoiseFreq, 0, 31);
-				}
 			}
 			else
 			{
@@ -1543,13 +1543,17 @@ void Tracker::SetupInstr()
 	DefaultInst.Volume = 127;
 	DefaultInst.LPan = 127;
 	DefaultInst.RPan = 127;
-	DefaultInst.NoiseFreq = 0;
 	DefaultInst.Gain = 0;
 	DefaultInst.InvL = false;
 	DefaultInst.InvR = false;
 	DefaultInst.PitchMod = false;
 	DefaultInst.Echo = false;
 	DefaultInst.Noise = false;
+	DefaultInst.Attack = 0;
+	DefaultInst.Decay = 0;
+	DefaultInst.Sustain = 0;
+	DefaultInst.Decay2 = 0;
+	DefaultInst.Release = 0;
 	inst.push_back(DefaultInst);
 
 	DefaultSample.SampleIndex = 0;
@@ -1749,8 +1753,12 @@ void Tracker::UpdateRows()
 
 void Tracker::UpdateTicks()
 {
-
+	for (int x = 0; x < 8; x++)
+	{
+		SG.Emu_APU.APU_Process_Effects(&Channels[x], &inst[Channels[x].CurrentInstrument], CursorY);
+	}
 }
+
 //Update audio buffer, also runs SPC and DSP emulation
 void Tracker::UpdateAudioBuffer()
 {

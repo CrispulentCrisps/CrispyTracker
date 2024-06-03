@@ -99,7 +99,6 @@ void SnesAPUHandler::APU_Update(spc_sample_t* Output, int BufferSize)
 	spc_filter_run(Filter, Output, BufferSize);
 }
 
-
 //Updating the registers of the DSP to reflect the changes in the track as it goes by
 void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int ypos)
 {
@@ -147,7 +146,7 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 			}
 			else //We don't need to calculate pitches if we are playing noise
 			{
-				spc_dsp_write(Dsp, GLOBAL_flg, inst->NoiseFreq);
+				spc_dsp_write(Dsp, GLOBAL_flg, currentnote % 32);
 			}
 		}
 
@@ -220,7 +219,7 @@ void SnesAPUHandler::APU_Play_Note_Editor(Channel* ch, Instrument* inst, int not
 		}
 		else //We don't need to calculate pitches if we are playing noise
 		{
-			spc_dsp_write(Dsp, GLOBAL_flg, inst->NoiseFreq);
+			spc_dsp_write(Dsp, GLOBAL_flg, currentnote%32);
 		}
 
 		if (IsOn)
@@ -237,6 +236,33 @@ void SnesAPUHandler::APU_Play_Note_Editor(Channel* ch, Instrument* inst, int not
 			kofcheck &= ~(1 << id);
 			spc_dsp_write(Dsp, GLOBAL_kon, kofcheck);
 		}
+	}
+}
+
+void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos)
+{
+	int note = ch->Rows[ypos].note;
+	int effect = ch->Rows[ypos].effect;
+	int value = ch->Rows[ypos].effectvalue;
+	int id = ch->Index;
+
+	switch (effect)
+	{
+	case ARPEGGIO:
+		break;
+	case PORT_UP:
+		value != 0 ? EffectHandle.SPC_Flags[id] |= port_flag : EffectHandle.SPC_Flags[id] &= ~port_flag;
+		break;
+	}
+
+	if ((EffectHandle.SPC_Flags[id] >> 1) & 1)//Check if the effect flag is on
+	{
+		uint16_t pit = spc_dsp_read(Dsp, ChannelRegs[id].pit_l) + spc_dsp_read(Dsp, ChannelRegs[id].pit_h);
+		pit += value;
+		pit = min((int)pit, 0x3FFF);
+		pit = max((int)pit, 0);
+		spc_dsp_write(Dsp, ChannelRegs[id].pit_l, pit & 0xFF);
+		spc_dsp_write(Dsp, ChannelRegs[id].pit_h, (pit >> 8) & 0xFF);
 	}
 }
 

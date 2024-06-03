@@ -122,6 +122,8 @@ public:
     void APU_Evaluate_Channel_Regs(Channel* ch);
     void APU_Play_Note_Editor(Channel* ch, Instrument* inst, int note, bool IsOn);
 
+    void APU_Process_Effects(Channel* ch, Instrument* inst, int ypos);
+
     void APU_Kill();
     void APU_Set_Sample_Memory(std::vector<Sample>& samp);
     void APU_Set_Sample_Directory(std::vector<Sample>& samp);

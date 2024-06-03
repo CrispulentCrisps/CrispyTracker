@@ -32,8 +32,6 @@ public:
 	int LPan;
 	//Right ear panning (will only go from -128 to 127)
 	int RPan;
-	//Frequency of noise in noise mode (0 to 31)
-	int NoiseFreq;
 	//Gain for raising audio volume (0-255)
 	int Gain; 
 	//Invert left values
