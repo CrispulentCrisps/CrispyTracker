@@ -113,8 +113,11 @@ public:
     int LastSamplePoint;
 
     std::vector<uint16_t> PitchTable;
-    
+
     EffectsHandler EffectHandle;
+
+    int16_t ChannelVolume_L[8];
+    int16_t ChannelVolume_R[8];
 
     void APU_Startup();
     void APU_Update(spc_sample_t* Output, int BufferSize);
@@ -122,7 +125,7 @@ public:
     void APU_Evaluate_Channel_Regs(Channel* ch);
     void APU_Play_Note_Editor(Channel* ch, Instrument* inst, int note, bool IsOn);
 
-    void APU_Process_Effects(Channel* ch, Instrument* inst, int ypos);
+    void APU_Process_Effects(Channel* ch, Instrument* inst, int ypos, int* speed, int* patindex);
 
     void APU_Kill();
     void APU_Set_Sample_Memory(std::vector<Sample>& samp);
@@ -147,4 +150,6 @@ public:
 
     int APU_Debug_KON_State();
     int APU_Debug_KOF_State();
+
+    int APU_Debug_PIT_State(int index, int byte);
 };

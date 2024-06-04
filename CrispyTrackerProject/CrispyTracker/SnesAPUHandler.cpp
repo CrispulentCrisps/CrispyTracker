@@ -27,6 +27,10 @@ void SnesAPUHandler::APU_Startup()
 		ChannelRegs[i].gain = (i * 16) + 7;
 		ChannelRegs[i].envx = (i * 16) + 8;
 		ChannelRegs[i].outx = (i * 16) + 9;
+
+		//Set the channel volume to max
+		ChannelVolume_L[i] = 127;
+		ChannelVolume_R[i] = 127;
 	}
 	//Setup the registers
 	spc_dsp_write(Dsp, GLOBAL_dir, Sample_Dir_Page >> 8);
@@ -59,7 +63,7 @@ void SnesAPUHandler::APU_Startup()
 			float exactpitch = StartValues[y] * (1 << x);
 			PitchTable.push_back((uint16_t)(exactpitch));
 			std::cout << PitchTable[y + (12 * x)] << ",";
-			//Write pitch table to memory as reference, last entry is at 0x01D7
+			//Write pitch table to memory as reference
 			//DSP_MEMORY[Pitch_Table_Page + addroff] = PitchTable[y + (12 * x)] & 0xFF;
 			//DSP_MEMORY[Pitch_Table_Page + addroff + 1] = (PitchTable[y + (12 * x)] >> 8) & 0xFF;
 			addroff += 2;
@@ -110,6 +114,12 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 	int currentvalue = ch->Rows[ypos].effectvalue;
 	int id = ch->Index;
 
+	if (currentvol < STOP_COMMAND) 
+	{
+		ChannelVolume_L[id] = currentvol * inst->SetVolume(1);
+		ChannelVolume_R[id] = currentvol * inst->SetVolume(-1);
+	}
+
 	if (currentnote < STOP_COMMAND && currentnote != 0)//Assuming it's not a reserved note
 	{
 		int ADSR1 = 0;
@@ -130,8 +140,8 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 
 		if (currentinst < 256 && currentinst != 0)
 		{
-			spc_dsp_write(Dsp, ChannelRegs[id].vol_l, (127 * (inst->LPan / 127.0) * (inst->Volume / 127.0)) * (inst->InvL ? -1 : 1));
-			spc_dsp_write(Dsp, ChannelRegs[id].vol_r, (127 * (inst->RPan / 127.0) * (inst->Volume / 127.0)) * (inst->InvR ? -1 : 1));
+			spc_dsp_write(Dsp, ChannelRegs[id].vol_l, ChannelVolume_L[id] * inst->SetVolume(1));
+			spc_dsp_write(Dsp, ChannelRegs[id].vol_r, ChannelVolume_R[id] * inst->SetVolume(-1));
 			spc_dsp_write(Dsp, ChannelRegs[id].scrn, inst->CurrentSample.SampleADDR);
 			spc_dsp_write(Dsp, GLOBAL_eon, (int)inst->Echo << id);
 
@@ -204,8 +214,8 @@ void SnesAPUHandler::APU_Play_Note_Editor(Channel* ch, Instrument* inst, int not
 
 		spc_dsp_write(Dsp, GLOBAL_pmon, inst->PitchMod << id);
 
-		spc_dsp_write(Dsp, ChannelRegs[id].vol_l, (127 * (inst->LPan / 127.0) * (inst->Volume / 127.0)) * (inst->InvL ? -1 : 1));
-		spc_dsp_write(Dsp, ChannelRegs[id].vol_r, (127 * (inst->RPan / 127.0) * (inst->Volume / 127.0)) * (inst->InvR ? -1 : 1));
+		spc_dsp_write(Dsp, ChannelRegs[id].vol_l, ChannelVolume_L[id] * inst->SetVolume(1));
+		spc_dsp_write(Dsp, ChannelRegs[id].vol_r, ChannelVolume_R[id] * inst->SetVolume(-1));
 		spc_dsp_write(Dsp, ChannelRegs[id].scrn, inst->CurrentSample.SampleADDR);
 		spc_dsp_write(Dsp, GLOBAL_eon, (int)inst->Echo << id);
 
@@ -239,30 +249,199 @@ void SnesAPUHandler::APU_Play_Note_Editor(Channel* ch, Instrument* inst, int not
 	}
 }
 
-void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos)
+void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos, int* speed, int* patindex)
 {
 	int note = ch->Rows[ypos].note;
 	int effect = ch->Rows[ypos].effect;
 	int value = ch->Rows[ypos].effectvalue;
 	int id = ch->Index;
 
-	switch (effect)
+	if (value < STOP_COMMAND)
 	{
-	case ARPEGGIO:
-		break;
-	case PORT_UP:
-		value != 0 ? EffectHandle.SPC_Flags[id] |= port_flag : EffectHandle.SPC_Flags[id] &= ~port_flag;
-		break;
+		switch (effect)
+		{
+		case ARPEGGIO:
+			break;
+		case PORT_UP:
+			value != 0 ? EffectHandle.Effect_Flags[id] |= port_flag : EffectHandle.Effect_Flags[id] &= ~port_flag;
+			EffectHandle.Port_Value[id] = value;
+			break;
+		case PORT_DOWN:
+			value != 0 ? EffectHandle.Effect_Flags[id] |= port_flag : EffectHandle.Effect_Flags[id] &= ~port_flag;
+			EffectHandle.Port_Value[id] = -value;
+			break;
+		case PORT_TO:
+			break;
+		case VIBRATO:
+			value != 0 ? EffectHandle.Effect_Flags[id] |= vibrato_flag : EffectHandle.Effect_Flags[id] &= ~vibrato_flag;
+			EffectHandle.Vibrato_Value[id] = value;
+			EffectHandle.Base_Pit[id] = spc_dsp_read(Dsp, ChannelRegs[id].pit_l) + (spc_dsp_read(Dsp, ChannelRegs[id].pit_h) << 8);
+			EffectHandle.Sine_Index[id] = 0;
+			break;
+		case TREMOLANDO:
+			value != 0 ? EffectHandle.Effect_Flags[id] |= tremo_flag : EffectHandle.Effect_Flags[id] &= ~tremo_flag;
+			EffectHandle.Tremo_Value[id] = value;
+			EffectHandle.Base_Vol_L[id] = ChannelVolume_L[id] * inst->SetVolume(1);
+			EffectHandle.Base_Vol_R[id] = ChannelVolume_R[id] * inst->SetVolume(-1);
+			EffectHandle.Sine_Index[id] = 0;
+			break;
+		case PANNING:
+			break;
+		case SPEED:
+			break;
+		case VOLSLIDE:
+			break;
+		case GOTO:
+			break;
+		case RETRIGGER:
+			break;
+		case BREAK:
+			break;
+		case ADSR_ENV:
+			break;
+		case ADSR_TYP:
+			break;
+		case ADSR_ATK:
+			break;
+		case ADSR_DEC:
+			break;
+		case ADSR_DC2:
+			break;
+		case ADSR_SUS:
+			break;
+		case ADSR_REL:
+			break;
+		case GAIN:
+			break;
+		case INVL:
+			break;
+		case INVR:
+			break;
+		case NOISE_SET:
+			break;
+		case PITCHMOD:
+			break;
+		case ECHO:
+			break;
+		case PANBRELLO:
+			break;
+		case ECHO_DEL:
+			break;
+		case ECHO_FDB:
+			break;
+		case ECHO_L:
+			break;
+		case ECHO_R:
+			break;
+		case ECHO_FIL_1:
+			break;
+		case ECHO_FIL_2:
+			break;
+		case ECHO_FIL_3:
+			break;
+		case ECHO_FIL_4:
+			break;
+		case ECHO_FIL_5:
+			break;
+		case ECHO_FIL_6:
+			break;
+		case ECHO_FIL_7:
+			break;
+		case ECHO_FIL_8:
+			break;
+		case FLAG_0:
+			break;
+		case FLAG_1:
+			break;
+		case FLAG_2:
+			break;
+		case FLAG_3:
+			break;
+		case FLAG_4:
+			break;
+		case FLAG_5:
+			break;
+		case FLAG_6:
+			break;
+		case FLAG_7:
+			break;
+		case FLAG_8:
+			break;
+		case FLAG_9:
+			break;
+		case FLAG_A:
+			break;
+		case FLAG_B:
+			break;
+		case FLAG_C:
+			break;
+		case FLAG_D:
+			break;
+		case FLAG_E:
+			break;
+		case FLAG_F:
+			break;
+		case ARP_SPEED:
+			break;
+		case PORT_UP_CTRL:
+			break;
+		case PORT_DOWN_CTRL:
+			break;
+		case GLOABL_PAN_L:
+			break;
+		case GLOABL_PAN_R:
+			break;
+		case GLOBAL_VOL:
+			break;
+		case END:
+			break;
+		}
 	}
 
-	if ((EffectHandle.SPC_Flags[id] >> 1) & 1)//Check if the effect flag is on
+	//Portamento
+	if ((EffectHandle.Effect_Flags[id] >> 1) & 1)//Check if the effect flag is on
 	{
-		uint16_t pit = spc_dsp_read(Dsp, ChannelRegs[id].pit_l) + spc_dsp_read(Dsp, ChannelRegs[id].pit_h);
-		pit += value;
-		pit = min((int)pit, 0x3FFF);
-		pit = max((int)pit, 0);
+		uint16_t pit = spc_dsp_read(Dsp, ChannelRegs[id].pit_l) + (spc_dsp_read(Dsp, ChannelRegs[id].pit_h) << 8);
+		if (pit + value > 0 && pit + value < 0x3FFF)
+		{
+			pit += EffectHandle.Port_Value[id];
+		}
+		else
+		{
+			EffectHandle.Effect_Flags[id] &= ~port_flag;//We can just set the flag off to not impede with the CPU
+		}
 		spc_dsp_write(Dsp, ChannelRegs[id].pit_l, pit & 0xFF);
 		spc_dsp_write(Dsp, ChannelRegs[id].pit_h, (pit >> 8) & 0xFF);
+	}
+
+	//Vibrato
+	if ((EffectHandle.Effect_Flags[id] >> 2) & 1)//Check if the effect flag is on
+	{
+		uint8_t depth = EffectHandle.Vibrato_Value[id] & 0x0F;
+		uint8_t speed = (EffectHandle.Vibrato_Value[id] >> 4) & 0x0F;
+		uint16_t pit = EffectHandle.Base_Pit[id];
+		pit += ((SineTable[EffectHandle.Sine_Index[id]]) / 16) * depth;
+		EffectHandle.Sine_Index[id] += speed;
+		spc_dsp_write(Dsp, ChannelRegs[id].pit_l, pit & 0xFF);
+		spc_dsp_write(Dsp, ChannelRegs[id].pit_h, (pit >> 8) & 0xFF);
+	}
+	
+	//Tremolando	
+	if ((EffectHandle.Effect_Flags[id] >> 3) & 1)//Check if the effect flag is on
+	{
+		uint8_t depth = EffectHandle.Tremo_Value[id] & 0x0F;
+		uint8_t speed = (EffectHandle.Tremo_Value[id] >> 4) & 0x0F;
+		int8_t vol_l = EffectHandle.Base_Vol_L[id];
+		int8_t vol_r = EffectHandle.Base_Vol_R[id];
+		int8_t dif = (SineTable[EffectHandle.Sine_Index[id]] / 16) * depth;
+
+		if (vol_l + dif >= -128 && vol_l + dif <= 127) vol_l += dif / (inst->LPan > 0 ? inst->LPan : 1);
+		if (vol_r + dif >= -128 && vol_r + dif <= 127) vol_r += dif / (inst->RPan > 0 ? inst->RPan : 1);
+		
+		spc_dsp_write(Dsp, ChannelRegs[id].vol_l, vol_l);
+		spc_dsp_write(Dsp, ChannelRegs[id].vol_r, vol_r);
+		
+		EffectHandle.Sine_Index[id] += speed;
 	}
 }
 
@@ -499,4 +678,10 @@ int SnesAPUHandler::APU_Debug_KON_State()
 int SnesAPUHandler::APU_Debug_KOF_State()
 {
 	return spc_dsp_read(Dsp, GLOBAL_kof);
+}
+
+int SnesAPUHandler::APU_Debug_PIT_State(int index, int byte)
+{
+	if (!byte) return spc_dsp_read(Dsp, ChannelRegs[index].pit_l);
+	else  return spc_dsp_read(Dsp, ChannelRegs[index].pit_h);
 }

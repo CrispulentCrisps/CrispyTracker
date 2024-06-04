@@ -69,6 +69,7 @@ public:
 	bool StopSample = true;
 
 	uint16_t BRR_Pitch(double pit);
+	double SetVolume(int Pan);//Determines volume, 1 for RIGHT, -1 for LEFT
 };
 
 #endif // !Instrument

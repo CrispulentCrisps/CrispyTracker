@@ -7,7 +7,7 @@
 
 //Maximum column values
 #define MAX_INSTRUMENT 127
-#define MAX_VOLUME 255
+#define MAX_VOLUME 127
 #define MAX_EFFECT 255
 #define MAX_EFFECT_VALUE 255
 

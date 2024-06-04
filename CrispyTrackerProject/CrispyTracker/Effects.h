@@ -1,24 +1,13 @@
 #pragma once
 #include <iostream>
 
-enum EffectFlags {
-	arp_flag = 1,				//Flag for arpeggio
-	port_flag = 2,				//Shared between portamento up and down
-	vibrato_flag = 4,			//Flag for vibrato
-	tremo_flag = 8,				//Flag for tremolando
-	panbrello_flag = 16,		//Flag for panbrello
-	volslide_flag = 32,			//Flag for volume sliding
-	port_to_flag = 64,			//Flag of portamento to note
-	port_ctrl_flag = 128,		//Flag for controlled portamento, shared between up and down
-};
-
 #define ARPEGGIO		0x00
 #define PORT_UP			0x01
 #define PORT_DOWN		0x02
 #define PORT_TO			0x03
 #define VIBRATO			0x04
-#define TREMOLANDO		0x05
 
+#define TREMOLANDO		0x07
 #define PANNING			0x08
 #define SPEED			0x09
 #define VOLSLIDE		0x0A
@@ -36,9 +25,9 @@ enum EffectFlags {
 #define ADSR_REL		0x16
 #define GAIN			0x17
 #define INVL			0x18
-#define NOISESET		0x19
-#define NOISEFREQ		0x1A
-#define PTCHMOD			0x1B
+#define INVR			0x19
+#define NOISE_SET		0x1A
+#define PITCHMOD		0x1B
 #define ECHO			0x1C
 
 #define PANBRELLO		0x20
@@ -47,14 +36,14 @@ enum EffectFlags {
 #define ECHO_FDB		0x31
 #define ECHO_L			0x32
 #define ECHO_R			0x33
-#define ECHO_FIL1		0x34
-#define ECHO_FIL2		0x35
-#define ECHO_FIL3		0x36
-#define ECHO_FIL4		0x37
-#define ECHO_FIL5		0x38
-#define ECHO_FIL6		0x39
-#define ECHO_FIL7		0x3A
-#define ECHO_FIL8		0x3B
+#define ECHO_FIL_1		0x34
+#define ECHO_FIL_2		0x35
+#define ECHO_FIL_3		0x36
+#define ECHO_FIL_4		0x37
+#define ECHO_FIL_5		0x38
+#define ECHO_FIL_6		0x39
+#define ECHO_FIL_7		0x3A
+#define ECHO_FIL_8		0x3B
 
 //Flags for music-code interchange
 #define FLAG_0			0xC0
@@ -75,11 +64,12 @@ enum EffectFlags {
 #define FLAG_F			0xCF
 
 //Extended effects
+#define ARP_SPEED		0xE0//Controls arpeggio speed
 #define PORT_UP_CTRL	0xE1//Portamento up controlled
 #define PORT_DOWN_CTRL	0xE2//Portamento down controlled
 
-#define GLOABL_PANL		0xE8//Global L
-#define GLOABL_PANR		0xE9//Global R
+#define GLOABL_PAN_L	0xE8//Global L
+#define GLOABL_PAN_R	0xE9//Global R
 #define GLOBAL_VOL		0xEA//Global Volume
 
 #define END				0xFF//Ends the track
@@ -109,7 +99,7 @@ enum EffectFlags {
 #define INVL_DESC			"18xy Invert Left [x: Inv L, y: Inv R,] Inverts audio on the specific channel"
 #define NOISESET_DESC		"19xx Set Noise [0: off, 1: on] Sets audio generator to play"
 #define NOISEFREQ_DESC		"1Axx Set Noise Frequency [xx: ] Sets the frequency for the noise generator"
-#define PTCHMOD_DESC		"1Bxx Set Pitch Modulation [0: off, 1: on] Enables/Disables the Pitch Mod"
+#define PITCHMOD_DESC		"1Bxx Set Pitch Modulation [0: off, 1: on] Enables/Disables the Pitch Mod"
 #define ECHO_DESC			"1Cxx Set Echo [0: off, 1: on] Enables/Disables the Echo"
 							
 #define PANBRLLO_DESC		"20xy Panbrello [x: speed, y: depth] Oscillates the panning of the note"
@@ -146,16 +136,73 @@ enum EffectFlags {
 
 #define PORT_UP_CTRL_DESC	"E1xy Portamento up [x: semitone, y: speed] Slides the note pitch up by X semitones at Y speed"
 #define PORT_DOWN_CTRL_DESC	"E2xy Portamento down [x: semitone, y: speed] Slides the note pitch down by X semitones at Y speed"
-#define PANL_DESC			"E8xx Set Global Left Panning Volume [xx: l value] Sets the Global Left panning of the tune"
-#define PANR_DESC			"E9xx Set Global Right Panning Volume [xx: r value] Sets the Global Right panning of the tune"
+#define GLOBAL_PAN_L_DESC	"E8xx Set Global Left Panning Volume [xx: l value] Sets the Global Left panning of the tune"
+#define GLOBAL_PAN_R_DESC	"E9xx Set Global Right Panning Volume [xx: r value] Sets the Global Right panning of the tune"
 #define GLOBAL_VOL_DESC		"EAxx Set Global Volume [xx: volume] Set's the Global Volume of the track"		
 
 #define END_DESC			"FFxx End Tune [xx: end tune] Will end the tune no matter the value"
 
+const int16_t SineTable[256] = {
+	 0,     6,    13,    19,    25,    31,    37,
+	44,    50,    56,    62,    68,    74,    80,
+	86,    92,    98,   103,   109,   115,   120,
+   126,   131,   136,   142,   147,   152,   157,
+   162,   167,   171,   176,   180,   185,   189,
+   193,   197,   201,   205,   208,   212,   215,
+   219,   222,   225,   228,   231,   233,   236,
+   238,   240,   242,   244,   246,   247,   249,
+   250,   251,   252,   253,   254,   254,   255,
+   255,   255,   255,   255,   254,   254,   253,
+   252,   251,   250,   249,   247,   246,   244,
+   242,   240,   238,   236,   233,   231,   228,
+   225,   222,   219,   215,   212,   208,   205,
+   201,   197,   193,   189,   185,   180,   176,
+   171,   167,   162,   157,   152,   147,   142,
+   136,   131,   126,   120,   115,   109,   103,
+	98,    92,    86,    80,    74,    68,    62,
+	56,    50,    44,    37,    31,    25,    19,
+	13,     6,     0,    -6,   -13,   -19,   -25,
+   -31,   -37,   -44,   -50,   -56,   -62,   -68,
+   -74,   -80,   -86,   -92,   -98,  -103,  -109,
+  -115,  -120,  -126,  -131,  -136,  -142,  -147,
+  -152,  -157,  -162,  -167,  -171,  -176,  -180,
+  -185,  -189,  -193,  -197,  -201,  -205,  -208,
+  -212,  -215,  -219,  -222,  -225,  -228,  -231,
+  -233,  -236,  -238,  -240,  -242,  -244,  -246,
+  -247,  -249,  -250,  -251,  -252,  -253,  -254,
+  -254,  -255,  -255,  -255,  -255,  -255,  -254,
+  -254,  -253,  -252,  -251,  -250,  -249,  -247,
+  -246,  -244,  -242,  -240,  -238,  -236,  -233,
+  -231,  -228,  -225,  -222,  -219,  -215,  -212,
+  -208,  -205,  -201,  -197,  -193,  -189,  -185,
+  -180,  -176,  -171,  -167,  -162,  -157,  -152,
+  -147,  -142,  -136,  -131,  -126,  -120,  -115,
+  -109,  -103,   -98,   -92,   -86,   -80,   -74,
+   -68,   -62,   -56,   -50,   -44,   -37,   -31,
+   -25,   -19,   -13,    -6 
+};
+
+enum EffectFlags {
+	arp_flag = 1,				//Flag for arpeggio
+	port_flag = 2,				//Flag for portamento down
+	vibrato_flag = 4,			//Flag for vibrato
+	tremo_flag = 8,				//Flag for tremolando
+	panbrello_flag = 16,		//Flag for panbrello
+	volslide_flag = 32,			//Flag for volume sliding
+	port_to_flag = 64,			//Flag of portamento to note
+	port_ctrl_flag = 128,		//Flag for controlled portamento, shared between up and down
+};
+
 class EffectsHandler {
 public:
-	EffectFlags flags;
-	uint16_t Effect_Flags[8]; //Storing effect flags as a bit field, one for each channel: Currently this would store 16 possible effects at once
+	uint8_t Effect_Flags[8];	//Storing effect flags as a bit field, one for each channel: Currently this would store 16 possible effects at once
+	uint16_t SPC_Flags[16];		//Stores the current value for the flag effects
 	
-	uint8_t SPC_Flags[8]; //Stores the current value for the flag effects
+	int16_t	Port_Value[8];		//Stores portamento value
+	int16_t Vibrato_Value[8];	//Stores vibrato value
+	int16_t Base_Pit[8];		//Stores base pitch
+	int8_t Base_Vol_L[8];		//Stores base volume for L
+	int8_t Base_Vol_R[8];		//Stores base volume for R
+	uint8_t Sine_Index[8];		//Stores the index of the position in the sine table
+	uint8_t Tremo_Value[8];		//Stores the value held in the tremolando effect
 };

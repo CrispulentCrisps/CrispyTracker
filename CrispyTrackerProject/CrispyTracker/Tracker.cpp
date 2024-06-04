@@ -1755,7 +1755,7 @@ void Tracker::UpdateTicks()
 {
 	for (int x = 0; x < 8; x++)
 	{
-		SG.Emu_APU.APU_Process_Effects(&Channels[x], &inst[Channels[x].CurrentInstrument], CursorY);
+		SG.Emu_APU.APU_Process_Effects(&Channels[x], &inst[Channels[x].CurrentInstrument], CursorY, &Speed1, &PatternIndex);
 	}
 }
 
@@ -1862,10 +1862,12 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 			case GLFW_KEY_DOWN:
 				CursorY += (MoveByStep) ? Step : 1;
 				BoxSelected = false;
+				SetScrollY(ScrollValue());
 				break;
 			case GLFW_KEY_UP:
 				CursorY -= (MoveByStep) ? Step : 1;
 				BoxSelected = false;
+				SetScrollY(ScrollValue());
 				break;
 			}
 		}
@@ -1888,7 +1890,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 		{
 			if (CurrentKey == NoteInput[i])
 			{
-				SG.Emu_APU.APU_Play_Note_Editor(&Channels[CursorX], &inst[SelectedInst], i + (12 * Octave), true);
+				SG.Emu_APU.APU_Play_Note_Editor(&Channels[CursorX], &inst[SelectedInst], i + (12 * Octave), CurPos == NOTE);
 			}
 		}
 		
@@ -2317,14 +2319,29 @@ void Tracker::DSPDebugWindow()
 {
 	if(Begin("DSP Debug Window", 0)) {
 		Text("DSP regs");
-		NewLine();
 		Text("KON: ");
 		SameLine();
 		Text(to_string(SG.Emu_APU.APU_Debug_KON_State()).data());
-		NewLine();
 		Text("KOF: ");
 		SameLine();
 		Text(to_string(SG.Emu_APU.APU_Debug_KOF_State()).data());
+		NewLine();
+		if (BeginTable("Pitch Table", 2, TABLE_FLAGS)) {
+			for (int x = 0; x < 8; x++)
+			{
+				TableNextColumn();
+				string channeltext = "Channel ";
+				channeltext += to_string(x) + " PIT_L: " + to_string(SG.Emu_APU.APU_Debug_PIT_State(x, 0));
+				Text(channeltext.data());
+				TableNextColumn();
+				string channeltext2 = "Channel ";
+				channeltext2 += to_string(x) + " PIT_H: " + to_string(SG.Emu_APU.APU_Debug_PIT_State(x, 1));
+				Text(channeltext2.data());
+				TableNextColumn();
+				TableNextRow();
+			}
+			EndTable();
+		}
 	}
 	End();
 }
