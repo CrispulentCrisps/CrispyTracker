@@ -18,7 +18,6 @@ class Instrument
 public:
 	Instrument();
 	~Instrument();
-	//Overall data size is 8 bytes and 2 bits
 	//Instrument index
 	int Index;
 	//Instrument name
@@ -69,7 +68,7 @@ public:
 	bool StopSample = true;
 
 	uint16_t BRR_Pitch(double pit);
-	double SetVolume(int Pan);//Determines volume, 1 for RIGHT, -1 for LEFT
+	double SetVolume(int Pan);//Determines volume, 1 for RIGHT, -1 for LEFT. Output is normalised, 0 - 1
 };
 
 #endif // !Instrument

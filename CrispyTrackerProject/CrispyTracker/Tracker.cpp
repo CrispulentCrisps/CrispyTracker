@@ -1755,7 +1755,7 @@ void Tracker::UpdateTicks()
 {
 	for (int x = 0; x < 8; x++)
 	{
-		SG.Emu_APU.APU_Process_Effects(&Channels[x], &inst[Channels[x].CurrentInstrument], CursorY, &Speed1, &PatternIndex);
+		SG.Emu_APU.APU_Process_Effects(&Channels[x], &inst[Channels[x].CurrentInstrument], CursorY, &Speed1, &PatternIndex, TickCounter);
 	}
 }
 

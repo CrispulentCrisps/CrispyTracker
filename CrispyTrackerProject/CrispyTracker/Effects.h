@@ -200,9 +200,14 @@ public:
 	
 	int16_t	Port_Value[8];		//Stores portamento value
 	int16_t Vibrato_Value[8];	//Stores vibrato value
+	uint8_t Tremo_Value[8];		//Stores the value held in the tremolando effect
+	uint8_t Panbrello_Value[8];	//Stores the value held in the tremolando effect
+
 	int16_t Base_Pit[8];		//Stores base pitch
 	int8_t Base_Vol_L[8];		//Stores base volume for L
 	int8_t Base_Vol_R[8];		//Stores base volume for R
-	uint8_t Sine_Index[8];		//Stores the index of the position in the sine table
-	uint8_t Tremo_Value[8];		//Stores the value held in the tremolando effect
+	
+	uint8_t Sine_Index_Vib[8];	//Stores the index of the position in the sine table, used for vibrato
+	uint8_t Sine_Index_Trem[8];	//Stores the index of the position in the sine table, used for tremolando
+	uint8_t Sine_Index_PnBr[8];	//Stores the index of the position in the sine table, used for panbrello
 };

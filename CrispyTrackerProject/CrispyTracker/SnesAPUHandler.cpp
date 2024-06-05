@@ -249,7 +249,7 @@ void SnesAPUHandler::APU_Play_Note_Editor(Channel* ch, Instrument* inst, int not
 	}
 }
 
-void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos, int* speed, int* patindex)
+void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos, int* speed, int* patindex, int currenttick)
 {
 	int note = ch->Rows[ypos].note;
 	int effect = ch->Rows[ypos].effect;
@@ -276,14 +276,14 @@ void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos
 			value != 0 ? EffectHandle.Effect_Flags[id] |= vibrato_flag : EffectHandle.Effect_Flags[id] &= ~vibrato_flag;
 			EffectHandle.Vibrato_Value[id] = value;
 			EffectHandle.Base_Pit[id] = spc_dsp_read(Dsp, ChannelRegs[id].pit_l) + (spc_dsp_read(Dsp, ChannelRegs[id].pit_h) << 8);
-			EffectHandle.Sine_Index[id] = 0;
+			EffectHandle.Sine_Index_Vib[id] = 0;
 			break;
 		case TREMOLANDO:
 			value != 0 ? EffectHandle.Effect_Flags[id] |= tremo_flag : EffectHandle.Effect_Flags[id] &= ~tremo_flag;
 			EffectHandle.Tremo_Value[id] = value;
 			EffectHandle.Base_Vol_L[id] = ChannelVolume_L[id] * inst->SetVolume(1);
 			EffectHandle.Base_Vol_R[id] = ChannelVolume_R[id] * inst->SetVolume(-1);
-			EffectHandle.Sine_Index[id] = 0;
+			EffectHandle.Sine_Index_Trem[id] = 0;
 			break;
 		case PANNING:
 			break;
@@ -294,6 +294,7 @@ void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos
 		case GOTO:
 			break;
 		case RETRIGGER:
+			if(currenttick % value == 0 && value != 0) APU_Grab_Channel_Status(ch, inst, ypos);
 			break;
 		case BREAK:
 			break;
@@ -324,6 +325,11 @@ void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos
 		case ECHO:
 			break;
 		case PANBRELLO:
+			value != 0 ? EffectHandle.Effect_Flags[id] |= panbrello_flag : EffectHandle.Effect_Flags[id] &= ~panbrello_flag;
+			EffectHandle.Panbrello_Value[id] = value;
+			EffectHandle.Base_Vol_L[id] = ChannelVolume_L[id] * inst->SetVolume(1);
+			EffectHandle.Base_Vol_R[id] = ChannelVolume_R[id] * inst->SetVolume(-1);
+			EffectHandle.Sine_Index_PnBr[id] = 0;
 			break;
 		case ECHO_DEL:
 			break;
@@ -420,8 +426,8 @@ void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos
 		uint8_t depth = EffectHandle.Vibrato_Value[id] & 0x0F;
 		uint8_t speed = (EffectHandle.Vibrato_Value[id] >> 4) & 0x0F;
 		uint16_t pit = EffectHandle.Base_Pit[id];
-		pit += ((SineTable[EffectHandle.Sine_Index[id]]) / 16) * depth;
-		EffectHandle.Sine_Index[id] += speed;
+		pit += ((SineTable[EffectHandle.Sine_Index_Vib[id]]) / 16) * depth;
+		EffectHandle.Sine_Index_Vib[id] += speed;
 		spc_dsp_write(Dsp, ChannelRegs[id].pit_l, pit & 0xFF);
 		spc_dsp_write(Dsp, ChannelRegs[id].pit_h, (pit >> 8) & 0xFF);
 	}
@@ -433,15 +439,35 @@ void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos
 		uint8_t speed = (EffectHandle.Tremo_Value[id] >> 4) & 0x0F;
 		int8_t vol_l = EffectHandle.Base_Vol_L[id];
 		int8_t vol_r = EffectHandle.Base_Vol_R[id];
-		int8_t dif = (SineTable[EffectHandle.Sine_Index[id]] / 16) * depth;
+		int8_t dif_l = (SineTable[EffectHandle.Sine_Index_Trem[id]] / 16) * ((double)depth * inst->SetVolume(1));
+		int8_t dif_r = (SineTable[EffectHandle.Sine_Index_Trem[id]] / 16) * ((double)depth * inst->SetVolume(-1));
 
-		if (vol_l + dif >= -128 && vol_l + dif <= 127) vol_l += dif / (inst->LPan > 0 ? inst->LPan : 1);
-		if (vol_r + dif >= -128 && vol_r + dif <= 127) vol_r += dif / (inst->RPan > 0 ? inst->RPan : 1);
+		if (vol_l + dif_l >= -128 && vol_l + dif_l <= 127) vol_l += dif_l;
+		if (vol_r + dif_r >= -128 && vol_r + dif_r <= 127) vol_r += dif_r;
 		
 		spc_dsp_write(Dsp, ChannelRegs[id].vol_l, vol_l);
 		spc_dsp_write(Dsp, ChannelRegs[id].vol_r, vol_r);
 		
-		EffectHandle.Sine_Index[id] += speed;
+		EffectHandle.Sine_Index_Trem[id] += speed;
+	}
+
+	//Panbrello	
+	if ((EffectHandle.Effect_Flags[id] >> 4) & 1)//Check if the effect flag is on
+	{
+		uint8_t depth = EffectHandle.Panbrello_Value[id] & 0x0F;
+		uint8_t speed = (EffectHandle.Panbrello_Value[id] >> 4) & 0x0F;
+		int8_t vol_l = EffectHandle.Base_Vol_L[id];
+		int8_t vol_r = EffectHandle.Base_Vol_R[id];
+		int8_t dif_l = (SineTable[EffectHandle.Sine_Index_PnBr[id]] / 16) * ((double)depth * inst->SetVolume(1));
+		int8_t dif_r = (SineTable[EffectHandle.Sine_Index_PnBr[id]+127] / 16) * ((double)depth * inst->SetVolume(-1));
+
+		if (vol_l + dif_l >= -128 && vol_l + dif_l <= 127) vol_l += dif_l;
+		if (vol_r + dif_r >= -128 && vol_r + dif_r <= 127) vol_r += dif_r;
+
+		spc_dsp_write(Dsp, ChannelRegs[id].vol_l, vol_l);
+		spc_dsp_write(Dsp, ChannelRegs[id].vol_r, vol_r);
+
+		EffectHandle.Sine_Index_PnBr[id] += speed;
 	}
 }
 
