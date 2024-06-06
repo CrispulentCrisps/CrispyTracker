@@ -46,20 +46,18 @@ public:
 
 	//ADSR
 	bool EnvelopeUsed;
-	//ADSR type (0-3)
-	int ADSRType;
 	//Attack (0-15)
 	int Attack;
 	//Decay (0-7)
 	int Decay;
 	//Sustain (0-7)
 	int Sustain;
-	//Decay2 (0-31)
-	int Decay2;
 	//Release (0-31)
 	int Release;
 
 	int NoteOff = 0;
+
+	uint16_t InstADDR;
 
 	Sample CurrentSample;
 	int CurrentSampleIndex = 0;//This is for the index of the sample within the sample list

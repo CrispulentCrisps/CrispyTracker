@@ -280,6 +280,8 @@ public:
 
 	bool ShowDSPDebugger = false;
 
+	string EffectText = "";
+
 	double ScrollValue();//Returns the position scrolled down the tracker
 
 	//Functions
@@ -307,6 +309,7 @@ public:
 	void SetupInstr();
 	void UpdateFont();
 	void Export_View();
+	void EffectsText(int effect);
 	//
 
 	void RunTracker(); //For when the tracker is playing the tune

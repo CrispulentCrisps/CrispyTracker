@@ -71,6 +71,7 @@ void SnesAPUHandler::APU_Startup()
 		std::cout << "\n";
 	}
 
+	InstMem.push_back(InstEntry());
 
 }
 //Update loop for the DSP
@@ -120,7 +121,7 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 		ChannelVolume_R[id] = currentvol * inst->SetVolume(-1);
 	}
 
-	if (currentnote < STOP_COMMAND && currentnote != 0)//Assuming it's not a reserved note
+	if (currentnote < STOP_COMMAND && currentnote != 0 && currentnote != NULL_COMMAND)//Assuming it's not a reserved note
 	{
 		int ADSR1 = 0;
 		int ADSR2 = 0;
@@ -134,7 +135,7 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 
 		spc_dsp_write(Dsp, ChannelRegs[id].adsr_1, ADSR1);
 		spc_dsp_write(Dsp, ChannelRegs[id].adsr_2, ADSR2);
-		spc_dsp_write(Dsp, ChannelRegs[id].gain,0x7F);
+		spc_dsp_write(Dsp, ChannelRegs[id].gain, inst->Gain);
 
 		spc_dsp_write(Dsp, GLOBAL_pmon, inst->PitchMod << id);
 
@@ -167,7 +168,7 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 			kofcheck &= ~(1 << id);
 			spc_dsp_write(Dsp, GLOBAL_kof, kofcheck);
 		}
-		else//Assuming we haven't hit a key
+		else if (ch->Rows[ypos].note != NULL_COMMAND)//Assuming we haven't hit a key
 		{
 			if (ch->Rows[ypos].note == RELEASE_COMMAND)
 			{
@@ -210,7 +211,7 @@ void SnesAPUHandler::APU_Play_Note_Editor(Channel* ch, Instrument* inst, int not
 
 		spc_dsp_write(Dsp, ChannelRegs[id].adsr_1, ADSR1);
 		spc_dsp_write(Dsp, ChannelRegs[id].adsr_2, ADSR2);
-		spc_dsp_write(Dsp, ChannelRegs[id].gain, 0x7F);
+		spc_dsp_write(Dsp, ChannelRegs[id].gain, inst->Gain);
 
 		spc_dsp_write(Dsp, GLOBAL_pmon, inst->PitchMod << id);
 
@@ -564,14 +565,52 @@ void SnesAPUHandler::APU_Evaluate_BRR_Loop_Start(Sample* sample)
 	DSP_MEMORY[Sample_Dir_Page + (sample->SampleIndex * 4) + 3] = (sample->LoopStartAddr >> 8) & 0xFF;
 }
 
-void SnesAPUHandler::APU_Write_Flag_Mem(uint16_t* flags)
+//Writes every page for instruments, sequence entries, patterns and subtunes
+void SnesAPUHandler::APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst)
 {
 	int addroff = 0;
-	for (int x = 0; x < 16; x++)
+
+	InstMem.clear();
+	InstMem.push_back(InstEntry());//This one isn't counted, reason it's here is to mirror the instrument list having the first entry as a "Default" one
+	if (LastSamplePoint != 0) InstAddr = LastSamplePoint;//Assuming we have no samples in memory
+	else InstAddr = Sample_Mem_Page;
+	for (int x = 1; x < inst.size(); x++)
 	{
-		DSP_MEMORY[Flag_Effect_Page+addroff] = flags[x];
-		addroff++;
+		InstEntry i_ent = InstEntry();
+		
+		uint8_t ADSR1 = 0;
+		uint8_t ADSR2 = 0;
+		ADSR1 += ((int)inst[x].EnvelopeUsed << 7);
+		ADSR1 += (inst[x].Decay << 4);
+		ADSR1 += (inst[x].Attack);
+		ADSR2 += (inst[x].Sustain << 5);
+		ADSR2 += (inst[x].Release);
+		
+		i_ent.ADSR1 = ADSR1;
+		i_ent.ADSR2 = ADSR2;
+		i_ent.Gain = inst[x].Gain;
+		i_ent.Vol_L = 127 * inst[x].SetVolume(1);
+		i_ent.Vol_R = 127 * inst[x].SetVolume(-1);
+		i_ent.SampleIndex = inst[x].CurrentSample.SampleIndex;
+
+		i_ent.EffectState |= ((int)inst[x].InvL << 0);
+		i_ent.EffectState |= ((int)inst[x].InvR << 1);
+		i_ent.EffectState |= ((int)inst[x].PitchMod << 2);
+		i_ent.EffectState |= ((int)inst[x].Noise << 3);
+		i_ent.EffectState |= ((int)inst[x].Echo << 4);
+
+		InstMem.push_back(i_ent);
+
+		DSP_MEMORY[InstAddr + addroff] = InstMem[x].Vol_L;
+		DSP_MEMORY[InstAddr + addroff + 1] = InstMem[x].Vol_R;
+		DSP_MEMORY[InstAddr + addroff + 2] = InstMem[x].ADSR1;
+		DSP_MEMORY[InstAddr + addroff + 3] = InstMem[x].ADSR2;
+		DSP_MEMORY[InstAddr + addroff + 4] = InstMem[x].Gain;
+		DSP_MEMORY[InstAddr + addroff + 5] = InstMem[x].EffectState;
+		DSP_MEMORY[InstAddr + addroff + 6] = InstMem[x].SampleIndex;
+		addroff += 7;
 	}
+	SequenceAddr = InstAddr + addroff;
 }
 
 //Sets master volume of the track
@@ -687,9 +726,22 @@ void SnesAPUHandler::APU_Debug_Dump_SPC()
 
 void SnesAPUHandler::APU_Debug_Dump_FLG()
 {
+	/*
 	string filename = "FLG_Dump.bin";
 	ofstream BRRFile(filename, ios::binary);
 	for (int x = Flag_Effect_Page; x < Sample_Mem_Page; x++)
+	{
+		BRRFile << DSP_MEMORY[x];
+	}
+	BRRFile.close();
+	*/
+}
+
+void SnesAPUHandler::APU_Debug_Dump_INST()
+{
+	string filename = "INST_Dump.bin";
+	ofstream BRRFile(filename, ios::binary);
+	for (int x = InstAddr; x < SequenceAddr; x++)
 	{
 		BRRFile << DSP_MEMORY[x];
 	}

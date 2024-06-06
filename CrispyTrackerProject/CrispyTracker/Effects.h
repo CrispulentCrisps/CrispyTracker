@@ -32,6 +32,7 @@
 
 #define PANBRELLO		0x20
 
+//Echo settings
 #define ECHO_DEL		0x30
 #define ECHO_FDB		0x31
 #define ECHO_L			0x32
@@ -68,12 +69,14 @@
 #define PORT_UP_CTRL	0xE1//Portamento up controlled
 #define PORT_DOWN_CTRL	0xE2//Portamento down controlled
 
+//Global effects
 #define GLOABL_PAN_L	0xE8//Global L
 #define GLOABL_PAN_R	0xE9//Global R
 #define GLOBAL_VOL		0xEA//Global Volume
 
 #define END				0xFF//Ends the track
 
+//Descriptions
 #define ARPEGGIO_DESC		"00xy Arpeggio [x: offset 1, y: offset 2] Semitone offset from base note"	
 #define PORT_UP_DESC		"01xx Portamento up [xx: speed up] Slides the pitch upwards"	
 #define PORT_DOWN_DESC		"02xx Portamento up [xx: speed down] Slides the pitch downwards"

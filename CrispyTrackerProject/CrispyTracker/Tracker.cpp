@@ -324,6 +324,10 @@ void Tracker::MenuBar()
 		{
 			SG.Emu_APU.APU_Debug_Dump_FLG();
 		}
+		if (Selectable("Dump INST"))
+		{
+			SG.Emu_APU.APU_Debug_Dump_INST();
+		}
 		if (Selectable("DSP regs"))
 		{
 			ShowDSPDebugger = !ShowDSPDebugger;
@@ -510,6 +514,7 @@ void Tracker::Instruments()//Showing the instruments window at the side
 			newinst.Name += to_string(index);
 			newinst.Index = index;
 			inst.push_back(newinst);
+			SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
 		}
 		SameLine();
 		if (Button("Delete", ImVec2(GetWindowWidth() * .3, 24)) && inst.size() > 1)
@@ -523,6 +528,7 @@ void Tracker::Instruments()//Showing the instruments window at the side
 			{
 				inst.pop_back();
 			}
+			SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
 		}		
 		SameLine();
 		if (Button("Copy", ImVec2(GetWindowWidth() * .3, 24)) && inst.size() > 1)
@@ -533,6 +539,7 @@ void Tracker::Instruments()//Showing the instruments window at the side
 			newinst.Index = index;
 			inst.push_back(newinst);
 			cout << inst.size();
+			SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
 		}
 		//Instrument side bar
 		if (inst.size() > 0)
@@ -595,6 +602,7 @@ void Tracker::Instrument_View()//Instrument editor
 							{
 								inst[SelectedInst].SampleIndex = s;
 								inst[SelectedInst].CurrentSample = samples[s];
+								SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
 							}
 							if (Selected)
 							{
@@ -608,108 +616,33 @@ void Tracker::Instrument_View()//Instrument editor
 				SliderInt("Volume", &inst[SelectedInst].Volume, 0, 127);
 
 				NewLine();
-				SliderInt("Left", &inst[SelectedInst].LPan, 0, 127);
-				SliderInt("Right", &inst[SelectedInst].RPan, 0, 127);
-				SliderInt("Gain", &inst[SelectedInst].Gain, 0, 255);
+				if (SliderInt("Left", &inst[SelectedInst].LPan, 0, 127)) SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
+				if (SliderInt("Right", &inst[SelectedInst].RPan, 0, 127)) SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
+				if (SliderInt("Gain", &inst[SelectedInst].Gain, 0, 127)) SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
 
-				SliderInt("Note offset", &inst[SelectedInst].NoteOff, -12, 12);
+				if (SliderInt("Note offset", &inst[SelectedInst].NoteOff, -12, 12)) SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
 
-				Checkbox("Envelope used", &inst[SelectedInst].EnvelopeUsed);
+				if (Checkbox("Envelope used", &inst[SelectedInst].EnvelopeUsed))SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
 				ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.33);
 
 				if (inst[SelectedInst].EnvelopeUsed)
 				{
 					NewLine();
 					Text("Envelope");
-					for (int i = 0; i < 4; i++)
-					{
-						if (RadioButton(ADSRNames[i].c_str(), &inst[SelectedInst].ADSRType,i))
-						{
-							inst[SelectedInst].ADSRType = i;
-						}
-					}
 
-					if (inst[SelectedInst].ADSRType == 0)
-					{
-						PushStyleColor(ImGuiCol_Text, AttackColour);
-						SliderInt("Attack ", &inst[SelectedInst].Attack, 0, 15);
-						PopStyleColor();
-						PushStyleColor(ImGuiCol_Text, DecayColour);
-						SliderInt("Decay", &inst[SelectedInst].Decay, 0, 7);
-						PopStyleColor();
-						PushStyleColor(ImGuiCol_Text, SustainColour);
-						SliderInt("Sustain", &inst[SelectedInst].Sustain, 0, 7);
-						PopStyleColor();
-						PushStyleColor(ImGuiCol_Text, ReleaseColour);
-						SliderInt("Release", &inst[SelectedInst].Release, 0, 31);
-						PopStyleColor();
-						float PlotArr[64] = { 
-							0, 0, 0, 0, 0, 0, 0, 0,
-							0, 0, 0, 0, 0, 0, 0, 0,
-							0, 0, 0, 0, 0, 0, 0, 0, 
-							0, 0, 0, 0, 0, 0, 0, 0,
-							0, 0, 0, 0, 0, 0, 0, 0,
-							0, 0, 0, 0, 0, 0, 0, 0,
-							0, 0, 0, 0, 0, 0, 0, 0,
-							0, 0, 0, 0, 0, 0, 0, 0
-						};
-
-						float attackaccum = 0;
-						for (int i = 0; i < 15 - inst[SelectedInst].Attack; i++)
-						{
-							PlotArr[i] = attackaccum;
-							attackaccum += (32.0 / (float)(15.0 - inst[SelectedInst].Attack));
-						}
-						PlotArr[15 - inst[SelectedInst].Attack] = 32;
-						
-						int PreviousPoint = 16 - inst[SelectedInst].Attack;
-
-						float decayaccum = 32;
-						float base = inst[SelectedInst].Sustain * 4.57142857143;
-						for (int j = PreviousPoint; j < PreviousPoint+(8-inst[SelectedInst].Decay); j++)
-						{
-							decayaccum -= ((32.0 - base) / (8.0 - inst[SelectedInst].Decay));
-							PlotArr[j] = decayaccum;
-						}
-						
-						PreviousPoint += (8 - inst[SelectedInst].Decay);
-						
-						float relaccum = base;
-						for (int k = PreviousPoint; k < PreviousPoint + (32 - inst[SelectedInst].Release); k++)
-						{
-							if (inst[SelectedInst].Sustain > 0)
-							{
-								relaccum -= (base / (32 - inst[SelectedInst].Release));
-								PlotArr[k] = relaccum;
-							}
-							else
-							{
-								PlotArr[k] = 0;
-							}
-						}
-						//float PlotArr[5] = { 0, inst[SelectedInst].Attack*2 , inst[SelectedInst].Decay*4 , inst[SelectedInst].Sustain*4 , inst[SelectedInst].Release};
-						float PlotBuff[256];
-						NewLine();
-						PlotLines("##Envelope output", PlotArr, 64, 0, "Envelope output", 0, 32, ImVec2(GetWindowWidth() * 0.75, GetWindowHeight() * 0.25));
-					}
-					else
-					{
-						PushStyleColor(ImGuiCol_Text, AttackColour);
-						SliderInt("Attack ", &inst[SelectedInst].Attack, 0, 15);
-						PopStyleColor();
-						PushStyleColor(ImGuiCol_Text, DecayColour);
-						SliderInt("Decay", &inst[SelectedInst].Decay, 0, 7);
-						PopStyleColor();
-						PushStyleColor(ImGuiCol_Text, SustainColour);
-						SliderInt("Sustain", &inst[SelectedInst].Sustain, 0, 7);
-						PopStyleColor();
-						PushStyleColor(ImGuiCol_Text, DecayColour);
-						SliderInt("Decay 2", &inst[SelectedInst].Decay2, 0, 31);
-						PopStyleColor();
-						PushStyleColor(ImGuiCol_Text, ReleaseColour);
-						SliderInt("Release", &inst[SelectedInst].Release, 0, 31);
-						PopStyleColor();
-						float PlotArr[64] = {
+					PushStyleColor(ImGuiCol_Text, AttackColour);
+					SliderInt("Attack ", &inst[SelectedInst].Attack, 0, 15);
+					PopStyleColor();
+					PushStyleColor(ImGuiCol_Text, DecayColour);
+					SliderInt("Decay", &inst[SelectedInst].Decay, 0, 7);
+					PopStyleColor();
+					PushStyleColor(ImGuiCol_Text, SustainColour);
+					SliderInt("Sustain", &inst[SelectedInst].Sustain, 0, 7);
+					PopStyleColor();
+					PushStyleColor(ImGuiCol_Text, ReleaseColour);
+					SliderInt("Release", &inst[SelectedInst].Release, 0, 31);
+					PopStyleColor();
+					float PlotArr[64] = {
 						0, 0, 0, 0, 0, 0, 0, 0,
 						0, 0, 0, 0, 0, 0, 0, 0,
 						0, 0, 0, 0, 0, 0, 0, 0,
@@ -718,51 +651,55 @@ void Tracker::Instrument_View()//Instrument editor
 						0, 0, 0, 0, 0, 0, 0, 0,
 						0, 0, 0, 0, 0, 0, 0, 0,
 						0, 0, 0, 0, 0, 0, 0, 0
-						};
+					};
 
-						for (int i = 0; i < inst[SelectedInst].Attack; i++)
-						{
-							PlotArr[i] = (float)i / (inst[SelectedInst].Attack + 1) * 32;
-						}
-						PlotArr[inst[SelectedInst].Attack] = 32;
-
-						int PreviousPoint = inst[SelectedInst].Attack + 1;
-
-						int decaccum = 32;
-						for (int j = PreviousPoint; j < PreviousPoint + (8 - inst[SelectedInst].Decay); j++)
-						{
-							PlotArr[j] = decaccum;
-						}
-
-						PreviousPoint += (8 - inst[SelectedInst].Decay);
-
-						for (int k = PreviousPoint; k < PreviousPoint + inst[SelectedInst].Decay2; k++)
-						{
-							if (inst[SelectedInst].Sustain > 0)
-							{
-								PlotArr[k] = (inst[SelectedInst].Sustain * 4) - ((((float)k - PreviousPoint) * 32) / inst[SelectedInst].Decay2);
-							}
-							else
-							{
-								PlotArr[k] = 0;
-							}
-						}
-						//float PlotArr[5] = { 0, inst[SelectedInst].Attack*2 , inst[SelectedInst].Decay*4 , inst[SelectedInst].Sustain*4 , inst[SelectedInst].Release};
-						float PlotBuff[256];
-						PlotLines("##Envelope output", PlotArr, 64, 0, "Envelope output", 0, 32, ImVec2(GetWindowWidth() * 0.75, GetWindowHeight() * 0.25));
+					float attackaccum = 0;
+					for (int i = 0; i < 15 - inst[SelectedInst].Attack; i++)
+					{
+						PlotArr[i] = attackaccum;
+						attackaccum += (32.0 / (float)(15.0 - inst[SelectedInst].Attack));
 					}
-					
+					PlotArr[15 - inst[SelectedInst].Attack] = 32;
+
+					int PreviousPoint = 16 - inst[SelectedInst].Attack;
+
+					float decayaccum = 32;
+					float base = inst[SelectedInst].Sustain * 4.57142857143;
+					for (int j = PreviousPoint; j < PreviousPoint + (8 - inst[SelectedInst].Decay); j++)
+					{
+						decayaccum -= ((32.0 - base) / (8.0 - inst[SelectedInst].Decay));
+						PlotArr[j] = decayaccum;
+					}
+
+					PreviousPoint += (8 - inst[SelectedInst].Decay);
+
+					float relaccum = base;
+					for (int k = PreviousPoint; k < PreviousPoint + (32 - inst[SelectedInst].Release); k++)
+					{
+						if (inst[SelectedInst].Sustain > 0)
+						{
+							relaccum -= (base / (32 - inst[SelectedInst].Release));
+							PlotArr[k] = relaccum;
+						}
+						else
+						{
+							PlotArr[k] = 0;
+						}
+					}
+					float PlotBuff[256];
+					NewLine();
+					PlotLines("##Envelope output", PlotArr, 64, 0, "Envelope output", 0, 32, ImVec2(GetWindowWidth() * 0.75, GetWindowHeight() * 0.25));
 				}
 
 				Text("Special");
 				NewLine();
-				Checkbox("Invert L  ", &inst[SelectedInst].InvL);
-				Checkbox("Invert R", &inst[SelectedInst].InvR);
+				if (Checkbox("Invert L", &inst[SelectedInst].InvL))SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
+				if (Checkbox("Invert R", &inst[SelectedInst].InvR)) SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
 
-				Checkbox("Pitch Mod ", &inst[SelectedInst].PitchMod);
-				Checkbox("Echo", &inst[SelectedInst].Echo);
+				if (Checkbox("Pitch Mod", &inst[SelectedInst].PitchMod))SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
+				if (Checkbox("Echo", &inst[SelectedInst].Echo))SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
 
-				Checkbox("Noise     ", &inst[SelectedInst].Noise);
+				if (Checkbox("Noise", &inst[SelectedInst].Noise)) SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
 			}
 			else
 			{
@@ -1543,7 +1480,7 @@ void Tracker::SetupInstr()
 	DefaultInst.Volume = 127;
 	DefaultInst.LPan = 127;
 	DefaultInst.RPan = 127;
-	DefaultInst.Gain = 0;
+	DefaultInst.Gain = 127;
 	DefaultInst.InvL = false;
 	DefaultInst.InvR = false;
 	DefaultInst.PitchMod = false;
@@ -1552,7 +1489,6 @@ void Tracker::SetupInstr()
 	DefaultInst.Attack = 0;
 	DefaultInst.Decay = 0;
 	DefaultInst.Sustain = 0;
-	DefaultInst.Decay2 = 0;
 	DefaultInst.Release = 0;
 	inst.push_back(DefaultInst);
 
@@ -1695,6 +1631,10 @@ void Tracker::Export_View()
 		}
 	}
 	End();
+}
+
+void Tracker::EffectsText(int effect)
+{
 }
 
 //Core updates to the tracker state

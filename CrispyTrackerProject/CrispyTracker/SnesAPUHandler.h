@@ -3,6 +3,7 @@
 #include <vector>
 #include <array>
 #include "Channel.h"
+#include "FileDef.h"
 #include "emu/dsp.h"
 #include "emu/spc.h"
 
@@ -53,8 +54,7 @@
 #define SPC_c1              0xFE
 #define SPC_c2              0xFF
 
-#define Flag_Effect_Page    0xDD00
-#define Sample_Mem_Page     0x0200
+#define Sample_Mem_Page     0x0200//AKA start of RAM
 #define Echo_Buffer_Addr    0xEE00
 #define Sample_Dir_Page     0xFF00
 
@@ -64,6 +64,12 @@
 //  00F0 - 00FF     |   CPU registers
 //  0100 - 01FF     |   Stackpage
 //  0200 - FFBF     |   RAM
+// 
+//  0200 - XXXX     | Sample page
+//  XXXX - YYYY     | Instrument page
+//  YYYY - ZZZZ     | Sequence Entry page
+//  ZZZZ - WWWW     | Patterns page
+//  WWWW - SSSS     | Subtune page
 //
 
 enum Region {
@@ -93,7 +99,15 @@ public:
 
     DSP_Ch_Reg ChannelRegs[8];
 
-    unsigned int SONG_ADDR = 0x10000;
+    uint16_t InstAddr       = 0x0200;  //Instrument adress
+    uint16_t SequenceAddr   = 0x0200;  //Sequence entry address
+    uint16_t PatternAddr    = 0x0200;  //Pattern address
+    uint16_t SubtuneAddr    = 0x0200;  //Subtune address
+
+    std::vector<SequenceEntry> SeqMem;
+    std::vector<InstEntry> InstMem;  
+    std::vector<PatternEntry> PatMem;
+    std::vector<SubtuneEntry> SubMem;
 
     const unsigned char IPL_ROM[64] = {
     0xcd, 0xef, 0xbd, 0xe8, 0x00, 0xc6, 0x1d, 0xd0, 0xfc, 0x8f, 0xaa, 0xf4,
@@ -110,7 +124,7 @@ public:
     
     Region reg;
 
-    int LastSamplePoint;
+    uint16_t LastSamplePoint;
 
     std::vector<uint16_t> PitchTable;
 
@@ -133,6 +147,7 @@ public:
     void APU_Evaluate_BRR_Loop(Sample* sample, int LoopPoint);
     void APU_Evaluate_BRR_Loop_Start(Sample* sample);
     void APU_Write_Flag_Mem(uint16_t* flags);
+    void APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst);
 
     bool APU_Set_Master_Vol(signed char vol);
     void APU_Set_Echo(unsigned int dtime, int* coef, signed int dfb, signed int dvol);
@@ -147,9 +162,8 @@ public:
     void APU_Debug_Dump_DIR();
     void APU_Debug_Dump_SPC();
     void APU_Debug_Dump_FLG();
-
+    void APU_Debug_Dump_INST();
     int APU_Debug_KON_State();
     int APU_Debug_KOF_State();
-
     int APU_Debug_PIT_State(int index, int byte);
 };

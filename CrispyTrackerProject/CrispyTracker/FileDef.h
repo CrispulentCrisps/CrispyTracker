@@ -6,7 +6,7 @@ enum InstEntryEffectFlags {
 	InvR = 2,
 	PMod = 4,
 	Noise = 8,
-	Delay = 16,
+	Echo = 16,
 };
 
 typedef struct Module {
@@ -20,36 +20,36 @@ typedef struct Module {
 };
 
 //This is for each instrument used in every track, this is to save memory from having to write the same values in the sequence data again and again
-//Size is 8 Bytes
 typedef struct InstEntry {
 	int8_t Vol_L;			//Left channel volume
 	int8_t Vol_R;			//Right channel volume
 	uint8_t ADSR1;			//EDDD AAAA	ADSR enable (E), decay rate (D), attack rate (A).
 	uint8_t ADSR2;			//SSSR RRRR	Sustain level (S), sustain rate (R).
-	uint16_t Gain;			//0VVV VVVV 1MMV VVVV	Mode(M), value(V).
+	uint8_t Gain;			//0VVV VVVV 1MMV VVVV	Mode(M), value(V).
 	uint8_t EffectState;	//Holds the state of the effects in the instrument to reference in DSP memory
 	uint8_t SampleIndex;	//Index of the sample, to be used by SCRN registers while they look in the DIR page
 };
 
 //Sequence entry reffers to a single row in the tracker for a single file
-//Size is 14 Bytes
 typedef struct SequenceEntry {
 	uint16_t Pitch;			//absolute pitch register value for the given note
-	uint16_t WaitTime;		//Time to wait before the next note, so as to not write every blank value down
+	uint8_t WaitTime;		//Time to wait before the next note, so as to not write every blank value down
 	int8_t Volume_L;		//Left Volume of said note
 	int8_t Volume_R;		//Right Volume of said note
-	InstEntry inst;			//Instrument Reference
+	uint16_t instADDR;		//Instrument Reference
+	uint8_t EffectsState;	//The state of the effects flags in the row
 };
 
-//This is for an
-//Size is XX Bytes
-typedef struct Pattern {
-	SequenceEntry* sequence;
+//This is for storing repeated sequences
+typedef struct PatternEntry {
+	uint8_t SequenceAmount;	//Amount of sequence entries used in said pattern
+	uint8_t PatternIndex;	//Index that the pattern uses
+	uint16_t SequenceIndex;	//Point in memory for when the sequence starts
 };
 
-//This is for an
-//Size is XX Bytes
+//This is for a single tune that can be used in the SPC file
 typedef struct SubtuneEntry {
-	uint8_t SongIndex;
-	uint8_t SongSpeed;
+	uint16_t SongADDR;		//Where in memory the start of the song is. This is defined as the first pattern in memory
+	uint8_t SongSpeed;		//Speed of said song in terms of ticks per row
+	uint8_t SongResetADDR;	//Where the song restarts
 };
