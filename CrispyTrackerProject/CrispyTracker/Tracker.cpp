@@ -514,7 +514,7 @@ void Tracker::Instruments()//Showing the instruments window at the side
 			newinst.Name += to_string(index);
 			newinst.Index = index;
 			inst.push_back(newinst);
-			SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
+			SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
 		}
 		SameLine();
 		if (Button("Delete", ImVec2(GetWindowWidth() * .3, 24)) && inst.size() > 1)
@@ -528,7 +528,7 @@ void Tracker::Instruments()//Showing the instruments window at the side
 			{
 				inst.pop_back();
 			}
-			SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
+			SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
 		}		
 		SameLine();
 		if (Button("Copy", ImVec2(GetWindowWidth() * .3, 24)) && inst.size() > 1)
@@ -539,7 +539,7 @@ void Tracker::Instruments()//Showing the instruments window at the side
 			newinst.Index = index;
 			inst.push_back(newinst);
 			cout << inst.size();
-			SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
+			SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
 		}
 		//Instrument side bar
 		if (inst.size() > 0)
@@ -602,7 +602,7 @@ void Tracker::Instrument_View()//Instrument editor
 							{
 								inst[SelectedInst].SampleIndex = s;
 								inst[SelectedInst].CurrentSample = samples[s];
-								SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
+								SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
 							}
 							if (Selected)
 							{
@@ -616,13 +616,13 @@ void Tracker::Instrument_View()//Instrument editor
 				SliderInt("Volume", &inst[SelectedInst].Volume, 0, 127);
 
 				NewLine();
-				if (SliderInt("Left", &inst[SelectedInst].LPan, 0, 127)) SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
-				if (SliderInt("Right", &inst[SelectedInst].RPan, 0, 127)) SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
-				if (SliderInt("Gain", &inst[SelectedInst].Gain, 0, 127)) SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
+				if (SliderInt("Left", &inst[SelectedInst].LPan, 0, 127)) SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
+				if (SliderInt("Right", &inst[SelectedInst].RPan, 0, 127)) SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
+				if (SliderInt("Gain", &inst[SelectedInst].Gain, 0, 255)) SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
 
-				if (SliderInt("Note offset", &inst[SelectedInst].NoteOff, -12, 12)) SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
+				if (SliderInt("Note offset", &inst[SelectedInst].NoteOff, -12, 12)) SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
 
-				if (Checkbox("Envelope used", &inst[SelectedInst].EnvelopeUsed))SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
+				if (Checkbox("Envelope used", &inst[SelectedInst].EnvelopeUsed))SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
 				ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.33);
 
 				if (inst[SelectedInst].EnvelopeUsed)
@@ -693,13 +693,13 @@ void Tracker::Instrument_View()//Instrument editor
 
 				Text("Special");
 				NewLine();
-				if (Checkbox("Invert L", &inst[SelectedInst].InvL))SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
-				if (Checkbox("Invert R", &inst[SelectedInst].InvR)) SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
+				if (Checkbox("Invert L", &inst[SelectedInst].InvL))SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
+				if (Checkbox("Invert R", &inst[SelectedInst].InvR)) SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
 
-				if (Checkbox("Pitch Mod", &inst[SelectedInst].PitchMod))SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
-				if (Checkbox("Echo", &inst[SelectedInst].Echo))SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
+				if (Checkbox("Pitch Mod", &inst[SelectedInst].PitchMod))SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
+				if (Checkbox("Echo", &inst[SelectedInst].Echo))SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
 
-				if (Checkbox("Noise", &inst[SelectedInst].Noise)) SG.Emu_APU.APU_Update_Sequence_Memory(StoragePatterns, inst);
+				if (Checkbox("Noise", &inst[SelectedInst].Noise)) SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
 			}
 			else
 			{

@@ -72,6 +72,12 @@ void SnesAPUHandler::APU_Startup()
 	}
 
 	InstMem.push_back(InstEntry());
+	addroff = 0;
+	for (int x = 0; x < 256; x++)
+	{
+		DSP_MEMORY[Sin_Table_Page + addroff] = SineTable[x];
+		addroff++;
+	}
 
 }
 //Update loop for the DSP
@@ -115,7 +121,7 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 	int currentvalue = ch->Rows[ypos].effectvalue;
 	int id = ch->Index;
 
-	if (currentvol < STOP_COMMAND) 
+	if (currentvol < NULL_COMMAND) 
 	{
 		ChannelVolume_L[id] = currentvol * inst->SetVolume(1);
 		ChannelVolume_R[id] = currentvol * inst->SetVolume(-1);
@@ -566,14 +572,17 @@ void SnesAPUHandler::APU_Evaluate_BRR_Loop_Start(Sample* sample)
 }
 
 //Writes every page for instruments, sequence entries, patterns and subtunes
-void SnesAPUHandler::APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst)
+void SnesAPUHandler::APU_Update_Instrument_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize)
 {
 	int addroff = 0;
-
+	//Write instrument table
 	InstMem.clear();
 	InstMem.push_back(InstEntry());//This one isn't counted, reason it's here is to mirror the instrument list having the first entry as a "Default" one
 	if (LastSamplePoint != 0) InstAddr = LastSamplePoint;//Assuming we have no samples in memory
 	else InstAddr = Sample_Mem_Page;
+	char buf[10];
+	sprintf_s(buf, "%04X", InstAddr);
+	cout << "\nInstADDR: " << buf;
 	for (int x = 1; x < inst.size(); x++)
 	{
 		InstEntry i_ent = InstEntry();
@@ -611,6 +620,117 @@ void SnesAPUHandler::APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std:
 		addroff += 7;
 	}
 	SequenceAddr = InstAddr + addroff;
+	sprintf_s(buf, "%04X", SequenceAddr);
+	cout << "\nSequenceADDR: " << buf;
+	APU_Update_Sequence_Memory(pat, inst, TrackSize);
+}
+
+void SnesAPUHandler::APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize)
+{
+	SeqMem.clear();
+	//Find every unique row entry
+	uniquerows.clear();
+	Row BlankRow = Row();
+	BlankRow.note = NULL_COMMAND;
+	BlankRow.volume = NULL_COMMAND;
+	BlankRow.octave = 0;
+	BlankRow.effect = NULL_COMMAND;
+	BlankRow.effectvalue = NULL_COMMAND;
+	BlankRow.instrument = NULL_COMMAND;
+	uniquerows.push_back(BlankRow);
+
+	//Find all unique row entries
+	for (int x = 0; x < pat.size(); x++)
+	{
+		for (int y = 0; y < TrackSize; y++)
+		{
+			int waitcount = 0;
+			bool isunique = true;
+			for (int z = 0; z < uniquerows.size(); z++)
+			{
+				Row currentrow = pat[x].SavedRows[y];
+				if (currentrow.note == uniquerows[z].note && currentrow.octave == uniquerows[z].octave && currentrow.volume == uniquerows[z].volume && currentrow.effect == uniquerows[z].effect && currentrow.effectvalue == uniquerows[z].effectvalue)
+				{
+					isunique = false;
+					break;
+				}
+			}
+			if (isunique)
+			{
+				uniquerows.push_back(pat[x].SavedRows[y]);
+			}
+		}
+	}
+
+	int addroff = 0;
+	//Write rows to memory
+	for (int x = 0; x < uniquerows.size(); x++)
+	{
+		if (uniquerows[x].instrument != NULL_COMMAND && uniquerows[x].instrument <= inst.size())
+		{
+			Instrument currentinst = inst[uniquerows[x].instrument];
+			SequenceEntry entry = SequenceEntry();
+
+			entry.Pitch = currentinst.BRR_Pitch(pow(2.0, (uniquerows[x].note - 48 + currentinst.NoteOff) / 12.0));
+			entry.Volume_L = uniquerows[x].volume;
+			entry.Volume_R = uniquerows[x].volume;
+			entry.instADDR = InstAddr + ((uniquerows[x].instrument-1) * 7);
+			entry.EffectsState = uniquerows[x].effect;
+			entry.EffectsValue = uniquerows[x].effectvalue;
+			
+			SeqMem.push_back(entry);
+			
+			DSP_MEMORY[SequenceAddr + addroff] = (entry.Pitch) & 0xFF;
+			DSP_MEMORY[SequenceAddr + addroff + 1] = (entry.Pitch >> 8) & 0xFF;
+			DSP_MEMORY[SequenceAddr + addroff + 2] = entry.Volume_L;
+			DSP_MEMORY[SequenceAddr + addroff + 3] = entry.Volume_R;
+			DSP_MEMORY[SequenceAddr + addroff + 4] = (entry.instADDR) & 0xFF;
+			DSP_MEMORY[SequenceAddr + addroff + 5] = (entry.instADDR >> 8) & 0xFF;
+			DSP_MEMORY[SequenceAddr + addroff + 6] = entry.EffectsState;
+			DSP_MEMORY[SequenceAddr + addroff + 7] = entry.EffectsValue;
+			addroff += 8;
+		}
+	}
+	PatternAddr = SequenceAddr + addroff;
+	char buf[10];
+	sprintf_s(buf, "%04X", PatternAddr);
+	cout << "\nPatternADDR: " << buf;
+	APU_Update_Pattern_Memory(pat, inst, TrackSize);
+}
+
+void SnesAPUHandler::APU_Update_Pattern_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize)
+{
+	std::vector<int> SequenceList;
+	int addroff = 0;
+	for (int x = 0; x < pat.size(); x++)
+	{
+		PatternEntry entry = PatternEntry();
+		entry.PatternIndex = x;
+		int SeqAmount = 0;
+		for (int y = 0; y < TrackSize; y++)
+		{
+			for (int z = 0; z < SeqMem.size(); z++)//Check over any sequences to find a match
+			{
+				Row currentrow = pat[x].SavedRows[y];
+				if (currentrow.note == uniquerows[z].note && currentrow.octave == uniquerows[z].octave && currentrow.volume == uniquerows[z].volume && currentrow.effect == uniquerows[z].effect && currentrow.effectvalue == uniquerows[z].effectvalue)
+				{
+					SequenceList.push_back(z);
+					SeqAmount++;
+					entry.SequenceAmount = SeqAmount;
+					break;
+				}
+			}
+		}
+
+		DSP_MEMORY[PatternAddr + addroff] = entry.PatternIndex;
+		DSP_MEMORY[PatternAddr + addroff + 1] = entry.SequenceAmount;
+		addroff += 2;
+		for (int w = 0; w < entry.SequenceAmount; w++)
+		{
+			DSP_MEMORY[PatternAddr + addroff] = SequenceList[w];
+			addroff++;
+		}
+	}
 }
 
 //Sets master volume of the track

@@ -33,18 +33,17 @@ typedef struct InstEntry {
 //Sequence entry reffers to a single row in the tracker for a single file
 typedef struct SequenceEntry {
 	uint16_t Pitch;			//absolute pitch register value for the given note
-	uint8_t WaitTime;		//Time to wait before the next note, so as to not write every blank value down
 	int8_t Volume_L;		//Left Volume of said note
 	int8_t Volume_R;		//Right Volume of said note
 	uint16_t instADDR;		//Instrument Reference
 	uint8_t EffectsState;	//The state of the effects flags in the row
+	uint8_t EffectsValue;	//The state of the effects flags in the row
 };
 
 //This is for storing repeated sequences
 typedef struct PatternEntry {
-	uint8_t SequenceAmount;	//Amount of sequence entries used in said pattern
 	uint8_t PatternIndex;	//Index that the pattern uses
-	uint16_t SequenceIndex;	//Point in memory for when the sequence starts
+	uint8_t SequenceAmount;	//Amount of sequence entries used in said pattern
 };
 
 //This is for a single tune that can be used in the SPC file

@@ -54,7 +54,8 @@
 #define SPC_c1              0xFE
 #define SPC_c2              0xFF
 
-#define Sample_Mem_Page     0x0200//AKA start of RAM
+#define Sin_Table_Page      0x0200//AKA start of RAM
+#define Sample_Mem_Page     0x0300
 #define Echo_Buffer_Addr    0xEE00
 #define Sample_Dir_Page     0xFF00
 
@@ -65,7 +66,8 @@
 //  0100 - 01FF     |   Stackpage
 //  0200 - FFBF     |   RAM
 // 
-//  0200 - XXXX     | Sample page
+//  0200 - 0280     | Sine table page
+//  0280 - XXXX     | Sample page
 //  XXXX - YYYY     | Instrument page
 //  YYYY - ZZZZ     | Sequence Entry page
 //  ZZZZ - WWWW     | Patterns page
@@ -104,10 +106,12 @@ public:
     uint16_t PatternAddr    = 0x0200;  //Pattern address
     uint16_t SubtuneAddr    = 0x0200;  //Subtune address
 
+    std::vector<InstEntry> InstMem;
     std::vector<SequenceEntry> SeqMem;
-    std::vector<InstEntry> InstMem;  
     std::vector<PatternEntry> PatMem;
     std::vector<SubtuneEntry> SubMem;
+
+    std::vector<Row> uniquerows;
 
     const unsigned char IPL_ROM[64] = {
     0xcd, 0xef, 0xbd, 0xe8, 0x00, 0xc6, 0x1d, 0xd0, 0xfc, 0x8f, 0xaa, 0xf4,
@@ -147,8 +151,9 @@ public:
     void APU_Evaluate_BRR_Loop(Sample* sample, int LoopPoint);
     void APU_Evaluate_BRR_Loop_Start(Sample* sample);
     void APU_Write_Flag_Mem(uint16_t* flags);
-    void APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst);
-
+    void APU_Update_Instrument_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);
+    void APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);
+    void APU_Update_Pattern_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);
     bool APU_Set_Master_Vol(signed char vol);
     void APU_Set_Echo(unsigned int dtime, int* coef, signed int dfb, signed int dvol);
     void APU_Init_Echo();
