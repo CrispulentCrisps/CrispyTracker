@@ -72,13 +72,6 @@ void SnesAPUHandler::APU_Startup()
 	}
 
 	InstMem.push_back(InstEntry());
-	addroff = 0;
-	for (int x = 0; x < 256; x++)
-	{
-		DSP_MEMORY[Sin_Table_Page + addroff] = SineTable[x];
-		addroff++;
-	}
-
 }
 //Update loop for the DSP
 void SnesAPUHandler::APU_Update(spc_sample_t* Output, int BufferSize)
@@ -263,6 +256,11 @@ void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos
 	int value = ch->Rows[ypos].effectvalue;
 	int id = ch->Index;
 
+	if ((EffectHandle.Effect_Flags[id] &= vibrato_flag) || (EffectHandle.Effect_Flags[id] &= port_flag))
+	{
+		EffectHandle.Base_Pit[id] = spc_dsp_read(Dsp, ChannelRegs[id].pit_l) + (spc_dsp_read(Dsp, ChannelRegs[id].pit_h) << 8);
+	}
+
 	if (value < STOP_COMMAND)
 	{
 		switch (effect)
@@ -304,32 +302,6 @@ void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos
 			if(currenttick % value == 0 && value != 0) APU_Grab_Channel_Status(ch, inst, ypos);
 			break;
 		case BREAK:
-			break;
-		case ADSR_ENV:
-			break;
-		case ADSR_TYP:
-			break;
-		case ADSR_ATK:
-			break;
-		case ADSR_DEC:
-			break;
-		case ADSR_DC2:
-			break;
-		case ADSR_SUS:
-			break;
-		case ADSR_REL:
-			break;
-		case GAIN:
-			break;
-		case INVL:
-			break;
-		case INVR:
-			break;
-		case NOISE_SET:
-			break;
-		case PITCHMOD:
-			break;
-		case ECHO:
 			break;
 		case PANBRELLO:
 			value != 0 ? EffectHandle.Effect_Flags[id] |= panbrello_flag : EffectHandle.Effect_Flags[id] &= ~panbrello_flag;
@@ -512,7 +484,7 @@ void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 			}
 			else
 			{
-				cout << "\nERROR: ATTEMPTING TO OVERWRITE IPL ROM\nADDR-OFF: " << AddrOff << "\nBRR BLOCK: " << j;
+				std::cout << "\nERROR: ATTEMPTING TO OVERWRITE IPL ROM\nADDR-OFF: " << AddrOff << "\nBRR BLOCK: " << j;
 			}
 		}
 	}
@@ -571,7 +543,7 @@ void SnesAPUHandler::APU_Evaluate_BRR_Loop_Start(Sample* sample)
 	DSP_MEMORY[Sample_Dir_Page + (sample->SampleIndex * 4) + 3] = (sample->LoopStartAddr >> 8) & 0xFF;
 }
 
-//Writes every page for instruments, sequence entries, patterns and subtunes
+//Writes page for instruments
 void SnesAPUHandler::APU_Update_Instrument_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize)
 {
 	int addroff = 0;
@@ -582,7 +554,7 @@ void SnesAPUHandler::APU_Update_Instrument_Memory(std::vector<Patterns>& pat, st
 	else InstAddr = Sample_Mem_Page;
 	char buf[10];
 	sprintf_s(buf, "%04X", InstAddr);
-	cout << "\nInstADDR: " << buf;
+	std::cout << "\nInstADDR: " << buf;
 	for (int x = 1; x < inst.size(); x++)
 	{
 		InstEntry i_ent = InstEntry();
@@ -621,10 +593,11 @@ void SnesAPUHandler::APU_Update_Instrument_Memory(std::vector<Patterns>& pat, st
 	}
 	SequenceAddr = InstAddr + addroff;
 	sprintf_s(buf, "%04X", SequenceAddr);
-	cout << "\nSequenceADDR: " << buf;
+	std::cout << "\nSequenceADDR: " << buf;
 	APU_Update_Sequence_Memory(pat, inst, TrackSize);
 }
 
+//Writes page for sequence entries
 void SnesAPUHandler::APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize)
 {
 	SeqMem.clear();
@@ -633,7 +606,7 @@ void SnesAPUHandler::APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std:
 	Row BlankRow = Row();
 	BlankRow.note = NULL_COMMAND;
 	BlankRow.volume = NULL_COMMAND;
-	BlankRow.octave = 0;
+	BlankRow.octave = NULL_COMMAND;
 	BlankRow.effect = NULL_COMMAND;
 	BlankRow.effectvalue = NULL_COMMAND;
 	BlankRow.instrument = NULL_COMMAND;
@@ -642,11 +615,11 @@ void SnesAPUHandler::APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std:
 	//Find all unique row entries
 	for (int x = 0; x < pat.size(); x++)
 	{
+		int waitcount = 0;
 		for (int y = 0; y < TrackSize; y++)
 		{
-			int waitcount = 0;
 			bool isunique = true;
-			for (int z = 0; z < uniquerows.size(); z++)
+			for (int z = 0; z < uniquerows.size(); z++)//Checks if we can find a unique tro
 			{
 				Row currentrow = pat[x].SavedRows[y];
 				if (currentrow.note == uniquerows[z].note && currentrow.octave == uniquerows[z].octave && currentrow.volume == uniquerows[z].volume && currentrow.effect == uniquerows[z].effect && currentrow.effectvalue == uniquerows[z].effectvalue)
@@ -655,6 +628,7 @@ void SnesAPUHandler::APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std:
 					break;
 				}
 			}
+
 			if (isunique)
 			{
 				uniquerows.push_back(pat[x].SavedRows[y]);
@@ -666,10 +640,10 @@ void SnesAPUHandler::APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std:
 	//Write rows to memory
 	for (int x = 0; x < uniquerows.size(); x++)
 	{
+		SequenceEntry entry = SequenceEntry();
 		if (uniquerows[x].instrument != NULL_COMMAND && uniquerows[x].instrument <= inst.size())
 		{
 			Instrument currentinst = inst[uniquerows[x].instrument];
-			SequenceEntry entry = SequenceEntry();
 
 			entry.Pitch = currentinst.BRR_Pitch(pow(2.0, (uniquerows[x].note - 48 + currentinst.NoteOff) / 12.0));
 			entry.Volume_L = uniquerows[x].volume;
@@ -678,6 +652,8 @@ void SnesAPUHandler::APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std:
 			entry.EffectsState = uniquerows[x].effect;
 			entry.EffectsValue = uniquerows[x].effectvalue;
 			
+			std::cout << "\nIndex: " << x << "\nentry pitch " << entry.Pitch << "\nentry vol l " << (int)entry.Volume_L << "\nentry vol r " << (int)entry.Volume_R << "\nentry inst addr " << (int)entry.instADDR << "\nentry effect state " << (int)entry.EffectsState << "\nentry effect value " << (int)entry.EffectsValue;
+
 			SeqMem.push_back(entry);
 			
 			DSP_MEMORY[SequenceAddr + addroff] = (entry.Pitch) & 0xFF;
@@ -694,10 +670,11 @@ void SnesAPUHandler::APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std:
 	PatternAddr = SequenceAddr + addroff;
 	char buf[10];
 	sprintf_s(buf, "%04X", PatternAddr);
-	cout << "\nPatternADDR: " << buf;
+	std::cout << "\nPatternADDR: " << buf;
 	APU_Update_Pattern_Memory(pat, inst, TrackSize);
 }
 
+//Writes page for patterns
 void SnesAPUHandler::APU_Update_Pattern_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize)
 {
 	std::vector<int> SequenceList;
@@ -744,7 +721,7 @@ bool SnesAPUHandler::APU_Set_Master_Vol(signed char vol)
 	}
 	else
 	{
-		cout << "\nEMU ERROR: VOL NOT WITHIN -128 & 127: VOL --> " << vol;
+		std::cout << "\nEMU ERROR: VOL NOT WITHIN -128 & 127: VOL --> " << vol;
 		return false;
 	}
 }
@@ -756,7 +733,7 @@ void SnesAPUHandler::APU_Set_Echo(unsigned int dtime, int* coef, signed int dfb,
 	int EchoAddr = (0xFF00 - (dtime * 0x0800)) >> 8;
 	char buf[10];
 	sprintf_s(buf, "%04X", EchoAddr);
-	cout << "\nEcho Addr: " << buf;
+	std::cout << "\nEcho Addr: " << buf;
 	spc_dsp_write(Dsp, GLOBAL_evol_l, dvol);
 	spc_dsp_write(Dsp, GLOBAL_evol_r, dvol);
 	spc_dsp_write(Dsp, GLOBAL_edl, dtime);

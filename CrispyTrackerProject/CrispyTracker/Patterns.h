@@ -3,12 +3,12 @@
 
 using namespace std;
 typedef struct Row {
-	int note = 256;
-	int octave = 256;
-	int instrument = 256;
-	int volume = 127;
-	int effect = 256;
-	int effectvalue = 256;
+	int note = NULL_COMMAND;
+	int octave = NULL_COMMAND;
+	int instrument = NULL_COMMAND;
+	int volume = NULL_COMMAND;
+	int effect = NULL_COMMAND;
+	int effectvalue = NULL_COMMAND;
 };
 
 class Patterns

@@ -15,21 +15,6 @@
 #define RETRIGGER		0x0C
 #define BREAK			0x0D
 
-//Instrument settings
-#define ADSR_ENV		0x10
-#define ADSR_TYP		0x11
-#define ADSR_ATK		0x12
-#define ADSR_DEC		0x13
-#define ADSR_DC2		0x14
-#define ADSR_SUS		0x15
-#define ADSR_REL		0x16
-#define GAIN			0x17
-#define INVL			0x18
-#define INVR			0x19
-#define NOISE_SET		0x1A
-#define PITCHMOD		0x1B
-#define ECHO			0x1C
-
 #define PANBRELLO		0x20
 
 //Echo settings
@@ -90,21 +75,7 @@
 #define GOTO_DESC			"0Bxx Goto [xx: set order position] Sets position within orders"
 #define RETRIGGER_DESC		"0Cxx Retrigger [xx: frames between triggers] Plays the note the amount of frames specified"
 #define BREAK_DESC			"0Dxx Break. Goes to next order"
-							
-#define ADSR_ENV_DESC		"10xx Envelope Used [0 for off, 1 for on] Tells the instrument if it uses the ADSR envelope"
-#define ADSR_TYP_DESC		"11xx Envelope Used [xx: type] Dictates which ADSR type to use"
-#define ADSR_ATK_DESC		"12xx Set Attack [xx: value] Sets the attack value"
-#define ADSR_DEC_DESC		"13xx Set Decay [xx: value] Sets the decay value"
-#define ADSR_DC2_DESC		"14xx Set Decay 2 [xx: value] Sets the second decay value"
-#define ADSR_SUS_DESC		"15xx Set Sustain [xx: value] Sets the sustain value"
-#define ADSR_REL_DESC		"16xx Set Release [xx: value] Sets the release value"
-#define GAIN_DESC			"17xx Set Gain [xx: value] Sets the gain value"
-#define INVL_DESC			"18xy Invert Left [x: Inv L, y: Inv R,] Inverts audio on the specific channel"
-#define NOISESET_DESC		"19xx Set Noise [0: off, 1: on] Sets audio generator to play"
-#define NOISEFREQ_DESC		"1Axx Set Noise Frequency [xx: ] Sets the frequency for the noise generator"
-#define PITCHMOD_DESC		"1Bxx Set Pitch Modulation [0: off, 1: on] Enables/Disables the Pitch Mod"
-#define ECHO_DESC			"1Cxx Set Echo [0: off, 1: on] Enables/Disables the Echo"
-							
+						
 #define PANBRLLO_DESC		"20xy Panbrello [x: speed, y: depth] Oscillates the panning of the note"
 
 #define ECHO_DEL_DESC		"30xx Echo Delay [xx: echo value] sets the delay value of the echo [Note! Every echo value consumes 2048 bytes of Audio Ram, this may cause issues within the ROM export and may not be able to fit within the SPC Export!]"

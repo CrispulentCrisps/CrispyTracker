@@ -54,8 +54,7 @@
 #define SPC_c1              0xFE
 #define SPC_c2              0xFF
 
-#define Sin_Table_Page      0x0200//AKA start of RAM
-#define Sample_Mem_Page     0x0300
+#define Sample_Mem_Page     0x0200
 #define Echo_Buffer_Addr    0xEE00
 #define Sample_Dir_Page     0xFF00
 

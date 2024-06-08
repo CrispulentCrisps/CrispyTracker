@@ -7,11 +7,10 @@ Now, this is a group project, but life can get in the way and must be prioritise
 I intend for this project to be free and open source, as this is what I believe is the best way to store programs, so any contributions or suggestions can be throw at me!
 
 # Collaborators
-
 	AlexMush
-	Kulor
-	Myself806
+	Franciscod
 	Euly
+	Tim4242
 
 # Libraries:
 	ImGUI
@@ -19,5 +18,7 @@ I intend for this project to be free and open source, as this is what I believe 
 	Libsndfile
 	GLFW
 	OpenGL3
+
+	For assembly compilaton use Asar 1.91
 
 uses MIT license

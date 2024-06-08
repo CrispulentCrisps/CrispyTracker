@@ -1,0 +1,133 @@
+Driver engine
+
+- = Features = -
+Play individual notes
+
+Refer to instrument values for:
+	- Volume [includes panning]
+	- Effect state [L/R inversion, pitch mod, echo, noise]
+	- Gain [first 8 bits since the last 8 are not of good use]
+	- ADSR envelope information
+	- Sample index for SCRN registers
+	
+Process effects including:
+	- Arpeggios
+	- Portamento
+	- Vibrato
+	- Tremolando
+	- Volume slides
+	- Panning state
+	- Retriggering notes
+	- Changing echo state
+	- Global panning and volume
+	- Arp Speed control
+	- Tracker Speed control
+	- Flag communication between the main CPU and SPC-700
+	- Halting tune
+
+Have patterns to repeat written sequences of notes
+Store samples as brr files
+Index for tracks to allow for multiple tracks in a single SPC file
+
+Allow for SFX to be played in any channel at any point in time
+
+- = Design = -
+
+The engine process will be split up into 3 main sections
+
+Table Construction
+Handle Row Commands
+Effects Processing
+
+- Table Construction -
+
+Tables will be constructed into the following tables:
+	Instrument Table:
+		int8_t Vol_L;			//Left channel volume
+		int8_t Vol_R;			//Right channel volume
+		uint8_t ADSR1;			//EDDD AAAA	ADSR enable (E), decay rate (D), attack rate (A).
+		uint8_t ADSR2;			//SSSR RRRR	Sustain level (S), sustain rate (R).
+		uint8_t Gain;			//0VVV VVVV 	Value(V).
+		uint8_t EffectState;		//Holds the state of the effects in the instrument to reference in DSP memory
+		uint8_t SampleIndex;		//Index of the sample, to be used by SCRN registers while they look in the DIR page
+		uint8_t Priority;		//Priority system for SFX/Instrument priority
+	
+	Pitch Table:
+		Pitch table will be preprocessed values that hold absolute pitch values, as such it will be stored as a uint16_t
+
+	Pattern Tables
+		Stores the address of row entries in sequence as the track is written out
+
+- Row Commands -
+
+Each row contains the following values:
+	Note
+	Instrument
+	Volume
+	Effect
+	Effect Value
+
+
+
+- Effects Processing -
+
+Effects will be categorised into 3 types
+	Type 1: DSP Writes; these will be effects that directly change register values in the DSP. This could potentially be a volatile system due to how the SNES handles things like delay buffers or coeffecients, so take care.
+	Type 2: Flag Effects; these will continue to affect the state of the channel as long as the effect is on. This includes Arps, Vibrato, Tremolando, Volume slides, Panbrello and Portamento.
+	Type 3: Communication Effects; these will act as values that the track can write to that will be sent to the main CPU.
+
+Effects list goes as:
+	00xy Arpeggio [x: offset 1, y: offset 2] Semitone offset from base note
+	01xx Portamento up [xx: speed up] Slides the pitch upwards
+	02xx Portamento up [xx: speed down] Slides the pitch downwards
+	03xx Portamento to [xx: speed toward] Slides the pitch to the desired note
+	04xy Vibrato [x: speed, y: depth] Oscillates the pitch of the note
+	05xy Tremolando [x: speed, y: depth] Oscillates the volume of the note
+
+	08xy Panning [x: left, y: right] Sets the panning of the channel
+	09xx Speed [xx: speed] Sets the speed of the track
+	0Axy Volume Slide [x: up, y: down] Changes the instrument volume
+	0Bxx Goto [xx: set order position] Sets position within orders
+	0Cxx Retrigger [xx: frames between triggers] Plays the note the amount of frames specified
+	0Dxx Break. Goes to next order
+
+	20xy Panbrello [x: speed, y: depth] Oscillates the panning of the note
+
+	30xx Echo Delay [xx: echo value] sets the delay value of the echo [Note! Every echo value consumes 2048 bytes of Audio Ram, this may cause issues within the ROM export and may not be able to fit within the SPC Export!]
+	31xx Echo Feedback [xx: feedback] Sets the Feedback of the echo. A value of 80 is equivelant to a feedback of 0
+	32xx Echo L Volume [xx: left value] Sets the volume of the Echo Left channel. A value of 80 is equivelant to a feedback of 0
+	33xx Echo R Volume [xx: right value] Sets the volume of the Echo Right channel. A value of 80 is equivelant to a feedback of 0
+	34xx Echo Filter Value 1 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]
+	35xx Echo Filter Value 2 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]
+	36xx Echo Filter Value 3 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]
+	37xx Echo Filter Value 4 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]
+	38xx Echo Filter Value 5 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]
+	39xx Echo Filter Value 6 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]
+	3Axx Echo Filter Value 7 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]
+	3Bxx Echo Filter Value 8 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]
+
+	Flag Effect 0 [On or Off] Used for interfacing with the SNES
+	Flag Effect 1 [On or Off] Used for interfacing with the SNES
+	Flag Effect 2 [On or Off] Used for interfacing with the SNES
+	Flag Effect 3 [On or Off] Used for interfacing with the SNES
+	Flag Effect 4 [On or Off] Used for interfacing with the SNES
+	Flag Effect 5 [On or Off] Used for interfacing with the SNES
+	Flag Effect 6 [On or Off] Used for interfacing with the SNES
+	Flag Effect 7 [On or Off] Used for interfacing with the SNES
+	Flag Effect 8 [On or Off] Used for interfacing with the SNES
+	Flag Effect 9 [On or Off] Used for interfacing with the SNES
+	Flag Effect A [On or Off] Used for interfacing with the SNES
+	Flag Effect B [On or Off] Used for interfacing with the SNES
+	Flag Effect C [On or Off] Used for interfacing with the SNES
+	Flag Effect D [On or Off] Used for interfacing with the SNES
+	Flag Effect E [On or Off] Used for interfacing with the SNES
+	Flag Effect F [On or Off] Used for interfacing with the SNES
+
+	E1xy Portamento up [x: semitone, y: speed] Slides the note pitch up by X semitones at Y speed
+	E2xy Portamento down [x: semitone, y: speed] Slides the note pitch down by X semitones at Y speed
+	E8xx Set Global Left Panning Volume [xx: l value] Sets the Global Left panning of the tune
+	E9xx Set Global Right Panning Volume [xx: r value] Sets the Global Right panning of the tune
+	EAxx Set Global Volume [xx: volume] Set's the Global Volume of the track
+
+	FFxx End Tune [xx: end tune] Will end the tune no matter the value
+

@@ -20,6 +20,10 @@ uint16_t Instrument::BRR_Pitch(double pit)
 		//return 0x1000;
 		return (uint16_t)basepit;
 	}
+	else
+	{
+		return 0;
+	}
 }
 
 double Instrument::SetVolume(int Pan)//Determines volume, 1 for RIGHT, -1 for LEFT

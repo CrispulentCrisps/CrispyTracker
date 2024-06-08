@@ -1,0 +1,1 @@
+C:\Users\david\Documents\Tools\ASAR-Assembler\asar.exe --no-title-check Main.s output.sfc

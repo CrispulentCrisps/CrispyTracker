@@ -2136,7 +2136,7 @@ void Tracker::DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[])
 
 void Tracker::UpdatePatternIndex(int x, int y)//For when you are switching patterns in the top menu item
 {
-	if (patterns[x][y].Index > Maxindex)
+	if (patterns[x][y].Index > Maxindex - 1)
 	{
 		Maxindex = patterns[x][y].Index;
 		Patterns pat;
@@ -2155,7 +2155,6 @@ void Tracker::UpdatePatternIndex(int x, int y)//For when you are switching patte
 		Channels[x].Rows[i].effect = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].effect;
 		Channels[x].Rows[i].effectvalue = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].effectvalue;
 	}
-
 }
 
 void Tracker::UpdateAllPatterns()
