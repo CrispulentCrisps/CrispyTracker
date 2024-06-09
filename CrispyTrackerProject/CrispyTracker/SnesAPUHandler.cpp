@@ -594,7 +594,7 @@ void SnesAPUHandler::APU_Update_Instrument_Memory(std::vector<Patterns>& pat, st
 	SequenceAddr = InstAddr + addroff;
 	sprintf_s(buf, "%04X", SequenceAddr);
 	std::cout << "\nSequenceADDR: " << buf;
-	APU_Update_Sequence_Memory(pat, inst, TrackSize);
+	//APU_Update_Sequence_Memory(pat, inst, TrackSize);
 }
 
 //Writes page for sequence entries
@@ -606,7 +606,7 @@ void SnesAPUHandler::APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std:
 	Row BlankRow = Row();
 	BlankRow.note = NULL_COMMAND;
 	BlankRow.volume = NULL_COMMAND;
-	BlankRow.octave = NULL_COMMAND;
+	BlankRow.octave = 0;
 	BlankRow.effect = NULL_COMMAND;
 	BlankRow.effectvalue = NULL_COMMAND;
 	BlankRow.instrument = NULL_COMMAND;
@@ -677,7 +677,6 @@ void SnesAPUHandler::APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std:
 //Writes page for patterns
 void SnesAPUHandler::APU_Update_Pattern_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize)
 {
-	std::vector<int> SequenceList;
 	int addroff = 0;
 	for (int x = 0; x < pat.size(); x++)
 	{
@@ -691,21 +690,21 @@ void SnesAPUHandler::APU_Update_Pattern_Memory(std::vector<Patterns>& pat, std::
 				Row currentrow = pat[x].SavedRows[y];
 				if (currentrow.note == uniquerows[z].note && currentrow.octave == uniquerows[z].octave && currentrow.volume == uniquerows[z].volume && currentrow.effect == uniquerows[z].effect && currentrow.effectvalue == uniquerows[z].effectvalue)
 				{
-					SequenceList.push_back(z);
-					SeqAmount++;
-					entry.SequenceAmount = SeqAmount;
+					entry.SequenceList.push_back(SequenceAddr + (z*8));
 					break;
 				}
 			}
 		}
+		entry.SequenceAmount = entry.SequenceList.size();
 
 		DSP_MEMORY[PatternAddr + addroff] = entry.PatternIndex;
 		DSP_MEMORY[PatternAddr + addroff + 1] = entry.SequenceAmount;
 		addroff += 2;
 		for (int w = 0; w < entry.SequenceAmount; w++)
 		{
-			DSP_MEMORY[PatternAddr + addroff] = SequenceList[w];
-			addroff++;
+			DSP_MEMORY[PatternAddr + addroff] = (entry.SequenceList[w]) & 0xFF;
+			DSP_MEMORY[PatternAddr + addroff + 1] = (entry.SequenceList[w] >> 8) & 0xFF;
+			addroff += 2;
 		}
 	}
 }

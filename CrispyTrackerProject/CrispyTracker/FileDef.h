@@ -28,11 +28,12 @@ typedef struct InstEntry {
 	uint8_t Gain;			//0VVV VVVV 1MMV VVVV	Mode(M), value(V).
 	uint8_t EffectState;	//Holds the state of the effects in the instrument to reference in DSP memory
 	uint8_t SampleIndex;	//Index of the sample, to be used by SCRN registers while they look in the DIR page
+	uint8_t Priority;		//Priority of instrument based off of SFX priority
 };
 
 //Sequence entry reffers to a single row in the tracker for a single file
 typedef struct SequenceEntry {
-	uint16_t Pitch;			//absolute pitch register value for the given note
+	uint8_t Pitch;			//pitch value for the pitch table
 	int8_t Volume_L;		//Left Volume of said note
 	int8_t Volume_R;		//Right Volume of said note
 	uint16_t instADDR;		//Instrument Reference
@@ -42,8 +43,9 @@ typedef struct SequenceEntry {
 
 //This is for storing repeated sequences
 typedef struct PatternEntry {
-	uint8_t PatternIndex;	//Index that the pattern uses
-	uint8_t SequenceAmount;	//Amount of sequence entries used in said pattern
+	uint8_t PatternIndex;			//Index that the pattern uses
+	uint8_t SequenceAmount;			//Amount of sequence entries used in said pattern
+	std::vector<uint16_t> SequenceList;	//Sequence entries index in pattern
 };
 
 //This is for a single tune that can be used in the SPC file

@@ -45,18 +45,15 @@ Tables will be constructed into the following tables:
 	Instrument Table:
 		int8_t Vol_L;			//Left channel volume
 		int8_t Vol_R;			//Right channel volume
-		uint8_t ADSR1;			//EDDD AAAA	ADSR enable (E), decay rate (D), attack rate (A).
-		uint8_t ADSR2;			//SSSR RRRR	Sustain level (S), sustain rate (R).
-		uint8_t Gain;			//0VVV VVVV 	Value(V).
+		uint8_t ADSR1;			//EDDD AAAA ADSR enable (E), decay rate (D), attack rate (A).
+		uint8_t ADSR2;			//SSSR RRRR Sustain level (S), sustain rate (R).
+		uint8_t Gain;			//0VVV VVVV Value(V).
 		uint8_t EffectState;		//Holds the state of the effects in the instrument to reference in DSP memory
 		uint8_t SampleIndex;		//Index of the sample, to be used by SCRN registers while they look in the DIR page
 		uint8_t Priority;		//Priority system for SFX/Instrument priority
 	
 	Pitch Table:
 		Pitch table will be preprocessed values that hold absolute pitch values, as such it will be stored as a uint16_t
-
-	Pattern Tables
-		Stores the address of row entries in sequence as the track is written out
 
 - Row Commands -
 
@@ -106,22 +103,24 @@ Effects list goes as:
 	3Axx Echo Filter Value 7 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]
 	3Bxx Echo Filter Value 8 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]
 
-	Flag Effect 0 [On or Off] Used for interfacing with the SNES
-	Flag Effect 1 [On or Off] Used for interfacing with the SNES
-	Flag Effect 2 [On or Off] Used for interfacing with the SNES
-	Flag Effect 3 [On or Off] Used for interfacing with the SNES
-	Flag Effect 4 [On or Off] Used for interfacing with the SNES
-	Flag Effect 5 [On or Off] Used for interfacing with the SNES
-	Flag Effect 6 [On or Off] Used for interfacing with the SNES
-	Flag Effect 7 [On or Off] Used for interfacing with the SNES
-	Flag Effect 8 [On or Off] Used for interfacing with the SNES
-	Flag Effect 9 [On or Off] Used for interfacing with the SNES
-	Flag Effect A [On or Off] Used for interfacing with the SNES
-	Flag Effect B [On or Off] Used for interfacing with the SNES
-	Flag Effect C [On or Off] Used for interfacing with the SNES
-	Flag Effect D [On or Off] Used for interfacing with the SNES
-	Flag Effect E [On or Off] Used for interfacing with the SNES
-	Flag Effect F [On or Off] Used for interfacing with the SNES
+
+	C0xx Flag Effect 0 [On or Off] Used for interfacing with the SNES
+	C1xx Flag Effect 1 [On or Off] Used for interfacing with the SNES
+	C2xx Flag Effect 2 [On or Off] Used for interfacing with the SNES
+	C3xx Flag Effect 3 [On or Off] Used for interfacing with the SNES
+	C4xx Flag Effect 4 [On or Off] Used for interfacing with the SNES
+	C5xx Flag Effect 5 [On or Off] Used for interfacing with the SNES
+	C6xx Flag Effect 6 [On or Off] Used for interfacing with the SNES
+	C7xx Flag Effect 7 [On or Off] Used for interfacing with the SNES
+	C8xx Flag Effect 8 [On or Off] Used for interfacing with the SNES
+	C9xx Flag Effect 9 [On or Off] Used for interfacing with the SNES
+	CAxx Flag Effect A [On or Off] Used for interfacing with the SNES
+	CBxx Flag Effect B [On or Off] Used for interfacing with the SNES
+	CCxx Flag Effect C [On or Off] Used for interfacing with the SNES
+	CDxx Flag Effect D [On or Off] Used for interfacing with the SNES
+	CExx Flag Effect E [On or Off] Used for interfacing with the SNES
+	CFxx Flag Effect F [On or Off] Used for interfacing with the SNES
+
 
 	E1xy Portamento up [x: semitone, y: speed] Slides the note pitch up by X semitones at Y speed
 	E2xy Portamento down [x: semitone, y: speed] Slides the note pitch down by X semitones at Y speed

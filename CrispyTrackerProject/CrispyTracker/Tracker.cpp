@@ -722,6 +722,7 @@ void Tracker::Channel_View()
 {
 	float padsize = GetStyle().CellPadding.x;
 	GetStyle().CellPadding.x = 4;
+	GetStyle().ItemSpacing.y = 2;
 	if (Begin("Channels"), 0, UNIVERSAL_WINDOW_FLAGS)
 	{
 		int paddingsave = GetStyle().FramePadding.x;
