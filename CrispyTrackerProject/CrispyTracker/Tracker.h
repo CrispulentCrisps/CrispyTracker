@@ -63,6 +63,8 @@ public:
 	int IDOffset = 0;
 	int FPS = 144;
 	int MAX_FPS = 360;
+	float TimeHolder = 0;
+	float DeltaTimeHolder = 0;
 
 	//Screen dimension constants
 	int SCREEN_WIDTH = 1920;

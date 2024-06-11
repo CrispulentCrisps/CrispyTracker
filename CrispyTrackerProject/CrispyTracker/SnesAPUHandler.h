@@ -136,10 +136,12 @@ public:
     int8_t ChannelVolume_L[8];
     int8_t ChannelVolume_R[8];
 
+    uint8_t KONState;
+    uint8_t KOFState;
+
     void APU_Startup();
     void APU_Update(spc_sample_t* Output, int BufferSize);
     void APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int ypos);
-    void APU_Evaluate_Channel_Regs(Channel* ch);
     void APU_Play_Note_Editor(Channel* ch, Instrument* inst, int note, bool IsOn);
 
     void APU_Process_Effects(Channel* ch, Instrument* inst, int ypos, int* speed, int* patindex, int currenttick);
@@ -162,6 +164,8 @@ public:
 
     int APU_Return_Cycle_Since_Last_Frame();
 
+    void APU_Rebuild_Sample_Memory(std::vector<Sample>& samp);
+
     void APU_Debug_Dump_BRR();
     void APU_Debug_Dump_DIR();
     void APU_Debug_Dump_SPC();
@@ -170,4 +174,5 @@ public:
     int APU_Debug_KON_State();
     int APU_Debug_KOF_State();
     int APU_Debug_PIT_State(int index, int byte);
+    int APU_Debug_VOL_State(int index, int byte);
 };

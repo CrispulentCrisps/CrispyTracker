@@ -14,8 +14,7 @@
 #define GOTO			0x0B
 #define RETRIGGER		0x0C
 #define BREAK			0x0D
-
-#define PANBRELLO		0x20
+#define PANBRELLO		0x0E
 
 //Echo settings
 #define ECHO_DEL		0x30
@@ -91,23 +90,24 @@
 #define ECHO_FIL7_DESC		"3Axx Echo Filter Value 7 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]"
 #define ECHO_FIL8_DESC		"3Bxx Echo Filter Value 8 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]"
 
-#define FLAG_0_DESC =		"0xC0 Flag Effect 0 [On or Off] Used for interfacing with the SNES"
-#define FLAG_1_DESC =		"0xC1 Flag Effect 1 [On or Off] Used for interfacing with the SNES"
-#define FLAG_2_DESC =		"0xC2 Flag Effect 2 [On or Off] Used for interfacing with the SNES"
-#define FLAG_3_DESC =		"0xC3 Flag Effect 3 [On or Off] Used for interfacing with the SNES"
-#define FLAG_4_DESC =		"0xC4 Flag Effect 4 [On or Off] Used for interfacing with the SNES"
-#define FLAG_5_DESC =		"0xC5 Flag Effect 5 [On or Off] Used for interfacing with the SNES"
-#define FLAG_6_DESC =		"0xC6 Flag Effect 6 [On or Off] Used for interfacing with the SNES"
-#define FLAG_7_DESC =		"0xC7 Flag Effect 7 [On or Off] Used for interfacing with the SNES"
-#define FLAG_8_DESC =		"0xC8 Flag Effect 8 [On or Off] Used for interfacing with the SNES"
-#define FLAG_9_DESC =		"0xC9 Flag Effect 9 [On or Off] Used for interfacing with the SNES"
-#define FLAG_A_DESC =		"0xCA Flag Effect A [On or Off] Used for interfacing with the SNES"
-#define FLAG_B_DESC =		"0xCB Flag Effect B [On or Off] Used for interfacing with the SNES"
-#define FLAG_C_DESC =		"0xCC Flag Effect C [On or Off] Used for interfacing with the SNES"
-#define FLAG_D_DESC =		"0xCD Flag Effect D [On or Off] Used for interfacing with the SNES"
-#define FLAG_E_DESC =		"0xCE Flag Effect E [On or Off] Used for interfacing with the SNES"
-#define FLAG_F_DESC =		"0xCF Flag Effect F [On or Off] Used for interfacing with the SNES"
+#define FLAG_0_DESC 		"0xC0 Flag Effect 0 [On or Off] Used for interfacing with the SNES"
+#define FLAG_1_DESC 		"0xC1 Flag Effect 1 [On or Off] Used for interfacing with the SNES"
+#define FLAG_2_DESC 		"0xC2 Flag Effect 2 [On or Off] Used for interfacing with the SNES"
+#define FLAG_3_DESC 		"0xC3 Flag Effect 3 [On or Off] Used for interfacing with the SNES"
+#define FLAG_4_DESC 		"0xC4 Flag Effect 4 [On or Off] Used for interfacing with the SNES"
+#define FLAG_5_DESC 		"0xC5 Flag Effect 5 [On or Off] Used for interfacing with the SNES"
+#define FLAG_6_DESC 		"0xC6 Flag Effect 6 [On or Off] Used for interfacing with the SNES"
+#define FLAG_7_DESC 		"0xC7 Flag Effect 7 [On or Off] Used for interfacing with the SNES"
+#define FLAG_8_DESC 		"0xC8 Flag Effect 8 [On or Off] Used for interfacing with the SNES"
+#define FLAG_9_DESC 		"0xC9 Flag Effect 9 [On or Off] Used for interfacing with the SNES"
+#define FLAG_A_DESC 		"0xCA Flag Effect A [On or Off] Used for interfacing with the SNES"
+#define FLAG_B_DESC 		"0xCB Flag Effect B [On or Off] Used for interfacing with the SNES"
+#define FLAG_C_DESC 		"0xCC Flag Effect C [On or Off] Used for interfacing with the SNES"
+#define FLAG_D_DESC 		"0xCD Flag Effect D [On or Off] Used for interfacing with the SNES"
+#define FLAG_E_DESC 		"0xCE Flag Effect E [On or Off] Used for interfacing with the SNES"
+#define FLAG_F_DESC 		"0xCF Flag Effect F [On or Off] Used for interfacing with the SNES"
 
+#define ARP_SPEED_DESC		"E0xy Arpeggio speed [x: semitone, y: speed] Slides the note pitch up by X semitones at Y speed"
 #define PORT_UP_CTRL_DESC	"E1xy Portamento up [x: semitone, y: speed] Slides the note pitch up by X semitones at Y speed"
 #define PORT_DOWN_CTRL_DESC	"E2xy Portamento down [x: semitone, y: speed] Slides the note pitch down by X semitones at Y speed"
 #define GLOBAL_PAN_L_DESC	"E8xx Set Global Left Panning Volume [xx: l value] Sets the Global Left panning of the tune"
@@ -116,45 +116,35 @@
 
 #define END_DESC			"FFxx End Tune [xx: end tune] Will end the tune no matter the value"
 
-const int16_t SineTable[256] = {
-	 0,     6,    13,    19,    25,    31,    37,
-	44,    50,    56,    62,    68,    74,    80,
-	86,    92,    98,   103,   109,   115,   120,
-   126,   131,   136,   142,   147,   152,   157,
-   162,   167,   171,   176,   180,   185,   189,
-   193,   197,   201,   205,   208,   212,   215,
-   219,   222,   225,   228,   231,   233,   236,
-   238,   240,   242,   244,   246,   247,   249,
-   250,   251,   252,   253,   254,   254,   255,
-   255,   255,   255,   255,   254,   254,   253,
-   252,   251,   250,   249,   247,   246,   244,
-   242,   240,   238,   236,   233,   231,   228,
-   225,   222,   219,   215,   212,   208,   205,
-   201,   197,   193,   189,   185,   180,   176,
-   171,   167,   162,   157,   152,   147,   142,
-   136,   131,   126,   120,   115,   109,   103,
-	98,    92,    86,    80,    74,    68,    62,
-	56,    50,    44,    37,    31,    25,    19,
-	13,     6,     0,    -6,   -13,   -19,   -25,
-   -31,   -37,   -44,   -50,   -56,   -62,   -68,
-   -74,   -80,   -86,   -92,   -98,  -103,  -109,
-  -115,  -120,  -126,  -131,  -136,  -142,  -147,
-  -152,  -157,  -162,  -167,  -171,  -176,  -180,
-  -185,  -189,  -193,  -197,  -201,  -205,  -208,
-  -212,  -215,  -219,  -222,  -225,  -228,  -231,
-  -233,  -236,  -238,  -240,  -242,  -244,  -246,
-  -247,  -249,  -250,  -251,  -252,  -253,  -254,
-  -254,  -255,  -255,  -255,  -255,  -255,  -254,
-  -254,  -253,  -252,  -251,  -250,  -249,  -247,
-  -246,  -244,  -242,  -240,  -238,  -236,  -233,
-  -231,  -228,  -225,  -222,  -219,  -215,  -212,
-  -208,  -205,  -201,  -197,  -193,  -189,  -185,
-  -180,  -176,  -171,  -167,  -162,  -157,  -152,
-  -147,  -142,  -136,  -131,  -126,  -120,  -115,
-  -109,  -103,   -98,   -92,   -86,   -80,   -74,
-   -68,   -62,   -56,   -50,   -44,   -37,   -31,
-   -25,   -19,   -13,    -6 
+const int8_t SineTable[256] = {
+0x00,0x03,0x06,0x09,0x0C,0x10,0x13,0x16,0x19,0x1C,
+0x1F,0x22,0x25,0x28,0x2B,0x2E,0x31,0x33,0x36,0x39,
+0x3C,0x3F,0x41,0x44,0x47,0x49,0x4C,0x4E,0x51,0x53,
+0x55,0x58,0x5A,0x5C,0x5E,0x60,0x62,0x64,0x66,0x68,
+0x6A,0x6B,0x6D,0x6F,0x70,0x71,0x73,0x74,0x75,0x76,
+0x78,0x79,0x7A,0x7A,0x7B,0x7C,0x7D,0x7D,0x7E,0x7E,
+0x7E,0x7F,0x7F,0x7F,0x7F,0x7F,0x7F,0x7F,0x7E,0x7E,
+0x7E,0x7D,0x7D,0x7C,0x7B,0x7A,0x7A,0x79,0x78,0x76,
+0x75,0x74,0x73,0x71,0x70,0x6F,0x6D,0x6B,0x6A,0x68,
+0x66,0x64,0x62,0x60,0x5E,0x5C,0x5A,0x58,0x55,0x53,
+0x51,0x4E,0x4C,0x49,0x47,0x44,0x41,0x3F,0x3C,0x39,
+0x36,0x33,0x31,0x2E,0x2B,0x28,0x25,0x22,0x1F,0x1C,
+0x19,0x16,0x13,0x10,0x0C,0x09,0x06,0x03,0x00,0xFD,
+0xFA,0xF7,0xF4,0xF0,0xED,0xEA,0xE7,0xE4,0xE1,0xDE,
+0xDB,0xD8,0xD5,0xD2,0xCF,0xCD,0xCA,0xC7,0xC4,0xC1,
+0xBF,0xBC,0xB9,0xB7,0xB4,0xB2,0xAF,0xAD,0xAB,0xA8,
+0xA6,0xA4,0xA2,0xA0,0x9E,0x9C,0x9A,0x98,0x96,0x95,
+0x93,0x91,0x90,0x8F,0x8D,0x8C,0x8B,0x8A,0x88,0x87,
+0x86,0x86,0x85,0x84,0x83,0x83,0x82,0x82,0x82,0x81,
+0x81,0x81,0x81,0x81,0x81,0x81,0x82,0x82,0x82,0x83,
+0x83,0x84,0x85,0x86,0x86,0x87,0x88,0x8A,0x8B,0x8C,
+0x8D,0x8F,0x90,0x91,0x93,0x95,0x96,0x98,0x9A,0x9C,
+0x9E,0xA0,0xA2,0xA4,0xA6,0xA8,0xAB,0xAD,0xAF,0xB2,
+0xB4,0xB7,0xB9,0xBC,0xBF,0xC1,0xC4,0xC7,0xCA,0xCD,
+0xCF,0xD2,0xD5,0xD8,0xDB,0xDE,0xE1,0xE4,0xE7,0xEA,
+0xED,0xF0,0xF4,0xF7,0xFA,0xFD
 };
+
 
 enum EffectFlags {
 	arp_flag = 1,				//Flag for arpeggio
@@ -170,13 +160,14 @@ enum EffectFlags {
 class EffectsHandler {
 public:
 	uint8_t Effect_Flags[8];	//Storing effect flags as a bit field, one for each channel: Currently this would store 16 possible effects at once
-	uint16_t SPC_Flags[16];		//Stores the current value for the flag effects
 	
+	uint8_t	Arp_Value[8];		//Stores Arpeggio value
 	int16_t	Port_Value[8];		//Stores portamento value
 	int16_t Vibrato_Value[8];	//Stores vibrato value
 	uint8_t Tremo_Value[8];		//Stores the value held in the tremolando effect
 	uint8_t Panbrello_Value[8];	//Stores the value held in the tremolando effect
 
+	int16_t Base_Note[8];		//Stores base note
 	int16_t Base_Pit[8];		//Stores base pitch
 	int8_t Base_Vol_L[8];		//Stores base volume for L
 	int8_t Base_Vol_R[8];		//Stores base volume for R
@@ -184,4 +175,9 @@ public:
 	uint8_t Sine_Index_Vib[8];	//Stores the index of the position in the sine table, used for vibrato
 	uint8_t Sine_Index_Trem[8];	//Stores the index of the position in the sine table, used for tremolando
 	uint8_t Sine_Index_PnBr[8];	//Stores the index of the position in the sine table, used for panbrello
+	
+	uint8_t ArpCounter[8];		//Stores the counter for arpeggio's
+	uint8_t ArpState[8];		//Stores the currently held note in the arp
+
+	uint8_t Arp_Control = 6;	//Controls how many ticks to wait between arpeggio notes.
 };

@@ -20,17 +20,18 @@ HRESULT SoundGenerator::LoadData(UINT count, BYTE* data, DWORD* flags)
 }
 
 //Update the registers for the emulation
-void SoundGenerator::Update(float ElapsedTime, Channel* ch, vector<Sample>& Samples, int YPos, vector<Instrument>& inst)
+bool SoundGenerator::Update(float ElapsedTime, Channel* ch, vector<Sample>& Samples, int& YPos, vector<Instrument>& inst)
 {
-	for (int i = 0; i < 8; i++)
+	if (ch[0].Tickcheck)
 	{
-		if (ch[i].Tickcheck)
+		for (int i = 0; i < 8; i++)
 		{
 			Emu_APU.APU_Grab_Channel_Status(&ch[i], &inst[ch[i].CurrentInstrument], YPos);
 			ch[i].Tickcheck = false;
 		}
-		Emu_APU.APU_Evaluate_Channel_Regs(ch);
+		YPos++;
 	}
+	return true;
 }
 
 //Updates buffer size for the audio buffer

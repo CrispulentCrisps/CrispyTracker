@@ -26,7 +26,7 @@ double Tracker::ScrollValue()
 		* Scale to screen size
 		* Remove padding from scroll
 	*/
-	return (((double)CursorY / (double)TrackLength)) * ((TextSize + GetStyle().CellPadding.y * 2) * TrackLength) - (GetWindowHeight() / 3.0);;
+	return (((double)CursorY / (double)TrackLength)) * ((TextSize + ImGui::GetStyle().CellPadding.y * 2) * TrackLength) - (GetWindowHeight() / 3.0);;
 }
 
 void Tracker::Initialise(int StartLength)
@@ -69,9 +69,9 @@ void MyAudioCallback(void* userdata, Uint8* stream, int len)
 void Tracker::Run()
 {	
 	glfwInit();
-	Authbuf.reserve(1024);
-	Descbuf.reserve(1024);
-	FilePath.reserve(1024);
+	Authbuf.reserve(128);
+	Descbuf.reserve(128);
+	FilePath.reserve(2048);
 	//Initialise the tracker
 	Initialise(TrackLength);
 	SG.SetBufferSize(SG.TRACKER_AUDIO_BUFFER);
@@ -92,9 +92,6 @@ void Tracker::Run()
 
 	glfwMakeContextCurrent(window);
 	monitor = glfwGetPrimaryMonitor();
-	float SwapInterval = (float)glfwGetVideoMode(monitor)->refreshRate / (float)FPS;
-	cout << "\nSwapInterval: " << SwapInterval << "\n";
-	glfwSwapInterval(SwapInterval); // Enable vsync
 
 	glfwSetWindowUserPointer(window, this);
 
@@ -114,7 +111,7 @@ void Tracker::Run()
 	GetIO().AddKeyEvent(ImGuiKey_Home, false);
 	GetIO().AddKeyEvent(ImGuiKey_End, false);
 	StyleColorsClassic();
-	ImGuiStyle* style = &GetStyle();
+	ImGuiStyle* style = &ImGui::GetStyle();
 	style->Colors[ImGuiCol_WindowBg] = WindowBG;
 	style->FrameBorderSize = 0.1f;
 	style->WindowRounding = .1f;
@@ -123,7 +120,6 @@ void Tracker::Run()
 	io = GetIO();
 	io.DisplaySize.x = SCREEN_WIDTH;
 	io.DisplaySize.y = SCREEN_HEIGHT;
-	io.DeltaTime = 1.f / FPS;
 	GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
 	if (window == NULL)
@@ -177,7 +173,6 @@ void Tracker::Run()
 
 		PlotColours = ImPlot::AddColormap("RGBColors", colorDataRGB, 32);
 	}
-
 	ChannelEditState cstate = NOTE;
 	SG.DEBUG_Open_File();
 	while (running) {
@@ -194,7 +189,6 @@ void Tracker::Run()
 	ImGui::DestroyContext();
 	ImPlot::DestroyContext();
 	glfwDestroyWindow(window);
-	//Quit SDL subsystems
 	ImGui_ImplOpenGL3_Shutdown();
 	glfwTerminate();
 	SDL_Quit();
@@ -216,22 +210,21 @@ void Tracker::CheckInput()
 	{
 		running = false;
 	}
-
-	UpdateAudioBuffer();
 	
-	//cout << "Playing Mode = " << PlayingMode;
 	if (PlayingMode)
 	{
 		RunTracker();
 	}
-	else
-	{
-		//SDL_ClearQueuedAudio(dev);
-	}
+
+	UpdateAudioBuffer();
 }
 
 void Tracker::Render()
 {
+	glfwWaitEvents();
+	float current = (float)glfwGetTime();
+	DeltaTimeHolder = current - TimeHolder;
+	TimeHolder = current;
 	IDOffset = 0;
 	FrameCount++;
 	ImGui_ImplOpenGL3_NewFrame();
@@ -240,10 +233,10 @@ void Tracker::Render()
 	DockSpaceOverViewport(NULL);
 	if (!ShowCredits)
 	{
+		//ShowDemoWindow();
 		MenuBar();
 		Author_View();
 		Speed_View();
-		//ShowDemoWindow();
 		Patterns_View();
 		Channel_View();
 		Instruments();
@@ -267,15 +260,13 @@ void Tracker::Render()
 	{
 		CreditsWindow();
 	}
-
 	ImGui::Render();
 	if (ImGui::GetDrawData() != NULL)
 	{
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		glfwSwapBuffers(window);
 	}
-	glfwWaitEvents();
-	EndFrame();
+	ImGui::EndFrame();
 }
 
 void Tracker::MenuBar()
@@ -308,29 +299,33 @@ void Tracker::MenuBar()
 		{
 			ShowEcho = !ShowEcho;
 		}
-		if (Selectable("Dump SPC"))
-		{
-			SG.Emu_APU.APU_Debug_Dump_SPC();
-		}
-		if (Selectable("Dump BRR"))
-		{
-			SG.Emu_APU.APU_Debug_Dump_BRR();
-		}
-		if (Selectable("Dump DIR"))
-		{
-			SG.Emu_APU.APU_Debug_Dump_DIR();
-		}
-		if (Selectable("Dump FLG"))
-		{
-			SG.Emu_APU.APU_Debug_Dump_FLG();
-		}
-		if (Selectable("Dump INST"))
-		{
-			SG.Emu_APU.APU_Debug_Dump_INST();
-		}
 		if (Selectable("DSP regs"))
 		{
 			ShowDSPDebugger = !ShowDSPDebugger;
+		}
+		if (ImGui::TreeNode("Dump contents"))
+		{
+			if (Selectable("Dump SPC"))
+			{
+				SG.Emu_APU.APU_Debug_Dump_SPC();
+			}
+			if (Selectable("Dump BRR"))
+			{
+				SG.Emu_APU.APU_Debug_Dump_BRR();
+			}
+			if (Selectable("Dump DIR"))
+			{
+				SG.Emu_APU.APU_Debug_Dump_DIR();
+			}
+			if (Selectable("Dump FLG"))
+			{
+				SG.Emu_APU.APU_Debug_Dump_FLG();
+			}
+			if (Selectable("Dump INST"))
+			{
+				SG.Emu_APU.APU_Debug_Dump_INST();
+			}
+			TreePop();
 		}
 		ImGui::EndMenu();
 	}
@@ -362,6 +357,7 @@ void Tracker::CreditsWindow()
 		BulletText("Crisps");
 		BulletText("Alexmush");
 		BulletText("Euly");
+		BulletText("Franciscod");
 		BulletText("Tim4242");
 
 		NewLine();
@@ -371,7 +367,7 @@ void Tracker::CreditsWindow()
 
 		NewLine();
 		Text("Driver Code:");
-		BulletText("Kulor");
+		BulletText("Crisps");
 
 		if (Button("Back to editor", ImVec2(128, TextSize * 1.5))) ShowCredits = false;
 	}
@@ -388,12 +384,12 @@ void Tracker::Patterns_View()
 			for (int y = 0; y < SongLength; y++)
 			{
 				TableNextRow();
-				TableNextColumn();
+				ImGui::TableNextColumn();
 				if (Selectable(to_string(y).c_str())) {
 					SelectedPattern = y;
 					UpdateAllPatterns();
 				}
-				TableNextColumn();
+				ImGui::TableNextColumn();
 
 				//Row Highlighting
 				ImU32 col;
@@ -427,7 +423,7 @@ void Tracker::Patterns_View()
 
 					PopID();
 					IDOffset++;
-					TableNextColumn();
+					ImGui::TableNextColumn();
 				}
 			}
 			EndTable();
@@ -564,7 +560,7 @@ void Tracker::Instruments()//Showing the instruments window at the side
 					{
 						SelectedInst = inst.size();
 					}
-					TableNextColumn();
+					ImGui::TableNextColumn();
 					PopID();
 					IDOffset++;
 				}
@@ -720,22 +716,22 @@ void Tracker::Instrument_View()//Instrument editor
 
 void Tracker::Channel_View()
 {
-	float padsize = GetStyle().CellPadding.x;
-	GetStyle().CellPadding.x = 4;
-	GetStyle().ItemSpacing.y = 2;
+	float padsizex = ImGui::GetStyle().CellPadding.x;
+	float padsizey = ImGui::GetStyle().CellPadding.y;
 	if (Begin("Channels"), 0, UNIVERSAL_WINDOW_FLAGS)
 	{
-		int paddingsave = GetStyle().FramePadding.x;
 		if (PlayingMode)
 		{
 			SetScrollY(ScrollValue());
 		}
 		if (BeginTable("ChannelView", 9, ImGuiTableFlags_SizingFixedFit, ImVec2(GetWindowWidth() * .9 + (TextSize * 8), 0)) != NULL)
 		{
+			ImGuiListClipper clipper;
+			clipper.Begin(TrackLength);
 			string ind;
 			ImVec2 RowVec = ImVec2((GetWindowWidth() / 9.0) / 6.0, (double)TextSize - (TextSize/3.0));
 			//Actual pattern data
-			TableNextColumn();
+			ImGui::TableNextColumn();
 			// This index is for each individual channel on the snes
 			// the -1 is for the left hand columns index
 			for (int i = -1; i < 8; i++)//X
@@ -753,7 +749,7 @@ void Tracker::Channel_View()
 				{
 					if (i == -1)//this is for the index on the leftmost of the screen
 					{
-						if (j == -1) ind = "|_|";
+						if (j == -1) ind = "---";
 						else ind = to_string(j);
 
 						if (j < 10)
@@ -773,17 +769,17 @@ void Tracker::Channel_View()
 					{
 						//Channel
 						//the *12 is for the char amount + 1 for spacing
-						ImVec2 sizevec = ImVec2(TextSize*9, RowVec.y);
+						ImVec2 sizevec = ImVec2(TextSize * 9, RowVec.y);
 						if (BeginTable("RowView", 5, TABLE_FLAGS, sizevec))
 						{
 							ImVec2 NoteSize = ImVec2(TextSize * 1.75, RowVec.y);
 							ImVec2 MiscSize = ImVec2(TextSize, RowVec.y);
-							TableSetupColumn("note",	ImGuiTableColumnFlags_WidthFixed, 0.0);
-							TableSetupColumn("vol",		ImGuiTableColumnFlags_WidthFixed, 0.0);
-							TableSetupColumn("inst",	ImGuiTableColumnFlags_WidthFixed, 0.0);
-							TableSetupColumn("effe",	ImGuiTableColumnFlags_WidthFixed, 0.0);
-							TableSetupColumn("val",		ImGuiTableColumnFlags_WidthFixed, 0.0);
-							TableNextColumn();
+							TableSetupColumn("note", ImGuiTableColumnFlags_WidthFixed, 0.0);
+							TableSetupColumn("vol", ImGuiTableColumnFlags_WidthFixed, 0.0);
+							TableSetupColumn("inst", ImGuiTableColumnFlags_WidthFixed, 0.0);
+							TableSetupColumn("effe", ImGuiTableColumnFlags_WidthFixed, 0.0);
+							TableSetupColumn("val", ImGuiTableColumnFlags_WidthFixed, 0.0);
+							ImGui::TableNextColumn();
 							//Row Highlighting
 							ImU32 col;
 							if (EditingMode && j == CursorY || PlayingMode && j == CursorY)
@@ -834,7 +830,7 @@ void Tracker::Channel_View()
 							}
 							PopID();
 							PushID(IDOffset + i + (j * 40) + 1);
-							TableNextColumn();
+							ImGui::TableNextColumn();
 
 							if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
 							{
@@ -853,7 +849,7 @@ void Tracker::Channel_View()
 							}
 							PopID();
 							PushID(IDOffset + i + (j * 40) + 2);
-							TableNextColumn();
+							ImGui::TableNextColumn();
 
 							if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
 							{
@@ -872,7 +868,7 @@ void Tracker::Channel_View()
 							}
 							PopID();
 							PushID(IDOffset + i + (j * 40) + 3);
-							TableNextColumn();
+							ImGui::TableNextColumn();
 
 							if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
 							{
@@ -891,7 +887,7 @@ void Tracker::Channel_View()
 							}
 							PopID();
 							PushID(IDOffset + i + (j * 40) + 4);
-							TableNextColumn();
+							ImGui::TableNextColumn();
 
 							if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
 							{
@@ -914,13 +910,15 @@ void Tracker::Channel_View()
 						}
 					}
 				}
-				TableNextColumn();
+				ImGui::TableNextColumn();
+
 			}
-			EndTable();//keeps crashing here when it minimises, seems one table fails when the window is small enough
+			EndTable();
 		}
 	}
 	End();
-	GetStyle().CellPadding.x = padsize;
+	ImGui::GetStyle().CellPadding.x = padsizex;
+	ImGui::GetStyle().CellPadding.y = padsizey;
 }
 
 void Tracker::Samples()
@@ -944,6 +942,7 @@ void Tracker::Samples()
 			{
 				samples.erase((samples.begin()) + SelectedSample);
 			}
+			SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
 		}
 		SameLine();
 		if (Button("Copy", ImVec2(GetWindowWidth() * .3, 24)) && samples.size() > 1)
@@ -953,6 +952,7 @@ void Tracker::Samples()
 			newsamp.SampleName += to_string(index);
 			samples.push_back(newsamp);
 			cout << samples.size();
+			SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
 		}
 
 		if (samples.size() > 0)
@@ -978,7 +978,7 @@ void Tracker::Samples()
 					{
 						SelectedSample = samples.size() - 1;
 					}
-					TableNextColumn();
+					ImGui::TableNextColumn();
 					PopID();
 				}
 				EndTable();
@@ -1006,15 +1006,15 @@ void Tracker::Sample_View()
 			InputInt("Fine Tune", (int*)&samples[SelectedSample].FineTune, 1, 1);
 			if (Checkbox("Loop Sample", &samples[SelectedSample].Loop)) {
 				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-				SG.Emu_APU.APU_Set_Sample_Memory(samples);
+				SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
 			}
 			if (InputInt("Loop Start", (int*)&samples[SelectedSample].LoopStart, 16, 0)) {
 				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-				SG.Emu_APU.APU_Set_Sample_Memory(samples);
+				SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
 			}
 			if(InputInt("Loop End", (int*)&samples[SelectedSample].LoopEnd, 16, 0)){
 				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-				SG.Emu_APU.APU_Set_Sample_Memory(samples);
+				SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
 			}
 			if (samples.size() > 1)
 			{
@@ -1044,19 +1044,19 @@ void Tracker::Sample_View()
 					{
 						samples[SelectedSample].LoopEnd = samples[SelectedSample].SampleData.size();
 						SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-						SG.Emu_APU.APU_Set_Sample_Memory(samples);
+						SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
 					}
 					else if (samples[SelectedSample].LoopEnd < 16)
 					{
 						samples[SelectedSample].LoopEnd = 16;
 						SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-						SG.Emu_APU.APU_Set_Sample_Memory(samples);
+						SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
 					}
 					else if (samples[SelectedSample].LoopStart < 0)
 					{
 						samples[SelectedSample].LoopStart = 0;
 						SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-						SG.Emu_APU.APU_Set_Sample_Memory(samples);
+						SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
 					}
 
 					if (samples[SelectedSample].LoopEnd % 16 != 0)//Assumes the sample is too large to hold
@@ -1221,9 +1221,9 @@ void Tracker::Settings_View()
 
 				EndTabBar();
 
-				SetCursorPosY(GetWindowHeight() - (TextSize + GetStyle().FramePadding.y) * 2);
+				SetCursorPosY(GetWindowHeight() - (TextSize + ImGui::GetStyle().FramePadding.y) * 2);
 
-				SetCursorPosX(GetWindowWidth() - (TextSize + GetStyle().FramePadding.x + 18) * 2);
+				SetCursorPosX(GetWindowWidth() - (TextSize + ImGui::GetStyle().FramePadding.x + 18) * 2);
 				if (Button("Apply"))
 				{
 					UpdateSettings(0);
@@ -1235,7 +1235,7 @@ void Tracker::Settings_View()
 					EndTooltip();
 				}
 				SameLine();
-				SetCursorPosX(GetWindowWidth() - (TextSize + GetStyle().FramePadding.x + 18) * 4);
+				SetCursorPosX(GetWindowWidth() - (TextSize + ImGui::GetStyle().FramePadding.x + 18) * 4);
 				if (Button("Cancel"))
 				{
 					ResetSettings();
@@ -1475,7 +1475,7 @@ void Tracker::EchoSettings()
 
 void Tracker::SetupInstr()
 {
-	DefaultInst.Index = 1;
+	DefaultInst.Index = 0;
 	DefaultInst.Name += "Instrument: ";
 	DefaultInst.SampleIndex = 0;
 	DefaultInst.Volume = 127;
@@ -1642,7 +1642,7 @@ void Tracker::EffectsText(int effect)
 void Tracker::RunTracker()
 {
 	//Upate the row index based off of tick timing
-	
+
 	TickTimer -= SG.Emu_APU.APU_Return_Cycle_Since_Last_Frame();
 
 	if (CursorY >= TrackLength - 1 && PatternIndex >= patterns->size() - 1)
@@ -1672,9 +1672,9 @@ void Tracker::RunTracker()
 	{
 		TickTimer = 32000.0 / (float)BaseTempo * TempoDivider;
 		TickCounter++;
+
 		if (TickCounter > Speed1 * TempoDivider)
 		{
-			CursorY++;
 			UpdateRows();
 			TickCounter = 0;
 		}
@@ -1688,7 +1688,7 @@ void Tracker::UpdateRows()
 	{
 		Channels[i].TickCheck(CursorY % TrackLength, inst, samples);
 	}
-
+	//CursorY++;
 	//cout << "\nCurrent Value: " << ((double)CursorY - 1.0/(24.0 / (double)TrackLength) / (double)TrackLength) * ((TextSize + GetStyle().CellPadding.y * 2) * TrackLength);
 }
 
@@ -1705,7 +1705,7 @@ void Tracker::UpdateAudioBuffer()
 {
 	if (SDL_GetQueuedAudioSize(dev) < SG.TRACKER_AUDIO_BUFFER * 8)
 	{
-		SG.Update(GetIO().DeltaTime, Channels, samples, CursorY, inst);
+		SG.Update(DeltaTimeHolder, Channels, samples, CursorY, inst);
 		SG.Emu_APU.APU_Update(SG.Totalbuffer[0].data(), 2 * SG.TRACKER_AUDIO_BUFFER);
 		SDL_QueueAudio(dev, SG.Totalbuffer[0].data(), sizeof(Sint16) * 2 * SG.TRACKER_AUDIO_BUFFER);
 	}
@@ -1727,9 +1727,9 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 			InitPressed = true;
 		}
 		else if (InitTimer > InitKeyTime)
-			KeyTimer += GetIO().DeltaTime;
+			KeyTimer += DeltaTimeHolder;
 		else
-			InitTimer += GetIO().DeltaTime;
+			InitTimer += DeltaTimeHolder;
 	}
 	else
 	{
@@ -2075,7 +2075,7 @@ void Tracker::LoadSample()
 					}
 					else //Assume we have a valid sample
 					{
-						cur.SampleIndex = SelectedSample;
+						cur.SampleIndex = SelectedSample+1;
 						FileName.erase(0, FilePath.length() + 1);
 						cur.SampleName = FileName;
 						cur.SampleRate = soundinfo.samplerate;
@@ -2091,8 +2091,7 @@ void Tracker::LoadSample()
 						//Memory shit
 						SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
 						SG.Emu_APU.APU_Evaluate_BRR_Loop_Start(&samples[SelectedSample]);
-						SG.Emu_APU.APU_Set_Sample_Memory(samples);
-						SG.Emu_APU.APU_Set_Sample_Directory(samples);
+						SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
 					}
 					sf_close(file);
 				}
@@ -2269,15 +2268,31 @@ void Tracker::DSPDebugWindow()
 		if (BeginTable("Pitch Table", 2, TABLE_FLAGS)) {
 			for (int x = 0; x < 8; x++)
 			{
-				TableNextColumn();
+				ImGui::TableNextColumn();
 				string channeltext = "Channel ";
 				channeltext += to_string(x) + " PIT_L: " + to_string(SG.Emu_APU.APU_Debug_PIT_State(x, 0));
 				Text(channeltext.data());
-				TableNextColumn();
+				ImGui::TableNextColumn();
 				string channeltext2 = "Channel ";
 				channeltext2 += to_string(x) + " PIT_H: " + to_string(SG.Emu_APU.APU_Debug_PIT_State(x, 1));
 				Text(channeltext2.data());
-				TableNextColumn();
+				ImGui::TableNextColumn();
+				TableNextRow();
+			}
+			EndTable();
+		}
+		if (BeginTable("Volume Table", 2, TABLE_FLAGS)) {
+			for (int x = 0; x < 8; x++)
+			{
+				ImGui::TableNextColumn();
+				string channeltext = "Channel ";
+				channeltext += to_string(x) + " VOL_L: " + to_string(SG.Emu_APU.APU_Debug_VOL_State(x, 0));
+				Text(channeltext.data());
+				ImGui::TableNextColumn();
+				string channeltext2 = "Channel ";
+				channeltext2 += to_string(x) + " VOL_R: " + to_string(SG.Emu_APU.APU_Debug_VOL_State(x, 1));
+				Text(channeltext2.data());
+				ImGui::TableNextColumn();
 				TableNextRow();
 			}
 			EndTable();

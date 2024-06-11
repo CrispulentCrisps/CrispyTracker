@@ -19,9 +19,12 @@ org $C10000     ;Go to bank C1000
 
 ROM_Engine_Start:
 
-base $0200      ;Set audio driver code to 0x0200 [closest to the start of memory we can get away with]
+base $0200          ;Set audio driver code to 0x0200 [closest to the start of memory we can get away with]
 
-DriverLoop:
+DriverLoop:         ;Main driver loop
+
+.TickRoutine:       ;Routine for incrementing the tick counter and postiion within the track
+    
 
 bra DriverLoop
 

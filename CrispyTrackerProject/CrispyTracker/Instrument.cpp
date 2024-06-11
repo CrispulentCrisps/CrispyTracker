@@ -26,9 +26,9 @@ uint16_t Instrument::BRR_Pitch(double pit)
 	}
 }
 
-double Instrument::SetVolume(int Pan)//Determines volume, 1 for RIGHT, -1 for LEFT
+double Instrument::SetVolume(int Pan)//Determines volume, 1 for LEFT, -1 for RIGHT
 {
-	if (Pan >= 0)//Assume R
+	if (Pan >= 0)//Assume L
 	{
 		return (LPan / 127.0) * (Volume / 127.0) * (InvL ? -1 : 1);
 	}

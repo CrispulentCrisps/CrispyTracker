@@ -16,7 +16,7 @@ typedef struct Module {
 	std::vector<Sample> samples;
 	std::vector<Instrument> inst;
 	std::vector<Patterns> patterns;
-	char dsp_mem[65536];
+	uint8_t dsp_mem[65536];
 };
 
 //This is for each instrument used in every track, this is to save memory from having to write the same values in the sequence data again and again

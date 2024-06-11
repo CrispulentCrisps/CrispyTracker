@@ -125,7 +125,6 @@ int Channel::EvaluateHexInput(int input, int index, int max, int valuetype)
 	}
 	return NewValue;
 }
-
 void Channel::SetUp(int Length)
 {
 	Row row = Row();
@@ -140,13 +139,10 @@ void Channel::SetUp(int Length)
 void Channel::TickCheck(int RowIndex, vector<Instrument>& instruments, vector<Sample>& samples)
 {
 	Tickcheck = true;
-	int CurrentSample = instruments[CurrentInstrument].SampleIndex;//Dictates the current sample [Here to make the code look cleaner]
 	if (Rows[RowIndex].note != MAX_VALUE && Rows[RowIndex].instrument < NULL_COMMAND)
 	{
 		//This is when a note should be played
 		CurrentInstrument = instruments[Rows[RowIndex].instrument].Index;
-		CurrentSamplePointIndex = 0;
 		PlayingNote = true;
-		cout << "\nChannel Hit!" << "\nCurrent Note: " << Rows[RowIndex].note << "\nCurrent Row " << RowIndex;
 	}
 }

@@ -32,7 +32,7 @@ Reset:
     jml $800000+(.ResetOffset&$FFFF);Jump to $80 in terms of memory X axis
 
 .ResetOffset
-    phk                         ;Push K
+    phk                         ;Push to stack
     plb                         ;Pull B
 
     ;Now we turn the screen black to avoid garbage data being written to the screen

@@ -48,7 +48,7 @@ public:
 
 	SoundGenerator(int TV, int NI, int POS, Channel channels[]);
 	HRESULT LoadData(UINT count, BYTE* data, DWORD* flags);
-	void Update(float ElapsedTime, Channel* ch, vector<Sample>& Samples, int YPos, vector<Instrument>& inst);//This should be used for updating the sample index of the channels
+	bool Update(float ElapsedTime, Channel* ch, vector<Sample>& Samples, int& YPos, vector<Instrument>& inst);//This should be used for updating the sample index of the channels
 	void SetBufferSize(int Length);
 	int P = 0;
 
