@@ -426,7 +426,7 @@ void Tracker::Patterns_View()
 					ImGui::TableNextColumn();
 				}
 			}
-			EndTable();
+			ImGui::EndTable();
 
 
 			NextColumn();
@@ -564,7 +564,7 @@ void Tracker::Instruments()//Showing the instruments window at the side
 					PopID();
 					IDOffset++;
 				}
-				EndTable();
+				ImGui::EndTable();
 			}
 		}
 	}
@@ -726,194 +726,193 @@ void Tracker::Channel_View()
 		}
 		if (BeginTable("ChannelView", 9, ImGuiTableFlags_SizingFixedFit, ImVec2(GetWindowWidth() * .9 + (TextSize * 8), 0)) != NULL)
 		{
-			ImGuiListClipper clipper;
-			clipper.Begin(TrackLength);
 			string ind;
-			ImVec2 RowVec = ImVec2((GetWindowWidth() / 9.0) / 6.0, (double)TextSize - (TextSize/3.0));
+			ImVec2 RowVec = ImVec2((GetWindowWidth() / 9.0) / 6.0, (double)TextSize - (TextSize / 3.0));
 			//Actual pattern data
-			ImGui::TableNextColumn();
-			// This index is for each individual channel on the snes
-			// the -1 is for the left hand columns index
-			for (int i = -1; i < 8; i++)//X
-			{
-				if (i >= 0)
+			if (ImGui::TableNextColumn()) {
+				// This index is for each individual channel on the snes
+				// the -1 is for the left hand columns index
+				for (int i = -1; i < 8; i++)//X
 				{
-					PushStyleColor(ImGuiTableBgTarget_RowBg0, (ImVec4)CursorCol);
-					string ChannelTitle = "Pattern: ";
-					ChannelTitle += to_string(patterns[i][SelectedPattern].Index);
-					Text(ChannelTitle.c_str());
-					PopStyleColor();
-				}
-				//This determines the columns on a given channel [all track lengths are constant between channels]
-				for (int j = -1; j < TrackLength; j++)//Y
-				{
-					if (i == -1)//this is for the index on the leftmost of the screen
+					if (i >= 0)
 					{
-						if (j == -1) ind = "---";
-						else ind = to_string(j);
-
-						if (j < 10)
+						PushStyleColor(ImGuiTableBgTarget_RowBg0, (ImVec4)CursorCol);
+						string ChannelTitle = "Pattern: ";
+						ChannelTitle += to_string(patterns[i][SelectedPattern].Index);
+						Text(ChannelTitle.c_str());
+						PopStyleColor();
+					}
+					//This determines the columns on a given channel [all track lengths are constant between channels]
+					for (int j = -1; j < TrackLength; j++)//Y
+					{
+						if (i == -1)//this is for the index on the leftmost of the screen
 						{
-							ind += "  ";
-						}
-						else if (j >= 10 && j < 100)
-						{
-							ind += " ";
-						}
+							if (j == -1) ind = "---";
+							else ind = to_string(j);
 
-						if (Selectable(ind.c_str())) {
-							CursorY = j;
+							if (j < 10)
+							{
+								ind += "  ";
+							}
+							else if (j >= 10 && j < 100)
+							{
+								ind += " ";
+							}
+
+							if (Selectable(ind.c_str())) {
+								CursorY = j;
+							}
+						}
+						else if (j > -1)
+						{
+							//Channel
+							//the *12 is for the char amount + 1 for spacing
+							ImVec2 sizevec = ImVec2(TextSize * 9, RowVec.y);
+							if (BeginTable("RowView", 5, TABLE_FLAGS, sizevec))
+							{
+								ImVec2 NoteSize = ImVec2(TextSize * 1.75, RowVec.y);
+								ImVec2 MiscSize = ImVec2(TextSize, RowVec.y);
+								TableSetupColumn("note", ImGuiTableColumnFlags_WidthFixed, 0.0);
+								TableSetupColumn("vol", ImGuiTableColumnFlags_WidthFixed, 0.0);
+								TableSetupColumn("inst", ImGuiTableColumnFlags_WidthFixed, 0.0);
+								TableSetupColumn("effe", ImGuiTableColumnFlags_WidthFixed, 0.0);
+								TableSetupColumn("val", ImGuiTableColumnFlags_WidthFixed, 0.0);
+								if (ImGui::TableNextColumn()) {
+									//Row Highlighting
+									ImU32 col;
+									if (EditingMode && j == CursorY || PlayingMode && j == CursorY)
+									{
+										col = Editing_H2Col;
+									}
+									else
+									{
+										if (j % Highlight2 == 0)
+										{
+											col = H2Col;
+										}
+										else if (j % Highlight1 == 0)
+										{
+											col = H1Col;
+										}
+										else
+										{
+											col = Default;
+										}
+									}
+									TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+
+									bool IsPoint = CursorX == i && CursorY == j;
+									if (IsPoint)//i = x, j = y
+									{
+										if (IsWindowFocused())
+										{
+											ChannelInput(CursorPos, i, j);
+										}
+									}
+									PushID(IDOffset + i + (j * 40));
+									//Cursor highlighting
+									if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+									{
+										TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
+									}
+									else
+									{
+										TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+									}
+									if (Selectable(Channels[i].NoteView(j).c_str(), IsPoint && CursorPos == NOTE, 0, NoteSize))
+									{
+										CursorPos = NOTE;
+										CursorX = i;
+										CursorY = j;
+										SetScrollY(ScrollValue());
+									}
+									PopID();
+									PushID(IDOffset + i + (j * 40) + 1);
+									ImGui::TableNextColumn();
+
+									if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+									{
+										TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
+									}
+									else
+									{
+										TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+									}
+									if (Selectable(Channels[i].InstrumentView(j).c_str(), IsPoint && CursorPos == INSTR, 0, MiscSize))
+									{
+										CursorPos = INSTR;
+										CursorX = i;
+										CursorY = j;
+										SetScrollY(ScrollValue());
+									}
+									PopID();
+									PushID(IDOffset + i + (j * 40) + 2);
+									ImGui::TableNextColumn();
+
+									if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+									{
+										TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
+									}
+									else
+									{
+										TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+									}
+									if (Selectable(Channels[i].VolumeView(j).c_str(), IsPoint && CursorPos == VOLUME, CursorPos == VOLUME, MiscSize))
+									{
+										CursorPos = VOLUME;
+										CursorX = i;
+										CursorY = j;
+										SetScrollY(ScrollValue());
+									}
+									PopID();
+									PushID(IDOffset + i + (j * 40) + 3);
+									ImGui::TableNextColumn();
+
+									if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+									{
+										TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
+									}
+									else
+									{
+										TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+									}
+									if (Selectable(Channels[i].EffectView(j).c_str(), IsPoint && CursorPos == EFFECT, 0, MiscSize))
+									{
+										CursorPos = EFFECT;
+										CursorX = i;
+										CursorY = j;
+										SetScrollY(ScrollValue());
+									}
+									PopID();
+									PushID(IDOffset + i + (j * 40) + 4);
+									ImGui::TableNextColumn();
+
+									if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+									{
+										TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
+									}
+									else
+									{
+										TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+									}
+									if (Selectable(Channels[i].Effectvalue(j).c_str(), IsPoint && CursorPos == VALUE, 0, MiscSize))
+									{
+										CursorPos = VALUE;
+										CursorX = i;
+										CursorY = j;
+										SetScrollY(ScrollValue());
+									}
+									PopID();
+
+									ImGui::EndTable();
+								}
+							}
 						}
 					}
-					else if (j > -1)
-					{
-						//Channel
-						//the *12 is for the char amount + 1 for spacing
-						ImVec2 sizevec = ImVec2(TextSize * 9, RowVec.y);
-						if (BeginTable("RowView", 5, TABLE_FLAGS, sizevec))
-						{
-							ImVec2 NoteSize = ImVec2(TextSize * 1.75, RowVec.y);
-							ImVec2 MiscSize = ImVec2(TextSize, RowVec.y);
-							TableSetupColumn("note", ImGuiTableColumnFlags_WidthFixed, 0.0);
-							TableSetupColumn("vol", ImGuiTableColumnFlags_WidthFixed, 0.0);
-							TableSetupColumn("inst", ImGuiTableColumnFlags_WidthFixed, 0.0);
-							TableSetupColumn("effe", ImGuiTableColumnFlags_WidthFixed, 0.0);
-							TableSetupColumn("val", ImGuiTableColumnFlags_WidthFixed, 0.0);
-							ImGui::TableNextColumn();
-							//Row Highlighting
-							ImU32 col;
-							if (EditingMode && j == CursorY || PlayingMode && j == CursorY)
-							{
-								col = Editing_H2Col;
-							}
-							else
-							{
-								if (j % Highlight2 == 0)
-								{
-									col = H2Col;
-								}
-								else if (j % Highlight1 == 0)
-								{
-									col = H1Col;
-								}
-								else
-								{
-									col = Default;
-								}
-							}
-							TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
-
-							bool IsPoint = CursorX == i && CursorY == j;
-							if (IsPoint)//i = x, j = y
-							{
-								if (IsWindowFocused())
-								{
-									ChannelInput(CursorPos, i, j);
-								}
-							}
-							PushID(IDOffset + i + (j * 40));
-							//Cursor highlighting
-							if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
-							{
-								TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
-							}
-							else
-							{
-								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
-							}
-							if (Selectable(Channels[i].NoteView(j).c_str(), IsPoint && CursorPos == NOTE, 0, NoteSize))
-							{
-								CursorPos = NOTE;
-								CursorX = i;
-								CursorY = j;
-								SetScrollY(ScrollValue());
-							}
-							PopID();
-							PushID(IDOffset + i + (j * 40) + 1);
-							ImGui::TableNextColumn();
-
-							if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
-							{
-								TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
-							}
-							else
-							{
-								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
-							}
-							if (Selectable(Channels[i].InstrumentView(j).c_str(), IsPoint && CursorPos == INSTR, 0, MiscSize))
-							{
-								CursorPos = INSTR;
-								CursorX = i;
-								CursorY = j;
-								SetScrollY(ScrollValue());
-							}
-							PopID();
-							PushID(IDOffset + i + (j * 40) + 2);
-							ImGui::TableNextColumn();
-
-							if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
-							{
-								TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
-							}
-							else
-							{
-								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
-							}
-							if (Selectable(Channels[i].VolumeView(j).c_str(), IsPoint && CursorPos == VOLUME, CursorPos == VOLUME, MiscSize))
-							{
-								CursorPos = VOLUME;
-								CursorX = i;
-								CursorY = j;
-								SetScrollY(ScrollValue());
-							}
-							PopID();
-							PushID(IDOffset + i + (j * 40) + 3);
-							ImGui::TableNextColumn();
-
-							if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
-							{
-								TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
-							}
-							else
-							{
-								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
-							}
-							if (Selectable(Channels[i].EffectView(j).c_str(), IsPoint && CursorPos == EFFECT, 0, MiscSize))
-							{
-								CursorPos = EFFECT;
-								CursorX = i;
-								CursorY = j;
-								SetScrollY(ScrollValue());
-							}
-							PopID();
-							PushID(IDOffset + i + (j * 40) + 4);
-							ImGui::TableNextColumn();
-
-							if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
-							{
-								TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
-							}
-							else
-							{
-								TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
-							}
-							if (Selectable(Channels[i].Effectvalue(j).c_str(), IsPoint && CursorPos == VALUE, 0, MiscSize))
-							{
-								CursorPos = VALUE;
-								CursorX = i;
-								CursorY = j;
-								SetScrollY(ScrollValue());
-							}
-							PopID();
-
-							EndTable();
-						}
-					}
+					ImGui::TableNextColumn();
 				}
-				ImGui::TableNextColumn();
-
 			}
-			EndTable();
+			ImGui::EndTable();
 		}
 	}
 	End();
@@ -981,7 +980,7 @@ void Tracker::Samples()
 					ImGui::TableNextColumn();
 					PopID();
 				}
-				EndTable();
+				ImGui::EndTable();
 			}
 		}
 	}
@@ -1018,14 +1017,6 @@ void Tracker::Sample_View()
 			}
 			if (samples.size() > 1)
 			{
-				vector<float> LoopView;
-				vector<float> SampleView;
-				for (int i = 0; i < samples[SelectedSample].SampleData.size(); i++)
-				{
-					SampleView.push_back(samples[SelectedSample].SampleData[i]);
-					LoopView.push_back(32767 * 2);
-				}
-				
 				ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2(0, 0));
 				ImPlot::PushStyleVar(ImPlotStyleVar_LineWeight, PlotLineWeight);
 
@@ -1037,6 +1028,24 @@ void Tracker::Sample_View()
 					ImPlot::SetupAxis(x, nullptr, ImPlotAxisFlags_NoLabel);
 					ImPlot::SetupAxis(y, nullptr, ImPlotAxisFlags_Lock);
 					ImPlot::PushColormap("RGBColors");
+					vector<float> LoopView;
+					vector<float> SampleView;
+					float PixelMult = 6;
+					float PlotPixelWidth = (ImPlot::GetPlotSize().x * PixelMult) / samples[SelectedSample].SampleData.size();
+					float PixelAccum = 0;
+					int before = 0;
+					for (int i = 0; i < samples[SelectedSample].SampleData.size(); i++)
+					{
+						//Downsampling check
+						before = PixelAccum;
+						PixelAccum += PlotPixelWidth;
+						if ((int)PixelAccum > before)
+						{
+							SampleView.push_back(samples[SelectedSample].SampleData[i]);
+							LoopView.push_back(32767 * 2);
+						}
+					}
+
 					ImPlot::PlotLine("Wave Data", SampleView.data(), SampleView.size());
 					ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, .5f * samples[SelectedSample].Loop);
 					
@@ -2030,7 +2039,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 
 void Tracker::LoadSample()
 {
-	ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".wav, .ogg, .mp3m .raw", ".");
+	ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".wav, .ogg, .mp3", ".");
 	if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
 	{
 		// action if OK
@@ -2279,7 +2288,7 @@ void Tracker::DSPDebugWindow()
 				ImGui::TableNextColumn();
 				TableNextRow();
 			}
-			EndTable();
+			ImGui::EndTable();
 		}
 		if (BeginTable("Volume Table", 2, TABLE_FLAGS)) {
 			for (int x = 0; x < 8; x++)
@@ -2295,7 +2304,7 @@ void Tracker::DSPDebugWindow()
 				ImGui::TableNextColumn();
 				TableNextRow();
 			}
-			EndTable();
+			ImGui::EndTable();
 		}
 	}
 	End();

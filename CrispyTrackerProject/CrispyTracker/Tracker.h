@@ -25,6 +25,7 @@
 #include "Libraries/ImGuiFileDialog-0.6.5/ImGuiFileDialog.h"
 #include "Libraries/libsndfile/include/sndfile.h"
 #include "Libraries/implot-0.16/implot.h"
+#include "Libraries/implot-0.16/implot_internal.h"
 
 #if !CT_UNIX
 #include <mmdeviceapi.h>

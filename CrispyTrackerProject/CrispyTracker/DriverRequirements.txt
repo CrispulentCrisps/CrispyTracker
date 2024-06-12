@@ -27,7 +27,7 @@ Process effects including:
 
 Have patterns to repeat written sequences of notes
 Store samples as brr files
-Index for tracks to allow for multiple tracks in a single SPC file
+Allow for multiple tracks in a single SPC file
 
 Allow for SFX to be played in any channel at any point in time
 
