@@ -71,6 +71,7 @@ void Tracker::Run()
 	glfwInit();
 	Authbuf.reserve(128);
 	Descbuf.reserve(128);
+	Songbuf.reserve(128);
 	FilePath.reserve(2048);
 	//Initialise the tracker
 	Initialise(TrackLength);
@@ -196,6 +197,7 @@ void Tracker::Run()
 
 void Tracker::CheckUpdatables()//for things we cannot update in the rendering loop
 {
+	UpdateModule();
 	if (FontUpdate)
 	{
 		UpdateFont();
@@ -1030,7 +1032,7 @@ void Tracker::Sample_View()
 					ImPlot::PushColormap("RGBColors");
 					vector<float> LoopView;
 					vector<float> SampleView;
-					float PixelMult = 6;
+					float PixelMult = 12;
 					float PlotPixelWidth = (ImPlot::GetPlotSize().x * PixelMult) / samples[SelectedSample].SampleData.size();
 					float PixelAccum = 0;
 					int before = 0;
@@ -1274,6 +1276,8 @@ void Tracker::Author_View()
 {
 	if (Begin("Author"), 0, UNIVERSAL_WINDOW_FLAGS)
 	{
+		Text("Song");
+		InputText("##SongTitle", (char*)Songbuf.c_str(), sizeof(Songbuf));
 		Text("Author");
 		InputText("##Author", (char*)Authbuf.c_str(), sizeof(Authbuf));
 		Text("Desc");
@@ -1292,7 +1296,10 @@ void Tracker::Speed_View()
 		InputInt("##Tempo divider", &TempoDivider, 1, 1);
 		
 		if (TempoDivider < 1) TempoDivider = 1;
+		else if (TempoDivider > 255) TempoDivider = 255;
+
 		if (Speed1 < 1)	Speed1 = 1;
+		else if (Speed1 > 255) Speed1 = 255;
 
 		string temp = "Tempo: ";
 		temp += to_string(BaseTempo / TempoDivider);
@@ -1762,6 +1769,9 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 			}
 
 			switch (CurrentKey) {
+			case GLFW_KEY_S:
+
+				break;
 			case GLFW_KEY_LEFT:
 				CursorPos--;
 				SelectionBoxSubX2 = max(SelectionBoxSubX2 - 1, 0);
@@ -2237,6 +2247,81 @@ void Tracker::ResetSettings()
 {
 	SManager.CustomData = SManager.DefaultData;
 	UpdateSettings(0);
+}
+
+void Tracker::UpdateModule()
+{
+	//Tracker
+	filehandler.mod.AuthorName = Authbuf;
+	filehandler.mod.TrackName = Songbuf;
+	filehandler.mod.TrakcDesc = Descbuf;
+	filehandler.mod.samples = samples;
+	filehandler.mod.inst = inst;
+	filehandler.mod.patterns = StoragePatterns;
+	filehandler.mod.TrackLength = TrackLength;
+	filehandler.mod.Speed1 = Speed1;
+	filehandler.mod.TempoDivider = TempoDivider;
+	filehandler.mod.Highlight1 = Highlight1;
+	filehandler.mod.Highlight2 = Highlight2;
+
+	//SNES
+	for (int x = 0; x < 65536; x++)
+	{
+		filehandler.mod.dsp_mem[x] = SG.Emu_APU.DSP_MEMORY[x];
+	}
+	filehandler.mod.SelectedRegion = 0;//Stand in for the moment
+	filehandler.mod.EchoVol = EchoVol;
+	filehandler.mod.Delay = Delay;
+	for (int x = 0; x < 8; x++)
+	{
+		filehandler.mod.EchoFilter[x] = EchoFilter[x];
+	}
+}
+
+void Tracker::SaveModuleAs()
+{
+	ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose Path", FILE_EXT, ".");
+	if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
+	{
+		// action if OK
+		if (ImGuiFileDialog::Instance()->IsOk())
+		{
+			FileName = ImGuiFileDialog::Instance()->GetFilePathName();
+			FilePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+			if (filehandler.SaveModule(FilePath, FileName))
+			{
+				cout << "File load Successful :D";
+			}
+			else
+			{
+				cout << "File load faled";
+			}
+		}
+		ImGuiFileDialog::Instance()->Close();
+	}
+}
+
+void Tracker::LoadModuleAs()
+{
+	ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", FILE_EXT, ".");
+	if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
+	{
+		// action if OK
+		if (ImGuiFileDialog::Instance()->IsOk())
+		{
+			FileName = ImGuiFileDialog::Instance()->GetFilePathName();
+			FilePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+			if (filehandler.LoadModule(FilePath, FileName))
+			{
+				cout << "File load Successful :D";
+			}
+			else
+			{
+				cout << "File load faled";
+			}
+		}
+		ImGuiFileDialog::Instance()->Close();
+	}
 }
 
 static void TextCentered(std::string text) {

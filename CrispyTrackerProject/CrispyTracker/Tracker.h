@@ -12,7 +12,7 @@
 
 #include "SettingsManager.h"
 #include "SoundGenerator.h"
-#include "FileDef.h"
+#include "FileHandler.h"
 
 #include <SDL_keyboard.h>
 
@@ -42,6 +42,8 @@ class Tracker
 public:
 	Tracker();
 	~Tracker();
+
+	FileHandler filehandler = FileHandler();
 
 	int UNIVERSAL_WINDOW_FLAGS = ImGuiWindowFlags_AlwaysAutoResize;
 	int TAB_FLAGS = ImGuiTabBarFlags_NoCloseWithMiddleMouseButton;
@@ -328,11 +330,15 @@ public:
 	void ChangePatternData(int x, int y);
 	void UpdateSettings(int w);
 	void ResetSettings();
+	void UpdateModule();
+	void SaveModuleAs();
+	void LoadModuleAs();
 
 	void ErrorWindow();
 	void DSPDebugWindow();
 
 	string Authbuf = " ";
+	string Songbuf = " ";
 	string Descbuf = " ";
 	string FilePath = " ";
 	string FileName = " ";
@@ -383,5 +389,5 @@ public:
 
 	ImAxis x;
 	ImAxis y;
-};
+};	
 #endif // Tracker
