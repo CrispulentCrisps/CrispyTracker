@@ -15,7 +15,6 @@ public:
 	};
 	int SampleIndex;
 	int SampleADDR;
-	long PlayingHZ;
 	
 	string SampleName = "Empty!";
 	vector<signed short> SampleData;
@@ -23,10 +22,8 @@ public:
 	int FineTune = 0;
 	bool Loop = false;
 	int LoopStart = 0;
-	int LoopStartAddr = 0;
+	uint16_t LoopStartAddr = 0;
 	int LoopEnd = 0;
-	int HPoint = 0;
-	int LPoint = 0;
 	BRRFile brr;
 
 	void BRRConvert();

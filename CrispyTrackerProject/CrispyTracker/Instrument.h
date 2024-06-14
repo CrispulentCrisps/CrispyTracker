@@ -60,10 +60,6 @@ public:
 	uint16_t InstADDR;
 
 	Sample CurrentSample;
-	int CurrentSampleIndex = 0;//This is for the index of the sample within the sample list
-	int CurrentSamplePoint = 0;//This is for the data bytes used in the BRR file
-	signed char CurrentSampleSubPoint = 0;//For the 4 bit samples in the data byte
-	bool StopSample = true;
 
 	uint16_t BRR_Pitch(double pit);
 	double SetVolume(int Pan);//Determines volume, 1 for RIGHT, -1 for LEFT. Output is normalised, 0 - 1

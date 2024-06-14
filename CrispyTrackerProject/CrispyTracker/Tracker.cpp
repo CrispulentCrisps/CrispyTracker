@@ -69,9 +69,6 @@ void MyAudioCallback(void* userdata, Uint8* stream, int len)
 void Tracker::Run()
 {	
 	glfwInit();
-	Authbuf.reserve(128);
-	Descbuf.reserve(128);
-	Songbuf.reserve(128);
 	FilePath.reserve(2048);
 	//Initialise the tracker
 	Initialise(TrackLength);
@@ -212,7 +209,7 @@ void Tracker::CheckInput()
 	{
 		running = false;
 	}
-	
+
 	if (PlayingMode)
 	{
 		RunTracker();
@@ -249,12 +246,17 @@ void Tracker::Render()
 		Misc_View();
 		EchoSettings();
 		if (ShowExport)	Export_View();
-		
+
+		if (SavingFile) SaveModuleAs();
+		if (LoadingFile) LoadModuleAs();
+
 		if (LoadingSample) LoadSample();
 
 		if (ShowError) ErrorWindow();
-		
+
 		if (ShowDSPDebugger) DSPDebugWindow();
+
+		if (ShowTrackerDebugger) TrackerDebug();
 
 		Info_View();
 	}
@@ -276,9 +278,22 @@ void Tracker::MenuBar()
 	BeginMainMenuBar();
 	if (BeginMenu("File"))
 	{
-		ImGui::MenuItem("Load");
-		ImGui::MenuItem("Save...");
-		ImGui::MenuItem("Save As...");
+		if(ImGui::MenuItem("Load")){
+			SavingFile = false;
+			LoadingFile = true;
+			LoadingSample = false;
+		}
+		if(ImGui::MenuItem("Save...")) {
+			SavingFile = true;
+			LoadingFile = false;
+			LoadingSample = false;
+		}
+		if (ImGui::MenuItem("Save as...")) {
+			SavingFile = true;
+			LoadingFile = false;
+			LoadingSample = false;
+		}
+
 		if (Selectable("Export...")) {
 			ShowExport = true;
 		}
@@ -291,6 +306,11 @@ void Tracker::MenuBar()
 		{
 			ShowSettings = !ShowSettings;
 		}
+		if (ImGui::MenuItem("Debug Window"))
+		{
+			ShowTrackerDebugger = !ShowTrackerDebugger;
+		}
+
 		ImGui::EndMenu();
 	}
 
@@ -1276,12 +1296,13 @@ void Tracker::Author_View()
 {
 	if (Begin("Author"), 0, UNIVERSAL_WINDOW_FLAGS)
 	{
+
 		Text("Song");
-		InputText("##SongTitle", (char*)Songbuf.c_str(), sizeof(Songbuf));
+		InputText("##SongTitle", songbuf, sizeof(songbuf));
 		Text("Author");
-		InputText("##Author", (char*)Authbuf.c_str(), sizeof(Authbuf));
+		InputText("##Author", authbuf, sizeof(authbuf));
 		Text("Desc");
-		InputTextMultiline("##Desc", (char*)Descbuf.c_str(), sizeof(Descbuf), ImVec2(GetWindowWidth() * 0.65, GetWindowHeight() * 0.7));
+		InputTextMultiline("##Desc", descbuf, sizeof(descbuf), ImVec2(GetWindowWidth() * 0.65, GetWindowHeight() * 0.7));
 	}
 	End();
 }
@@ -1491,8 +1512,9 @@ void Tracker::EchoSettings()
 
 void Tracker::SetupInstr()
 {
+	inst.clear();
 	DefaultInst.Index = 0;
-	DefaultInst.Name += "Instrument: ";
+	DefaultInst.Name = "Instrument: ";
 	DefaultInst.SampleIndex = 0;
 	DefaultInst.Volume = 127;
 	DefaultInst.LPan = 127;
@@ -1509,6 +1531,7 @@ void Tracker::SetupInstr()
 	DefaultInst.Release = 0;
 	inst.push_back(DefaultInst);
 
+	samples.clear();
 	DefaultSample.SampleIndex = 0;
 	DefaultSample.SampleName = "Choose a sample!";
 	DefaultSample.FineTune = 0;
@@ -1757,8 +1780,16 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 	if (!IsPressed)
 	{
 		//cout << "\nCurrent key: " << CurrentKey;
-		
-		if (CurrentMod & GLFW_MOD_SHIFT)
+		if (CurrentMod & GLFW_MOD_CONTROL)
+		{
+			switch (CurrentKey)
+			{
+			case GLFW_KEY_S:
+				SavingFile = true;
+				break;
+			}
+		}
+		else if (CurrentMod & GLFW_MOD_SHIFT)
 		{
 			if (!BoxSelected)
 			{
@@ -1769,9 +1800,6 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 			}
 
 			switch (CurrentKey) {
-			case GLFW_KEY_S:
-
-				break;
 			case GLFW_KEY_LEFT:
 				CursorPos--;
 				SelectionBoxSubX2 = max(SelectionBoxSubX2 - 1, 0);
@@ -1848,7 +1876,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 
 		for (int i = 0; i < 24; i++)
 		{
-			if (CurrentKey == NoteInput[i])
+			if (CurrentKey == NoteInput[i] && inst.size() > 1)
 			{
 				SG.Emu_APU.APU_Play_Note_Editor(&Channels[CursorX], &inst[SelectedInst], i + (12 * Octave), CurPos == NOTE);
 			}
@@ -2122,10 +2150,13 @@ void Tracker::LoadSample()
 				ImPlot::SetNextAxisToFit(x);
 			}
 		}
+		else
+		{
+			LoadingSample = false;
+			ImGuiFileDialog::Instance()->Close();
+		}
 		cout << FileName + "\n" + FilePath;
 		// close
-		ImGuiFileDialog::Instance()->Close();
-		LoadingSample = false;
 	}
 }
 
@@ -2252,9 +2283,9 @@ void Tracker::ResetSettings()
 void Tracker::UpdateModule()
 {
 	//Tracker
-	filehandler.mod.AuthorName = Authbuf;
-	filehandler.mod.TrackName = Songbuf;
-	filehandler.mod.TrakcDesc = Descbuf;
+	filehandler.mod.AuthorName = authbuf;
+	filehandler.mod.TrackName = songbuf;
+	filehandler.mod.TrackDesc = descbuf;
 	filehandler.mod.samples = samples;
 	filehandler.mod.inst = inst;
 	filehandler.mod.patterns = StoragePatterns;
@@ -2265,12 +2296,9 @@ void Tracker::UpdateModule()
 	filehandler.mod.Highlight2 = Highlight2;
 
 	//SNES
-	for (int x = 0; x < 65536; x++)
-	{
-		filehandler.mod.dsp_mem[x] = SG.Emu_APU.DSP_MEMORY[x];
-	}
 	filehandler.mod.SelectedRegion = 0;//Stand in for the moment
 	filehandler.mod.EchoVol = EchoVol;
+	filehandler.mod.Feedback = Feedback;
 	filehandler.mod.Delay = Delay;
 	for (int x = 0; x < 8; x++)
 	{
@@ -2280,47 +2308,101 @@ void Tracker::UpdateModule()
 
 void Tracker::SaveModuleAs()
 {
-	ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose Path", FILE_EXT, ".");
-	if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
+	ImGuiFileDialog::Instance()->OpenDialog("Save Module", "Choose Path", FILE_EXT, ".");
+	if (ImGuiFileDialog::Instance()->Display("Save Module"))
 	{
 		// action if OK
 		if (ImGuiFileDialog::Instance()->IsOk())
 		{
 			FileName = ImGuiFileDialog::Instance()->GetFilePathName();
 			FilePath = ImGuiFileDialog::Instance()->GetCurrentPath();
-			if (filehandler.SaveModule(FilePath, FileName))
+			if (filehandler.SaveModule(FileName))
 			{
-				cout << "File load Successful :D";
+				cout << "File save Successful :D";
+				ImGuiFileDialog::Instance()->Close();
+				SavingFile = false;
 			}
 			else
 			{
-				cout << "File load faled";
+				cout << "File save faled";
+				ImGuiFileDialog::Instance()->Close();
+				SavingFile = false;
 			}
 		}
-		ImGuiFileDialog::Instance()->Close();
+		else
+		{
+			SavingFile = false;
+			ImGuiFileDialog::Instance()->Close();
+		}
 	}
 }
 
 void Tracker::LoadModuleAs()
 {
-	ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", FILE_EXT, ".");
-	if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
+	ImGuiFileDialog::Instance()->OpenDialog("Load Module", "Choose File", FILE_EXT, ".");
+	if (ImGuiFileDialog::Instance()->Display("Load Module"))
 	{
 		// action if OK
 		if (ImGuiFileDialog::Instance()->IsOk())
 		{
 			FileName = ImGuiFileDialog::Instance()->GetFilePathName();
 			FilePath = ImGuiFileDialog::Instance()->GetCurrentPath();
-			if (filehandler.LoadModule(FilePath, FileName))
+			if (filehandler.LoadModule(FileName))
 			{
+				LoadingFile = false;
 				cout << "File load Successful :D";
+				ApplyLoad();
+				ImGuiFileDialog::Instance()->Close();
 			}
 			else
 			{
+				LoadingFile = false;
 				cout << "File load faled";
+				ImGuiFileDialog::Instance()->Close();
 			}
 		}
-		ImGuiFileDialog::Instance()->Close();
+		else
+		{
+			LoadingFile = false;
+			ImGuiFileDialog::Instance()->Close();
+		}
+	}
+}
+
+void Tracker::ApplyLoad()
+{
+	memcpy(authbuf, filehandler.mod.AuthorName.c_str(), min(filehandler.mod.AuthorName.size(), sizeof(authbuf)));
+	memcpy(songbuf, filehandler.mod.TrackName.c_str(), min(filehandler.mod.TrackName.size(), sizeof(songbuf)));
+	memcpy(descbuf, filehandler.mod.TrackDesc.c_str(), min(filehandler.mod.TrackDesc.size(), sizeof(descbuf)));
+
+	TrackLength = filehandler.mod.TrackLength;
+	Speed1 = filehandler.mod.Speed1;
+	TempoDivider = filehandler.mod.TempoDivider;
+	Highlight1 = filehandler.mod.Highlight1;
+	Highlight2 = filehandler.mod.Highlight2;
+
+	SetupInstr();
+	for (int x = 0; x < filehandler.mod.samples.size(); x++)
+	{
+		Sample samp = filehandler.mod.samples[x];
+		Sample cur;
+		cur.SampleIndex = samp.SampleIndex;
+		cur.SampleName = samp.SampleName;
+		cur.SampleData = samp.SampleData;
+		cur.SampleRate = samp.SampleRate;
+		cur.Loop = samp.Loop;
+		cur.LoopStart = samp.LoopStart;
+		cur.LoopEnd = samp.LoopEnd;
+		cur.FineTune = samp.FineTune;
+		SelectedSample = x;
+		cur.SampleIndex = SelectedSample;
+		//Assume the file isn't fucked and we can move to the BRR conversion
+		cur.BRRConvert();
+		samples.push_back(cur);
+		//Memory shit
+		SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
+		SG.Emu_APU.APU_Evaluate_BRR_Loop_Start(&samples[SelectedSample]);
+		SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
 	}
 }
 
@@ -2391,6 +2473,15 @@ void Tracker::DSPDebugWindow()
 			}
 			ImGui::EndTable();
 		}
+	}
+	End();
+}
+
+void Tracker::TrackerDebug()
+{
+	if (Begin("Tracker Debug", 0))
+	{
+		Checkbox("Compress files", &filehandler.Compress);
 	}
 	End();
 }

@@ -12,7 +12,8 @@
 #define MAX_EFFECT_VALUE 255
 
 //File handling
-#define FILE_EXT "ctf"
+#define FILE_EXT ".ctf"
+#define FILE_HEAD 0xDEADBEEF
 
 //File errors
 #define FILE_ERORR_01 "FILE CORRUPTED"

@@ -139,7 +139,7 @@ void Channel::SetUp(int Length)
 void Channel::TickCheck(int RowIndex, vector<Instrument>& instruments, vector<Sample>& samples)
 {
 	Tickcheck = true;
-	if (Rows[RowIndex].note != MAX_VALUE && Rows[RowIndex].instrument < NULL_COMMAND)
+	if (Rows[RowIndex].note != MAX_VALUE && Rows[RowIndex].instrument < NULL_COMMAND && Rows[RowIndex].instrument < instruments.size())
 	{
 		//This is when a note should be played
 		CurrentInstrument = instruments[Rows[RowIndex].instrument].Index;

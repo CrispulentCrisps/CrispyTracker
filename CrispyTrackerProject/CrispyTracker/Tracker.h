@@ -43,8 +43,6 @@ public:
 	Tracker();
 	~Tracker();
 
-	FileHandler filehandler = FileHandler();
-
 	int UNIVERSAL_WINDOW_FLAGS = ImGuiWindowFlags_AlwaysAutoResize;
 	int TAB_FLAGS = ImGuiTabBarFlags_NoCloseWithMiddleMouseButton;
 	int TAB_ITEM_FLAGS = ImGuiTabItemFlags_NoReorder;
@@ -82,6 +80,10 @@ public:
 	vector<Patterns> pattern;
 	SettingsManager SManager;
 	int MAX_VALUE = NULL_COMMAND;
+
+	FileHandler filehandler = FileHandler();
+	bool SavingFile = false;
+	bool LoadingFile = false;
 
 #pragma region Keyboard Controls
 	//Inputting notes
@@ -284,6 +286,7 @@ public:
 	//
 
 	bool ShowDSPDebugger = false;
+	bool ShowTrackerDebugger = false;
 
 	string EffectText = "";
 
@@ -330,18 +333,23 @@ public:
 	void ChangePatternData(int x, int y);
 	void UpdateSettings(int w);
 	void ResetSettings();
+
 	void UpdateModule();
 	void SaveModuleAs();
 	void LoadModuleAs();
+	void ApplyLoad();
 
 	void ErrorWindow();
 	void DSPDebugWindow();
+	void TrackerDebug();
 
-	string Authbuf = " ";
-	string Songbuf = " ";
-	string Descbuf = " ";
-	string FilePath = " ";
-	string FileName = " ";
+	string FilePath = "";
+	string FileName = "";
+
+	char songbuf[256] = { 0 };
+	char authbuf[256] = { 0 };
+	char descbuf[256] = { 0 };
+
 	string ADSRNames[4] = {
 		"Direct (cut on release)",
 		"Effective (linear decrease)",

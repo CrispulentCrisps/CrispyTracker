@@ -2,6 +2,7 @@
 
 void Patterns::SetUp(int Length)
 {
+	Row StandardRow;
 	StandardRow.note = StandardRow.instrument = StandardRow.volume = StandardRow.effect = StandardRow.effectvalue = NULL_COMMAND;
 	for (int i = 0; i < Length; i++)
 	{

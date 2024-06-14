@@ -13,25 +13,23 @@ typedef struct Module {
 	//Tracker Specific
 	std::string AuthorName;
 	std::string TrackName;
-	std::string TrakcDesc;
-	std::vector<Sample> samples;
-	std::vector<Instrument> inst;
-	std::vector<Patterns> patterns;
+	std::string TrackDesc;
 	uint8_t TrackLength;
 	uint8_t Speed1;
 	uint8_t TempoDivider;
 	uint8_t Highlight1;
 	uint8_t Highlight2;
+	std::vector<Sample> samples;
+	std::vector<Instrument> inst;
+	std::vector<Patterns> patterns;
 
 	//SNES Specific
-	unsigned char dsp_mem[65536];
 	uint8_t SelectedRegion;
 	//Echo
 	int8_t EchoVol;
 	uint8_t Delay;
 	uint8_t Feedback;
 	int8_t EchoFilter[8];
-
 };
 
 //This is for each instrument used in every track, this is to save memory from having to write the same values in the sequence data again and again
