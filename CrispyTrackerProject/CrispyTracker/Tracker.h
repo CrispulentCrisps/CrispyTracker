@@ -209,7 +209,7 @@ public:
 	Sample DefaultSample;
 
 	//This is the patterns that is Displayed with
-	vector<Patterns> patterns[8];//Display
+	vector<Patterns> orders[8];//Display
 
 	//This is the patterns that is Stored so that when a pattern index is removed the data is preserved
 	vector<Patterns> StoragePatterns;//Storage

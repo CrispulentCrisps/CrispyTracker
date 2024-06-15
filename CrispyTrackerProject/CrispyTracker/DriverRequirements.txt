@@ -48,8 +48,8 @@ Tables will be constructed into the following tables:
 		uint8_t ADSR1;			//EDDD AAAA ADSR enable (E), decay rate (D), attack rate (A).
 		uint8_t ADSR2;			//SSSR RRRR Sustain level (S), sustain rate (R).
 		uint8_t Gain;			//0VVV VVVV Value(V).
-		uint8_t EffectState;		//Holds the state of the effects in the instrument to reference in DSP memory
-		uint8_t SampleIndex;		//Index of the sample, to be used by SCRN registers while they look in the DIR page
+		uint8_t EffectState;	//Holds the state of the effects in the instrument to reference in DSP memory
+		uint8_t SampleIndex;	//Index of the sample, to be used by SCRN registers while they look in the DIR page
 		uint8_t Priority;		//Priority system for SFX/Instrument priority
 	
 	Pitch Table:
@@ -64,6 +64,47 @@ Each row contains the following values:
 	Effect
 	Effect Value
 
+	These will be affected by command bytes that are used for every row, listed below are the set:
+		[xx, name, args : args, information]
+		//Controls
+		00, End Of Row, Skip, dicates that the end of the row has been reach, waits Skip rows 
+		01, Speed, S, Changes Tick threshold to S
+
+		//Note
+		1x, Play Note, Pitch : channel index, Pitch is an index into a pitch table, plays in channel X
+		1x+8, Play Note, Pitch : channel index, Pitch is an absolute pitch, plays in channel X
+
+		//Instrument
+		2x, Set Instrument, Index, Sets the current intstrument in channel x
+		28, Set Instrument, Index, Sets the current intstrument in channel 0 - 			|		|		|
+		29, Set Instrument, Index, Sets the current intstrument in channel 1 - Pmod		|		|		|
+		2A, Set Instrument, Index, Sets the current intstrument in channel 2 - 			| Noise	|		|
+		2B, Set Instrument, Index, Sets the current intstrument in channel 3 - Pmod 	| Noise	|		|
+		2C, Set Instrument, Index, Sets the current intstrument in channel 4 - 			|		| Echo	|
+		2D, Set Instrument, Index, Sets the current intstrument in channel 5 - Pmod 	|		| Echo	|
+		2E, Set Instrument, Index, Sets the current intstrument in channel 6 - 		 	| Noise	| Echo	|
+		2F, Set Instrument, Index, Sets the current intstrument in channel 7 - Pmod 	| Noise	| Echo	|
+		
+		//Special
+		30, Set Noise Value, Pitch, takes in a 5 bit value for the noise pitch. Noise is universal across the SNES
+		31, Echo Delay, D, Sets the delay amount for the echo [note: due to the nature of echo this can be EXTREMELY VOLATILE, so checks will absolutely have to be in place]
+		32, Echo Volume, L : R, Sets the L+R volume for the echo
+		33, Echo Feedback, F, Sets the feedback of the echo
+		3x+4, Echo Coeffecients, C, Sets the filter coeffecients [note: Values < -128 or > 127 can cause issues]
+
+		//Volume
+		4x, Set Volume, LPAN : RPAN, Sets the master volume of channel X [Also used in Panning effect]
+
+		//Effects
+		5x, Set Effect Flags, V, Sets the flag state for the effect flags as a bitfield in X channel
+		58, Set Arp Value, A, puts XY into A	[Note 1 : Note 2] 
+		59, Set Port Value, P, puts XX into P 	[Portamento Val]
+		5A, Set Vib Value, V, puts XY into V 	[Speed : Depth]
+		5B, Set Trem Value, T, puts XY into T 	[Speed : Depth]
+		5C, Set Vol Slide Value, S, puts XY into S 	[Up : Down]
+		5D, Set Retrig Value, R, puts XX into R [Thresh]
+		5E, Set Pbr Value, B, puts XY into B	[Speed : Depth]
+
 
 
 - Effects Processing -
@@ -76,7 +117,7 @@ Effects will be categorised into 3 types
 Effects list goes as:
 	00xy Arpeggio [x: offset 1, y: offset 2] Semitone offset from base note
 	01xx Portamento up [xx: speed up] Slides the pitch upwards
-	02xx Portamento up [xx: speed down] Slides the pitch downwards
+	02xx Portamento down [xx: speed down] Slides the pitch downwards
 	03xx Portamento to [xx: speed toward] Slides the pitch to the desired note
 	04xy Vibrato [x: speed, y: depth] Oscillates the pitch of the note
 	05xy Tremolando [x: speed, y: depth] Oscillates the volume of the note
@@ -87,8 +128,7 @@ Effects list goes as:
 	0Bxx Goto [xx: set order position] Sets position within orders
 	0Cxx Retrigger [xx: frames between triggers] Plays the note the amount of frames specified
 	0Dxx Break. Goes to next order
-
-	20xy Panbrello [x: speed, y: depth] Oscillates the panning of the note
+	0Exy Panbrello [x: speed, y: depth] Oscillates the panning of the note
 
 	30xx Echo Delay [xx: echo value] sets the delay value of the echo [Note! Every echo value consumes 2048 bytes of Audio Ram, this may cause issues within the ROM export and may not be able to fit within the SPC Export!]
 	31xx Echo Feedback [xx: feedback] Sets the Feedback of the echo. A value of 80 is equivelant to a feedback of 0

@@ -15,6 +15,7 @@ typedef struct Module {
 	std::string TrackName;
 	std::string TrackDesc;
 	uint8_t TrackLength;
+	uint8_t SongLength;
 	uint8_t Speed1;
 	uint8_t TempoDivider;
 	uint8_t Highlight1;
@@ -22,6 +23,7 @@ typedef struct Module {
 	std::vector<Sample> samples;
 	std::vector<Instrument> inst;
 	std::vector<Patterns> patterns;
+	std::vector<uint8_t> Orders[8];
 
 	//SNES Specific
 	uint8_t SelectedRegion;

@@ -58,7 +58,7 @@ public:
 
 	struct Row {
 		int note = NULL_COMMAND;
-		int octave = 0;
+		int octave = NULL_COMMAND;
 		int instrument = NULL_COMMAND;
 		int volume = NULL_COMMAND;
 		int effect = NULL_COMMAND;

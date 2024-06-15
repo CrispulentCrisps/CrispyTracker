@@ -7,7 +7,7 @@ void Sample::BRRConvert()
     printf("\n SAMPLE CONVERSION BEGIN\n");
     int BlockAmount = floor((SampleData.size()) / 16.0);
 
-    printf("/n BLOCKS ALLOCATED:");
+    printf("\n BLOCKS ALLOCATED:");
     printf(std::to_string(BlockAmount).data());
     signed char CombinedBit = 0;
     for (int i = 0; i < BlockAmount; i++)

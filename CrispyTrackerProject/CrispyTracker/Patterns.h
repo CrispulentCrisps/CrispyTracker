@@ -4,17 +4,17 @@
 using namespace std;
 typedef struct Row {
 	uint16_t note = NULL_COMMAND;
-	uint8_t octave = NULL_COMMAND;
-	uint8_t instrument = NULL_COMMAND;
-	uint8_t volume = NULL_COMMAND;
-	uint8_t effect = NULL_COMMAND;
-	uint8_t effectvalue = NULL_COMMAND;
+	uint16_t octave = NULL_COMMAND;
+	uint16_t instrument = NULL_COMMAND;
+	uint16_t volume = NULL_COMMAND;
+	uint16_t effect = NULL_COMMAND;
+	uint16_t effectvalue = NULL_COMMAND;
 };
 
 class Patterns
 {
 public:
-	int Index;
+	uint8_t Index;
 
 	Row SavedRows[256];
 	void SetUp(int Length);

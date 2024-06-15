@@ -559,7 +559,7 @@ void SnesAPUHandler::APU_Evaluate_BRR_Loop(Sample* sample, int LoopPoint)
 	int LoopBlockPos = LoopPoint / 16;
 	for (int x = 0; x < sample->brr.DBlocks.size(); x++)
 	{
-		if (x == LoopBlockPos && sample->Loop)//Assuming we've hit the loop point
+		if (x == LoopBlockPos - 1 && sample->Loop)//Assuming we've hit the loop point
 		{
 			sample->brr.DBlocks[x].HeaderByte |= sample->LoopFlag | sample->EndFlag;
 		}

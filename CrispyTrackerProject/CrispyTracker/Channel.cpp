@@ -128,8 +128,11 @@ int Channel::EvaluateHexInput(int input, int index, int max, int valuetype)
 void Channel::SetUp(int Length)
 {
 	Row row = Row();
-	row.note = MAX_VALUE;
-	row.instrument = MAX_VALUE;
+	row.note = NULL_COMMAND;
+	row.octave = NULL_COMMAND;
+	row.instrument = NULL_COMMAND;
+	row.effect = NULL_COMMAND;
+	row.effectvalue = NULL_COMMAND;
 	for (int i = 0; i < Length; i++)
 	{
 		Rows.push_back(row);

@@ -41,7 +41,7 @@ void Tracker::Initialise(int StartLength)
 		Patterns pat = Patterns();
 		pat.SetUp(256);
 		pat.Index = i;
-		patterns[i].push_back(pat);
+		orders[i].push_back(pat);
 		StoragePatterns.push_back(pat);
 	}
 
@@ -402,7 +402,8 @@ void Tracker::Patterns_View()
 	{
 		Columns(2);
 
-		if (BeginTable("PatternsTable", 9, TABLE_FLAGS)) {
+		if (BeginTable("PatternsTable", 9, TABLE_FLAGS)) 
+		{
 			for (int y = 0; y < SongLength; y++)
 			{
 				TableNextRow();
@@ -428,16 +429,16 @@ void Tracker::Patterns_View()
 				for (int x = 0; x < 8; x++)
 				{
 					PushID(IDOffset);
-					Selectable(to_string(patterns[x][y].Index).c_str());
+					Selectable(to_string(orders[x][y].Index).c_str());
 
 					if (IsItemClicked(ImGuiMouseButton_Right)) {
-						patterns[x][y].Index > 0 ? patterns[x][y].Index-- : patterns[x][y].Index = 0;
+						orders[x][y].Index > 0 ? orders[x][y].Index-- : orders[x][y].Index = 0;
 						SelectedPattern = y;
 						UpdatePatternIndex(x, y);
 						UpdateAllPatterns();
 					}
 					else if (IsItemClicked(ImGuiMouseButton_Left)) {
-						patterns[x][y].Index++;
+						orders[x][y].Index++;
 						SelectedPattern = y;
 						UpdatePatternIndex(x, y);
 						UpdateAllPatterns();
@@ -461,7 +462,7 @@ void Tracker::Patterns_View()
 					pat = DefaultPattern;
 					pat.Index = Maxindex + i;
 					//cout << "\n SavedRows: " << pat.SavedRows.size();
-					patterns[i].push_back(pat);
+					orders[i].push_back(pat);
 					StoragePatterns.push_back(pat);
 				}
 				Maxindex += 8;
@@ -482,7 +483,7 @@ void Tracker::Patterns_View()
 					SelectedPattern >= SongLength ? SelectedPattern-- : SelectedPattern = SelectedPattern;
 					for (int i = 0; i < 8; i++)
 					{
-						patterns[i].erase(patterns[i].begin() + SelectedPattern);
+						orders[i].erase(orders[i].begin() + SelectedPattern);
 					}
 					SongLength--;
 				}
@@ -500,11 +501,10 @@ void Tracker::Patterns_View()
 				for (int i = 0; i < 8; i++)
 				{
 					Patterns pat;
-					pat = patterns[i][SelectedPattern];
+					pat = orders[i][SelectedPattern];
 					//cout << "\n SavedRows: " << pat.SavedRows.size();
-					patterns[i].push_back(pat);
+					orders[i].push_back(pat);
 				}
-				Maxindex += 8;
 				SongLength++;
 			}
 			if (IsItemHovered())
@@ -738,8 +738,6 @@ void Tracker::Instrument_View()//Instrument editor
 
 void Tracker::Channel_View()
 {
-	float padsizex = ImGui::GetStyle().CellPadding.x;
-	float padsizey = ImGui::GetStyle().CellPadding.y;
 	if (Begin("Channels"), 0, UNIVERSAL_WINDOW_FLAGS)
 	{
 		if (PlayingMode)
@@ -760,7 +758,7 @@ void Tracker::Channel_View()
 					{
 						PushStyleColor(ImGuiTableBgTarget_RowBg0, (ImVec4)CursorCol);
 						string ChannelTitle = "Pattern: ";
-						ChannelTitle += to_string(patterns[i][SelectedPattern].Index);
+						ChannelTitle += to_string(orders[i][SelectedPattern].Index);
 						Text(ChannelTitle.c_str());
 						PopStyleColor();
 					}
@@ -799,7 +797,8 @@ void Tracker::Channel_View()
 								TableSetupColumn("inst", ImGuiTableColumnFlags_WidthFixed, 0.0);
 								TableSetupColumn("effe", ImGuiTableColumnFlags_WidthFixed, 0.0);
 								TableSetupColumn("val", ImGuiTableColumnFlags_WidthFixed, 0.0);
-								if (ImGui::TableNextColumn()) {
+								if (ImGui::TableNextColumn()) 
+								{
 									//Row Highlighting
 									ImU32 col;
 									if (EditingMode && j == CursorY || PlayingMode && j == CursorY)
@@ -925,9 +924,8 @@ void Tracker::Channel_View()
 										SetScrollY(ScrollValue());
 									}
 									PopID();
-
-									ImGui::EndTable();
 								}
+								ImGui::EndTable();
 							}
 						}
 					}
@@ -938,8 +936,6 @@ void Tracker::Channel_View()
 		}
 	}
 	End();
-	ImGui::GetStyle().CellPadding.x = padsizex;
-	ImGui::GetStyle().CellPadding.y = padsizey;
 }
 
 void Tracker::Samples()
@@ -1296,7 +1292,6 @@ void Tracker::Author_View()
 {
 	if (Begin("Author"), 0, UNIVERSAL_WINDOW_FLAGS)
 	{
-
 		Text("Song");
 		InputText("##SongTitle", songbuf, sizeof(songbuf));
 		Text("Author");
@@ -1684,7 +1679,7 @@ void Tracker::RunTracker()
 
 	TickTimer -= SG.Emu_APU.APU_Return_Cycle_Since_Last_Frame();
 
-	if (CursorY >= TrackLength - 1 && PatternIndex >= patterns->size() - 1)
+	if (CursorY >= TrackLength - 1 && PatternIndex >= orders->size() - 1)
 	{
 		PlayingMode = false;
 	}
@@ -1696,7 +1691,7 @@ void Tracker::RunTracker()
 		int currentindex = 0;
 		for (int i = 0; i < 8; i++)
 		{
-			currentindex = patterns[i][SelectedPattern].Index;
+			currentindex = orders[i][SelectedPattern].Index;
 			for (int j = 0; j < TrackLength; j++)
 			{
 				Channels[i].Rows[j].note =			StoragePatterns[currentindex].SavedRows[j].note;
@@ -1903,6 +1898,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 			}
 			else
 			{
+				SetScrollY(ScrollValue());
 				//For editing the stuff in the subcolumns
 				switch (CurPos)
 				{
@@ -2027,6 +2023,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 				{
 					CursorY = 0;
 				}
+				UpdateAllPatterns();
 			}
 		}
 		
@@ -2155,6 +2152,8 @@ void Tracker::LoadSample()
 			LoadingSample = false;
 			ImGuiFileDialog::Instance()->Close();
 		}
+		LoadingSample = false;
+		ImGuiFileDialog::Instance()->Close();
 		cout << FileName + "\n" + FilePath;
 		// close
 	}
@@ -2186,24 +2185,24 @@ void Tracker::DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[])
 
 void Tracker::UpdatePatternIndex(int x, int y)//For when you are switching patterns in the top menu item
 {
-	if (patterns[x][y].Index > Maxindex - 1)
+	if (orders[x][y].Index > Maxindex - 1)
 	{
-		Maxindex = patterns[x][y].Index;
+		Maxindex = orders[x][y].Index;
 		Patterns pat;
 		pat = DefaultPattern;
 		StoragePatterns.push_back(pat);
-		patterns->push_back(pat);
+		//patterns->push_back(pat);
 	}
 
 	cout << "\n" << x << "\n" << y;
 	for (int i = 0; i < TrackLength; i++)
 	{
-		Channels[x].Rows[i].note = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].note;
-		Channels[x].Rows[i].octave = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].octave;
-		Channels[x].Rows[i].instrument = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].instrument;
-		Channels[x].Rows[i].volume = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].volume;
-		Channels[x].Rows[i].effect = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].effect;
-		Channels[x].Rows[i].effectvalue = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].effectvalue;
+		Channels[x].Rows[i].note = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].note;
+		Channels[x].Rows[i].octave = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].octave;
+		Channels[x].Rows[i].instrument = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].instrument;
+		Channels[x].Rows[i].volume = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].volume;
+		Channels[x].Rows[i].effect = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].effect;
+		Channels[x].Rows[i].effectvalue = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].effectvalue;
 	}
 }
 
@@ -2213,12 +2212,12 @@ void Tracker::UpdateAllPatterns()
 	{
 		for (int i = 0; i < TrackLength; i++)
 		{
-			Channels[x].Rows[i].note = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].note;
-			Channels[x].Rows[i].octave = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].octave;
-			Channels[x].Rows[i].instrument = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].instrument;
-			Channels[x].Rows[i].volume = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].volume;
-			Channels[x].Rows[i].effect = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].effect;
-			Channels[x].Rows[i].effectvalue = StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[i].effectvalue;
+			Channels[x].Rows[i].note = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].note;
+			Channels[x].Rows[i].octave = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].octave;
+			Channels[x].Rows[i].instrument = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].instrument;
+			Channels[x].Rows[i].volume = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].volume;
+			Channels[x].Rows[i].effect = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].effect;
+			Channels[x].Rows[i].effectvalue = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].effectvalue;
 		}
 	}
 }
@@ -2226,23 +2225,23 @@ void Tracker::UpdateAllPatterns()
 void Tracker::ChangePatternData(int x, int y)
 {
 	cout << "\nCHANGED PATTERN DATA:" << "\nX: " << x << "\nY: " << y << "\nSelected Pattern " << SelectedPattern;
-	cout << "\n" << patterns->size() << " : " << patterns[x].size();
+	cout << "\n" << orders->size() << " : " << orders[x].size();
 
 	//Put data into channel
-	patterns[x][SelectedPattern].SavedRows[y].note = Channels[x].Rows[y].note;
-	patterns[x][SelectedPattern].SavedRows[y].octave = Channels[x].Rows[y].octave;
-	patterns[x][SelectedPattern].SavedRows[y].instrument = Channels[x].Rows[y].instrument;
-	patterns[x][SelectedPattern].SavedRows[y].volume = Channels[x].Rows[y].volume;
-	patterns[x][SelectedPattern].SavedRows[y].effect = Channels[x].Rows[y].effect;
-	patterns[x][SelectedPattern].SavedRows[y].effectvalue = Channels[x].Rows[y].effectvalue;
+	orders[x][SelectedPattern].SavedRows[y].note = Channels[x].Rows[y].note;
+	orders[x][SelectedPattern].SavedRows[y].octave = Channels[x].Rows[y].octave;
+	orders[x][SelectedPattern].SavedRows[y].instrument = Channels[x].Rows[y].instrument;
+	orders[x][SelectedPattern].SavedRows[y].volume = Channels[x].Rows[y].volume;
+	orders[x][SelectedPattern].SavedRows[y].effect = Channels[x].Rows[y].effect;
+	orders[x][SelectedPattern].SavedRows[y].effectvalue = Channels[x].Rows[y].effectvalue;
 
 	//Put data into channel
-	StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[y].note = Channels[x].Rows[y].note;
-	StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[y].octave = Channels[x].Rows[y].octave;
-	StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[y].instrument = Channels[x].Rows[y].instrument;
-	StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[y].volume = Channels[x].Rows[y].volume;
-	StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[y].effect = Channels[x].Rows[y].effect;
-	StoragePatterns[patterns[x][SelectedPattern].Index].SavedRows[y].effectvalue = Channels[x].Rows[y].effectvalue;
+	StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[y].note = Channels[x].Rows[y].note;
+	StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[y].octave = Channels[x].Rows[y].octave;
+	StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[y].instrument = Channels[x].Rows[y].instrument;
+	StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[y].volume = Channels[x].Rows[y].volume;
+	StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[y].effect = Channels[x].Rows[y].effect;
+	StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[y].effectvalue = Channels[x].Rows[y].effectvalue;
 }
 
 void Tracker::UpdateSettings(int w)
@@ -2290,11 +2289,21 @@ void Tracker::UpdateModule()
 	filehandler.mod.inst = inst;
 	filehandler.mod.patterns = StoragePatterns;
 	filehandler.mod.TrackLength = TrackLength;
+	filehandler.mod.SongLength = SongLength;
 	filehandler.mod.Speed1 = Speed1;
 	filehandler.mod.TempoDivider = TempoDivider;
 	filehandler.mod.Highlight1 = Highlight1;
 	filehandler.mod.Highlight2 = Highlight2;
-
+	
+	for (int y = 0; y < filehandler.mod.SongLength; y++)
+	{
+		for (int x = 0; x < 8; x++)
+		{
+			filehandler.mod.Orders[x].resize(orders[x].size());
+			filehandler.mod.Orders[x][y] = orders[x][y].Index;
+		}
+	}
+	
 	//SNES
 	filehandler.mod.SelectedRegion = 0;//Stand in for the moment
 	filehandler.mod.EchoVol = EchoVol;
@@ -2369,6 +2378,7 @@ void Tracker::LoadModuleAs()
 	}
 }
 
+//Applies the loade file contents to the project
 void Tracker::ApplyLoad()
 {
 	memcpy(authbuf, filehandler.mod.AuthorName.c_str(), min(filehandler.mod.AuthorName.size(), sizeof(authbuf)));
@@ -2376,6 +2386,7 @@ void Tracker::ApplyLoad()
 	memcpy(descbuf, filehandler.mod.TrackDesc.c_str(), min(filehandler.mod.TrackDesc.size(), sizeof(descbuf)));
 
 	TrackLength = filehandler.mod.TrackLength;
+	SongLength = filehandler.mod.SongLength;
 	Speed1 = filehandler.mod.Speed1;
 	TempoDivider = filehandler.mod.TempoDivider;
 	Highlight1 = filehandler.mod.Highlight1;
@@ -2394,16 +2405,87 @@ void Tracker::ApplyLoad()
 		cur.LoopStart = samp.LoopStart;
 		cur.LoopEnd = samp.LoopEnd;
 		cur.FineTune = samp.FineTune;
-		SelectedSample = x;
-		cur.SampleIndex = SelectedSample;
-		//Assume the file isn't fucked and we can move to the BRR conversion
 		cur.BRRConvert();
 		samples.push_back(cur);
 		//Memory shit
-		SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-		SG.Emu_APU.APU_Evaluate_BRR_Loop_Start(&samples[SelectedSample]);
+		SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[samp.SampleIndex], samples[samp.SampleIndex].LoopEnd);
+		SG.Emu_APU.APU_Evaluate_BRR_Loop_Start(&samples[samp.SampleIndex]);
 		SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
 	}
+
+	for (int x = 0; x < filehandler.mod.inst.size(); x++)
+	{
+		Instrument currentinst = filehandler.mod.inst[x];
+		Instrument newinst;
+		newinst.Index = currentinst.Index;
+		newinst.Name = currentinst.Name;
+		newinst.SampleIndex = currentinst.SampleIndex;
+		newinst.Volume = currentinst.Volume;
+		newinst.LPan = currentinst.LPan;
+		newinst.RPan = currentinst.RPan;
+		newinst.Gain = currentinst.Gain;
+		newinst.InvL = currentinst.InvL;
+		newinst.InvR = currentinst.InvR;
+		newinst.PitchMod = currentinst.PitchMod;
+		newinst.Echo = currentinst.Echo;
+		newinst.EnvelopeUsed = currentinst.EnvelopeUsed;
+		newinst.Noise = currentinst.Noise;
+		newinst.Attack = currentinst.Attack;
+		newinst.Decay =	currentinst.Decay;
+		newinst.Sustain = currentinst.Sustain;
+		newinst.Release = currentinst.Release;
+		newinst.NoteOff = currentinst.NoteOff;
+		newinst.CurrentSample = samples[newinst.SampleIndex];
+		inst.push_back(newinst);
+	}
+
+	StoragePatterns.clear();
+	for (int x = 0; x < filehandler.mod.patterns.size(); x++)
+	{
+		Patterns pat = Patterns();
+		Patterns curpat = filehandler.mod.patterns[x];
+		
+		pat.Index = curpat.Index;
+		for (int y = 0; y < 256; y++)
+		{
+			pat.SavedRows[y].note = curpat.SavedRows[y].note;
+			pat.SavedRows[y].octave = curpat.SavedRows[y].octave;
+			pat.SavedRows[y].instrument = curpat.SavedRows[y].instrument;
+			pat.SavedRows[y].volume = curpat.SavedRows[y].volume;
+			pat.SavedRows[y].effect = curpat.SavedRows[y].effect;
+			pat.SavedRows[y].effectvalue = curpat.SavedRows[y].effectvalue;
+		}
+		StoragePatterns.push_back(pat);
+	}
+
+	for (int x = 0; x < 8; x++)
+	{
+		orders[x].clear();
+		orders[x].resize(filehandler.mod.Orders[x].size());
+
+	}
+
+	for (int y = 0; y < filehandler.mod.SongLength; y++)
+	{
+		for (int x = 0; x < 8; x++)
+		{
+			orders[x][y].Index = filehandler.mod.Orders[x][y];
+			UpdatePatternIndex(x, y);
+		}
+	}
+
+	SelectedRegion = filehandler.mod.SelectedRegion;
+	EchoVol = filehandler.mod.EchoVol;
+	Delay = filehandler.mod.Delay;
+	Feedback = filehandler.mod.Feedback;
+	for (int x = 0; x < 8; x++)
+	{
+		EchoFilter[x] = filehandler.mod.EchoFilter[x];
+	}
+	SG.Emu_APU.APU_Set_Echo(Delay, EchoFilter, Feedback, EchoVol);
+	SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
+
+	UpdateAllPatterns();
 }
 
 static void TextCentered(std::string text) {
@@ -2432,7 +2514,8 @@ void Tracker::ErrorWindow()
 
 void Tracker::DSPDebugWindow()
 {
-	if(Begin("DSP Debug Window", 0)) {
+	if(Begin("DSP Debug Window", 0)) 
+	{
 		Text("DSP regs");
 		Text("KON: ");
 		SameLine();

@@ -52,6 +52,7 @@ bool FileHandler::LoadModule(string path)
 		addroff += GetStringLength(filelen, compbuf, addroff) + 1;
 
 		mod.TrackLength = AlignData<uint8_t>(compbuf, addroff++);
+		mod.SongLength = AlignData<uint8_t>(compbuf, addroff++);
 		mod.Speed1 = AlignData<uint8_t>(compbuf, addroff++);
 		mod.TempoDivider = AlignData<uint8_t>(compbuf, addroff++);
 		mod.Highlight1 = AlignData<uint8_t>(compbuf, addroff++);
@@ -64,7 +65,7 @@ bool FileHandler::LoadModule(string path)
 		for (int x = 0; x < samplelen; x++)
 		{
 			sampvec[x].SampleIndex = AlignData<uint8_t>(compbuf, addroff++);
-			sampvec[x].SampleIndex = AlignData<uint16_t>(compbuf, addroff);
+			sampvec[x].SampleADDR = AlignData<uint16_t>(compbuf, addroff);
 			addroff += 2;
 			sampvec[x].SampleName = std::string((char*)compbuf + addroff, GetStringLength(filelen, compbuf, addroff));
 			addroff += GetStringLength(filelen, compbuf, addroff) + 1;
@@ -85,7 +86,80 @@ bool FileHandler::LoadModule(string path)
 		}
 		mod.samples = sampvec;
 
+
 		std::vector<Instrument> inst;
+
+		int instlen = AlignData<uint8_t>(compbuf, addroff++);
+		std::vector<Instrument> instvec;
+		instvec.resize(instlen);
+
+		for (int x = 0; x < instlen; x++)
+		{
+			instvec[x].Index = AlignData<uint8_t>(compbuf, addroff++);
+			instvec[x].Name = std::string((char*)compbuf + addroff, GetStringLength(filelen, compbuf, addroff));
+			addroff += GetStringLength(filelen, compbuf, addroff) + 1;
+			instvec[x].SampleIndex = AlignData<uint8_t>(compbuf, addroff++);
+			instvec[x].Volume = AlignData<int8_t>(compbuf, addroff++);
+			instvec[x].LPan = AlignData<int8_t>(compbuf, addroff++);
+			instvec[x].RPan = AlignData<int8_t>(compbuf, addroff++);
+			instvec[x].Gain = AlignData<uint8_t>(compbuf, addroff++);
+			instvec[x].InvL = !!AlignData<uint8_t>(compbuf, addroff++);
+			instvec[x].InvR = !!AlignData<uint8_t>(compbuf, addroff++);
+			instvec[x].PitchMod = !!AlignData<uint8_t>(compbuf, addroff++);
+			instvec[x].Echo = !!AlignData<uint8_t>(compbuf, addroff++);
+			instvec[x].Noise = !!AlignData<uint8_t>(compbuf, addroff++);
+			instvec[x].EnvelopeUsed = !!AlignData<uint8_t>(compbuf, addroff++);
+			instvec[x].Attack = AlignData<uint8_t>(compbuf, addroff++);
+			instvec[x].Decay = AlignData<uint8_t>(compbuf, addroff++);
+			instvec[x].Sustain = AlignData<uint8_t>(compbuf, addroff++);
+			instvec[x].Release = AlignData<uint8_t>(compbuf, addroff++);
+			instvec[x].NoteOff = AlignData<int8_t>(compbuf, addroff++);
+			instvec[x].InstADDR = AlignData<uint16_t>(compbuf, addroff);
+			addroff += 2;
+		}
+		mod.inst = instvec;
+
+		std::vector<Patterns> pat;
+
+		int patlen = AlignData<uint8_t>(compbuf, addroff++);
+		std::vector<Patterns> patvec;
+		patvec.resize(patlen);
+		for (int x = 0; x < patlen; x++)
+		{
+			patvec[x].Index = AlignData<uint8_t>(compbuf, addroff++);
+			memcpy(patvec[x].SavedRows, (char*)compbuf + addroff, sizeof(patvec[x].SavedRows));
+			addroff += sizeof(patvec[x].SavedRows);
+		}
+		mod.patterns = patvec;
+
+		std::vector<int> ord;
+		std::vector<Patterns> ordvec[8];
+		
+		for (int x = 0; x < 8; x++)
+		{
+			mod.Orders[x].clear();
+			mod.Orders[x].resize(mod.SongLength);
+			ordvec[x].resize(mod.SongLength);
+		}
+
+		for (int y = 0; y < mod.SongLength; y++)
+		{
+			for (int x = 0; x < 8; x++)
+			{
+				ordvec[x][y].Index = AlignData<uint8_t>(compbuf, addroff++);
+				mod.Orders[x][y] = ordvec[x][y].Index;
+			}
+		}
+
+		mod.SelectedRegion = AlignData<uint8_t>(compbuf, addroff++);
+		mod.EchoVol = AlignData<int8_t>(compbuf, addroff++);
+		mod.Delay = AlignData<uint8_t>(compbuf, addroff++);
+		mod.Feedback = AlignData<uint8_t>(compbuf, addroff++);
+		for (int x = 0; x < 8; x++)
+		{
+			mod.EchoFilter[x] = AlignData<int8_t>(compbuf, addroff++);
+		}
+
 		return true;
 	}
 	else
@@ -112,6 +186,7 @@ bool FileHandler::SaveModule(string path)
 		fwrite(mod.TrackDesc.c_str(), 1, mod.TrackDesc.length(), file);
 		fputc(0, file);
 		fwrite(&mod.TrackLength, 1, 1, file);
+		fwrite(&mod.SongLength, 1, 1, file);
 		fwrite(&mod.Speed1, 1, 1, file);
 		fwrite(&mod.TempoDivider, 1, 1, file);
 		fwrite(&mod.Highlight1, 1, 1, file);
@@ -141,6 +216,7 @@ bool FileHandler::SaveModule(string path)
 			fwrite(&mod.samples[s].LoopEnd, 4, 1, file);
 		}
 
+		cout << "\nInstrument memory starts at: " << ftell(file);
 		//Instruments
 		int instsize = mod.inst.size() - 1;
 		fwrite(&instsize, 1, 1, file);
@@ -175,11 +251,26 @@ bool FileHandler::SaveModule(string path)
 			fwrite(&in.InstADDR, 2, 1, file);
 		}
 
+		cout << "\nPattern memory starts at: " << ftell(file);
+
+		uint8_t patternslen = mod.patterns.size();
+		fwrite(&patternslen, 1, 1, file);
 		//Patterns
 		for (Patterns& pat : mod.patterns) 
 		{
 			fwrite(&pat.Index, 1, 1, file);
 			fwrite(pat.SavedRows, sizeof(Row), 256, file);
+		}
+
+		cout << "\nOrder memory starts at: " << ftell(file);
+		//Orders
+		for (int y = 0; y < mod.SongLength; y++)
+		{
+			for (int x = 0; x < 8; x++)
+			{
+				uint8_t ord = mod.Orders[x][y];
+				fwrite(&ord, 1, 1, file);
+			}
 		}
 
 		//SNES specific
@@ -191,6 +282,7 @@ bool FileHandler::SaveModule(string path)
 		{
 			fwrite(&mod.EchoFilter[x], 1, 1, file);
 		}
+		cout << "\nEcho memory starts at: " << ftell(file);
 		if (Compress)
 		{
 			//Compression
