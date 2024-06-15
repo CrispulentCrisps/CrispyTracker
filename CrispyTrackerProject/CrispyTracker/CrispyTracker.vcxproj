@@ -167,7 +167,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\..\Downloads\miniz-3.0.2\miniz.c" />
     <ClCompile Include="BRRFile.cpp" />
     <ClCompile Include="Channel.cpp" />
     <ClCompile Include="Effects.cpp" />
@@ -193,6 +192,7 @@
     <ClCompile Include="Libraries\implot-0.16\implot.cpp" />
     <ClCompile Include="Libraries\implot-0.16\implot_demo.cpp" />
     <ClCompile Include="Libraries\implot-0.16\implot_items.cpp" />
+    <ClCompile Include="miniz.c" />
     <ClCompile Include="Patterns.cpp" />
     <ClCompile Include="Sample.cpp" />
     <ClCompile Include="SettingsManager.cpp" />
@@ -202,7 +202,6 @@
     <ClCompile Include="Tracker.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\..\..\Downloads\miniz-3.0.2\miniz.h" />
     <ClInclude Include="BRRFile.h" />
     <ClInclude Include="Channel.h" />
     <ClInclude Include="Effects.h" />
@@ -238,6 +237,7 @@
     <ClInclude Include="Libraries\implot-0.16\implot.h" />
     <ClInclude Include="Libraries\implot-0.16\implot_internal.h" />
     <ClInclude Include="Macros.h" />
+    <ClInclude Include="miniz.h" />
     <ClInclude Include="Patterns.h" />
     <ClInclude Include="Sample.h" />
     <ClInclude Include="SettingsManager.h" />

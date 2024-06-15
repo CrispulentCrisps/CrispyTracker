@@ -123,7 +123,7 @@
     <ClCompile Include="FileHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\..\..\Downloads\miniz-3.0.2\miniz.c">
+    <ClCompile Include="miniz.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -251,7 +251,7 @@
     <ClInclude Include="FileHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\..\..\Downloads\miniz-3.0.2\miniz.h">
+    <ClInclude Include="miniz.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
