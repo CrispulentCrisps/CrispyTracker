@@ -148,7 +148,7 @@ const int8_t SineTable[256] = {
 
 enum EffectFlags {
 	arp_flag = 1,				//Flag for arpeggio
-	port_flag = 2,				//Flag for portamento down
+	port_flag = 2,				//Flag for portamento up and down
 	vibrato_flag = 4,			//Flag for vibrato
 	tremo_flag = 8,				//Flag for tremolando
 	panbrello_flag = 16,		//Flag for panbrello

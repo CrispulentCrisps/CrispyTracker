@@ -52,9 +52,9 @@ LoadDriver:
     bne .CheckPorts             ;Go to .CheckPorts if the compare fails
 
 .WriteToPorts:
-    lda.b #DriverLoop&$FF       ;Load last byte to the A register
+    lda.b #DriverStart&$FF      ;Load last byte to the A register
     sta.w HW_APUI02             ;Sends A value into HW_APUI02
-    lda.b #(DriverLoop>>8)&$FF  ;Load first byte to the A register
+    lda.b #(DriverStart>>8)&$FF ;Load first byte to the A register
     sta.w HW_APUI03             ;Sends A value into HW_APUI03
     lda.b #$01                  ;Load first byte to the A register
     sta.w HW_APUI01             ;Sends A value into HW_APUI01
@@ -66,11 +66,11 @@ LoadDriver:
     cmp.b #$CC                  ;Compare if the current value in APU-0 is 0xCC
     bne .ReadPort0              ;Go to .ReadPort0 if the compare fails
 
-    lda.b #ROM_Engine_Start&$FF          ;Loads first byte of the address into A
+    lda.b #ROM_Engine_Start&$FF         ;Loads first byte of the address into A
     sta.b $0                            ;Load 0 into zeropage
-    lda.b #(ROM_Engine_Start>>8)&$FF     ;Loads second byte of the address into A
+    lda.b #(ROM_Engine_Start>>8)&$FF    ;Loads second byte of the address into A
     sta.b $1                            ;Load 1 into zeropage
-    lda.b #(ROM_Engine_Start>>16)&$FF    ;Loads third byte of the address into A
+    lda.b #(ROM_Engine_Start>>16)&$FF   ;Loads third byte of the address into A
     sta.b $2                            ;Load 2 into zeropage
 
     ldy.w #0                            ;Reset Y register
@@ -90,9 +90,9 @@ LoadDriver:
     cpy.w #ROM_Engine_End               ;Check if the Y register is the same as the ROM end point
     bne .TransferLoop                   ;If it fails, go back to the transfer loop
 
-    lda.b #DriverLoop&$FF               ;Load 00 into A
+    lda.b #DriverStart&$FF              ;Load 00 into A
     sta.w HW_APUI02                     ;Write A value into APU-2
-    lda.b #(DriverLoop>>8)&$FF          ;Load 02 into A
+    lda.b #(DriverStart>>8)&$FF         ;Load 02 into A
     sta.w HW_APUI03                     ;Write A value into APU-3
     stz.w HW_APUI01                     ;Write zeropage value into APU-1
 

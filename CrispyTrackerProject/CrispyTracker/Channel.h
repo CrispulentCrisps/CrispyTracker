@@ -70,17 +70,7 @@ public:
 
 	Sint16 AudioDataL;
 	Sint16 AudioDataR;
-	int MarginLeft, MarginRight, MarginTop, MarginBottom;
 	int Index;
-	int Tick;
-	int ChannelLength;
-	int WaveType;
-	int Volume;
-	int ChannelPatternIndex = 0;
-	//fuck it we ball !!
-	//Needs to be float for the Lanczos resampling
-	float CurrentSamplePointIndex = 0;
-	float CurrentPlayedNote = 0;
 	int NoteType = 0;//Specifically for notation styling
 
 	int CurrentInstrument = 0;

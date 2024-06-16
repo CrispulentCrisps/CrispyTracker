@@ -113,7 +113,7 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 	int currenteffect = ch->Rows[ypos].effect;
 	int currentvalue = ch->Rows[ypos].effectvalue;
 	int id = ch->Index;
-	if (currentvol < NULL_COMMAND) 
+	if (currentvol < NULL_COMMAND)
 	{
 		ChannelVolume_L[id] = currentvol * inst->SetVolume(1);
 		ChannelVolume_R[id] = currentvol * inst->SetVolume(-1);
@@ -189,6 +189,7 @@ void SnesAPUHandler::APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int 
 		KONState &= ~(1 << id);
 	}
 }
+
 void SnesAPUHandler::APU_Play_Note_Editor(Channel* ch, Instrument* inst, int note, bool IsOn)
 {
 	int currentnote = note;
@@ -247,21 +248,19 @@ void SnesAPUHandler::APU_Play_Note_Editor(Channel* ch, Instrument* inst, int not
 	}
 }
 
-void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos, int* speed, int* patindex, int currenttick)
+//Handling effects
+void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos, int& speed, int& patindex, int currenttick)
 {
 	int note = ch->Rows[ypos].note;
 	int effect = ch->Rows[ypos].effect;
 	int value = ch->Rows[ypos].effectvalue;
 	int id = ch->Index;
 
-
-	if (note < NULL_COMMAND) EffectHandle.Base_Note[id] = note;
-	/*
-	if ((EffectHandle.Effect_Flags[id] &= vibrato_flag) || (EffectHandle.Effect_Flags[id] &= port_flag))
-	{
-		EffectHandle.Base_Pit[id] = spc_dsp_read(Dsp, ChannelRegs[id].pit_l) + (spc_dsp_read(Dsp, ChannelRegs[id].pit_h) << 8);
+	if (note < NULL_COMMAND) {
+		EffectHandle.Base_Note[id] = note;
+		EffectHandle.Base_Pit[id] = inst->BRR_Pitch(pow(2.0, (EffectHandle.Base_Note[id] - 48 + inst->NoteOff) / 12.0));
 	}
-	*/
+
 	if (value < NULL_COMMAND)
 	{
 		switch (effect)
@@ -279,11 +278,13 @@ void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos
 			EffectHandle.Port_Value[id] = -value;
 			break;
 		case PORT_TO:
+			value != 0 ? EffectHandle.Effect_Flags[id] |= port_to_flag : EffectHandle.Effect_Flags[id] &= ~port_to_flag;
+			if (EffectHandle.Effect_Flags[id] |= port_to_flag & 1) { EffectHandle.Effect_Flags[id] &= ~port_flag; }
+			EffectHandle.Port_Value[id] = value;
 			break;
 		case VIBRATO:
 			value != 0 ? EffectHandle.Effect_Flags[id] |= vibrato_flag : EffectHandle.Effect_Flags[id] &= ~vibrato_flag;
 			EffectHandle.Vibrato_Value[id] = value;
-			EffectHandle.Base_Pit[id] = spc_dsp_read(Dsp, ChannelRegs[id].pit_l) + (spc_dsp_read(Dsp, ChannelRegs[id].pit_h) << 8);
 			EffectHandle.Sine_Index_Vib[id] = 0;
 			break;
 		case TREMOLANDO:
@@ -296,6 +297,7 @@ void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos
 		case PANNING:
 			break;
 		case SPEED:
+			value != 0 ? speed = value : speed = speed;
 			break;
 		case VOLSLIDE:
 			break;
@@ -387,6 +389,7 @@ void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos
 		}
 	}
 
+	//Arpeggio
 	if (EffectHandle.Effect_Flags[id] & 1)
 	{
 		uint16_t Pitch = 0;
@@ -484,6 +487,40 @@ void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos
 
 		EffectHandle.Sine_Index_PnBr[id] += speed;
 	}
+	
+	//VolSlide
+	if ((EffectHandle.Effect_Flags[id] >> 5) & 1)//Check if the effect flag is on
+	{
+
+	}
+	
+	//Portamento to
+	if ((EffectHandle.Effect_Flags[id] >> 6) & 1)//Check if the effect flag is on
+	{
+		uint16_t val = EffectHandle.Port_Value[id];
+		uint16_t pit = spc_dsp_read(Dsp, ChannelRegs[id].pit_l) + (spc_dsp_read(Dsp, ChannelRegs[id].pit_h) << 8);
+		uint16_t target = inst->BRR_Pitch(pow(2.0, (EffectHandle.Base_Note[id] - 48 + inst->NoteOff) / 12.0));
+		if (target < pit)
+		{
+			pit += val;
+			if (pit + val > target)
+			{
+				pit = target;
+				EffectHandle.Effect_Flags[id] &= ~port_to_flag;
+			}
+		}
+		else
+		{
+			pit -= val;
+			if (pit - val < target)
+			{
+				pit = target;
+				EffectHandle.Effect_Flags[id] &= ~port_to_flag;
+			}
+		}
+		spc_dsp_write(Dsp, ChannelRegs[id].pit_l, pit & 0xFF);
+		spc_dsp_write(Dsp, ChannelRegs[id].pit_h, (pit >> 8) & 0xFF);
+	}
 }
 
 //Delete SPC & DSP instance
@@ -503,7 +540,7 @@ void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 		samp[i].brr.SampleDir = Sample_Mem_Page + AddrOff;
 		for (int j = 0; j < samp[i].brr.DBlocks.size(); j++)//BRR Block Index
 		{
-			if (AddrOff < Echo_Buffer_Addr)
+			if (AddrOff < Sample_Dir_Page)
 			{
 				if (samp[i].LoopStart / 16 == j)
 				{
@@ -535,7 +572,6 @@ void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 //Sets up the DIR page for interfacing with samples
 void SnesAPUHandler::APU_Set_Sample_Directory(std::vector<Sample>& samp)
 {
-	//sets the sample directory at 0xDD00
 	int CurrentDir = 0;
 	for (int i = 1; i < samp.size(); i++)
 	{
@@ -770,7 +806,13 @@ bool SnesAPUHandler::APU_Set_Master_Vol(signed char vol)
 void SnesAPUHandler::APU_Set_Echo(unsigned int dtime, int* coef, signed int dfb, signed int dvol)
 {
 	//int EchoAddr = (0xFFFF - (dtime * 0x0800)) >> 8;
+	
 	int EchoAddr = (0xFF00 - (dtime * 0x0800)) >> 8;
+	if (dtime == 0)
+	{
+		EchoAddr = 0x1;
+	}
+
 	char buf[10];
 	sprintf_s(buf, "%04X", EchoAddr);
 	std::cout << "\nEcho Addr: " << buf;
@@ -798,7 +840,7 @@ void SnesAPUHandler::APU_Init_Echo()
 	spc_dsp_write(Dsp, GLOBAL_evol_r, 96);
 	spc_dsp_write(Dsp, GLOBAL_edl, 0);
 	spc_dsp_write(Dsp, GLOBAL_efb, 64);
-	spc_dsp_write(Dsp, GLOBAL_esa, (0xFFFF - 0x0800) >> 8);//Sets the location of the echo buffer
+	spc_dsp_write(Dsp, GLOBAL_esa, (0xFF00 - 0x0800) >> 8);//Sets the location of the echo buffer
 	spc_dsp_write(Dsp, GLOBAL_c0, 127);
 	spc_dsp_write(Dsp, GLOBAL_c1, 0);
 	spc_dsp_write(Dsp, GLOBAL_c2, 0);
@@ -823,6 +865,12 @@ void SnesAPUHandler::APU_Audio_Start()
 	KOFState = 0;
 	spc_dsp_write(Dsp, GLOBAL_kof, 0x00);
 	spc_dsp_write(Dsp, GLOBAL_kon, 0x00);
+}
+
+void SnesAPUHandler::APU_SoftReset()
+{
+	spc_dsp_soft_reset(Dsp);
+	spc_dsp_write(Dsp, GLOBAL_flg, 0);
 }
 
 int SnesAPUHandler::APU_Return_Cycle_Since_Last_Frame()

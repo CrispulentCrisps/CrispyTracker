@@ -144,7 +144,7 @@ public:
     void APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int ypos);
     void APU_Play_Note_Editor(Channel* ch, Instrument* inst, int note, bool IsOn);
 
-    void APU_Process_Effects(Channel* ch, Instrument* inst, int ypos, int* speed, int* patindex, int currenttick);
+    void APU_Process_Effects(Channel* ch, Instrument* inst, int ypos, int& speed, int& patindex, int currenttick);
 
     void APU_Kill();
     void APU_Set_Sample_Memory(std::vector<Sample>& samp);
@@ -161,6 +161,7 @@ public:
 
     void APU_Audio_Stop();
     void APU_Audio_Start();
+    void APU_SoftReset();
 
     int APU_Return_Cycle_Since_Last_Frame();
 

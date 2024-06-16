@@ -1102,7 +1102,7 @@ void Tracker::Sample_View()
 
 					if (samples[SelectedSample].LoopEnd - samples[SelectedSample].LoopStart > 0)
 					{
-						ImPlot::PlotShaded("Loop Point Shade", LoopView.data(), samples[SelectedSample].LoopEnd - samples[SelectedSample].LoopStart, -INFINITY, 1, samples[SelectedSample].LoopStart, 0, INFINITY);
+ 						ImPlot::PlotShaded("Loop Point Shade", LoopView.data(), samples[SelectedSample].LoopEnd - samples[SelectedSample].LoopStart, -INFINITY, 1, samples[SelectedSample].LoopStart, 0, INFINITY);
 					}
 					ImPlot::PopStyleVar();
 					ImPlot::PopColormap();
@@ -1730,7 +1730,7 @@ void Tracker::UpdateTicks()
 {
 	for (int x = 0; x < 8; x++)
 	{
-		SG.Emu_APU.APU_Process_Effects(&Channels[x], &inst[Channels[x].CurrentInstrument], CursorY, &Speed1, &PatternIndex, TickCounter);
+		SG.Emu_APU.APU_Process_Effects(&Channels[x], &inst[Channels[x].CurrentInstrument], CursorY, Speed1, PatternIndex, TickCounter);
 	}
 }
 
@@ -2381,6 +2381,9 @@ void Tracker::LoadModuleAs()
 //Applies the loade file contents to the project
 void Tracker::ApplyLoad()
 {
+	samples.clear();
+	inst.clear();
+	StoragePatterns.clear();
 	memcpy(authbuf, filehandler.mod.AuthorName.c_str(), min(filehandler.mod.AuthorName.size(), sizeof(authbuf)));
 	memcpy(songbuf, filehandler.mod.TrackName.c_str(), min(filehandler.mod.TrackName.size(), sizeof(songbuf)));
 	memcpy(descbuf, filehandler.mod.TrackDesc.c_str(), min(filehandler.mod.TrackDesc.size(), sizeof(descbuf)));
@@ -2410,8 +2413,8 @@ void Tracker::ApplyLoad()
 		//Memory shit
 		SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[samp.SampleIndex], samples[samp.SampleIndex].LoopEnd);
 		SG.Emu_APU.APU_Evaluate_BRR_Loop_Start(&samples[samp.SampleIndex]);
-		SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
 	}
+	SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
 
 	for (int x = 0; x < filehandler.mod.inst.size(); x++)
 	{
@@ -2484,6 +2487,11 @@ void Tracker::ApplyLoad()
 	}
 	SG.Emu_APU.APU_Set_Echo(Delay, EchoFilter, Feedback, EchoVol);
 	SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
+
+	for (int x = 0; x < 8; x++)
+	{
+		Channels[x].CurrentInstrument = 0;
+	}
 
 	UpdateAllPatterns();
 }
