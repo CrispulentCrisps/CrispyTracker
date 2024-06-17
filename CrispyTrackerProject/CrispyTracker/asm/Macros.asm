@@ -4,10 +4,10 @@
 
 namespace COM
 
-TickAccum =     $00         ;Accumulator for the tick amount
-TickThresh =    $00         ;Equivelant to track speed
-SequencePos =   $02         ;Position within the sequence stream
-
+TickAccum =                 $00         ;Accumulator for the tick amount
+TickThresh =                $00         ;Equivelant to track speed
+SequencePos =               $02         ;Position within the sequence stream
+KONState =                  $04         ;Holds the current bitfield state of KON
 ;Commands
 
     ;Row commands

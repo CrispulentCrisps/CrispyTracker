@@ -93,7 +93,7 @@ Each row contains the following values:
 		3x+4, Echo Coeffecients, C, Sets the filter coeffecients [note: Values < -128 or > 127 can cause issues]
 
 		//Volume
-		4x, Set Volume, LPAN : RPAN, Sets the master volume of channel X [Also used in Panning effect]
+		4x, Set Volume, LPAN : RPAN, Sets the master volume of channel X [Also used in Panning effect. Used in conjunction with L/R inversion]
 
 		//Effects
 		5x, Set Effect Flags, V, Sets the flag state for the effect flags as a bitfield in X channel
@@ -143,9 +143,7 @@ Effects list goes as:
 	3Axx Echo Filter Value 7 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]
 	3Bxx Echo Filter Value 8 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]
 
-
 	C0xx Flag Effects [00-FF] Used for interfacing with between the 65816 and SPC-700
-
 
 	E1xy Portamento ctrl up [x: semitone, y: speed] Slides the note pitch up by X semitones at Y speed
 	E2xy Portamento ctrl down [x: semitone, y: speed] Slides the note pitch down by X semitones at Y speed
