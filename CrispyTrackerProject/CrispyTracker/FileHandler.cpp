@@ -40,23 +40,55 @@ bool FileHandler::LoadModule(string path)
 	mz_uncompress((unsigned char*)compbuf, &bufsize, (const unsigned char*)compfiledat+4, (mz_ulong)filelen-4);
 	free(compfiledat);
 
+	std::vector<int> ord;
+	std::vector<Patterns> ordvec[8];
 	int addroff = 0;
 	if (AlignData<uint32_t>(compbuf, addroff) == FILE_HEAD)
 	{
 		addroff += 4;
-		mod.AuthorName = std::string((char*)compbuf + addroff, GetStringLength(filelen, compbuf, addroff));
-		addroff += GetStringLength(filelen, compbuf, addroff) + 1;
-		mod.TrackName = std::string((char*)compbuf + addroff, GetStringLength(filelen, compbuf, addroff));
-		addroff += GetStringLength(filelen, compbuf, addroff) + 1;
-		mod.TrackDesc = std::string((char*)compbuf + addroff, GetStringLength(filelen, compbuf, addroff));
-		addroff += GetStringLength(filelen, compbuf, addroff) + 1;
+		uint8_t SubtuneCount = AlignData<uint8_t>(compbuf, addroff++);
+		mod.subtune.resize(SubtuneCount);
+		for (uint8_t z = 0; z < SubtuneCount; z++)
+		{
+			mod.subtune[z].AuthorName = std::string((char*)compbuf + addroff, GetStringLength(filelen, compbuf, addroff));
+			addroff += GetStringLength(filelen, compbuf, addroff) + 1;
+			mod.subtune[z].TrackName = std::string((char*)compbuf + addroff, GetStringLength(filelen, compbuf, addroff));
+			addroff += GetStringLength(filelen, compbuf, addroff) + 1;
+			mod.subtune[z].TrackDesc = std::string((char*)compbuf + addroff, GetStringLength(filelen, compbuf, addroff));
+			addroff += GetStringLength(filelen, compbuf, addroff) + 1;
 
-		mod.TrackLength = AlignData<uint8_t>(compbuf, addroff++);
-		mod.SongLength = AlignData<uint8_t>(compbuf, addroff++);
-		mod.Speed1 = AlignData<uint8_t>(compbuf, addroff++);
-		mod.TempoDivider = AlignData<uint8_t>(compbuf, addroff++);
-		mod.Highlight1 = AlignData<uint8_t>(compbuf, addroff++);
-		mod.Highlight2 = AlignData<uint8_t>(compbuf, addroff++);
+			mod.subtune[z].TrackLength = AlignData<uint8_t>(compbuf, addroff++);
+			mod.subtune[z].SongLength = AlignData<uint8_t>(compbuf, addroff++);
+			mod.subtune[z].Speed1 = AlignData<uint8_t>(compbuf, addroff++);
+			mod.subtune[z].TempoDivider = AlignData<uint8_t>(compbuf, addroff++);
+			mod.subtune[z].Highlight1 = AlignData<uint8_t>(compbuf, addroff++);
+			mod.subtune[z].Highlight2 = AlignData<uint8_t>(compbuf, addroff++);
+
+			for (int x = 0; x < 8; x++)
+			{
+				mod.subtune[z].Orders[x].clear();
+				mod.subtune[z].Orders[x].resize(mod.subtune[z].SongLength);
+				ordvec[x].resize(mod.subtune[z].SongLength);
+			}
+
+			for (int y = 0; y < mod.subtune[z].SongLength; y++)
+			{
+				for (int x = 0; x < 8; x++)
+				{
+					ordvec[x][y].Index = AlignData<uint8_t>(compbuf, addroff++);
+					mod.subtune[z].Orders[x][y] = ordvec[x][y].Index;
+				}
+			}
+
+			mod.SelectedRegion = AlignData<uint8_t>(compbuf, addroff++);
+			mod.subtune[z].EchoVol = AlignData<int8_t>(compbuf, addroff++);
+			mod.subtune[z].Delay = AlignData<uint8_t>(compbuf, addroff++);
+			mod.subtune[z].Feedback = AlignData<uint8_t>(compbuf, addroff++);
+			for (int x = 0; x < 8; x++)
+			{
+				mod.subtune[z].EchoFilter[x] = AlignData<int8_t>(compbuf, addroff++);
+			}
+		}
 
 		int samplelen = AlignData<uint8_t>(compbuf, addroff++);
 
@@ -132,34 +164,6 @@ bool FileHandler::LoadModule(string path)
 		}
 		mod.patterns = patvec;
 
-		std::vector<int> ord;
-		std::vector<Patterns> ordvec[8];
-		
-		for (int x = 0; x < 8; x++)
-		{
-			mod.Orders[x].clear();
-			mod.Orders[x].resize(mod.SongLength);
-			ordvec[x].resize(mod.SongLength);
-		}
-
-		for (int y = 0; y < mod.SongLength; y++)
-		{
-			for (int x = 0; x < 8; x++)
-			{
-				ordvec[x][y].Index = AlignData<uint8_t>(compbuf, addroff++);
-				mod.Orders[x][y] = ordvec[x][y].Index;
-			}
-		}
-
-		mod.SelectedRegion = AlignData<uint8_t>(compbuf, addroff++);
-		mod.EchoVol = AlignData<int8_t>(compbuf, addroff++);
-		mod.Delay = AlignData<uint8_t>(compbuf, addroff++);
-		mod.Feedback = AlignData<uint8_t>(compbuf, addroff++);
-		for (int x = 0; x < 8; x++)
-		{
-			mod.EchoFilter[x] = AlignData<int8_t>(compbuf, addroff++);
-		}
-
 		return true;
 	}
 	else
@@ -179,18 +183,44 @@ bool FileHandler::SaveModule(string path)
 		//Tracker specific
 		uint32_t head = FILE_HEAD;
 		fwrite(&head, 4, 1, file);
-		fwrite(mod.AuthorName.c_str(), 1, mod.AuthorName.length(), file);
-		fputc(0, file);
-		fwrite(mod.TrackName.c_str(), 1, mod.TrackName.length(), file);
-		fputc(0, file);
-		fwrite(mod.TrackDesc.c_str(), 1, mod.TrackDesc.length(), file);
-		fputc(0, file);
-		fwrite(&mod.TrackLength, 1, 1, file);
-		fwrite(&mod.SongLength, 1, 1, file);
-		fwrite(&mod.Speed1, 1, 1, file);
-		fwrite(&mod.TempoDivider, 1, 1, file);
-		fwrite(&mod.Highlight1, 1, 1, file);
-		fwrite(&mod.Highlight2, 1, 1, file);
+		uint8_t SubtuneCount = mod.subtune.size();
+		fwrite(&SubtuneCount, 1, 1, file);
+		for (int x = 0; x < mod.subtune.size(); x++)
+		{
+			fwrite(mod.subtune[x].AuthorName.c_str(), 1, mod.subtune[x].AuthorName.length(), file);
+			fputc(0, file);
+			fwrite(mod.subtune[x].TrackName.c_str(), 1, mod.subtune[x].TrackName.length(), file);
+			fputc(0, file);
+			fwrite(mod.subtune[x].TrackDesc.c_str(), 1, mod.subtune[x].TrackDesc.length(), file);
+			fputc(0, file);
+			fwrite(&mod.subtune[x].TrackLength, 1, 1, file);
+			fwrite(&mod.subtune[x].SongLength, 1, 1, file);
+			fwrite(&mod.subtune[x].Speed1, 1, 1, file);
+			fwrite(&mod.subtune[x].TempoDivider, 1, 1, file);
+			fwrite(&mod.subtune[x].Highlight1, 1, 1, file);
+			fwrite(&mod.subtune[x].Highlight2, 1, 1, file);
+
+			cout << "\nOrder memory starts at: " << ftell(file);
+			//Orders
+			for (int y = 0; y < mod.subtune[x].SongLength; y++)
+			{
+				for (int z = 0; z < 8; z++)
+				{
+					uint8_t ord = mod.subtune[x].Orders[z][y];
+					fwrite(&ord, 1, 1, file);
+				}
+			}
+
+			fwrite(&mod.SelectedRegion, 1, 1, file);
+			fwrite(&mod.subtune[x].EchoVol, 1, 1, file);
+			fwrite(&mod.subtune[x].Delay, 1, 1, file);
+			fwrite(&mod.subtune[x].Feedback, 1, 1, file);
+			for (int z = 0; z < 8; z++)
+			{
+				fwrite(&mod.subtune[x].EchoFilter[z], 1, 1, file);
+			}
+			cout << "\nEcho memory starts at: " << ftell(file);
+		}
 
 		//Samples
 		int sampsize = mod.samples.size() - 1;
@@ -214,6 +244,7 @@ bool FileHandler::SaveModule(string path)
 			fputc(mod.samples[s].Loop ? 1 : 0, file);
 			fwrite(&mod.samples[s].LoopStart, 4, 1, file);
 			fwrite(&mod.samples[s].LoopEnd, 4, 1, file);
+
 		}
 
 		cout << "\nInstrument memory starts at: " << ftell(file);
@@ -249,8 +280,10 @@ bool FileHandler::SaveModule(string path)
 			uint8_t noff = in.NoteOff;
 			fwrite(&noff, 1, 1, file);
 			fwrite(&in.InstADDR, 2, 1, file);
+
 		}
 
+		//SNES specific
 		cout << "\nPattern memory starts at: " << ftell(file);
 
 		uint8_t patternslen = mod.patterns.size();
@@ -262,27 +295,6 @@ bool FileHandler::SaveModule(string path)
 			fwrite(pat.SavedRows, sizeof(Row), 256, file);
 		}
 
-		cout << "\nOrder memory starts at: " << ftell(file);
-		//Orders
-		for (int y = 0; y < mod.SongLength; y++)
-		{
-			for (int x = 0; x < 8; x++)
-			{
-				uint8_t ord = mod.Orders[x][y];
-				fwrite(&ord, 1, 1, file);
-			}
-		}
-
-		//SNES specific
-		fwrite(&mod.SelectedRegion, 1, 1, file);
-		fwrite(&mod.EchoVol, 1, 1, file);
-		fwrite(&mod.Delay, 1, 1, file);
-		fwrite(&mod.Feedback, 1, 1, file);
-		for (int x = 0; x < 8; x++)
-		{
-			fwrite(&mod.EchoFilter[x], 1, 1, file);
-		}
-		cout << "\nEcho memory starts at: " << ftell(file);
 		if (Compress)
 		{
 			//Compression

@@ -66,6 +66,8 @@ public:
 	int MAX_FPS = 360;
 	float TimeHolder = 0;
 	float DeltaTimeHolder = 0;
+	int MaxTune = 1;
+	int CurrentTune = 0;
 
 	//Screen dimension constants
 	int SCREEN_WIDTH = 1920;
@@ -208,7 +210,7 @@ public:
 	vector<Sample> samples;
 	Sample DefaultSample;
 
-	//This is the patterns that is Displayed with
+	//This is the order of patterns
 	vector<Patterns> orders[8];//Display
 
 	//This is the patterns that is Stored so that when a pattern index is removed the data is preserved
@@ -330,6 +332,7 @@ public:
 	void DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[]);
 	void UpdatePatternIndex(int x, int y);
 	void UpdateAllPatterns();
+
 	void ChangePatternData(int x, int y);
 	void UpdateSettings(int w);
 	void ResetSettings();

@@ -1211,39 +1211,39 @@ void Tracker::Settings_View()
 					InputInt("##FPS", &FPS, 1, 1);
 					if (FPS > MAX_FPS) FPS = MAX_FPS; else if (FPS < 1) FPS = 1;
 
-					NewLine();
-					Text("Audio Buffer Size");
+NewLine();
+Text("Audio Buffer Size");
 
-					if (BeginCombo("##Buffer", BufferNames[SManager.CustomData.Buf].c_str()))
-					{
-						for (int i = 0; i < 5; i++)
-						{
-							if (Selectable(BufferNames[i].c_str(), i == SManager.CustomData.Buf))
-							{
-								switch (i)
-								{
-								case 0:
-									SManager.CustomData.Buf = SManager.Buf_512;
-									break;
-								case 1:
-									SManager.CustomData.Buf = SManager.Buf_1024;
-									break;
-								case 2:
-									SManager.CustomData.Buf = SManager.Buf_2048;
-									break;
-								case 3:
-									SManager.CustomData.Buf = SManager.Buf_4096;
-									break;
-								case 4:
-									SManager.CustomData.Buf = SManager.Buf_8192;
-									break;
-								}
-							}
-						}
-						EndCombo();
-					}
+if (BeginCombo("##Buffer", BufferNames[SManager.CustomData.Buf].c_str()))
+{
+	for (int i = 0; i < 5; i++)
+	{
+		if (Selectable(BufferNames[i].c_str(), i == SManager.CustomData.Buf))
+		{
+			switch (i)
+			{
+			case 0:
+				SManager.CustomData.Buf = SManager.Buf_512;
+				break;
+			case 1:
+				SManager.CustomData.Buf = SManager.Buf_1024;
+				break;
+			case 2:
+				SManager.CustomData.Buf = SManager.Buf_2048;
+				break;
+			case 3:
+				SManager.CustomData.Buf = SManager.Buf_4096;
+				break;
+			case 4:
+				SManager.CustomData.Buf = SManager.Buf_8192;
+				break;
+			}
+		}
+	}
+	EndCombo();
+}
 
-					EndTabItem();
+EndTabItem();
 				}
 
 				EndTabBar();
@@ -1280,8 +1280,8 @@ void Tracker::Misc_View()
 	{
 		InputInt("Octave", &Octave, 1, 8);
 		InputInt("Step", &Step, 1, 8);
-		Octave > 8 ? Octave = 8 : Octave < 0 ? Octave = 0: Octave;
-		if(SliderInt("Master Volume", &VolumeScale, -128, 127)) {
+		Octave > 8 ? Octave = 8 : Octave < 0 ? Octave = 0 : Octave;
+		if (SliderInt("Master Volume", &VolumeScale, -128, 127)) {
 			assert(SG.Emu_APU.APU_Set_Master_Vol(VolumeScale));
 		}
 	}
@@ -1292,6 +1292,36 @@ void Tracker::Author_View()
 {
 	if (Begin("Author"), 0, UNIVERSAL_WINDOW_FLAGS)
 	{
+		Text("Subtunes");
+		if (BeginCombo("##Subtunes", 0))
+		{
+			for (int x = 0; x < filehandler.mod.subtune.size(); x++)
+			{
+				bool selected = x == CurrentTune;
+				if (Selectable(filehandler.mod.subtune[x].TrackName.c_str(), selected))
+				{
+					CurrentTune = x;
+				}
+				if (selected)
+				{
+					SetItemDefaultFocus();
+				}
+			}
+			EndCombo();
+		}
+		SameLine();
+		if (Button("+")) 
+		{
+			MaxTune++;
+			CurrentTune = MaxTune;
+		}
+		SameLine();
+		if (Button("-"))
+		{
+			filehandler.mod.subtune.erase(filehandler.mod.subtune.begin() + CurrentTune);
+			MaxTune--;
+			CurrentTune = MaxTune;
+		}
 		Text("Song");
 		InputText("##SongTitle", songbuf, sizeof(songbuf));
 		Text("Author");
@@ -2282,36 +2312,37 @@ void Tracker::ResetSettings()
 void Tracker::UpdateModule()
 {
 	//Tracker
-	filehandler.mod.AuthorName = authbuf;
-	filehandler.mod.TrackName = songbuf;
-	filehandler.mod.TrackDesc = descbuf;
+	filehandler.mod.subtune.resize(MaxTune+1);
+	filehandler.mod.subtune[CurrentTune].AuthorName = authbuf;
+	filehandler.mod.subtune[CurrentTune].TrackName = songbuf;
+	filehandler.mod.subtune[CurrentTune].TrackDesc = descbuf;
 	filehandler.mod.samples = samples;
 	filehandler.mod.inst = inst;
 	filehandler.mod.patterns = StoragePatterns;
-	filehandler.mod.TrackLength = TrackLength;
-	filehandler.mod.SongLength = SongLength;
-	filehandler.mod.Speed1 = Speed1;
-	filehandler.mod.TempoDivider = TempoDivider;
-	filehandler.mod.Highlight1 = Highlight1;
-	filehandler.mod.Highlight2 = Highlight2;
+	filehandler.mod.subtune[CurrentTune].TrackLength = TrackLength;
+	filehandler.mod.subtune[CurrentTune].SongLength = SongLength;
+	filehandler.mod.subtune[CurrentTune].Speed1 = Speed1;
+	filehandler.mod.subtune[CurrentTune].TempoDivider = TempoDivider;
+	filehandler.mod.subtune[CurrentTune].Highlight1 = Highlight1;
+	filehandler.mod.subtune[CurrentTune].Highlight2 = Highlight2;
 	
-	for (int y = 0; y < filehandler.mod.SongLength; y++)
+	for (int y = 0; y < filehandler.mod.subtune[CurrentTune].SongLength; y++)
 	{
 		for (int x = 0; x < 8; x++)
 		{
-			filehandler.mod.Orders[x].resize(orders[x].size());
-			filehandler.mod.Orders[x][y] = orders[x][y].Index;
+			filehandler.mod.subtune[CurrentTune].Orders[x].resize(orders[x].size());
+			filehandler.mod.subtune[CurrentTune].Orders[x][y] = orders[x][y].Index;
 		}
 	}
 	
 	//SNES
 	filehandler.mod.SelectedRegion = 0;//Stand in for the moment
-	filehandler.mod.EchoVol = EchoVol;
-	filehandler.mod.Feedback = Feedback;
-	filehandler.mod.Delay = Delay;
+	filehandler.mod.subtune[CurrentTune].EchoVol = EchoVol;
+	filehandler.mod.subtune[CurrentTune].Feedback = Feedback;
+	filehandler.mod.subtune[CurrentTune].Delay = Delay;
 	for (int x = 0; x < 8; x++)
 	{
-		filehandler.mod.EchoFilter[x] = EchoFilter[x];
+		filehandler.mod.subtune[CurrentTune].EchoFilter[x] = EchoFilter[x];
 	}
 }
 
@@ -2384,16 +2415,16 @@ void Tracker::ApplyLoad()
 	samples.clear();
 	inst.clear();
 	StoragePatterns.clear();
-	memcpy(authbuf, filehandler.mod.AuthorName.c_str(), min(filehandler.mod.AuthorName.size(), sizeof(authbuf)));
-	memcpy(songbuf, filehandler.mod.TrackName.c_str(), min(filehandler.mod.TrackName.size(), sizeof(songbuf)));
-	memcpy(descbuf, filehandler.mod.TrackDesc.c_str(), min(filehandler.mod.TrackDesc.size(), sizeof(descbuf)));
+	memcpy(authbuf, filehandler.mod.subtune[CurrentTune].AuthorName.c_str(), min(filehandler.mod.subtune[CurrentTune].AuthorName.size(), sizeof(authbuf)));
+	memcpy(songbuf, filehandler.mod.subtune[CurrentTune].TrackName.c_str(), min(filehandler.mod.subtune[CurrentTune].TrackName.size(), sizeof(songbuf)));
+	memcpy(descbuf, filehandler.mod.subtune[CurrentTune].TrackDesc.c_str(), min(filehandler.mod.subtune[CurrentTune].TrackDesc.size(), sizeof(descbuf)));
 
-	TrackLength = filehandler.mod.TrackLength;
-	SongLength = filehandler.mod.SongLength;
-	Speed1 = filehandler.mod.Speed1;
-	TempoDivider = filehandler.mod.TempoDivider;
-	Highlight1 = filehandler.mod.Highlight1;
-	Highlight2 = filehandler.mod.Highlight2;
+	TrackLength = filehandler.mod.subtune[CurrentTune].TrackLength;
+	SongLength = filehandler.mod.subtune[CurrentTune].SongLength;
+	Speed1 = filehandler.mod.subtune[CurrentTune].Speed1;
+	TempoDivider = filehandler.mod.subtune[CurrentTune].TempoDivider;
+	Highlight1 = filehandler.mod.subtune[CurrentTune].Highlight1;
+	Highlight2 = filehandler.mod.subtune[CurrentTune].Highlight2;
 
 	SetupInstr();
 	for (int x = 0; x < filehandler.mod.samples.size(); x++)
@@ -2464,26 +2495,26 @@ void Tracker::ApplyLoad()
 	for (int x = 0; x < 8; x++)
 	{
 		orders[x].clear();
-		orders[x].resize(filehandler.mod.Orders[x].size());
+		orders[x].resize(filehandler.mod.subtune[CurrentTune].Orders[x].size());
 
 	}
 
-	for (int y = 0; y < filehandler.mod.SongLength; y++)
+	for (int y = 0; y < filehandler.mod.subtune[CurrentTune].SongLength; y++)
 	{
 		for (int x = 0; x < 8; x++)
 		{
-			orders[x][y].Index = filehandler.mod.Orders[x][y];
+			orders[x][y].Index = filehandler.mod.subtune[CurrentTune].Orders[x][y];
 			UpdatePatternIndex(x, y);
 		}
 	}
 
 	SelectedRegion = filehandler.mod.SelectedRegion;
-	EchoVol = filehandler.mod.EchoVol;
-	Delay = filehandler.mod.Delay;
-	Feedback = filehandler.mod.Feedback;
+	EchoVol = filehandler.mod.subtune[CurrentTune].EchoVol;
+	Delay = filehandler.mod.subtune[CurrentTune].Delay;
+	Feedback = filehandler.mod.subtune[CurrentTune].Feedback;
 	for (int x = 0; x < 8; x++)
 	{
-		EchoFilter[x] = filehandler.mod.EchoFilter[x];
+		EchoFilter[x] = filehandler.mod.subtune[CurrentTune].EchoFilter[x];
 	}
 	SG.Emu_APU.APU_Set_Echo(Delay, EchoFilter, Feedback, EchoVol);
 	SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);

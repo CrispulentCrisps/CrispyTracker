@@ -9,8 +9,7 @@ enum InstEntryEffectFlags {
 	Echo = 16,
 };
 
-typedef struct Module {
-	//Tracker Specific
+typedef struct Subtune {
 	std::string AuthorName;
 	std::string TrackName;
 	std::string TrackDesc;
@@ -20,18 +19,23 @@ typedef struct Module {
 	uint8_t TempoDivider;
 	uint8_t Highlight1;
 	uint8_t Highlight2;
-	std::vector<Sample> samples;
-	std::vector<Instrument> inst;
-	std::vector<Patterns> patterns;
 	std::vector<uint8_t> Orders[8];
-
-	//SNES Specific
-	uint8_t SelectedRegion;
 	//Echo
 	int8_t EchoVol;
 	uint8_t Delay;
 	uint8_t Feedback;
 	int8_t EchoFilter[8];
+};
+
+typedef struct Module {
+	//Tracker Specific
+	std::vector<Subtune> subtune;
+	std::vector<Sample> samples;
+	std::vector<Instrument> inst;
+	std::vector<Patterns> patterns;
+
+	//SNES Specific
+	uint8_t SelectedRegion;
 };
 
 //This is for each instrument used in every track, this is to save memory from having to write the same values in the sequence data again and again
