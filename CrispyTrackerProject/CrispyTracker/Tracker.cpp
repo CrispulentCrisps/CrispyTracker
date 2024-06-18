@@ -1297,26 +1297,31 @@ void Tracker::Author_View()
 		{
 			for (int x = 0; x < filehandler.mod.subtune.size(); x++)
 			{
+				PushID(IDOffset++);
 				bool selected = x == CurrentTune;
-				if (Selectable(filehandler.mod.subtune[x].TrackName.c_str(), selected))
+				if (Selectable(filehandler.mod.subtune[CurrentTune].trbuf, selected))
 				{
 					CurrentTune = x;
+					memcpy(authbuf, filehandler.mod.subtune[CurrentTune].aubuf, sizeof(authbuf));
+					memcpy(songbuf, filehandler.mod.subtune[CurrentTune].trbuf, sizeof(songbuf));
+					memcpy(descbuf, filehandler.mod.subtune[CurrentTune].dcbuf, sizeof(descbuf));
 				}
 				if (selected)
 				{
 					SetItemDefaultFocus();
 				}
+				PopID();
 			}
 			EndCombo();
 		}
 		SameLine();
-		if (Button("+")) 
+		if (Button("+") && MaxTune < 255)
 		{
 			MaxTune++;
 			CurrentTune = MaxTune;
 		}
 		SameLine();
-		if (Button("-"))
+		if (Button("-") && MaxTune > 1)
 		{
 			filehandler.mod.subtune.erase(filehandler.mod.subtune.begin() + CurrentTune);
 			MaxTune--;
@@ -2312,10 +2317,13 @@ void Tracker::ResetSettings()
 void Tracker::UpdateModule()
 {
 	//Tracker
-	filehandler.mod.subtune.resize(MaxTune+1);
-	filehandler.mod.subtune[CurrentTune].AuthorName = authbuf;
-	filehandler.mod.subtune[CurrentTune].TrackName = songbuf;
-	filehandler.mod.subtune[CurrentTune].TrackDesc = descbuf;
+	filehandler.mod.subtune.resize(MaxTune + 1);
+	memcpy(filehandler.mod.subtune[CurrentTune].aubuf, authbuf, sizeof(authbuf));
+	memcpy(filehandler.mod.subtune[CurrentTune].trbuf, songbuf, sizeof(songbuf));
+	memcpy(filehandler.mod.subtune[CurrentTune].dcbuf, descbuf, sizeof(descbuf));
+	filehandler.mod.subtune[CurrentTune].AuthorName = filehandler.mod.subtune[CurrentTune].aubuf;
+	filehandler.mod.subtune[CurrentTune].TrackName =  filehandler.mod.subtune[CurrentTune].trbuf;
+	filehandler.mod.subtune[CurrentTune].TrackDesc =  filehandler.mod.subtune[CurrentTune].dcbuf;
 	filehandler.mod.samples = samples;
 	filehandler.mod.inst = inst;
 	filehandler.mod.patterns = StoragePatterns;

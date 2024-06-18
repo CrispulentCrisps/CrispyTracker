@@ -66,7 +66,7 @@ public:
 	int MAX_FPS = 360;
 	float TimeHolder = 0;
 	float DeltaTimeHolder = 0;
-	int MaxTune = 1;
+	int MaxTune = 0;
 	int CurrentTune = 0;
 
 	//Screen dimension constants

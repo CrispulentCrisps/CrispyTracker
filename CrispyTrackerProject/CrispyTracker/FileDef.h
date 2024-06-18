@@ -10,6 +10,9 @@ enum InstEntryEffectFlags {
 };
 
 typedef struct Subtune {
+	char aubuf[256];
+	char trbuf[256];
+	char dcbuf[256];
 	std::string AuthorName;
 	std::string TrackName;
 	std::string TrackDesc;
