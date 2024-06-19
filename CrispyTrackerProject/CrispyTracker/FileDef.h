@@ -13,21 +13,21 @@ typedef struct Subtune {
 	char aubuf[256];
 	char trbuf[256];
 	char dcbuf[256];
-	std::string AuthorName;
-	std::string TrackName;
-	std::string TrackDesc;
-	uint8_t TrackLength;
-	uint8_t SongLength;
-	uint8_t Speed1;
-	uint8_t TempoDivider;
-	uint8_t Highlight1;
-	uint8_t Highlight2;
+	std::string AuthorName = " ";
+	std::string TrackName = " ";
+	std::string TrackDesc = " ";
+	uint8_t TrackLength = 64;
+	uint8_t SongLength = 1;
+	uint8_t Speed1 = 6;
+	uint8_t TempoDivider = 2;
+	uint8_t Highlight1 = 4;
+	uint8_t Highlight2 = 16;
 	std::vector<uint8_t> Orders[8];
 	//Echo
-	int8_t EchoVol;
-	uint8_t Delay;
-	uint8_t Feedback;
-	int8_t EchoFilter[8];
+	int8_t EchoVol = 64;
+	uint8_t Delay = 0;
+	uint8_t Feedback = 64;
+	int8_t EchoFilter[8] = { 127, 0, 0 , 0 , 0 , 0 , 0 , 0 };
 };
 
 typedef struct Module {

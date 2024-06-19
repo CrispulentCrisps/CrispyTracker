@@ -143,10 +143,10 @@ public:
 	//
 
 	//TrackerSpeed
-	int BaseTempo = 150;
+	int BaseTempo = 300;
 	int Speed1 = 6;
 	int TickCounter = 0;
-	int TempoDivider = 1;
+	int TempoDivider = 2;
 	//
 
 	//Track visuals
@@ -341,6 +341,7 @@ public:
 	void SaveModuleAs();
 	void LoadModuleAs();
 	void ApplyLoad();
+	void ApplySubtune();
 
 	void ErrorWindow();
 	void DSPDebugWindow();

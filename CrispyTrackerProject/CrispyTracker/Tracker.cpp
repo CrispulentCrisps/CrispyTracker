@@ -1293,26 +1293,30 @@ void Tracker::Author_View()
 	if (Begin("Author"), 0, UNIVERSAL_WINDOW_FLAGS)
 	{
 		Text("Subtunes");
-		if (BeginCombo("##Subtunes", 0))
+		if (filehandler.mod.subtune.size() != 0)
 		{
-			for (int x = 0; x < filehandler.mod.subtune.size(); x++)
+			if (BeginCombo("##Subtunes", filehandler.mod.subtune[CurrentTune].trbuf))
 			{
-				PushID(IDOffset++);
-				bool selected = x == CurrentTune;
-				if (Selectable(filehandler.mod.subtune[CurrentTune].trbuf, selected))
+				for (int x = 0; x < filehandler.mod.subtune.size(); x++)
 				{
-					CurrentTune = x;
-					memcpy(authbuf, filehandler.mod.subtune[CurrentTune].aubuf, sizeof(authbuf));
-					memcpy(songbuf, filehandler.mod.subtune[CurrentTune].trbuf, sizeof(songbuf));
-					memcpy(descbuf, filehandler.mod.subtune[CurrentTune].dcbuf, sizeof(descbuf));
+					PushID(IDOffset++);
+					bool selected = (x == CurrentTune);
+					string txt = to_string(x) + ": ";
+					Text(txt.c_str());
+					SameLine();
+					if (Selectable(filehandler.mod.subtune[x].trbuf, selected))
+					{
+						CurrentTune = x;
+						ApplySubtune();
+					}
+					if (selected)
+					{
+						SetItemDefaultFocus();
+					}
+					PopID();
 				}
-				if (selected)
-				{
-					SetItemDefaultFocus();
-				}
-				PopID();
+				EndCombo();
 			}
-			EndCombo();
 		}
 		SameLine();
 		if (Button("+") && MaxTune < 255)
@@ -2426,7 +2430,7 @@ void Tracker::ApplyLoad()
 	memcpy(authbuf, filehandler.mod.subtune[CurrentTune].AuthorName.c_str(), min(filehandler.mod.subtune[CurrentTune].AuthorName.size(), sizeof(authbuf)));
 	memcpy(songbuf, filehandler.mod.subtune[CurrentTune].TrackName.c_str(), min(filehandler.mod.subtune[CurrentTune].TrackName.size(), sizeof(songbuf)));
 	memcpy(descbuf, filehandler.mod.subtune[CurrentTune].TrackDesc.c_str(), min(filehandler.mod.subtune[CurrentTune].TrackDesc.size(), sizeof(descbuf)));
-
+	MaxTune = filehandler.mod.subtune.size()-1;
 	TrackLength = filehandler.mod.subtune[CurrentTune].TrackLength;
 	SongLength = filehandler.mod.subtune[CurrentTune].SongLength;
 	Speed1 = filehandler.mod.subtune[CurrentTune].Speed1;
@@ -2533,6 +2537,29 @@ void Tracker::ApplyLoad()
 	}
 
 	UpdateAllPatterns();
+}
+
+void Tracker::ApplySubtune()
+{	
+	memcpy(authbuf, filehandler.mod.subtune[CurrentTune].aubuf, sizeof(authbuf));
+	memcpy(songbuf, filehandler.mod.subtune[CurrentTune].trbuf, sizeof(songbuf));
+	memcpy(descbuf, filehandler.mod.subtune[CurrentTune].dcbuf, sizeof(descbuf));
+	TrackLength = filehandler.mod.subtune[CurrentTune].TrackLength;
+	SongLength = filehandler.mod.subtune[CurrentTune].SongLength;
+	Speed1 = filehandler.mod.subtune[CurrentTune].Speed1;
+	TempoDivider = filehandler.mod.subtune[CurrentTune].TempoDivider;
+	Highlight1 = filehandler.mod.subtune[CurrentTune].Highlight1;
+	Highlight2 = filehandler.mod.subtune[CurrentTune].Highlight2;
+	for (int y = 0; y < SongLength; y++)
+	{
+		for (int x = 0; x < 8; x++)
+		{
+			orders[x].resize(filehandler.mod.subtune[CurrentTune].Orders[x].size());
+			orders[x][y].Index = filehandler.mod.subtune[CurrentTune].Orders[x][y];
+			UpdatePatternIndex(x, y);
+		}
+	}
+	//UpdateModule();
 }
 
 static void TextCentered(std::string text) {
