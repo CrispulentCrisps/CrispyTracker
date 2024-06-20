@@ -342,6 +342,7 @@ public:
 	void LoadModuleAs();
 	void ApplyLoad();
 	void ApplySubtune();
+	void InitialiseNewSubtune();
 
 	void ErrorWindow();
 	void DSPDebugWindow();
@@ -353,13 +354,6 @@ public:
 	char songbuf[256] = { 0 };
 	char authbuf[256] = { 0 };
 	char descbuf[256] = { 0 };
-
-	string ADSRNames[4] = {
-		"Direct (cut on release)",
-		"Effective (linear decrease)",
-		"Effective (exponential decrease)",
-		"Delayed (write r on release)"
-	};
 
 	string Credits = "Crispytracker: " + VERSION;//Is actually used for the title
 	

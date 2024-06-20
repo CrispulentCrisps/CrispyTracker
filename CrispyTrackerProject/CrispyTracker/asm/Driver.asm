@@ -21,14 +21,26 @@ org $C10000     ;Go to bank C1000
 
 ROM_Engine_Start:
 
-base $0200          ;Set audio driver code to 0x0200 [closest to the start of memory we can get away with]
+base $0200              ;Set audio driver code to 0x0200 [closest to the start of memory we can get away with]
 
-DriverStart:         ;Start of the driver
+DriverStart:            ;Start of the driver
 %spc_write(DSP_FLG, $20)
 %spc_write(DSP_MVOL_L, $7F)
 %spc_write(DSP_MVOL_R, $7F)
-%spc_write(DSP_ESA, $DD)
+%spc_write(DSP_EVOL_L, $40)
+%spc_write(DSP_EVOL_R, $40)
+%spc_write(DSP_ESA, $BF)
 %spc_write(DSP_EDL, $00)
+%spc_write(DSP_EFB, $60)
+%spc_write(DSP_C0, $40)
+%spc_write(DSP_C1, $20)
+%spc_write(DSP_C2, $10)
+%spc_write(DSP_C3, $08)
+%spc_write(DSP_C4, $04)
+%spc_write(DSP_C5, $02)
+%spc_write(DSP_C6, $01)
+%spc_write(DSP_C7, $00)
+
 %spc_write(DSP_DIR, $05)
 
 %spc_write(DSP_V0_GAIN, $7F)
@@ -69,7 +81,7 @@ DriverStart:         ;Start of the driver
 
 %spc_write(DSP_NON, $00)
 %spc_write(DSP_PMON, $00)
-%spc_write(DSP_EON, $00)
+%spc_write(DSP_EON, $FF)
 %spc_write(DSP_KOF, $00)
 %spc_write(DSP_KON, $00)
 
@@ -78,8 +90,16 @@ mov SPC_Timer1, #$FF    ;Divide timer to run at ~31hz
 mov X, #00
 mov COM_SequencePos, #SequenceMemory&$FF
 mov COM_SequencePos+1, #(SequenceMemory>>8)&$FF
+mov COM_FlagVal, #0
 
 DriverLoop:         ;Main driver loop
+    jmp .TickRoutine
+
+.PositionReset:
+    mov SPC_RegADDR, #DSP_FLG      ;Get to the flag register
+    mov SPC_RegData, COM_FlagVal   ;Write value for flag val
+    mov COM_SequencePos, #SequenceMemory&$FF
+    mov COM_SequencePos+1, #(SequenceMemory>>8)&$FF
     bra .TickRoutine
 
 .ReadRows:
@@ -98,10 +118,20 @@ DriverLoop:         ;Main driver loop
                                 ;Find command type
     cmp X, #$10                 ;Compare the higher nibble to 10
     beq .NoteCommands           ;Compared and found X = 0
+    cmp X, #$30                 ;Compare the higher nibble to 30
+    beq .SpecialCommands        ;Compared and found X = 0
 
 .NoteCommands:
     cmp Y, #$8                  ;Check if we're doing an absolute pitch or a note table
     bpl .PlayPitch              ;If Y < 8 we know it's an absolute pitch command
+
+.SpecialCommands:
+    cmp Y, #$0
+    beq .SetNoise
+    cmp Y, #$1
+    beq .SetDelayTime
+    cmp Y, #$2
+    beq .SetDelayTime
 
 .PlayNote:
 
@@ -137,6 +167,25 @@ DriverLoop:         ;Main driver loop
     mov SPC_RegData, A
 
     bra .ReadRows
+
+.SetNoise:
+    mov X, #0                       ;Reset X to 0 since we know the command type
+    mov A, (COM_SequencePos+X)      ;Grab position of counter
+    incw COM_SequencePos            ;Increments the sequence pos pointer
+    and COM_FlagVal, #~$1F         ;Clear bottom 5 bits
+    or A, COM_FlagVal              ;Sets the COM_FlagVal to the applied value
+    mov COM_FlagVal, A             ;Write into value location in zeropage
+    bra .ReadRows
+
+.SetDelayTime:
+    mov X, #0                       ;Reset X to 0 since we know the command type
+    mov A, (COM_SequencePos+X)      ;Grab position of counter
+    incw COM_SequencePos            ;Increments the sequence pos pointer
+    mov SPC_RegADDR, #DSP_EDL
+    mov SPC_RegData, A
+    bra .ReadRows
+    
+
 .TickRoutine:               ;Routine for incrementing the tick counter and postiion within the track
     mov X, #00              ;Reset counter
     
@@ -149,14 +198,8 @@ DriverLoop:         ;Main driver loop
     bmi .TickIncrement      ;Go back to the tick incrementer if the counter is not 
                             ;Assuming we've hit the threshold
     mov X, #00              ;Reset counter
-    bra .ReadRows
-
-.PositionReset:
-    mov COM_SequencePos, #SequenceMemory&$FF
-    mov COM_SequencePos+1, #(SequenceMemory>>8)&$FF
-    bra .TickRoutine
-
-bra DriverLoop
+    jmp .ReadRows
+jmp DriverLoop
 
 fill $0500-pc()
 ;Test sine sample + dir page
@@ -174,6 +217,8 @@ ChannelTable:
     db $80
 
 SequenceMemory:
+;%SetNoise($1E)
+%SetDelayTime(8)
 %PlayPitch($0800, 0);Write note in
 %PlayPitch($0010, 1);Write note in
 %PlayPitch($0020, 2);Write note in

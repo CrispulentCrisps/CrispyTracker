@@ -14,7 +14,7 @@ uint16_t Instrument::BRR_Pitch(double pit)
 {
 	if (pit != 0)
 	{
-		float basepit = (pit * CurrentSample.SampleRate * 16.0) / 125.0;
+		float basepit = ((pit * CurrentSample.SampleRate * 16.0) / 125.0) + CurrentSample.FineTune;
 		basepit = max(basepit, (float)0);
 		basepit = min(basepit, (float)0x3FFF);
 		//return 0x1000;

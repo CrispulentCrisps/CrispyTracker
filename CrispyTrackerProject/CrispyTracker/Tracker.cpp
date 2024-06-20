@@ -408,7 +408,7 @@ void Tracker::Patterns_View()
 			{
 				TableNextRow();
 				ImGui::TableNextColumn();
-				if (Selectable(to_string(y).c_str())) {
+				if (Selectable(to_string(y).c_str()) && IsItemFocused) {
 					SelectedPattern = y;
 					UpdateAllPatterns();
 				}
@@ -1021,6 +1021,9 @@ void Tracker::Sample_View()
 			InputText("Sample Name", (char*)samples[SelectedSample].SampleName.c_str(), sizeof(samples[SelectedSample].SampleName));
 			InputInt("Playing HZ", &samples[SelectedSample].SampleRate);
 			InputInt("Fine Tune", (int*)&samples[SelectedSample].FineTune, 1, 1);
+			samples[SelectedSample].FineTune = min(-128, samples[SelectedSample].FineTune);
+			samples[SelectedSample].FineTune = max(127, samples[SelectedSample].FineTune);
+
 			if (Checkbox("Loop Sample", &samples[SelectedSample].Loop)) {
 				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
 				SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
@@ -1323,6 +1326,8 @@ void Tracker::Author_View()
 		{
 			MaxTune++;
 			CurrentTune = MaxTune;
+			InitialiseNewSubtune();
+			ApplySubtune();
 		}
 		SameLine();
 		if (Button("-") && MaxTune > 1)
@@ -1330,6 +1335,7 @@ void Tracker::Author_View()
 			filehandler.mod.subtune.erase(filehandler.mod.subtune.begin() + CurrentTune);
 			MaxTune--;
 			CurrentTune = MaxTune;
+			ApplySubtune();
 		}
 		Text("Song");
 		InputText("##SongTitle", songbuf, sizeof(songbuf));
@@ -2559,7 +2565,17 @@ void Tracker::ApplySubtune()
 			UpdatePatternIndex(x, y);
 		}
 	}
-	//UpdateModule();
+}
+
+void Tracker::InitialiseNewSubtune()
+{
+	Subtune tune = Subtune();
+	for (int x = 0; x < 8; x++)
+	{
+		tune.Orders[x].resize(1);
+		tune.Orders[x][0] = x;
+	}
+	filehandler.mod.subtune.push_back(tune);
 }
 
 static void TextCentered(std::string text) {
