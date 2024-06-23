@@ -246,17 +246,13 @@ void Tracker::Render()
 		Misc_View();
 		EchoSettings();
 		if (ShowExport)	Export_View();
-
 		if (SavingFile) SaveModuleAs();
 		if (LoadingFile) LoadModuleAs();
-
 		if (LoadingSample) LoadSample();
-
 		if (ShowError) ErrorWindow();
-
 		if (ShowDSPDebugger) DSPDebugWindow();
-
 		if (ShowTrackerDebugger) TrackerDebug();
+		if (SubtuneWarning) SubtuneDeletionWarning();
 
 		Info_View();
 	}
@@ -738,13 +734,14 @@ void Tracker::Instrument_View()//Instrument editor
 
 void Tracker::Channel_View()
 {
+	int celpady = GetStyle().CellPadding.y;
 	if (Begin("Channels"), 0, UNIVERSAL_WINDOW_FLAGS)
 	{
 		if (PlayingMode)
 		{
 			SetScrollY(ScrollValue());
 		}
-		if (BeginTable("ChannelView", 9, ImGuiTableFlags_SizingFixedFit, ImVec2(GetWindowWidth() * .9 + (TextSize * 8), 0)) != NULL)
+		if (BeginTable("ChannelView", 9, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInner, ImVec2(GetWindowWidth() * .9 + (TextSize * 8), 0)) != NULL)
 		{
 			string ind;
 			ImVec2 RowVec = ImVec2((GetWindowWidth() / 9.0) / 6.0, (double)TextSize - (TextSize / 3.0));
@@ -840,7 +837,7 @@ void Tracker::Channel_View()
 									{
 										TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 									}
-									if (Selectable(Channels[i].NoteView(j).c_str(), IsPoint && CursorPos == NOTE, 0, NoteSize))
+									if (Selectable(Channels[i].NoteView(j).c_str(), IsPoint && CursorPos == NOTE, ImGuiSelectableFlags_SelectOnClick, NoteSize))
 									{
 										CursorPos = NOTE;
 										CursorX = i;
@@ -859,7 +856,7 @@ void Tracker::Channel_View()
 									{
 										TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 									}
-									if (Selectable(Channels[i].InstrumentView(j).c_str(), IsPoint && CursorPos == INSTR, 0, MiscSize))
+									if (Selectable(Channels[i].InstrumentView(j).c_str(), IsPoint && CursorPos == INSTR, ImGuiSelectableFlags_SelectOnClick, MiscSize))
 									{
 										CursorPos = INSTR;
 										CursorX = i;
@@ -878,7 +875,7 @@ void Tracker::Channel_View()
 									{
 										TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 									}
-									if (Selectable(Channels[i].VolumeView(j).c_str(), IsPoint && CursorPos == VOLUME, CursorPos == VOLUME, MiscSize))
+									if (Selectable(Channels[i].VolumeView(j).c_str(), IsPoint && CursorPos == VOLUME, ImGuiSelectableFlags_SelectOnClick, MiscSize))
 									{
 										CursorPos = VOLUME;
 										CursorX = i;
@@ -897,7 +894,7 @@ void Tracker::Channel_View()
 									{
 										TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 									}
-									if (Selectable(Channels[i].EffectView(j).c_str(), IsPoint && CursorPos == EFFECT, 0, MiscSize))
+									if (Selectable(Channels[i].EffectView(j).c_str(), IsPoint && CursorPos == EFFECT, ImGuiSelectableFlags_SelectOnClick, MiscSize))
 									{
 										CursorPos = EFFECT;
 										CursorX = i;
@@ -916,7 +913,7 @@ void Tracker::Channel_View()
 									{
 										TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
 									}
-									if (Selectable(Channels[i].Effectvalue(j).c_str(), IsPoint && CursorPos == VALUE, 0, MiscSize))
+									if (Selectable(Channels[i].Effectvalue(j).c_str(), IsPoint && CursorPos == VALUE, ImGuiSelectableFlags_SelectOnClick, MiscSize))
 									{
 										CursorPos = VALUE;
 										CursorX = i;
@@ -936,6 +933,7 @@ void Tracker::Channel_View()
 		}
 	}
 	End();
+	GetStyle().CellPadding.y = celpady;
 }
 
 void Tracker::Samples()
@@ -1330,12 +1328,15 @@ void Tracker::Author_View()
 			ApplySubtune();
 		}
 		SameLine();
-		if (Button("-") && MaxTune > 1)
+		if (Button("-") && MaxTune >= 1)
 		{
+			SubtuneWarning = true;
+			/*
 			filehandler.mod.subtune.erase(filehandler.mod.subtune.begin() + CurrentTune);
 			MaxTune--;
 			CurrentTune = MaxTune;
 			ApplySubtune();
+			*/
 		}
 		Text("Song");
 		InputText("##SongTitle", songbuf, sizeof(songbuf));
@@ -2433,6 +2434,14 @@ void Tracker::ApplyLoad()
 	samples.clear();
 	inst.clear();
 	StoragePatterns.clear();
+	
+	for (int x = 0; x < filehandler.mod.subtune.size(); x++)
+	{
+		memcpy(filehandler.mod.subtune[x].aubuf, filehandler.mod.subtune[x].AuthorName.c_str(), min(filehandler.mod.subtune[x].AuthorName.size(), sizeof(authbuf)));
+		memcpy(filehandler.mod.subtune[x].trbuf, filehandler.mod.subtune[x].TrackName.c_str(), min(filehandler.mod.subtune[x].TrackName.size(), sizeof(songbuf)));
+		memcpy(filehandler.mod.subtune[x].dcbuf, filehandler.mod.subtune[x].TrackDesc.c_str(), min(filehandler.mod.subtune[x].TrackDesc.size(), sizeof(descbuf)));
+
+	}
 	memcpy(authbuf, filehandler.mod.subtune[CurrentTune].AuthorName.c_str(), min(filehandler.mod.subtune[CurrentTune].AuthorName.size(), sizeof(authbuf)));
 	memcpy(songbuf, filehandler.mod.subtune[CurrentTune].TrackName.c_str(), min(filehandler.mod.subtune[CurrentTune].TrackName.size(), sizeof(songbuf)));
 	memcpy(descbuf, filehandler.mod.subtune[CurrentTune].TrackDesc.c_str(), min(filehandler.mod.subtune[CurrentTune].TrackDesc.size(), sizeof(descbuf)));
@@ -2578,18 +2587,52 @@ void Tracker::InitialiseNewSubtune()
 	filehandler.mod.subtune.push_back(tune);
 }
 
-static void TextCentered(std::string text) {
+static void TextCentered(std::string text, bool wrapped = false) {
 	auto windowWidth = ImGui::GetWindowSize().x;
 	auto textWidth = ImGui::CalcTextSize(text.c_str()).x;
 
 	ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-	ImGui::Text(text.c_str());
+	if(!wrapped)ImGui::Text(text.c_str());
+	else ImGui::TextWrapped(text.c_str());
+}
+
+void Tracker::SubtuneDeletionWarning()
+{
+	SetNextWindowPos(GetMainViewport()->GetCenter(), 0, ImVec2(0.5f, 0.5f));
+	if (Begin("DeletionWarning",0, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize))
+	{
+		TextCentered("! WARNING !");
+		NewLine();
+		TextCentered("ARE YOU SURE YOU WANT TO DELETE THIS SUBTUNE?");
+		NewLine();
+		//PushTextWrapPos(GetWindowWidth() * 0.9);
+		string subdisp = to_string(CurrentTune) + ": " + filehandler.mod.subtune[CurrentTune].trbuf;
+		TextCentered(subdisp,true);
+		//PopTextWrapPos();
+		NewLine();
+		if (Button("No!", ImVec2(GetWindowWidth() * .125, TextSize+4)))
+		{
+			SubtuneWarning = false;
+		}
+		SameLine();
+		Dummy(ImVec2(GetWindowWidth() * 0.675, TextSize + 4));
+		SameLine();
+		if (Button("Yes", ImVec2(GetWindowWidth() * .125, TextSize + 4)))
+		{
+			filehandler.mod.subtune.erase(filehandler.mod.subtune.begin() + CurrentTune);
+			MaxTune--;
+			CurrentTune = MaxTune;
+			ApplySubtune();
+			SubtuneWarning = false;
+		}
+	}
+	End();
 }
 
 void Tracker::ErrorWindow()
 {
 	SetNextWindowPos(GetMainViewport()->GetCenter(), 0, ImVec2(0.5f, 0.5f));
-	if(Begin("ERROR", 0, UNIVERSAL_WINDOW_FLAGS)) {
+	if(Begin("ERROR", 0, UNIVERSAL_WINDOW_FLAGS | ImGuiWindowFlags_NoResize)) {
 		TextCentered("AN ERROR HAS OCCURED");
 		NewLine();
 		TextCentered(ErrorMessage);

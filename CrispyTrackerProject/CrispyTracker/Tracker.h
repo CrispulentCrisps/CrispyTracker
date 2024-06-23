@@ -287,6 +287,8 @@ public:
 	string ErrorMessage;
 	//
 
+	bool SubtuneWarning = false;
+
 	bool ShowDSPDebugger = false;
 	bool ShowTrackerDebugger = false;
 
@@ -343,6 +345,7 @@ public:
 	void ApplyLoad();
 	void ApplySubtune();
 	void InitialiseNewSubtune();
+	void SubtuneDeletionWarning();
 
 	void ErrorWindow();
 	void DSPDebugWindow();

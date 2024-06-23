@@ -2,6 +2,9 @@
 ;|                              |
 ;|  Cobalt Audio Diver Program  |
 ;|                              |
+;|          Written by          |
+;|            Crisps            |
+;|                              |
 ;|          08/06/2024          |
 ;|                              |
 ;|==============================|
@@ -100,7 +103,7 @@ DriverLoop:         ;Main driver loop
     mov SPC_RegData, COM_FlagVal   ;Write value for flag val
     mov COM_SequencePos, #SequenceMemory&$FF
     mov COM_SequencePos+1, #(SequenceMemory>>8)&$FF
-    bra .TickRoutine
+    jmp .TickRoutine
 
 .ReadRows:
     mov X, #00
@@ -131,7 +134,11 @@ DriverLoop:         ;Main driver loop
     cmp Y, #$1
     beq .SetDelayTime
     cmp Y, #$2
-    beq .SetDelayTime
+    beq .SetDelayVol
+    cmp Y, #$3
+    beq .SetDelayFeedback
+    cmp Y, #$4
+    bpl .SetDelayFeedback
 
 .PlayNote:
 
@@ -166,7 +173,7 @@ DriverLoop:         ;Main driver loop
     mov SPC_RegADDR, #DSP_KON
     mov SPC_RegData, A
 
-    bra .ReadRows
+    jmp .ReadRows
 
 .SetNoise:
     mov X, #0                       ;Reset X to 0 since we know the command type
@@ -175,7 +182,7 @@ DriverLoop:         ;Main driver loop
     and COM_FlagVal, #~$1F         ;Clear bottom 5 bits
     or A, COM_FlagVal              ;Sets the COM_FlagVal to the applied value
     mov COM_FlagVal, A             ;Write into value location in zeropage
-    bra .ReadRows
+    jmp .ReadRows
 
 .SetDelayTime:
     mov X, #0                       ;Reset X to 0 since we know the command type
@@ -183,8 +190,40 @@ DriverLoop:         ;Main driver loop
     incw COM_SequencePos            ;Increments the sequence pos pointer
     mov SPC_RegADDR, #DSP_EDL
     mov SPC_RegData, A
-    bra .ReadRows
+    jmp .ReadRows
     
+.SetDelayVol:
+    mov X, #0                       ;Reset X to 0 since we know the command type
+    mov A, (COM_SequencePos+X)      ;Grab position of counter
+    incw COM_SequencePos            ;Increments the sequence pos pointer
+    mov SPC_RegADDR, #DSP_EVOL_L
+    mov SPC_RegData, A
+    mov A, (COM_SequencePos+X)      ;Grab position of counter
+    incw COM_SequencePos            ;Increments the sequence pos pointer
+    mov SPC_RegADDR, #DSP_EVOL_R
+    mov SPC_RegData, A
+    jmp .ReadRows
+
+.SetDelayFeedback:
+    mov X, #0                       ;Reset X to 0 since we know the command type
+    mov A, (COM_SequencePos+X)      ;Grab position of counter
+    incw COM_SequencePos            ;Increments the sequence pos pointer
+    mov SPC_RegADDR, #DSP_EFB
+    mov SPC_RegData, A
+
+.SetDelayCoeff:
+    mov X, #0                       ;Reset X to 0 since we know the command type
+    mov A, (COM_SequencePos+X)      ;Grab position of counter
+    incw COM_SequencePos            ;Increments the sequence pos pointer
+    mov X, A                        ;Store the position value into X
+    mov A, Y                        ;Shove the coffecient position into A
+    and A, #%11111011               ;Sub 4 from A, now we have the exact coeffecient index
+    ;Need to set the index right
+    mov Y, A                        ;Store the coeffecient index
+    mov A, X                        ;Put the X value back into A
+    ;mov SPC_RegADDR, #C0+Y
+    ;mov SPC_RegData, A
+
 
 .TickRoutine:               ;Routine for incrementing the tick counter and postiion within the track
     mov X, #00              ;Reset counter
@@ -206,7 +245,7 @@ fill $0500-pc()
 db $04,$05,$04,$05
 db $84, $17, $45, $35, $22, $22, $31, $21, $10, $68, $01, $21, $0D, $01, $08, $0B, $C3, $3E, $5B, $09, $8B, $D7, $B1, $E0, $BC, $AF, $78
 
-ChannelTable:
+ChannelTable:   ;Writes the value for the channel bitfield
     db $01
     db $02
     db $04
@@ -219,6 +258,17 @@ ChannelTable:
 SequenceMemory:
 ;%SetNoise($1E)
 %SetDelayTime(8)
+%SetDelayVolume($40, $20)
+%SetDelayFeedback($7F)
+%SetDelayCoefficient($40, 0)
+%SetDelayCoefficient($20, 1)
+%SetDelayCoefficient($10, 2)
+%SetDelayCoefficient($08, 3)
+%SetDelayCoefficient($04, 4)
+%SetDelayCoefficient($02, 5)
+%SetDelayCoefficient($01, 6)
+%SetDelayCoefficient($00, 7)
+
 %PlayPitch($0800, 0);Write note in
 %PlayPitch($0010, 1);Write note in
 %PlayPitch($0020, 2);Write note in

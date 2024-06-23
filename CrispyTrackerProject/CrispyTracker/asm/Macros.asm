@@ -39,6 +39,21 @@ db $31
 db <V>
 endmacro
 
+macro SetDelayVolume(L, R)   ;Set Echo delay volume
+db $32
+db <L>
+db <R>
+endmacro
+
+macro SetDelayFeedback(V)   ;Set Echo delay volume
+db $33
+db <V>
+endmacro
+
+macro SetDelayCoefficient(V, C)   ;Set Echo delay volume
+db $34+<C>
+db <V>
+endmacro
     ;Effects commands
 
 namespace off
