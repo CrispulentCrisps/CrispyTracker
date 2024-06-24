@@ -35,14 +35,6 @@ DriverStart:            ;Start of the driver
 %spc_write(DSP_ESA, $BF)
 %spc_write(DSP_EDL, $00)
 %spc_write(DSP_EFB, $60)
-%spc_write(DSP_C0, $40)
-%spc_write(DSP_C1, $20)
-%spc_write(DSP_C2, $10)
-%spc_write(DSP_C3, $08)
-%spc_write(DSP_C4, $04)
-%spc_write(DSP_C5, $02)
-%spc_write(DSP_C6, $01)
-%spc_write(DSP_C7, $00)
 
 %spc_write(DSP_DIR, $05)
 
@@ -87,6 +79,15 @@ DriverStart:            ;Start of the driver
 %spc_write(DSP_EON, $FF)
 %spc_write(DSP_KOF, $00)
 %spc_write(DSP_KON, $00)
+
+%spc_write(DSP_C0, $00)
+%spc_write(DSP_C1, $00)
+%spc_write(DSP_C2, $00)
+%spc_write(DSP_C3, $00)
+%spc_write(DSP_C4, $00)
+%spc_write(DSP_C5, $00)
+%spc_write(DSP_C6, $00)
+%spc_write(DSP_C7, $00)
 
 mov SPC_Control, #$01   ;Set control bit to enable Timer 0
 mov SPC_Timer1, #$FF    ;Divide timer to run at ~31hz
@@ -138,7 +139,7 @@ DriverLoop:         ;Main driver loop
     cmp Y, #$3
     beq .SetDelayFeedback
     cmp Y, #$4
-    bpl .SetDelayFeedback
+    bpl .SetDelayCoeff
 
 .PlayNote:
 
@@ -160,11 +161,9 @@ DriverLoop:         ;Main driver loop
     mov SPC_RegADDR, Y              ;Get to the Lo pitch
     mov SPC_RegData, A
     incw COM_SequencePos            ;Increments the sequence pos pointer
-    
-    ;mov X, COM_KONState            ;Load KONState from memory
+
     mov A, Y                        ;Load Y into A
     xcn A
-    ;and A, #%11110111               ;Sub 8 from A
     mov X, A                        ;Shove channel index into X
     mov A, ChannelTable+X
     or A, COM_KONState
@@ -210,6 +209,7 @@ DriverLoop:         ;Main driver loop
     incw COM_SequencePos            ;Increments the sequence pos pointer
     mov SPC_RegADDR, #DSP_EFB
     mov SPC_RegData, A
+    jmp .ReadRows
 
 .SetDelayCoeff:
     mov X, #0                       ;Reset X to 0 since we know the command type
@@ -217,13 +217,15 @@ DriverLoop:         ;Main driver loop
     incw COM_SequencePos            ;Increments the sequence pos pointer
     mov X, A                        ;Store the position value into X
     mov A, Y                        ;Shove the coffecient position into A
-    and A, #%11111011               ;Sub 4 from A, now we have the exact coeffecient index
-    ;Need to set the index right
-    mov Y, A                        ;Store the coeffecient index
-    mov A, X                        ;Put the X value back into A
-    ;mov SPC_RegADDR, #C0+Y
-    ;mov SPC_RegData, A
-
+    dec A                           ;Sub 4 from A, now we have the exact coeffecient index
+    dec A
+    dec A
+    dec A
+    mov Y, A                        ;Store back into Y
+    mov A, CoeffecientTable+Y       ;Grab the register addr from the addr table offset by Y
+    mov SPC_RegADDR, A              ;Shove register addr in from A
+    mov SPC_RegData, X              ;Grab value stored in X and shove into regdata
+    jmp .ReadRows
 
 .TickRoutine:               ;Routine for incrementing the tick counter and postiion within the track
     mov X, #00              ;Reset counter
@@ -255,19 +257,29 @@ ChannelTable:   ;Writes the value for the channel bitfield
     db $40
     db $80
 
+CoeffecientTable:   ;Writes the value for the coeffecient index
+    db DSP_C0
+    db DSP_C1
+    db DSP_C2
+    db DSP_C3
+    db DSP_C4
+    db DSP_C5
+    db DSP_C6
+    db DSP_C7
+
 SequenceMemory:
 ;%SetNoise($1E)
 %SetDelayTime(8)
 %SetDelayVolume($40, $20)
 %SetDelayFeedback($7F)
-%SetDelayCoefficient($40, 0)
-%SetDelayCoefficient($20, 1)
-%SetDelayCoefficient($10, 2)
-%SetDelayCoefficient($08, 3)
-%SetDelayCoefficient($04, 4)
-%SetDelayCoefficient($02, 5)
-%SetDelayCoefficient($01, 6)
-%SetDelayCoefficient($00, 7)
+%SetDelayCoefficient(0, $40)
+%SetDelayCoefficient(1, $20)
+%SetDelayCoefficient(2, $10)
+%SetDelayCoefficient(3, $08)
+%SetDelayCoefficient(4, $04)
+%SetDelayCoefficient(5, $02)
+%SetDelayCoefficient(6, $01)
+%SetDelayCoefficient(7, $00)
 
 %PlayPitch($0800, 0);Write note in
 %PlayPitch($0010, 1);Write note in

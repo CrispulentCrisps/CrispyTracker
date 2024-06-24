@@ -8,7 +8,14 @@ TickAccum =                 $00         ;Accumulator for the tick amount
 TickThresh =                $00         ;Equivelant to track speed
 SequencePos =               $02         ;Position within the sequence stream
 KONState =                  $04         ;Holds the current bitfield state of KON
-FlagVal =                   $05         ;Holds the noise value
+FlagVal =                   $05         ;Holds the flag value
+
+;Effects
+ArpBitField =               $10
+PortBitField =              $11
+VibratoBitfield =           $12
+TremoBitField =             $13
+PanBrelloBitField =         $14
 ;Commands
 
     ;Row commands
@@ -50,7 +57,7 @@ db $33
 db <V>
 endmacro
 
-macro SetDelayCoefficient(V, C)   ;Set Echo delay volume
+macro SetDelayCoefficient(C, V)   ;Set Echo delay coeffecients
 db $34+<C>
 db <V>
 endmacro
