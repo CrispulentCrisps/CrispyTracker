@@ -96,7 +96,7 @@ mov COM_SequencePos, #SequenceMemory&$FF
 mov COM_SequencePos+1, #(SequenceMemory>>8)&$FF
 mov COM_FlagVal, #0
 
-DriverLoop:         ;Main driver loop
+DriverLoop:                         ;Main driver loop
     jmp .TickRoutine
 
 .PositionReset:
@@ -124,22 +124,45 @@ DriverLoop:         ;Main driver loop
     beq .NoteCommands           ;Compared and found X = 0
     cmp X, #$30                 ;Compare the higher nibble to 30
     beq .SpecialCommands        ;Compared and found X = 0
+    cmp X, #$40                 ;Compare the higher nibble to 30
+    beq .SpecialCommands        ;Compared and found X = 0
 
 .NoteCommands:
     cmp Y, #$8                  ;Check if we're doing an absolute pitch or a note table
-    bpl .PlayPitch              ;If Y < 8 we know it's an absolute pitch command
+    bpl .GotoPlayPitch          ;If Y < 8 we know it's an absolute pitch command
+
+.GotoPlayPitch:
+    jmp .PlayPitch
 
 .SpecialCommands:
     cmp Y, #$0
-    beq .SetNoise
+    beq .GotoSetNoise
     cmp Y, #$1
-    beq .SetDelayTime
+    beq .GotoSetDelayTime
     cmp Y, #$2
-    beq .SetDelayVol
+    beq .GotoSetDelayVol
     cmp Y, #$3
-    beq .SetDelayFeedback
+    beq .GotoSetDelayFeedback
     cmp Y, #$4
-    bpl .SetDelayCoeff
+    bpl .GotoSetDelayCoeff
+;GOTO's to avoid beq and blp going out of bounds
+.GotoSetDelayCoeff:
+    jmp .SetDelayCoeff
+.GotoSetDelayFeedback:
+    jmp .SetDelayFeedback
+.GotoSetDelayVol:
+    jmp .SetDelayVol
+.GotoSetNoise:
+    jmp .SetNoise
+.GotoSetDelayTime:
+    jmp .SetDelayTime
+
+.VolumeCommands
+    cmp Y, #$0                  ;Check if we're doing an absolute pitch or a note table
+    beq .GotoSetVolume          ;If Y < 8 we know it's an absolute pitch command
+
+.GotoSetVolume:
+    jmp .SetVolume
 
 .PlayNote:
 
@@ -217,15 +240,15 @@ DriverLoop:         ;Main driver loop
     incw COM_SequencePos            ;Increments the sequence pos pointer
     mov X, A                        ;Store the position value into X
     mov A, Y                        ;Shove the coffecient position into A
-    dec A                           ;Sub 4 from A, now we have the exact coeffecient index
-    dec A
-    dec A
-    dec A
+    sbc A, #4                       ;Sub 4 from A, now we have the exact coeffecient index
     mov Y, A                        ;Store back into Y
     mov A, CoeffecientTable+Y       ;Grab the register addr from the addr table offset by Y
     mov SPC_RegADDR, A              ;Shove register addr in from A
     mov SPC_RegData, X              ;Grab value stored in X and shove into regdata
     jmp .ReadRows
+
+.SetVolume:
+
 
 .TickRoutine:               ;Routine for incrementing the tick counter and postiion within the track
     mov X, #00              ;Reset counter
@@ -234,12 +257,19 @@ DriverLoop:         ;Main driver loop
     mov A, SPC_Count1       ;Check counter
     beq .TickIncrement      ;If the timer is set to 0
                             ;Assuming the timer is 1
+    jmp .EffectsProcess     ;Process effects
+    .ContinueIncrement:
     inc X                   ;Increment our counter
     cmp X, #31              ;Check if the counter has reached the threshold
-    bmi .TickIncrement      ;Go back to the tick incrementer if the counter is not 
+    bmi .TickIncrement      ;Go back to the tick incrementer if the counter is not
                             ;Assuming we've hit the threshold
     mov X, #00              ;Reset counter
     jmp .ReadRows
+
+.EffectsProcess:
+    inc COM_TriangleCounter
+    jmp .ContinueIncrement
+
 jmp DriverLoop
 
 fill $0500-pc()
@@ -285,6 +315,11 @@ SequenceMemory:
 %PlayPitch($0010, 1);Write note in
 %PlayPitch($0020, 2);Write note in
 %PlayPitch($0030, 3);Write note in
+db COM_EndRow
+%PlayPitch($0900, 0);Write note in
+%PlayPitch($0011, 1);Write note in
+%PlayPitch($0022, 2);Write note in
+%PlayPitch($0033, 3);Write note in
 db COM_EndRow
 Engine_End:
 

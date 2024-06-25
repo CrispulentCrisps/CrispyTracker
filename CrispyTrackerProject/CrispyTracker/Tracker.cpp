@@ -1019,8 +1019,8 @@ void Tracker::Sample_View()
 			InputText("Sample Name", (char*)samples[SelectedSample].SampleName.c_str(), sizeof(samples[SelectedSample].SampleName));
 			InputInt("Playing HZ", &samples[SelectedSample].SampleRate);
 			InputInt("Fine Tune", (int*)&samples[SelectedSample].FineTune, 1, 1);
-			samples[SelectedSample].FineTune = min(-128, samples[SelectedSample].FineTune);
-			samples[SelectedSample].FineTune = max(127, samples[SelectedSample].FineTune);
+			if (samples[SelectedSample].FineTune > 127) samples[SelectedSample].FineTune = 127;
+			else if (samples[SelectedSample].FineTune < -128) samples[SelectedSample].FineTune = -128;
 
 			if (Checkbox("Loop Sample", &samples[SelectedSample].Loop)) {
 				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
@@ -1897,6 +1897,12 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 				CursorY -= (MoveByStep) ? Step : 1;
 				BoxSelected = false;
 				SetScrollY(ScrollValue());
+				break;
+			case GLFW_KEY_INSERT:
+				StoragePatterns[orders[CursorX][SelectedPattern].Index].ShiftRowValues(CursorY, 1);
+				break;
+			case GLFW_KEY_BACKSPACE:
+				StoragePatterns[orders[CursorX][SelectedPattern].Index].ShiftRowValues(CursorY, -1);
 				break;
 			}
 		}

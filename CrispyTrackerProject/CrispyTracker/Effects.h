@@ -112,7 +112,7 @@
 #define PORT_DOWN_CTRL_DESC	"E2xy Portamento down [x: semitone, y: speed] Slides the note pitch down by X semitones at Y speed"
 #define GLOBAL_PAN_L_DESC	"E8xx Set Global Left Panning Volume [xx: l value] Sets the Global Left panning of the tune"
 #define GLOBAL_PAN_R_DESC	"E9xx Set Global Right Panning Volume [xx: r value] Sets the Global Right panning of the tune"
-#define GLOBAL_VOL_DESC		"EAxx Set Global Volume [xx: volume] Set's the Global Volume of the track"		
+#define GLOBAL_VOL_DESC		"EAxx Set Global Volume [xx: volume] Set's the Global Volume of the track"
 
 #define END_DESC			"FFxx End Tune [xx: end tune] Will end the tune no matter the value"
 

@@ -28,3 +28,27 @@ int Patterns::Pattern_EvaluateHexInput(int input, int index)
 	*/
 	return surrogate;
 }
+
+void Patterns::ShiftRowValues(int ypos, int step)
+{
+	vector<Row> temp;
+	temp.resize(256);
+	for (int x = 0; x < 256; x++)
+	{
+		temp[x] = SavedRows[x];
+	}
+	if (step >= 0)
+	{
+		temp.insert(temp.begin() + ypos, Row());
+		temp.erase(temp.begin() + 256);
+	}
+	else
+	{
+		temp.erase(temp.begin() + ypos);
+		temp.insert(temp.begin() + 255, Row());
+	}
+	for (int x = 0; x < 256; x++)
+	{
+		SavedRows[x] = temp[x];
+	}
+}

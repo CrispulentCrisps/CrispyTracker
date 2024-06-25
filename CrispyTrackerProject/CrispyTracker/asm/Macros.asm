@@ -5,17 +5,20 @@
 namespace COM
 
 TickAccum =                 $00         ;Accumulator for the tick amount
-TickThresh =                $00         ;Equivelant to track speed
-SequencePos =               $02         ;Position within the sequence stream
+TickThresh =                $02         ;Equivelant to track speed
+SequencePos =               $03         ;Position within the sequence stream
 KONState =                  $04         ;Holds the current bitfield state of KON
 FlagVal =                   $05         ;Holds the flag value
+ChannelVol =                $06         ;Holds the channel master volume [goes across 8 bytes]
+
 
 ;Effects
-ArpBitField =               $10
-PortBitField =              $11
-VibratoBitfield =           $12
-TremoBitField =             $13
-PanBrelloBitField =         $14
+TriangleCounter =           $10
+ArpBitField =               $11
+PortBitField =              $12
+VibratoBitfield =           $13
+TremoBitField =             $14
+PanBrelloBitField =         $15
 ;Commands
 
     ;Row commands

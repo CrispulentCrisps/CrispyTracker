@@ -19,4 +19,5 @@ public:
 	Row SavedRows[256];
 	void SetUp(int Length);
 	int Pattern_EvaluateHexInput(int input, int index);
+	void ShiftRowValues(int ypos, int step);
 };
