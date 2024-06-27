@@ -122,10 +122,12 @@ DriverLoop:                         ;Main driver loop
                                 ;Find command type
     cmp X, #$10                 ;Compare the higher nibble to 10
     beq .NoteCommands           ;Compared and found X = 0
+    cmp X, #$20                 ;Compare the higher nibble to 20
+    beq .InstrumentCommands     ;Compared and found X = 0
     cmp X, #$30                 ;Compare the higher nibble to 30
     beq .SpecialCommands        ;Compared and found X = 0
-    cmp X, #$40                 ;Compare the higher nibble to 30
-    beq .SpecialCommands        ;Compared and found X = 0
+    cmp X, #$40                 ;Compare the higher nibble to 40
+    beq .VolumeCommands         ;Compared and found X = 0
 
 .NoteCommands:
     cmp Y, #$8                  ;Check if we're doing an absolute pitch or a note table
@@ -133,6 +135,9 @@ DriverLoop:                         ;Main driver loop
 
 .GotoPlayPitch:
     jmp .PlayPitch
+
+.InstrumentCommands:
+    jmp .SetInstrument
 
 .SpecialCommands:
     cmp Y, #$0
@@ -145,6 +150,7 @@ DriverLoop:                         ;Main driver loop
     beq .GotoSetDelayFeedback
     cmp Y, #$4
     bpl .GotoSetDelayCoeff
+
 ;GOTO's to avoid beq and blp going out of bounds
 .GotoSetDelayCoeff:
     jmp .SetDelayCoeff
@@ -157,10 +163,14 @@ DriverLoop:                         ;Main driver loop
 .GotoSetDelayTime:
     jmp .SetDelayTime
 
-.VolumeCommands
+.VolumeCommands:
     cmp Y, #$0                  ;Check if we're doing an absolute pitch or a note table
-    beq .GotoSetVolume          ;If Y < 8 we know it's an absolute pitch command
+    beq .GotoSetMasterVolume    ;If we know the command is for the master volume
+    cmp Y, #$1                  ;Check if we're doing an absolute pitch or a note table
+    bpl .GotoSetVolume          ;If we know the command is for the master volume
 
+.GotoSetMasterVolume:
+    jmp .SetMasterVolume
 .GotoSetVolume:
     jmp .SetVolume
 
@@ -195,6 +205,13 @@ DriverLoop:                         ;Main driver loop
     mov SPC_RegADDR, #DSP_KON
     mov SPC_RegData, A
 
+    jmp .ReadRows
+
+.SetInstrument:
+    mov X, #0                       ;Reset X to 0 since we know the command type
+    mov A, (COM_SequencePos+X)      ;Grab position of counter
+    incw COM_SequencePos            ;Increments the sequence pos pointer
+    mov COM_ChInstrumentIndex+Y, A
     jmp .ReadRows
 
 .SetNoise:
@@ -247,11 +264,37 @@ DriverLoop:                         ;Main driver loop
     mov SPC_RegData, X              ;Grab value stored in X and shove into regdata
     jmp .ReadRows
 
-.SetVolume:
+.SetMasterVolume:
+    mov X, #0                       ;Reset X to 0 since we know the command type
+    mov A, (COM_SequencePos+X)      ;Grab position of counter
+    incw COM_SequencePos            ;Increments the sequence pos pointer
+    mov SPC_RegADDR, #DSP_MVOL_L
+    mov SPC_RegData, A
+    mov A, (COM_SequencePos+X)      ;Grab position of counter
+    incw COM_SequencePos            ;Increments the sequence pos pointer
+    mov SPC_RegADDR, #DSP_MVOL_R
+    mov SPC_RegData, A
+    jmp .ReadRows
 
+.SetVolume:
+    mov X, #0                       ;Reset X to 0 since we know the command type
+    mov A, (COM_SequencePos+X)      ;Grab position of counter
+    incw COM_SequencePos            ;Increments the sequence pos pointer
+    dec Y                           ;Decrement Y to get to the correct channel
+    mov COM_ChannelVol+Y, A       ;Move the data into the right section of memory
+    jmp .ReadRows
 
 .TickRoutine:               ;Routine for incrementing the tick counter and postiion within the track
-    mov X, #00              ;Reset counter
+    mov X, #0               ;Reset counter
+    
+    .ProcessInstruments:
+
+    .InstLoop:
+    inc COM_InstLoopCounter
+    cmp COM_InstLoopCounter, #8
+    bne .InstLoop
+    
+    mov COM_InstLoopCounter, #0
     
     .TickIncrement
     mov A, SPC_Count1       ;Check counter
@@ -297,11 +340,32 @@ CoeffecientTable:   ;Writes the value for the coeffecient index
     db DSP_C6
     db DSP_C7
 
+InstrumentMemory:
+%WriteInstrument($7F, $7F, $FF, $F0, $7F, $00, $00, $40)
+.EndOfInstrument:
+
 SequenceMemory:
 ;%SetNoise($1E)
 %SetDelayTime(8)
 %SetDelayVolume($40, $20)
 %SetDelayFeedback($7F)
+%SetMasterVolume($7F, $CC)
+%SetChannelVolume(0, $80)
+%SetChannelVolume(1, $40)
+%SetChannelVolume(2, $20)
+%SetChannelVolume(3, $10)
+%SetChannelVolume(4, $08)
+%SetChannelVolume(5, $04)
+%SetChannelVolume(6, $02)
+%SetChannelVolume(7, $01)
+%SetInstrument($0, $0)
+%SetInstrument($1, $2)
+%SetInstrument($2, $4)
+%SetInstrument($3, $8)
+%SetInstrument($4, $10)
+%SetInstrument($5, $20)
+%SetInstrument($6, $40)
+%SetInstrument($7, $80)
 %SetDelayCoefficient(0, $40)
 %SetDelayCoefficient(1, $20)
 %SetDelayCoefficient(2, $10)
@@ -310,16 +374,10 @@ SequenceMemory:
 %SetDelayCoefficient(5, $02)
 %SetDelayCoefficient(6, $01)
 %SetDelayCoefficient(7, $00)
-
-%PlayPitch($0800, 0);Write note in
-%PlayPitch($0010, 1);Write note in
-%PlayPitch($0020, 2);Write note in
-%PlayPitch($0030, 3);Write note in
-db COM_EndRow
-%PlayPitch($0900, 0);Write note in
-%PlayPitch($0011, 1);Write note in
-%PlayPitch($0022, 2);Write note in
-%PlayPitch($0033, 3);Write note in
+%PlayPitch($0400, 0);Write note in
+%PlayPitch($0800, 1);Write note in
+%PlayPitch($0010, 2);Write note in
+%PlayPitch($0020, 3);Write note in
 db COM_EndRow
 Engine_End:
 

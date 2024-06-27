@@ -76,14 +76,6 @@ Each row contains the following values:
 
 		//Instrument
 		2x, Set Instrument, Index, Sets the current intstrument in channel x
-		28, Set Instrument, Index, Sets the current intstrument in channel 0 - 			|		|		|
-		29, Set Instrument, Index, Sets the current intstrument in channel 1 - Pmod		|		|		|
-		2A, Set Instrument, Index, Sets the current intstrument in channel 2 - 			| Noise	|		|
-		2B, Set Instrument, Index, Sets the current intstrument in channel 3 - Pmod 	| Noise	|		|
-		2C, Set Instrument, Index, Sets the current intstrument in channel 4 - 			|		| Echo	|
-		2D, Set Instrument, Index, Sets the current intstrument in channel 5 - Pmod 	|		| Echo	|
-		2E, Set Instrument, Index, Sets the current intstrument in channel 6 - 		 	| Noise	| Echo	|
-		2F, Set Instrument, Index, Sets the current intstrument in channel 7 - Pmod 	| Noise	| Echo	|
 		
 		//Special
 		30, Set Noise Value, Pitch, takes in a 5 bit value for the noise pitch. Noise is universal across the SNES
