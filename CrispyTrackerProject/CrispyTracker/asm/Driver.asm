@@ -41,8 +41,8 @@ DriverStart:            ;Start of the driver
 %spc_write(DSP_V0_GAIN, $7F)
 %spc_write(DSP_V0_ADSR1, $8F)
 %spc_write(DSP_V0_ADSR2, $F0)
-%spc_write(DSP_V0_VOL_L, $20)
-%spc_write(DSP_V0_VOL_R, $20)
+%spc_write(DSP_V0_VOL_L, $00)
+%spc_write(DSP_V0_VOL_R, $00)
 %spc_write(DSP_V0_PITCHL, $00)
 %spc_write(DSP_V0_PITCHH, $00)
 %spc_write(DSP_V0_SCRN, $00)
@@ -50,8 +50,8 @@ DriverStart:            ;Start of the driver
 %spc_write(DSP_V1_GAIN, $7F)
 %spc_write(DSP_V1_ADSR1, $8F)
 %spc_write(DSP_V1_ADSR2, $F0)
-%spc_write(DSP_V1_VOL_L, $20)
-%spc_write(DSP_V1_VOL_R, $20)
+%spc_write(DSP_V1_VOL_L, $00)
+%spc_write(DSP_V1_VOL_R, $00)
 %spc_write(DSP_V1_PITCHL, $00)
 %spc_write(DSP_V1_PITCHH, $00)
 %spc_write(DSP_V1_SCRN, $00)
@@ -68,8 +68,8 @@ DriverStart:            ;Start of the driver
 %spc_write(DSP_V3_GAIN, $7F)
 %spc_write(DSP_V3_ADSR1, $8F)
 %spc_write(DSP_V3_ADSR2, $F0)
-%spc_write(DSP_V3_VOL_L, $20)
-%spc_write(DSP_V3_VOL_R, $20)
+%spc_write(DSP_V3_VOL_L, $00)
+%spc_write(DSP_V3_VOL_R, $00)
 %spc_write(DSP_V3_PITCHL, $00)
 %spc_write(DSP_V3_PITCHH, $00)
 %spc_write(DSP_V3_SCRN, $00)
@@ -208,10 +208,115 @@ DriverLoop:                         ;Main driver loop
     jmp .ReadRows
 
 .SetInstrument:
-    mov X, #0                       ;Reset X to 0 since we know the command type
-    mov A, (COM_SequencePos+X)      ;Grab position of counter
-    incw COM_SequencePos            ;Increments the sequence pos pointer
-    mov COM_ChInstrumentIndex+Y, A
+    mov X, #0                                           ;Reset X to 0 since we know the command type
+    mov A, (COM_SequencePos+X)                          ;Grab position of counter
+    incw COM_SequencePos                                ;Increments the sequence pos pointer
+    push Y                                              ;Store Y in stack
+                                                        ;Grab the right position in memory
+    mov COM_TempMemADDRL, #InstrumentMemory&$FF
+    mov COM_TempMemADDRH, #(InstrumentMemory>>8)&$FF
+    mov Y, #8                                           ;Multiply the offset by 8, since instruments are 8 bytes large
+    mul YA
+    addw YA, COM_TempMemADDRL
+    mov COM_TempMemADDRH, Y
+    mov COM_TempMemADDRL, A
+    mov Y, #0
+    mov A, (COM_TempMemADDRL)+Y                         ;Goto point in memory and then store in A
+
+    ;Mix volumes [Breaks when L/R = -128]
+    pop X                           ;Take channel index out of the stack from Y and into X
+    push X                          ;Store back instrument index for later use
+    mov Y,COM_ChannelVol+X          ;Grab the current master volume of the channe;
+    mov X, #127                     ;Load 127 to use for division
+    mul YA                          ;Multiply
+    div YA, X                       ;Divide
+                                    ;Now shove value in right address
+    pop X                           ;Grab the instrument index
+    push X                          ;push said instrument index back for R use
+    push A                          ;push volume for later
+    mov A, X                        ;shove X value into A
+    xcn                             ;swap top and bottom nibbles
+    mov SPC_RegADDR, A              ;Put in the channel addr
+    pop A
+    mov SPC_RegData, A              ;Shove in value from stack into A and into this
+                                    
+                                    ;Find Right volume
+    mov Y, #1
+    mov A, (COM_TempMemADDRL)+Y     ;Goto point in memory and then store in A
+    pop X                           ;Take channel index out of the stack from Y and into X
+    push X                          ;Store back instrument index for later use
+    mov Y,COM_ChannelVol+X          ;Grab the current master volume of the channe;
+    mov X, #127                     ;Load 127 to use for division
+    mul YA                          ;Multiply
+    div YA, X                       ;Divide
+                                    ;Now shove value in right address
+    pop X                           ;Grab the stack value
+    push X                          ;push said stack value back for R use
+    push A                          ;push A value for later
+    mov A, X                        ;shove X value into A
+    xcn                             ;swap top and bottom nibbles
+    adc A, #1
+    mov SPC_RegADDR, A              ;Put in the channel addr
+    pop A
+    mov SPC_RegData, A              ;Shove in value from stack into A and into this
+
+    ;Set ADSR1
+    mov Y, #2
+    mov A, (COM_TempMemADDRL)+Y     ;Goto point in memory and then store in A
+    pop X                           ;Grab the stack value
+    push X                          ;push said stack value back for later use
+    push A                          ;Store ADSR1 value into stack
+    mov A, X                        ;shove X value into A
+    xcn                             ;swap top and bottom nibbles
+    adc A, #5
+    mov SPC_RegADDR, A              ;Put in the channel addr
+    pop A
+    mov SPC_RegData, A              ;Shove in value from stack into A and into this
+
+    ;Set ADSR2
+    mov Y, #3
+    mov A, (COM_TempMemADDRL)+Y     ;Goto point in memory and then store in A
+    pop X                           ;Grab the stack value
+    push X                          ;push said stack value back for later use
+    push A                          ;Store ADSR1 value into stack
+    mov A, X                        ;shove X value into A
+    xcn                             ;swap top and bottom nibbles
+    adc A, #6
+    mov SPC_RegADDR, A              ;Put in the channel addr
+    pop A
+    mov SPC_RegData, A              ;Shove in value from stack into A and into this
+
+    ;Set Gain
+    mov Y, #4
+    mov A, (COM_TempMemADDRL)+Y     ;Goto point in memory and then store in A
+    pop X                           ;Grab the stack value
+    push X                          ;push said stack value back for later use
+    push A                          ;Store ADSR1 value into stack
+    mov A, X                        ;shove X value into A
+    xcn                             ;swap top and bottom nibbles
+    adc A, #7
+    mov SPC_RegADDR, A              ;Put in the channel addr
+    pop A
+    mov SPC_RegData, A              ;Shove in value from stack into A and into this
+
+    ;Set Effect state
+    mov Y, #5
+    mov A, (COM_TempMemADDRL)+Y     ;Goto point in memory and then store in A
+    push A                          ;Store value onto stack for future bit fuckery
+    
+
+    ;Assign sample index to SCRN registers
+    mov Y, #6
+    mov A, (COM_TempMemADDRL)+Y     ;Goto point in memory and then store in A
+    pop X                           ;Grab the stack value
+    push X                          ;push said stack value back for later use
+    push A                          ;Store ADSR1 value into stack
+    mov A, X                        ;shove X value into A
+    xcn                             ;swap top and bottom nibbles
+    adc A, #4
+    mov SPC_RegADDR, A              ;Put in the channel addr
+    pop A
+    mov SPC_RegData, A              ;Shove in value from stack into A and into this
     jmp .ReadRows
 
 .SetNoise:
@@ -286,13 +391,14 @@ DriverLoop:                         ;Main driver loop
 
 .TickRoutine:               ;Routine for incrementing the tick counter and postiion within the track
     mov X, #0               ;Reset counter
-    
+    mov Y, #0
     .ProcessInstruments:
 
-    .InstLoop:
-    inc COM_InstLoopCounter
-    cmp COM_InstLoopCounter, #8
-    bne .InstLoop
+    ;.InstLoop:              ;Used to evaluate instrument specific information
+    ;ov A, ChInstrumentIndex
+    ;inc COM_InstLoopCounter
+    ;cmp COM_InstLoopCounter, #8
+    ;bne .InstLoop
     
     mov COM_InstLoopCounter, #0
     
@@ -341,7 +447,7 @@ CoeffecientTable:   ;Writes the value for the coeffecient index
     db DSP_C7
 
 InstrumentMemory:
-%WriteInstrument($7F, $7F, $FF, $F0, $7F, $00, $00, $40)
+%WriteInstrument($7F, $40, $FF, $F0, $7F, $00, $00, $40)
 .EndOfInstrument:
 
 SequenceMemory:
@@ -358,14 +464,14 @@ SequenceMemory:
 %SetChannelVolume(5, $04)
 %SetChannelVolume(6, $02)
 %SetChannelVolume(7, $01)
-%SetInstrument($0, $0)
-%SetInstrument($1, $2)
-%SetInstrument($2, $4)
-%SetInstrument($3, $8)
-%SetInstrument($4, $10)
-%SetInstrument($5, $20)
-%SetInstrument($6, $40)
-%SetInstrument($7, $80)
+%SetInstrument($2, $0)
+;%SetInstrument($1, $2)
+;%SetInstrument($2, $4)
+;%SetInstrument($3, $8)
+;%SetInstrument($4, $10)
+;%SetInstrument($5, $20)
+;%SetInstrument($6, $40)
+;%SetInstrument($7, $80)
 %SetDelayCoefficient(0, $40)
 %SetDelayCoefficient(1, $20)
 %SetDelayCoefficient(2, $10)
@@ -374,8 +480,8 @@ SequenceMemory:
 %SetDelayCoefficient(5, $02)
 %SetDelayCoefficient(6, $01)
 %SetDelayCoefficient(7, $00)
-%PlayPitch($0400, 0);Write note in
-%PlayPitch($0800, 1);Write note in
+%PlayPitch($0004, 0);Write note in
+%PlayPitch($0008, 1);Write note in
 %PlayPitch($0010, 2);Write note in
 %PlayPitch($0020, 3);Write note in
 db COM_EndRow

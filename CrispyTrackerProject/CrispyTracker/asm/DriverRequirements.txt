@@ -6,7 +6,7 @@ Play individual notes
 Refer to instrument values for:
 	- Volume [includes panning]
 	- Effect state [L/R inversion, pitch mod, echo, noise]
-	- Gain [first 8 bits since the last 8 are not of good use]
+	- Gain
 	- ADSR envelope information
 	- Sample index for SCRN registers
 	
@@ -36,7 +36,7 @@ Allow for SFX to be played in any channel at any point in time
 The engine process will be split up into 3 main sections
 
 Table Construction
-Handle Row Commands
+Handling Row Commands
 Effects Processing
 
 - Table Construction -
@@ -98,8 +98,6 @@ Each row contains the following values:
 		5D, Set Retrig Value, R, puts XX into R [Thresh]
 		5E, Set Pbr Value, B, puts XY into B	[Speed : Depth]
 
-
-
 - Effects Processing -
 
 Effects will be categorised into 3 types
@@ -142,6 +140,6 @@ Effects list goes as:
 	E2xy Portamento ctrl down [x: semitone, y: speed] Slides the note pitch down by X semitones at Y speed
 	E8xx Set Global Left Panning Volume [xx: l value] Sets the Global Left panning of the tune
 	E9xx Set Global Right Panning Volume [xx: r value] Sets the Global Right panning of the tune
-	EAxx Set Global Volume [xx: volume] Set's the Global Volume of the track
+	EAxx Set Global Volume [xx: volume] Sets the Global Volume of the track
 
 	FFxx End Tune [xx: end tune] Will end the tune no matter the value

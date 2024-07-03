@@ -3,16 +3,17 @@
 ;
 
 namespace COM
-
-TickAccum =                 $00         ;Accumulator for the tick amount
-TickThresh =                $02         ;Equivelant to track speed
-SequencePos =               $03         ;Position within the sequence stream [Goes across 2 bytes]
-KONState =                  $05         ;Holds the current bitfield state of KON
-FlagVal =                   $06         ;Holds the flag value
-ChannelVol =                $07         ;Holds the channel master volume [goes across 8 bytes]
+TempMemADDRL =              $00         ;General purpose addr
+TempMemADDRH =              $01         ;
+TickAccum =                 $02         ;Accumulator for the tick amount
+TickThresh =                $03         ;Equivelant to track speed
+SequencePos =               $04         ;Position within the sequence stream [Goes across 2 bytes]
+KONState =                  $06         ;Holds the current bitfield state of KON
+FlagVal =                   $07         ;Holds the flag value
+ChannelVol =                $08         ;Holds the channel master volume [goes across 8 bytes]
 
 ;Instruments
-ChInstrumentIndex =         $10         ;Holds the current instrument index in the channel [Goes across 8 bytes]
+;ChInstrumentIndex =         $10         ;Holds the current instrument index in the channel [Goes across 8 bytes]
 
 ;Special
 NoiseState =                $30
@@ -29,6 +30,8 @@ PanBrelloBitField =         $45
 
 ;General Memory Storage
 InstLoopCounter =           $80
+;InstrumentIndexHolder =     $83
+InstrumentValueHolder =     $81
 
 ;Commands
 
