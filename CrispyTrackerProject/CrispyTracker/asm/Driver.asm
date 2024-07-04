@@ -9,11 +9,6 @@
 ;|                              |
 ;|==============================|
 
-;
-;   General Memory Layout
-;   0200    Audio driver code section
-;   
-
 incsrc "Macros.asm"
 incsrc "spc700.asm"
 incsrc "dsp.asm"
@@ -36,7 +31,7 @@ DriverStart:            ;Start of the driver
 %spc_write(DSP_EDL, $00)
 %spc_write(DSP_EFB, $60)
 
-%spc_write(DSP_DIR, $05)
+%spc_write(DSP_DIR, $20)
 
 %spc_write(DSP_V0_GAIN, $7F)
 %spc_write(DSP_V0_ADSR1, $8F)
@@ -226,7 +221,7 @@ DriverLoop:                         ;Main driver loop
     ;Mix volumes [Breaks when L/R = -128]
     pop X                           ;Take channel index out of the stack from Y and into X
     push X                          ;Store back instrument index for later use
-    mov Y,COM_ChannelVol+X          ;Grab the current master volume of the channe;
+    mov Y,COM_ChannelVol+X          ;Grab the current master volume of the channel
     mov X, #127                     ;Load 127 to use for division
     mul YA                          ;Multiply
     div YA, X                       ;Divide
@@ -245,7 +240,7 @@ DriverLoop:                         ;Main driver loop
     mov A, (COM_TempMemADDRL)+Y     ;Goto point in memory and then store in A
     pop X                           ;Take channel index out of the stack from Y and into X
     push X                          ;Store back instrument index for later use
-    mov Y,COM_ChannelVol+X          ;Grab the current master volume of the channe;
+    mov Y,COM_ChannelVol+X          ;Grab the current master volume of the channel
     mov X, #127                     ;Load 127 to use for division
     mul YA                          ;Multiply
     div YA, X                       ;Divide
@@ -302,8 +297,35 @@ DriverLoop:                         ;Main driver loop
     ;Set Effect state
     mov Y, #5
     mov A, (COM_TempMemADDRL)+Y     ;Goto point in memory and then store in A
-    push A                          ;Store value onto stack for future bit fuckery
-    
+    pop X                           ;Grab channel index
+    push X                          ;Store instrument index
+                                    ;Pitch mod
+    mov A, ChannelTable+X           ;Shove in the bitmask index using the channel index
+    eor A, #$FF                     ;Grab the inverse of said mask
+    and A, COM_PModState            ;Apply mask to PModState
+    mov Y, A
+    and A, #%00000001               ;Grab the first bit
+    beq .SkipPMod                   ;Skip the code if we find the bit is 0
+    mov A, ChannelTable+X
+    mov SPC_RegADDR, #DSP_PMON      ;Put in the channel addr
+    mov SPC_RegData, Y              ;Shove the PMON bitfield in
+    .SkipPMod:
+                                    ;Noise
+    mov A, (COM_TempMemADDRL)+Y     ;Goto point in memory and then store in A
+    and A, #%00000010               ;Grab the second bit
+    beq .SkipNoise                  ;Skip the code if we find the bit is 0
+    mov A, ChannelTable+X
+    mov SPC_RegADDR, #DSP_NON       ;Put in the channel addr
+    mov SPC_RegData, A              ;Shove the NON bitfield in
+    .SkipNoise:
+                                    ;Echo on
+    mov A, (COM_TempMemADDRL)+Y     ;Goto point in memory and then store in A
+    and A, #%00000100               ;Grab the third bit
+    beq .SkipEcho                   ;Skip the code if we find the bit is 0
+    mov A, ChannelTable+X
+    mov SPC_RegADDR, #DSP_EON       ;Put in the channel addr
+    mov SPC_RegData, A              ;Shove the EON bitfield in
+    .SkipEcho:
 
     ;Assign sample index to SCRN registers
     mov Y, #6
@@ -317,6 +339,8 @@ DriverLoop:                         ;Main driver loop
     mov SPC_RegADDR, A              ;Put in the channel addr
     pop A
     mov SPC_RegData, A              ;Shove in value from stack into A and into this
+
+    pop X
     jmp .ReadRows
 
 .SetNoise:
@@ -391,16 +415,6 @@ DriverLoop:                         ;Main driver loop
 
 .TickRoutine:               ;Routine for incrementing the tick counter and postiion within the track
     mov X, #0               ;Reset counter
-    mov Y, #0
-    .ProcessInstruments:
-
-    ;.InstLoop:              ;Used to evaluate instrument specific information
-    ;ov A, ChInstrumentIndex
-    ;inc COM_InstLoopCounter
-    ;cmp COM_InstLoopCounter, #8
-    ;bne .InstLoop
-    
-    mov COM_InstLoopCounter, #0
     
     .TickIncrement
     mov A, SPC_Count1       ;Check counter
@@ -421,9 +435,10 @@ DriverLoop:                         ;Main driver loop
 
 jmp DriverLoop
 
-fill $0500-pc()
+fill $2000-pc()
+assert pc() == $2000
 ;Test sine sample + dir page
-db $04,$05,$04,$05
+db $04,$20,$04,$20
 db $84, $17, $45, $35, $22, $22, $31, $21, $10, $68, $01, $21, $0D, $01, $08, $0B, $C3, $3E, $5B, $09, $8B, $D7, $B1, $E0, $BC, $AF, $78
 
 ChannelTable:   ;Writes the value for the channel bitfield
@@ -447,11 +462,13 @@ CoeffecientTable:   ;Writes the value for the coeffecient index
     db DSP_C7
 
 InstrumentMemory:
-%WriteInstrument($7F, $40, $FF, $F0, $7F, $00, $00, $40)
+%WriteInstrument($7F, $40, $FF, $F0, $7F, $03, $00, $40)
+%WriteInstrument($40, $60, $FF, $F0, $7F, $02, $00, $60)
+%WriteInstrument($20, $7F, $FF, $F0, $7F, $04, $00, $80)
 .EndOfInstrument:
 
 SequenceMemory:
-;%SetNoise($1E)
+%SetNoise($1E)
 %SetDelayTime(8)
 %SetDelayVolume($40, $20)
 %SetDelayFeedback($7F)
@@ -464,9 +481,9 @@ SequenceMemory:
 %SetChannelVolume(5, $04)
 %SetChannelVolume(6, $02)
 %SetChannelVolume(7, $01)
-%SetInstrument($2, $0)
-;%SetInstrument($1, $2)
-;%SetInstrument($2, $4)
+%SetInstrument($0, $0)
+%SetInstrument($1, $1)
+%SetInstrument($2, $2)
 ;%SetInstrument($3, $8)
 ;%SetInstrument($4, $10)
 ;%SetInstrument($5, $20)

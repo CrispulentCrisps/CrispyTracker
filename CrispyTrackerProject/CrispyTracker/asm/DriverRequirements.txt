@@ -5,7 +5,7 @@ Play individual notes
 
 Refer to instrument values for:
 	- Volume [includes panning]
-	- Effect state [L/R inversion, pitch mod, echo, noise]
+	- Effect state [pitch mod, echo, noise]
 	- Gain
 	- ADSR envelope information
 	- Sample index for SCRN registers
