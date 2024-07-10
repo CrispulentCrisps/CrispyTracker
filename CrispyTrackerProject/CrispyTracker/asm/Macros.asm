@@ -19,19 +19,21 @@ ChannelVol =                $08         ;Holds the channel master volume [goes a
 NoiseState =                $30
 EchoState =                 $31
 PModState =                 $32
+TempORStore =               $38
 
 ;Effects
 TriangleCounter =           $40
-ArpBitField =               $41
-PortBitField =              $42
-VibratoBitfield =           $43
-TremoBitField =             $44
-PanBrelloBitField =         $45
+TriangleState =             $41
+EffectChannel =             $42
+ArpBitField =               $48
+PortBitField =              $49
+VibratoBitfield =           $4A
+TremoBitField =             $4B
+PanBrelloBitField =         $4C
 
-;General Memory Storage
-InstLoopCounter =           $80
-;InstrumentIndexHolder =     $83
-InstrumentValueHolder =     $81
+;General Tracker State
+TrackSpeed =                $80     ;Holds the track speed for the track
+ChannelPitch =              $90     ;Hold the current channel's pitch in memory for effects processing
 
 ;Commands
 

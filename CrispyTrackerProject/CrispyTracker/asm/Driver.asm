@@ -84,11 +84,11 @@ DriverStart:            ;Start of the driver
 %spc_write(DSP_C6, $00)
 %spc_write(DSP_C7, $00)
 
-mov SPC_Control, #$01   ;Set control bit to enable Timer 0
-mov SPC_Timer1, #$FF    ;Divide timer to run at ~31hz
-mov X, #00
-mov COM_SequencePos, #SequenceMemory&$FF
-mov COM_SequencePos+1, #(SequenceMemory>>8)&$FF
+mov SPC_Control, #$01                           ;Set control bit to enable Timer 0
+mov SPC_Timer1, #$FF                            ;Divide timer to run at ~31hz
+mov X, #00                                      ;Reset X
+mov COM_SequencePos, #SequenceMemory&$FF        ;Grab the lower byte of the sequnce position in memory
+mov COM_SequencePos+1, #(SequenceMemory>>8)&$FF ;Grab the higher byte of the sequnce position in memory
 mov COM_FlagVal, #0
 
 DriverLoop:                         ;Main driver loop
@@ -218,7 +218,7 @@ DriverLoop:                         ;Main driver loop
     mov Y, #0
     mov A, (COM_TempMemADDRL)+Y                         ;Goto point in memory and then store in A
 
-    ;Mix volumes [Breaks when L/R = -128]
+    ;Mix volumes [Breaks when L/R = -128] [Unsure if broken]
     pop X                           ;Take channel index out of the stack from Y and into X
     push X                          ;Store back instrument index for later use
     mov Y,COM_ChannelVol+X          ;Grab the current master volume of the channel
@@ -280,7 +280,6 @@ DriverLoop:                         ;Main driver loop
     mov SPC_RegADDR, A              ;Put in the channel addr
     pop A
     mov SPC_RegData, A              ;Shove in value from stack into A and into this
-
     ;Set Gain
     mov Y, #4
     mov A, (COM_TempMemADDRL)+Y     ;Goto point in memory and then store in A
@@ -294,39 +293,59 @@ DriverLoop:                         ;Main driver loop
     pop A
     mov SPC_RegData, A              ;Shove in value from stack into A and into this
 
-    ;Set Effect state
+    ;Set Effect state [Currently broken]
     mov Y, #5
-    mov A, (COM_TempMemADDRL)+Y     ;Goto point in memory and then store in A
-    pop X                           ;Grab channel index
-    push X                          ;Store instrument index
-                                    ;Pitch mod
-    mov A, ChannelTable+X           ;Shove in the bitmask index using the channel index
-    eor A, #$FF                     ;Grab the inverse of said mask
-    and A, COM_PModState            ;Apply mask to PModState
-    mov Y, A
-    and A, #%00000001               ;Grab the first bit
-    beq .SkipPMod                   ;Skip the code if we find the bit is 0
-    mov A, ChannelTable+X
-    mov SPC_RegADDR, #DSP_PMON      ;Put in the channel addr
-    mov SPC_RegData, Y              ;Shove the PMON bitfield in
+    mov A, (COM_TempMemADDRL)+Y         ;Goto point in memory and then store in A
+    pop X                               ;Grab channel index
+    push X                              ;Store instrument index
+    push A                              ;Shove effect state into the stack
+                                        ;Pitch mod
+    mov A, ChannelTable+X               ;Shove in the bitmask index using the channel index
+    eor A, #$FF                         ;Grab the inverse of said mask
+    and A, COM_PModState                ;Apply mask to PModState
+    pop A                               ;Grab effect state and put into A
+    push A                              ;Store for later use
+    and A, #%00000001                   ;Grab the first bit
+    beq .SkipPMod                       ;Skip the code if we find the bit is 0
+    mov A, ChannelTable+X               ;Grab bitfield state
+    mov COM_TempORStore, A              ;Store A into COM_TempORStore
+    or COM_PModState, COM_TempORStore   ;OR in the Pmod state with the value in A, stored in COM_TempORStore
+    mov SPC_RegADDR, #DSP_PMON          ;Put in the channel addr
+    mov SPC_RegData, COM_PModState      ;Shove the PMON bitfield in
     .SkipPMod:
-                                    ;Noise
-    mov A, (COM_TempMemADDRL)+Y     ;Goto point in memory and then store in A
-    and A, #%00000010               ;Grab the second bit
-    beq .SkipNoise                  ;Skip the code if we find the bit is 0
-    mov A, ChannelTable+X
-    mov SPC_RegADDR, #DSP_NON       ;Put in the channel addr
-    mov SPC_RegData, A              ;Shove the NON bitfield in
+                                        ;Noise
+    mov A, (COM_TempMemADDRL)+Y         ;Goto point in memory and then store in A
+    mov A, ChannelTable+X               ;Shove in the bitmask index using the channel index
+    eor A, #$FF                         ;Grab the inverse of said mask
+    and A, COM_NoiseState               ;Apply mask to NoiseState
+    pop A                               ;Grab effect state and put into A
+    push A                              ;Store for later use
+    and A, #%00000010                   ;Grab the first bit
+    beq .SkipNoise                      ;Skip the code if we find the bit is 0
+    mov A, ChannelTable+X               ;Grab bitfield state
+    mov COM_TempORStore, A              ;Store A into COM_TempORStore
+    or COM_NoiseState, COM_TempORStore  ;OR in the Pmod state with the value in A, stored in COM_TempORStore
+    mov SPC_RegADDR, #DSP_NON           ;Put in the channel addr
+    mov SPC_RegData, COM_NoiseState     ;Shove the NON bitfield in
     .SkipNoise:
-                                    ;Echo on
-    mov A, (COM_TempMemADDRL)+Y     ;Goto point in memory and then store in A
-    and A, #%00000100               ;Grab the third bit
-    beq .SkipEcho                   ;Skip the code if we find the bit is 0
-    mov A, ChannelTable+X
-    mov SPC_RegADDR, #DSP_EON       ;Put in the channel addr
-    mov SPC_RegData, A              ;Shove the EON bitfield in
+                                        ;Echo on
+    mov A, (COM_TempMemADDRL)+Y         ;Goto point in memory and then store in A
+    mov A, ChannelTable+X               ;Shove in the bitmask index using the channel index
+    eor A, #$FF                         ;Grab the inverse of said mask
+    and A, COM_EchoState                ;Apply mask to EchoState
+    pop A                               ;Grab effect state and put into A
+    push A                              ;Store for later use
+    and A, #%00000100                   ;Grab the first bit
+    beq .SkipEcho                       ;Skip the code if we find the bit is 0
+    mov A, ChannelTable+X               ;Grab bitfield state
+    mov COM_TempORStore, A              ;Store A into COM_TempORStore
+    or COM_EchoState, COM_TempORStore   ;OR in the Pmod state with the value in A, stored in COM_TempORStore
+    mov SPC_RegADDR, #DSP_EON           ;Put in the channel addr
+    mov SPC_RegData, COM_EchoState      ;Shove the EON bitfield in
     .SkipEcho:
 
+    pop Y                               ;Here to prevent stack leaks
+                                    
     ;Assign sample index to SCRN registers
     mov Y, #6
     mov A, (COM_TempMemADDRL)+Y     ;Goto point in memory and then store in A
@@ -430,7 +449,19 @@ DriverLoop:                         ;Main driver loop
     jmp .ReadRows
 
 .EffectsProcess:
-    inc COM_TriangleCounter
+    clrv                            ;Clear the overflow flag
+    push X                          ;Store away the current tick for after the effects processing
+    mov X, #COM_EffectChannel       ;Grab channel index
+    mov A, (COM_TriangleCounter)+X  ;Grab the triangle counter
+    clrc                            ;Clear the carry flag
+    adc A, COM_TriangleState        ;Add to it the triangle state
+    mov (COM_TriangleCounter)+X, A  ;Return back to the triangle counter
+    bvc .ContinueEffects            ;If the overflow flag is NOT set
+    mov A, COM_TriangleState        ;Shove triangle state into A
+    eor A, #$FF
+    clrv
+    .ContinueEffects:
+    pop X                           ;Grab the former tick integer and shove back into X
     jmp .ContinueIncrement
 
 jmp DriverLoop
@@ -439,7 +470,10 @@ fill $2000-pc()
 assert pc() == $2000
 ;Test sine sample + dir page
 db $04,$20,$04,$20
-db $84, $17, $45, $35, $22, $22, $31, $21, $10, $68, $01, $21, $0D, $01, $08, $0B, $C3, $3E, $5B, $09, $8B, $D7, $B1, $E0, $BC, $AF, $78
+db $84, $17, $45, $35, $22, $22, $31, $21, 
+    $10, $68, $01, $21, $0D, $01, $08, $0B, 
+    $C3, $3E, $5B, $09, $8B, $D7, $B1, $E0, 
+    $BC, $AF, $78
 
 ChannelTable:   ;Writes the value for the channel bitfield
     db $01

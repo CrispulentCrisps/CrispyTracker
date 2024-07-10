@@ -90,7 +90,7 @@ Each row contains the following values:
 
 		//Effects
 		5x, Set Effect Flags, V, Sets the flag state for the effect flags as a bitfield in X channel
-		58, Set Arp Value, A, puts XY into A	[Note 1 : Note 2] 
+		58, Set Arp Value, A, puts XY into A	[Note 1 : Note 2]
 		59, Set Port Value, P, puts XX into P 	[Portamento Val]
 		5A, Set Vib Value, V, puts XY into V 	[Speed : Depth]
 		5B, Set Trem Value, T, puts XY into T 	[Speed : Depth]
