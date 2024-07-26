@@ -9,7 +9,7 @@ Refer to instrument values for:
 	- Gain
 	- ADSR envelope information
 	- Sample index for SCRN registers
-	
+
 Process effects including:
 	- Arpeggios
 	- Portamento
@@ -24,6 +24,17 @@ Process effects including:
 	- Tracker Speed control
 	- Flag communication between the main CPU and SPC-700
 	- Halting tune
+
+Effects are stored in a bitfield as
+	- arp_flag = 		1
+	- port_flag = 		2
+	- vibrato_flag = 	4
+	- tremo_flag = 		8
+	- panbrello_flag = 	16
+	- volslide_flag = 	32
+	- port_to_flag = 	64
+	- port_ctrl_flag = 	128
+
 
 Have patterns to repeat written sequences of notes
 Store samples as brr files
@@ -91,12 +102,12 @@ Each row contains the following values:
 		//Effects
 		5x, Set Effect Flags, V, Sets the flag state for the effect flags as a bitfield in X channel
 		58, Set Arp Value, A, puts XY into A	[Note 1 : Note 2]
-		59, Set Port Value, P, puts XX into P 	[Portamento Val]
-		5A, Set Vib Value, V, puts XY into V 	[Speed : Depth]
-		5B, Set Trem Value, T, puts XY into T 	[Speed : Depth]
-		5C, Set Vol Slide Value, S, puts XY into S 	[Up : Down]
-		5D, Set Retrig Value, R, puts XX into R [Thresh]
-		5E, Set Pbr Value, B, puts XY into B	[Speed : Depth]
+		60, Set Port Value, P, puts XX into P 	[Portamento Val]
+		68, Set Vib Value, V, puts XY into V 	[Speed : Depth]
+		70, Set Trem Value, T, puts XY into T 	[Speed : Depth]
+		78, Set Vol Slide Value, S, puts XY into S 	[Up : Down]
+		80, Set Retrig Value, R, puts XX into R [Thresh]
+		88, Set Pbr Value, B, puts XY into B	[Speed : Depth]
 
 - Effects Processing -
 

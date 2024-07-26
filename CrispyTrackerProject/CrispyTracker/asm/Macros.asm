@@ -23,17 +23,23 @@ TempORStore =               $38
 
 ;Effects
 TriangleCounter =           $40
-TriangleState =             $41
-EffectChannel =             $42
-ArpBitField =               $48
-PortBitField =              $49
-VibratoBitfield =           $4A
-TremoBitField =             $4B
-PanBrelloBitField =         $4C
+TriangleState =             $48
+TriangleSignHolder =        $50
+EffectChannel =             $51     ;Current channel we are processing effects on
+
+ChannelEffectState =        $52     ;Bitfield for each channel's effect [Refer to Effects in driver requirements]
+ChannelArpValue =           $5A     ;Array of values for the Arpeggio
+ChannelPortamentoValue =    $62     ;Array of values for the Portamento
+ChannelVibratoValue =       $6A     ;Array of values for the Vibrato
+ChannelTremolandoValue =    $72     ;Array of values for the Tremolando
+ChannelPanbrelloValue =     $7A     ;Array of values for the Panbrello
+ChannelVolSlideValue =      $82     ;Array of values for the Volume slide
+
+ChannelPitches =            $90     ;Array of pitch values in each channel
 
 ;General Tracker State
 TrackSpeed =                $80     ;Holds the track speed for the track
-ChannelPitch =              $90     ;Hold the current channel's pitch in memory for effects processing
+ChannelPitch =              $81     ;Hold the current channel's pitch in memory for effects processing
 
 ;Commands
 
@@ -108,9 +114,20 @@ db $41+<C>
 db <V>
 endmacro
 
-macro MixChannel(C)
-
-endmacro
     ;Effects commands
+macro SetEffectBitfield(C, V)
+db $50+<C>
+db <V>
+endmacro
+
+macro SetArpValue(C, V)
+db $58+<C>
+db <V>
+endmacro
+
+macro SetPortValue(C, V)
+db $60+<C>
+db <V>
+endmacro
 
 namespace off
