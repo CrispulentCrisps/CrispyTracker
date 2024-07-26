@@ -36,6 +36,7 @@ ChannelVolSlideValue =      $82     ;Array of values for the Volume slide
 
 PortDir =                   $8A
 ChannelPitches =            $90     ;Array of pitch values in each channel
+ChannelPitchesCopy =        $A0     ;Array of pitches written to for every new note
 
 ;General Tracker State
 TrackSpeed =                $80     ;Holds the track speed for the track
@@ -129,6 +130,11 @@ macro SetPort(C, V, D)
 db $60+<C>
 db <V>
 db <D>
+endmacro
+
+macro SetVib(C, V)
+db $68+<C>
+db <V>
 endmacro
 
 namespace off

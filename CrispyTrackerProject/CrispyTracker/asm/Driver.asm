@@ -239,12 +239,10 @@ DriverLoop:                         ;Main driver loop
     mov X, #0                       ;Reset X to 0 since we know the command type
     mov A, Y                        ;Shove Y into A
     and A, #%11110111               ;Sub 8 from A
-    
     push A                          ;Save A value
     xcn A                           ;Swap hi and lo nibbles
     or A, #DSP_V0_PITCHH            ;Or A with DSP_V0_PITCHH
     mov Y, A                        ;Shove A into Y
-    
     mov A, (COM_SequencePos+X)      ;Grab the sequence position and store in A
     mov X, A                        ;Store value into stack
     pop A                           ;Grab channel index
@@ -254,9 +252,9 @@ DriverLoop:                         ;Main driver loop
     mov X, A                        ;Move index into X
     pop A                           ;Grab exact value from stack
     mov COM_ChannelPitches+X, A     ;Shove value into Channel Pitches
+    ;mov COM_ChannelPitchesCopy+X, A ;Shove value into Channel Pitches Copy
     push X                          ;Store index to stack
     mov X, #0                       ;Reset X
-
     mov SPC_RegADDR, Y              ;Get to the Hi pitch
     incw COM_SequencePos            ;Increments the sequence pos pointer
     mov SPC_RegData, A              ;Shove pitch value into the regdata
@@ -269,22 +267,19 @@ DriverLoop:                         ;Main driver loop
     mov X, A                        ;Move index into X
     pop A                           ;Grab exact value from stack
     mov COM_ChannelPitches+X, A     ;Shove value into Channel Pitches
+    ;mov COM_ChannelPitchesCopy+X, A ;Shove value into Channel Pitches Copy
     mov X, #0                       ;Reset X
-
     mov SPC_RegADDR, Y              ;Get to the Lo pitch
     mov SPC_RegData, A
     incw COM_SequencePos            ;Increments the sequence pos pointer
-
     mov A, Y                        ;Load Y into A
     xcn A
     mov X, A                        ;Shove channel index into X
     mov A, ChannelTable+X
     or A, COM_KONState
     mov COM_KONState, A
-    
     mov SPC_RegADDR, #DSP_KON
     mov SPC_RegData, A
-
     jmp .ReadRows
 
 .SetInstrument:
@@ -578,26 +573,8 @@ DriverLoop:                         ;Main driver loop
 .EffectsProcess:
 
     .ForEffects:
-    ;------------------;
-    ; Triangle counter ;
-    ;------------------;
     push X                          ;Store away the current tick for after the effects processing
-    mov X, COM_EffectChannel        ;Grab channel index
-    mov A, (COM_TriangleCounter)+X  ;Grab the triangle counter
-    clrc                            ;Clear the carry flag
-    mov COM_TriangleSignHolder, A   ;Store A into TriangleSignHolder
-    adc A, COM_TriangleState+X      ;Add to TriangleCounter the triangle state
-    mov (COM_TriangleCounter)+X, A  ;Return back to the triangle counter
-    rol A                           ;Put sign bit in carry
-    eor1 C, COM_TriangleSignHolder.7;Result from the 2 xor sign bits in C
-    bcc .ContinueEffects            ;If the overflow flag is NOT set
-    mov A, COM_TriangleState+X      ;Shove triangle state into A
-    eor A, #$FF                     ;Invert to get negative
-    inc A                           ;Add one to value
-    mov COM_TriangleState+X, A      ;Return back to triangle counter
-    mov A, COM_TriangleSignHolder   ;Shove sign holder into A
-    mov (COM_TriangleCounter)+X, A  ;Shove back into triangle counter array
-    .ContinueEffects:
+    call CountTriangle
 
     ;------------------;
     ;    Portamento    ;
@@ -643,6 +620,11 @@ DriverLoop:                         ;Main driver loop
     mov COM_ChannelPitches+X, A             ;Put value back into channel pitches
     .SkipCarry:
 
+    ;------------------;
+    ;      Vibrato     ;
+    ;------------------;
+
+
     ;-------------------;
     ;    Apply Effect   ;
     ;-------------------;
@@ -683,6 +665,34 @@ DriverLoop:                         ;Main driver loop
     jmp .ForEffects             ;Jump back and start the loop all over again
 
 jmp DriverLoop
+
+    ;------------------;
+    ; Triangle counter ;
+    ;------------------;
+    ;   Note of usage:
+    ;       To use the triangle counter, use CALL to call the subroutine 
+    ;       and use POP to get the value from it
+    ;
+    ;       To change the speed, multiply the triangle state by the desired number
+    ;
+CountTriangle:
+    mov X, COM_EffectChannel        ;Grab channel index
+    mov A, (COM_TriangleCounter)+X  ;Grab the triangle counter
+    clrc                            ;Clear the carry flag
+    mov COM_TriangleSignHolder, A   ;Store A into TriangleSignHolder
+    adc A, COM_TriangleState+X      ;Add to TriangleCounter the triangle state
+    mov (COM_TriangleCounter)+X, A  ;Return back to the triangle counter
+    rol A                           ;Put sign bit in carry
+    eor1 C, COM_TriangleSignHolder.7;Result from the 2 xor sign bits in C
+    bcc .ContinueEffects            ;If the overflow flag is NOT set
+    mov A, COM_TriangleState+X      ;Shove triangle state into A
+    eor A, #$FF                     ;Invert to get negative
+    inc A                           ;Add one to value
+    mov COM_TriangleState+X, A      ;Return back to triangle counter
+    mov A, COM_TriangleSignHolder   ;Shove sign holder into A
+    mov (COM_TriangleCounter)+X, A  ;Shove back into triangle counter array
+    .ContinueEffects:
+    ret
 
 fill $2000-pc()
 assert pc() == $2000
@@ -734,7 +744,7 @@ SequenceMemory:
 %SetInstrument($0, $0)
 %SetInstrument($1, $1)
 %SetInstrument($2, $2)
-%SetPort(0, $44, $00)
+%SetVib(0, $88)
 ;%SetInstrument($3, $8)
 ;%SetInstrument($4, $10)
 ;%SetInstrument($5, $20)
