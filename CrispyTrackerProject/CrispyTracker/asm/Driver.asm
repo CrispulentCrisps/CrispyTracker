@@ -22,6 +22,15 @@ ROM_Engine_Start:
 base $0200              ;Set audio driver code to 0x0200 [closest to the start of memory we can get away with]
 
 DriverStart:            ;Start of the driver
+mov COM_TempMemADDRL, #Engine_End&$FF
+mov COM_TempMemADDRH, #Engine_End>>8
+mov X, #0
+mov A, #0
+.MemClearLoop:
+db $C7, $00                 ;Equivelant to mov (COM_TempMemADDRL+X), A; reason is the ASAR doesn't put this line in code, instead putting in C5 00 00
+incw COM_TempMemADDRL
+bne .MemClearLoop
+
 mov X, #$FF
 mov SP, X
 mov X, #0
@@ -84,7 +93,7 @@ mov COM_TriangleState+8, #$1
 
 %spc_write(DSP_NON, $00)
 %spc_write(DSP_PMON, $00)
-%spc_write(DSP_EON, $FF)
+%spc_write(DSP_EON, $00)
 %spc_write(DSP_KOF, $00)
 %spc_write(DSP_KON, $00)
 
@@ -192,7 +201,6 @@ DriverLoop:                         ;Main driver loop
 
 .EffectCommands:
     cmp Y, #8               ;Compare Y to see if we're setting the effects bitfield
-    bmi .GotoSetEffect      ;if it's < 0 then we go to the set effect
     beq .GotoSetArpValue    ;otherwise if it's = 0 then we go to arp value
 
 .PortVibSet:
@@ -210,8 +218,6 @@ DriverLoop:                         ;Main driver loop
     bmi .GotoSetRetrigValue ;if it's < 0 then we go to the set the port value
     beq .GotoSetPanbrValue  ;otherwise if it's = 0 then we go to set the vibrato value
 
-.GotoSetEffect:
-    jmp .SetEffect
 .GotoSetArpValue:
     jmp .SetArpValue
 .GotoSetPortValue:
@@ -510,17 +516,6 @@ DriverLoop:                         ;Main driver loop
     mov COM_ChannelVol+Y, A       ;Move the data into the right section of memory
     jmp .ReadRows
 
-.SetEffect:
-    mov X, #0                           ;Reset X to 0 since we know the command type
-    mov A, (COM_SequencePos+X)          ;Grab position of counter
-    incw COM_SequencePos                ;Increments the sequence pos pointer
-    push A                              ;Shove value into A
-    mov A, Y                            ;Grab value from Y and put into A
-    mov X, A                            ;push A value into X, because this CPU doesn't like to do mov X, Y
-    pop A                               ;Grab value we stored back into A
-    mov COM_ChannelEffectState+X, A   ;Set effects bitfield
-    jmp .ReadRows
-
 .SetArpValue:
     mov X, #0                       ;Reset X to 0 since we know the command type
     mov A, (COM_SequencePos+X)      ;Grab position of counter
@@ -538,10 +533,19 @@ DriverLoop:                         ;Main driver loop
     mov A, (COM_SequencePos+X)          ;Grab position of counter
     incw COM_SequencePos                ;Increments the sequence pos pointer
     push A                              ;Store A value
-    mov A, Y                            ;Move lower nibble into A to decrement
+    mov A, Y                            ;Move channel index to A
     mov X, A                            ;Put channel index into X
-    pop A                               ;Grab value we stored to put into the arp value array
-    mov COM_ChannelPortamentoValue+X, A
+    pop A                               ;Grab value we stored to put into the port value array
+    mov COM_ChannelPortValue+X, A       ;Write value to table
+    mov A, (COM_SequencePos+X)          ;Grab value from instruction set
+    incw COM_SequencePos                ;Increments the sequence pos pointer
+    push A                              ;Shove value to stack as we need to increment X using A
+    mov A, X                            ;Shove X into A
+    inc A                               ;Increment
+    mov X, A                            ;Return value
+    pop A                               ;Grab value from stack
+    mov COM_ChannelPortValue+X, A       ;Write value to table
+
     jmp .ReadRows
 
 .SetVibValue:
@@ -598,29 +602,45 @@ DriverLoop:                         ;Main driver loop
     ;------------------;
     ;    Portamento    ;
     ;------------------;
-    mov X, COM_EffectChannel            ;Grab channel index
-    mov A, X                            ;Shove index into A for mathematical operations
-    asl A                               ;Multiply A by 2
-    mov X, A                            ;Shove A into X
-    mov Y, COM_ChannelPitches+X         ;Grab the channel lo pitch and store in Y
-    push X                              ;Store premultiplied index to stack
-    mov A, X                            ;Put index into A
-    lsr A                               ;Divide by 2
-    mov X, A                            ;Put index back into X
-    mov A, Y                            ;Put lo pitch into A
-    adc A, COM_ChannelPortamentoValue+X ;Increment A by the Portamneto value
-    mov Y, A                            ;Move portamento value into A
-    pop X                               ;Grab premultiplied index from stack
-    push X                              ;Store premult for later use
-    mov COM_ChannelPitches+X, Y         ;Put value back into channel pitches
-    bcc .SkipCarry                      ;Check if the carry flag is off
-                                        ;Otherwise increment the hi pitch
-    mov A, X                            ;Shove X into A for maths
-    inc A                               ;Increment A
-    mov X, A                            ;Put index back into X
-    mov A, COM_ChannelPitches+X         ;Move hi pitch value in
-    inc A                               ;Increment A
-    mov COM_ChannelPitches+X, A         ;Put value back into channel pitches
+    mov X, COM_EffectChannel                ;Grab channel index
+    mov A, X                                ;Shove index into A for mathematical operations
+    asl A                                   ;Multiply A by 2
+    inc A                                   ;Increment to get the portamento direction
+    mov X, A                                ;Shove index into X
+    mov Y, COM_ChannelPortValue+X           ;Shove the port direction into Y
+    mov COM_PortDir, Y                      ;Shove dir in memory
+    dec A                                   ;Decrement to get correct index
+    mov X, A                                ;Shove A into X
+    mov Y, COM_ChannelPitches+X             ;Grab the channel lo pitch and store in Y
+    push X                                  ;Store premultiplied index to stack
+    mov A, Y                                ;Put lo pitch into A
+    cmp COM_PortDir, #0                     ;Check if dir is set to 0
+    clrc
+    bne .NegativePort                       ;Go down if the value is != 0
+    adc A, COM_ChannelPortValue+X           ;Increment A by the Portamneto value
+    jmp .FinishDirCheck                     ;Jump over
+    .NegativePort:
+    sbc A, COM_ChannelPortValue+X           ;Decrement A by the Portamneto value
+    .FinishDirCheck
+    mov Y, A                                ;Move portamento value into Y
+    pop X                                   ;Grab premultiplied index from stack
+    push X                                  ;Store premult for later use
+    mov COM_ChannelPitches+X, Y             ;Put value back into channel pitches
+    bcc .SkipCarry                          ;Check if the carry flag is off
+                                            ;Otherwise increment the hi pitch
+    mov A, X                                ;Shove X into A for maths
+    inc A                                   ;Increment A
+    mov X, A                                ;Put index back into X
+    mov A, COM_ChannelPitches+X             ;Move hi pitch value in
+    
+    cmp COM_PortDir, #0                     ;Check if dir is set to 0
+    bne .DecrementHi                        ;Go down if the value is != 0
+    inc A                                   ;Increment A
+    jmp .ApplyChange                        ;Jump over
+    .DecrementHi:                           
+    dec A                                   ;Decrement A
+    .ApplyChange:
+    mov COM_ChannelPitches+X, A             ;Put value back into channel pitches
     .SkipCarry:
 
     ;-------------------;
@@ -629,22 +649,24 @@ DriverLoop:                         ;Main driver loop
 
     mov X, COM_EffectChannel                ;Grab channel index
     mov A, X                                ;Shove index into A
+    asl A                                   ;Multiply by 2
+    mov X, A                                ;Move mult value into X
+    lsr A                                   ;Divide by 2
     xcn A                                   ;Swap nibbles
     adc A, #2                               ;Inc 2 to grab low pitch
     mov Y, A                                ;Shove addr value into Y
     mov A, COM_ChannelPitches+X             ;Shove lo pitch into A
-    pop X                                   ;Grab premult value
     mov SPC_RegADDR, Y                      ;Shove Y to addr
     mov SPC_RegData, A                      ;Shove lo pitch value into data
-    mov A, X                                ;Inc X by shoving X into A
+    pop A                                   ;Grab premult index value
     inc A                                   ;Increment
     mov X, A                                ;Return value
     mov A, Y                                ;Shove Y into A
     inc A                                   ;Increment
     mov Y, A                                ;Return value
-    mov A, COM_ChannelPitches+X             ;Shove lo pitch into A
+    mov A, COM_ChannelPitches+X             ;Shove hi pitch into A
     mov SPC_RegADDR, Y                      ;Shove Y to addr
-    mov SPC_RegData, A                      ;Shove lo pitch value into data
+    mov SPC_RegData, A                      ;Shove hi pitch value into data
 
     ;Check FOR loop
     pop X                           ;Grab the former tick integer and shove back into X
@@ -712,8 +734,7 @@ SequenceMemory:
 %SetInstrument($0, $0)
 %SetInstrument($1, $1)
 %SetInstrument($2, $2)
-%SetEffectBitfield(0, %00000010)
-%SetPortValue(0, $44)
+%SetPort(0, $44, $00)
 ;%SetInstrument($3, $8)
 ;%SetInstrument($4, $10)
 ;%SetInstrument($5, $20)
@@ -729,8 +750,8 @@ SequenceMemory:
 %SetDelayCoefficient(7, $00)
 %PlayPitch($0004, 0);Write note in
 %PlayPitch($0008, 1);Write note in
-%PlayPitch($0010, 2);Write note in
-%PlayPitch($0020, 3);Write note in
+;%PlayPitch($0010, 2);Write note in
+;%PlayPitch($0020, 3);Write note in
 db COM_EndRow
 Engine_End:
 

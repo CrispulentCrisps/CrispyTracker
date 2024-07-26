@@ -3,8 +3,8 @@
 ;
 
 namespace COM
-TempMemADDRL =              $00         ;General purpose addr
-TempMemADDRH =              $01         ;
+TempMemADDRL =              $00         ;General purpose addr LO
+TempMemADDRH =              $01         ;General purpose addr HI
 TickAccum =                 $02         ;Accumulator for the tick amount
 TickThresh =                $03         ;Equivelant to track speed
 SequencePos =               $04         ;Position within the sequence stream [Goes across 2 bytes]
@@ -27,14 +27,14 @@ TriangleState =             $48
 TriangleSignHolder =        $50
 EffectChannel =             $51     ;Current channel we are processing effects on
 
-ChannelEffectState =        $52     ;Bitfield for each channel's effect [Refer to Effects in driver requirements]
-ChannelArpValue =           $5A     ;Array of values for the Arpeggio
-ChannelPortamentoValue =    $62     ;Array of values for the Portamento
+ChannelArpValue =           $52     ;Array of values for the Arpeggio
+ChannelPortValue =          $5A     ;Array of values for the Portamento
 ChannelVibratoValue =       $6A     ;Array of values for the Vibrato
 ChannelTremolandoValue =    $72     ;Array of values for the Tremolando
 ChannelPanbrelloValue =     $7A     ;Array of values for the Panbrello
 ChannelVolSlideValue =      $82     ;Array of values for the Volume slide
 
+PortDir =                   $8A
 ChannelPitches =            $90     ;Array of pitch values in each channel
 
 ;General Tracker State
@@ -125,9 +125,10 @@ db $58+<C>
 db <V>
 endmacro
 
-macro SetPortValue(C, V)
+macro SetPort(C, V, D)
 db $60+<C>
 db <V>
+db <D>
 endmacro
 
 namespace off
