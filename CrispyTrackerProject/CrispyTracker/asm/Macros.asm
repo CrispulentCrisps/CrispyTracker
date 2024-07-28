@@ -12,14 +12,11 @@ KONState =                  $06         ;Holds the current bitfield state of KON
 FlagVal =                   $07         ;Holds the flag value
 ChannelVol =                $08         ;Holds the channel master volume [goes across 8 bytes]
 
-;Instruments
-;ChInstrumentIndex =         $10         ;Holds the current instrument index in the channel [Goes across 8 bytes]
-
 ;Special
-NoiseState =                $30
-EchoState =                 $31
-PModState =                 $32
-TempORStore =               $38
+NoiseState =                $10
+EchoState =                 $11
+PModState =                 $12
+TempORStore =               $18
 
 ;Effects
 TriangleCounter =           $40
@@ -36,12 +33,12 @@ ChannelVolSlideValue =      $82     ;Array of values for the Volume slide
 
 PortDir =                   $8A
 ChannelPitches =            $90     ;Array of pitch values in each channel
-ChannelPitchesCopy =        $A0     ;Array of pitches written to for every new note
+ChannelPitchesOutput =      $A0     ;Array of pitches written to for every new note
+ChannelVolumeOutput =       $B0     ;Array of pitches written to for every new note
+ChannelInstrumentIndex =    $C0     ;Array of Instrument indexes
 
 ;General Tracker State
-TrackSpeed =                $80     ;Holds the track speed for the track
-ChannelPitch =              $81     ;Hold the current channel's pitch in memory for effects processing
-
+TrackSpeed =                $E0     ;Holds the track speed for the track
 ;Commands
 
     ;Row commands
@@ -137,4 +134,8 @@ db $68+<C>
 db <V>
 endmacro
 
+macro SetVolSlide(C, V)
+db $78+<C>
+db <V>
+endmacro
 namespace off
