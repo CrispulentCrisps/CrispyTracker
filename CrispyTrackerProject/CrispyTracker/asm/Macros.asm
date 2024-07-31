@@ -3,28 +3,28 @@
 ;
 
 namespace COM
-TempMemADDRL =              $00         ;General purpose addr LO
-TempMemADDRH =              $01         ;General purpose addr HI
-TickAccum =                 $02         ;Accumulator for the tick amount
-TickThresh =                $03         ;Equivelant to track speed
-SequencePos =               $04         ;Position within the sequence stream [Goes across 2 bytes]
-KONState =                  $06         ;Holds the current bitfield state of KON
-FlagVal =                   $07         ;Holds the flag value
-ChannelVol =                $08         ;Holds the channel master volume [goes across 8 bytes]
+TempMemADDRL =              $00     ;General purpose addr LO
+TempMemADDRH =              $01     ;General purpose addr HI
+TickAccum =                 $02     ;Accumulator for the tick amount
+TickThresh =                $03     ;Equivelant to track speed
+SequencePos =               $04     ;Position within the sequence stream [Goes across 2 bytes]
+KONState =                  $06     ;Holds the current bitfield state of KON
+FlagVal =                   $07     ;Holds the flag value
+ChannelVol =                $08     ;Holds the channel master volume [goes across 8 bytes]
 
 ;Special
-NoiseState =                $18
-EchoState =                 $19
-PModState =                 $1A
-TempORStore =               $1B
-TempVolumeProcess =         $1C
-TempPitchProcess =          $1D         ;Goes across 2 bytes
+NoiseState =                $18     ;Bitfield for the NON  register
+EchoState =                 $19     ;Bitfield for the EON  register
+PModState =                 $1A     ;Bitfield for the PMON register
+TempORStore =               $1B     ;Temporarily stores an OR'd value
+TempVolumeProcess =         $1C     ;Used to manipulate a volume value without actually changing said volume
+TempPitchProcess =          $1D     ;Holds the Lo byte of a pitch
 
-TempTriangleSpeed =         $1F
+TempTriangleSpeed =         $1F     ;Holds the triangle state we're working with
 ;Effects
-TriangleCounter =           $20
-TriangleState =             $28
-TriangleSignHolder =        $30
+TriangleCounter =           $20     ;Array of traingle values
+TriangleState =             $28     ;Array of traingle states
+TriangleSignHolder =        $30     ;Holds the last triangle 
 EffectChannel =             $31     ;Current channel we are processing effects on
 
 ChannelArpValue =           $32     ;Array of values for the Arpeggio

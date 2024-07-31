@@ -655,6 +655,7 @@ DriverLoop:                         ;Main driver loop
     ;-------------------;
     ;Speed
     mov X, COM_EffectChannel            ;Grab channel index
+    mov COM_TempPitchProcess, #0        ;Reset temp pitch process so as to not fuck up other parts
     mov A, COM_ChannelVibratoValue+X    ;Grab vibrato value
     cmp A, #0                           ;Check if vibratovalue is 0
     beq .SkipVibrato                    ;If so then skip
@@ -674,6 +675,7 @@ DriverLoop:                         ;Main driver loop
     mov Y, A                            ;Shove depth into Y
     mov A, COM_TriangleCounter+X        ;Grab depth
     mov COM_TempMemADDRL, A             ;Shove A into temporary memory
+    mov COM_TempMemADDRH, Y             ;Shove A into temporary memory
     mov1 C, COM_TempMemADDRL.7          ;Move A's sign into the carry bit
     ror A                               ;Divide by 2
     mov1 C, COM_TempMemADDRL.7          ;Move A's sign into the carry bit
@@ -683,7 +685,14 @@ DriverLoop:                         ;Main driver loop
     mov1 C, COM_TempMemADDRL.7          ;Move A's sign into the carry bit
     ror A                               ;Divide by 2
     mul YA                              ;Multiply the triangle counter with the depth
+    push A                              ;Store lo offset in memory
+    mov A, Y                            ;Shove hi into A for maths
+    sbc A, COM_TempMemADDRH             ;Subtract
+    mov Y, A                            ;Return
+    pop A                               ;Grab lo from stack
     mov COM_TempPitchProcess, A         ;Shove lower byte into the temp pitch process
+    ;mov X, #1
+    ;mov COM_TempPitchProcess+X, Y       ;Shove lower byte into the temp pitch process
     ;Apply
     mov A, COM_EffectChannel            ;Grab channel index
     asl A                               ;Multiply by 2
@@ -739,6 +748,18 @@ DriverLoop:                         ;Main driver loop
     mov A, COM_ChannelVol+X             ;Grab channel volume 
     cmp A, #0                           ;Check if it's 0
     beq .SkipVolumeSlide                ;if so then skip the volume code
+    and A, #$F0                         ;Grab upper nibble
+    beq .DownSlide                      ;If the lower nibble isn't 0 then we assume it's a downward volume slide
+    .UpSlide:
+    mov A, COM_ChannelVolSlideValue+X   ;Shove in volume slide value
+    xcn                                 ;swap nibbles as otherwise it'll decay the volume by like F0 at most in a single call
+    mov COM_TempMemADDRL, A             ;Shove XCN'd value into a temporary addr
+    mov A, COM_ChannelVol+X             ;Grab channel volume
+    sbc A, COM_TempMemADDRL             ;Decrement the volume by the slide value
+    mov COM_ChannelVol+X, A             ;Apply value change
+    jmp .SkipVolumeSlide
+    .DownSlide:
+    mov A, COM_ChannelVol+X             ;Grab channel volume 
     sbc A, COM_ChannelVolSlideValue+X   ;Decrement the volume by the slide value
     mov COM_ChannelVol+X, A             ;Apply value change
     .SkipVolumeSlide:
@@ -750,7 +771,6 @@ DriverLoop:                         ;Main driver loop
     ;-------------------;
     ;    Apply Effect   ;
     ;-------------------;
-
     ;Volume
     mov A, COM_EffectChannel                ;Grab channel index
     asl A                                   ;Mult by 2
@@ -898,7 +918,7 @@ SequenceMemory:
 %SetInstrument($0, $0)
 %SetInstrument($1, $1)
 %SetInstrument($2, $2)
-%SetVib(0, $88);
+%SetVib(0, $88)
 ;%SetInstrument($3, $8)
 ;%SetInstrument($4, $10)
 ;%SetInstrument($5, $20)

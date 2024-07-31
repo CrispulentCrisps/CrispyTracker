@@ -1112,6 +1112,11 @@ void Tracker::Sample_View()
 				ImPlot::PopStyleVar();
 				ImPlot::PopStyleVar();
 			}
+			NewLine();
+			int sampsize = 0;
+			sampsize += samples[SelectedSample].brr.DBlocks.size() * 9;
+			Text(("Sample is " + to_string(sampsize) + " bytes large").c_str());
+			NewLine();
 			if (Button("Close", ImVec2(64, TextSize * 1.5))) {
 				ShowSample = false;
 			}
@@ -1128,15 +1133,15 @@ void Tracker::Settings_View()
 		{
 			string ResolutionNames[4] = { "3840x2160", "2560x1440", "1920x1080", "1280x720" };
 			string BufferNames[5] = { "512", "1024", "2048", "4096", "8192" };
-			string NotationNames[3] = { "Sharp", "Flat", "German"};
+			string NotationNames[3] = { "Sharp", "Flat", "German" };
 
 			if (BeginTabBar("TestTab"))
 			{
 				//This should be for visual changes
-				if (BeginTabItem("Appearance")) 
+				if (BeginTabItem("Appearance"))
 				{
 					Text("Screen Resolutions");
-					
+
 					if (BeginCombo("##Screen Resolutions", ResolutionNames[SManager.CustomData.Res].c_str()))
 					{
 						for (int i = 0; i < 4; i++)
@@ -1212,39 +1217,39 @@ void Tracker::Settings_View()
 					InputInt("##FPS", &FPS, 1, 1);
 					if (FPS > MAX_FPS) FPS = MAX_FPS; else if (FPS < 1) FPS = 1;
 
-NewLine();
-Text("Audio Buffer Size");
+					NewLine();
+					Text("Audio Buffer Size");
 
-if (BeginCombo("##Buffer", BufferNames[SManager.CustomData.Buf].c_str()))
-{
-	for (int i = 0; i < 5; i++)
-	{
-		if (Selectable(BufferNames[i].c_str(), i == SManager.CustomData.Buf))
-		{
-			switch (i)
-			{
-			case 0:
-				SManager.CustomData.Buf = SManager.Buf_512;
-				break;
-			case 1:
-				SManager.CustomData.Buf = SManager.Buf_1024;
-				break;
-			case 2:
-				SManager.CustomData.Buf = SManager.Buf_2048;
-				break;
-			case 3:
-				SManager.CustomData.Buf = SManager.Buf_4096;
-				break;
-			case 4:
-				SManager.CustomData.Buf = SManager.Buf_8192;
-				break;
-			}
-		}
-	}
-	EndCombo();
-}
+					if (BeginCombo("##Buffer", BufferNames[SManager.CustomData.Buf].c_str()))
+					{
+						for (int i = 0; i < 5; i++)
+						{
+							if (Selectable(BufferNames[i].c_str(), i == SManager.CustomData.Buf))
+							{
+								switch (i)
+								{
+								case 0:
+									SManager.CustomData.Buf = SManager.Buf_512;
+									break;
+								case 1:
+									SManager.CustomData.Buf = SManager.Buf_1024;
+									break;
+								case 2:
+									SManager.CustomData.Buf = SManager.Buf_2048;
+									break;
+								case 3:
+									SManager.CustomData.Buf = SManager.Buf_4096;
+									break;
+								case 4:
+									SManager.CustomData.Buf = SManager.Buf_8192;
+									break;
+								}
+							}
+						}
+						EndCombo();
+					}
 
-EndTabItem();
+					EndTabItem();
 				}
 
 				EndTabBar();
@@ -1601,7 +1606,7 @@ void Tracker::UpdateFont()
 void Tracker::Export_View()
 {
 	string TypeNames[3] = { "WAV","MP3","OGG"};
-	string TechnicalTypeNames[3] = {"SPC","ASM","SHVC" };
+	string TechnicalTypeNames[3] = {"SPC","ASM","TBD"};
 	string Qualitynames[8] = { "8KHz","11KHz","16KHz","22KHz","24KHz","32KHz","44KHz","48KHz" };
 	string DepthName[2] = { "8 bit", "16 bit"};
 	string SignName[2] = { "Unsigned", "Signed"};
