@@ -116,7 +116,7 @@ db "CTTC"                       ;Unique code for identification
 fill 6                          ;Fill 6 bytes
 db 0,0,0,0
                                 ;Second half of header
-db "Cobalt Engine Test Pg"      ;Program name [21 characters long]
+db "Cobalt Engine Aud Dvr"      ;Program name [21 characters long]
 db $31                          ;Set ROM identification and speed
 db 0                            ;Set what we have available [in this case ROM]
 db 8                            ;Set ROM size [256k]
