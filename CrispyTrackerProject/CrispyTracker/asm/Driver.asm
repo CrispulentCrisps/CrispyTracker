@@ -509,8 +509,21 @@ DriverLoop:                         ;Main driver loop
     jmp .ReadRows
 
 .SetVibValue:
+    mov X, #0                           ;Reset X to 0 since we know the command type
+    mov A, Y                            ;Shove Y into A for maths
+    sbc A, #8                           ;Decrement 8
+    mov Y, A                            ;Return
+    mov A, (COM_SequencePos+X)          ;Grab position of counter
+    incw COM_SequencePos                ;Increments the sequence pos pointer
+    mov COM_ChannelVibratoValue+Y, A    ;Apply value to memory
+    jmp .ReadRows
 
 .SetTremValue:
+    mov X, #0                           ;Reset X to 0 since we know the command type
+    mov A, (COM_SequencePos+X)          ;Grab position of counter
+    incw COM_SequencePos                ;Increments the sequence pos pointer
+    mov COM_ChannelTremolandoValue+Y, A ;Apply value to memory
+    jmp .ReadRows
 
 .SetVolSlideValue:
     mov X, #0                           ;Reset X to 0 since we know the command type
@@ -550,7 +563,7 @@ DriverLoop:                         ;Main driver loop
     .ForEffects:
     push X                          ;Store away the current tick for after the effects processing
     call CountTriangle              ;Calls the CountTriangle subroutine
-    
+
     ;------------------;
     ;    Volume Mix    ;
     ;------------------;
@@ -640,35 +653,119 @@ DriverLoop:                         ;Main driver loop
     ;-------------------;
     ;      Vibrato      ;
     ;-------------------;
-    mov X, #0                               ;Reset X
+    ;Speed
+    mov X, COM_EffectChannel            ;Grab channel index
+    mov A, COM_ChannelVibratoValue+X    ;Grab vibrato value
+    cmp A, #0                           ;Check if vibratovalue is 0
+    beq .SkipVibrato                    ;If so then skip
+    and A, #$F0                         ;Grab upper nibble for speed
+    xcn
+    mov COM_TempTriangleSpeed, A        ;Shove triangle speed to memory
+    mov A, COM_TriangleState+X          ;Shove triangle state into A
+    adc A, COM_TempTriangleSpeed        ;Add the speed change
+    mov COM_TriangleState+X, A          ;Apply
+    call CountTriangle                  ;Call triangle subroutine
+    mov A, COM_TriangleState+X          ;Shove triangle state into A
+    sbc A, COM_TempTriangleSpeed        ;Subtract to reverse change
+    ;Depth
+    mov X, COM_EffectChannel            ;Grab channel index
+    mov A, COM_ChannelVibratoValue+X    ;Grab vibrato value
+    and A, #$0F                         ;Grab lower nibble for depth
+    mov Y, A                            ;Shove depth into Y
+    mov A, COM_TriangleCounter+X        ;Grab depth
+    mov COM_TempMemADDRL, A             ;Shove A into temporary memory
+    mov1 C, COM_TempMemADDRL.7          ;Move A's sign into the carry bit
+    ror A                               ;Divide by 2
+    mov1 C, COM_TempMemADDRL.7          ;Move A's sign into the carry bit
+    ror A                               ;Divide by 2
+    mov1 C, COM_TempMemADDRL.7          ;Move A's sign into the carry bit
+    ror A                               ;Divide by 2
+    mov1 C, COM_TempMemADDRL.7          ;Move A's sign into the carry bit
+    ror A                               ;Divide by 2
+    mul YA                              ;Multiply the triangle counter with the depth
+    mov COM_TempPitchProcess, A         ;Shove lower byte into the temp pitch process
+    ;Apply
+    mov A, COM_EffectChannel            ;Grab channel index
+    asl A                               ;Multiply by 2
+    inc A                               ;Increment to get the hi byte
+    mov X, A                            ;Shove into X for indexing
+    mov Y, COM_ChannelPitches+X         ;Shove hi byte into Y
+    dec X                               ;Decrement to get the lo byte
+    mov A, COM_ChannelPitches+X         ;Shove lo byte into A
+    addw YA, COM_TempPitchProcess       ;Add offset into the pitch value
+    mov COM_ChannelPitchesOutput+X, A   ;Shove in lo byte into pitch lo byte
+    inc X                               ;Increment
+    mov COM_ChannelPitchesOutput+X, Y   ;Shove Y into hi byte
+    .SkipVibrato
 
     ;-------------------;
     ;     Tremolando    ;
     ;-------------------;
-    
+    mov X, COM_EffectChannel            ;Grab channel index
+    mov Y, COM_ChannelVol+X             ;Grab channel volume
+    mov A, COM_ChannelTremolandoValue+X ;Grab the channel tremo value
+    cmp A, #0                           ;Check if the tremovalue is 0 to avoid *0 or /0
+    beq .SkipTremo                      ;Skip if equal to 0
+    and A, #$F0                         ;Get higher nibble for speed
+    xcn                                 ;Swap nibbles so the speed is at a sensible value
+    mov COM_TempTriangleSpeed, A        ;Shove triangle speed to memory
+    mov A, COM_TriangleState+X          ;Shove triangle state into A
+    adc A, COM_TempTriangleSpeed        ;Add the speed change
+    mov COM_TriangleState+X, A          ;Apply
+    call CountTriangle                  ;Call triangle subroutine
+    mov A, COM_TriangleState+X          ;Shove triangle state into A
+    sbc A, COM_TempTriangleSpeed        ;Subtract to reverse change
+    mov COM_TriangleState+X, A          ;Apply
+
+    mov A, COM_ChannelTremolandoValue+X ;Grab the channel tremo value
+    and A, #$0F                         ;Grab depth
+    mov Y, A                            ;Shove depth into Y
+    mov A, COM_TriangleCounter+X        ;Grab triangle value
+    lsr A                               ;Divide by 2
+    lsr A                               ;Divide by 2
+    lsr A                               ;Divide by 2
+    lsr A                               ;Divide by 2
+    mul YA                              ;Multiply depth and triangle counter
+    mov COM_TempVolumeProcess, A        ;Apply
+    jmp .AvoidWrongMov                  ;Jump to avoid a wrongful overwrite
+    .SkipTremo:
+    mov COM_TempVolumeProcess, Y        ;Apply
+    .AvoidWrongMov:
 
     ;-------------------;
     ;    Volume Slide   ;
     ;-------------------;
-    
     mov X, COM_EffectChannel            ;Shove channel index into X
-    mov A, COM_ChannelVol+X             ;grab channel master volume
+    mov A, COM_ChannelVol+X             ;Grab channel volume 
     cmp A, #0                           ;Check if it's 0
     beq .SkipVolumeSlide                ;if so then skip the volume code
     sbc A, COM_ChannelVolSlideValue+X   ;Decrement the volume by the slide value
     mov COM_ChannelVol+X, A             ;Apply value change
     .SkipVolumeSlide:
-
+    
     ;-------------------;
     ;     Panbrello     ;
     ;-------------------;
     
-
     ;-------------------;
     ;    Apply Effect   ;
     ;-------------------;
 
     ;Volume
+    mov A, COM_EffectChannel                ;Grab channel index
+    asl A                                   ;Mult by 2
+    push A                                  ;Push for later
+    mov X, A
+    mov A, COM_ChannelVolumeOutput+X        ;Shove the output volume into Y
+    adc A, COM_TempVolumeProcess            ;Add volume offset
+    mov COM_ChannelVolumeOutput+X, A        ;Apply offset
+    pop A                                   ;Grab from stack
+    inc A                                   ;Increment for R volume
+    mov X, A
+    mov A, COM_ChannelVolumeOutput+X        ;Shove the output volume into Y
+    adc A, COM_TempVolumeProcess            ;Add volume offset
+    mov COM_ChannelVolumeOutput+X, A        ;Apply offset
+
     mov X, COM_EffectChannel                ;Grab channel index
     mov A, X
     xcn A
@@ -703,7 +800,9 @@ DriverLoop:                         ;Main driver loop
     mov SPC_RegADDR, Y                      ;Shove Y to addr
     mov SPC_RegData, A                      ;Shove hi pitch value into data
 
-    ;Check FOR loop
+    ;-------------------;
+    ;   FOR loop check  ;
+    ;-------------------;
     pop X                           ;Grab the former tick integer and shove back into X
     mov A, COM_EffectChannel        ;Grab current channel index
     cmp A, #7                       ;Check if we've reached the 7th element
@@ -727,7 +826,9 @@ jmp DriverLoop
     ;       and then reference the triangle counter at the precise memory location
     ;
     ;       To change the speed, multiply the triangle state by the desired number
+    ;       REMEMBER!!! Reset the speed after changing it, otherwise the damage is collateral!!!
     ;
+    ;Currently broken
 CountTriangle:
     mov X, COM_EffectChannel        ;Grab channel index
     mov A, (COM_TriangleCounter)+X  ;Grab the triangle counter
@@ -735,8 +836,24 @@ CountTriangle:
     mov COM_TriangleSignHolder, A   ;Store A into TriangleSignHolder
     adc A, COM_TriangleState+X      ;Add to TriangleCounter the triangle state
     mov (COM_TriangleCounter)+X, A  ;Return back to the triangle counter
+    mov Y, COM_TriangleState        ;Shove triangle state into Y to trigger negative flag
+    bmi .CheckNegative              ;Check if negative
+    .CheckPositive
+    mov A, COM_TriangleSignHolder   ;Shove sign holder into A
+    sbc A, COM_TriangleCounter+X    ;Find difference
+    cmp A, #$7F                     ;Check if distance is greater than 7F
+    bpl .ContinueEffects            ;if the distance between the values > 127 then it MUST be an overflow
+    jmp .Continue
+
+    .CheckNegative
+    mov A, COM_TriangleSignHolder
+    sbc A, COM_TriangleCounter+X
+    cmp A, #$FF
+    bmi .ContinueEffects            ;if the distance between the values > 127 then it MUST be an overflow
+
+    .Continue
     rol A                           ;Put sign bit in carry
-    eor1 C, COM_TriangleSignHolder.7;Result from the 2 xor sign bits in C
+    eor1 C, COM_TriangleSignHolder.7;Invert carry based off of the sign bit in the sign holder
     bcc .ContinueEffects            ;If the overflow flag is NOT set
     mov A, COM_TriangleState+X      ;Shove triangle state into A
     eor A, #$FF                     ;Invert to get negative
@@ -785,7 +902,7 @@ SequenceMemory:
 %SetDelayTime(8)
 %SetDelayVolume($40, $20)
 %SetDelayFeedback($7F)
-%SetMasterVolume($7F, $CC)
+%SetMasterVolume($7F, $7F)
 %SetChannelVolume(0, $80)
 %SetChannelVolume(1, $40)
 %SetChannelVolume(2, $20)
@@ -797,8 +914,7 @@ SequenceMemory:
 %SetInstrument($0, $0)
 %SetInstrument($1, $1)
 %SetInstrument($2, $2)
-%SetVib(0, $88)
-%SetVolSlide(0, $04)
+%SetVib(0, $88);
 ;%SetInstrument($3, $8)
 ;%SetInstrument($4, $10)
 ;%SetInstrument($5, $20)
@@ -813,7 +929,7 @@ SequenceMemory:
 %SetDelayCoefficient(6, $01)
 %SetDelayCoefficient(7, $00)
 %PlayPitch($0004, 0);Write note in
-%PlayPitch($0008, 1);Write note in
+;%PlayPitch($0008, 1);Write note in
 ;%PlayPitch($0010, 2);Write note in
 ;%PlayPitch($0020, 3);Write note in
 db COM_EndRow
