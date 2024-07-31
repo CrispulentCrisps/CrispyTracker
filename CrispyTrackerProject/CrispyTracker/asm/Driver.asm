@@ -828,7 +828,6 @@ jmp DriverLoop
     ;       To change the speed, multiply the triangle state by the desired number
     ;       REMEMBER!!! Reset the speed after changing it, otherwise the damage is collateral!!!
     ;
-    ;Currently broken
 CountTriangle:
     mov X, COM_EffectChannel        ;Grab channel index
     mov A, (COM_TriangleCounter)+X  ;Grab the triangle counter
@@ -836,22 +835,7 @@ CountTriangle:
     mov COM_TriangleSignHolder, A   ;Store A into TriangleSignHolder
     adc A, COM_TriangleState+X      ;Add to TriangleCounter the triangle state
     mov (COM_TriangleCounter)+X, A  ;Return back to the triangle counter
-    mov Y, COM_TriangleState        ;Shove triangle state into Y to trigger negative flag
-    bmi .CheckNegative              ;Check if negative
-    .CheckPositive
-    mov A, COM_TriangleSignHolder   ;Shove sign holder into A
-    sbc A, COM_TriangleCounter+X    ;Find difference
-    cmp A, #$7F                     ;Check if distance is greater than 7F
-    bpl .ContinueEffects            ;if the distance between the values > 127 then it MUST be an overflow
-    jmp .Continue
-
-    .CheckNegative
-    mov A, COM_TriangleSignHolder
-    sbc A, COM_TriangleCounter+X
-    cmp A, #$FF
-    bmi .ContinueEffects            ;if the distance between the values > 127 then it MUST be an overflow
-
-    .Continue
+    bvc .ContinueEffects            ;Check if overflown
     rol A                           ;Put sign bit in carry
     eor1 C, COM_TriangleSignHolder.7;Invert carry based off of the sign bit in the sign holder
     bcc .ContinueEffects            ;If the overflow flag is NOT set
