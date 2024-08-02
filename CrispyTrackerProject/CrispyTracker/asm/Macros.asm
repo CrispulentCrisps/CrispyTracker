@@ -24,7 +24,7 @@ TempTriangleSpeed =         $1F     ;Holds the triangle state we're working with
 ;Effects
 TriangleCounter =           $20     ;Array of traingle values
 TriangleState =             $28     ;Array of traingle states
-TriangleSignHolder =        $30     ;Holds the last triangle 
+TriangleSignHolder =        $30     ;Holds the last triangle
 EffectChannel =             $31     ;Current channel we are processing effects on
 
 ChannelArpValue =           $32     ;Array of values for the Arpeggio
