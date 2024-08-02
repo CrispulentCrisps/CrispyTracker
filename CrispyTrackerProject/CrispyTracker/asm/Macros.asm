@@ -22,23 +22,27 @@ TempPitchProcess =          $1D     ;Holds the Lo byte of a pitch
 
 TempTriangleSpeed =         $1F     ;Holds the triangle state we're working with
 ;Effects
-TriangleCounter =           $20     ;Array of traingle values
-TriangleState =             $28     ;Array of traingle states
-TriangleSignHolder =        $30     ;Holds the last triangle
-EffectChannel =             $31     ;Current channel we are processing effects on
+TriangleCounterVibrato =    $20     ;LFO array for vibrato
+TriangleCounterTremo =      $28     ;LFO array for tremolando
+TriangleCounterPanbr =      $30     ;LFO array for panbrello
+TriangleStateVibrato =      $38     ;Array of traingle states
+TriangleStateTremo =        $40     ;Array of traingle states
+TriangleStatePanbr =        $48     ;Array of traingle states
+TriangleSignHolder =        $50     ;Holds the last triangle
+EffectChannel =             $51     ;Current channel we are processing effects on
 
-ChannelArpValue =           $32     ;Array of values for the Arpeggio
-ChannelPortValue =          $3A     ;Array of values for the Portamento
-ChannelVibratoValue =       $4A     ;Array of values for the Vibrato
-ChannelTremolandoValue =    $52     ;Array of values for the Tremolando
-ChannelPanbrelloValue =     $5A     ;Array of values for the Panbrello
-ChannelVolSlideValue =      $62     ;Array of values for the Volume slide
+ChannelArpValue =           $52     ;Array of values for the Arpeggio
+ChannelPortValue =          $5A     ;Array of values for the Portamento
+ChannelVibratoValue =       $6A     ;Array of values for the Vibrato
+ChannelTremolandoValue =    $72     ;Array of values for the Tremolando
+ChannelPanbrelloValue =     $7A     ;Array of values for the Panbrello
+ChannelVolSlideValue =      $82     ;Array of values for the Volume slide
 
-PortDir =                   $6A
-ChannelPitches =            $70     ;Array of pitch values in each channel
-ChannelPitchesOutput =      $80     ;Array of pitches written to for every new note
-ChannelVolumeOutput =       $90     ;Array of pitches written to for every new note
-ChannelInstrumentIndex =    $A0     ;Array of Instrument indexes
+PortDir =                   $8A
+ChannelPitches =            $90     ;Array of pitch values in each channel
+ChannelPitchesOutput =      $A0     ;Array of pitches written to for every new note
+ChannelVolumeOutput =       $B0     ;Array of pitches written to for every new note
+ChannelInstrumentIndex =    $C0     ;Array of Instrument indexes
 
 ;General Tracker State
 TrackSpeed =                $E0     ;Holds the track speed for the track

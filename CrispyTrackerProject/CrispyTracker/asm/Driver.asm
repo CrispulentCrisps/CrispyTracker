@@ -522,6 +522,8 @@ DriverLoop:                         ;Main driver loop
     mov A, (COM_SequencePos+X)          ;Grab position of counter
     incw COM_SequencePos                ;Increments the sequence pos pointer
     mov COM_ChannelVibratoValue+Y, A    ;Apply value to memory
+    and A, #$0F                         ;Grab speed 
+    mov COM_TriangleStateVibrato+Y, A   ;Set triangle speed
     jmp .ReadRows
 
 .SetTremValue:
@@ -529,6 +531,8 @@ DriverLoop:                         ;Main driver loop
     mov A, (COM_SequencePos+X)          ;Grab position of counter
     incw COM_SequencePos                ;Increments the sequence pos pointer
     mov COM_ChannelTremolandoValue+Y, A ;Apply value to memory
+    and A, #$0F                         ;Grab speed
+    mov COM_TriangleStateTremo+Y, A     ;Set triangle speed
     jmp .ReadRows
 
 .SetVolSlideValue:
@@ -541,12 +545,17 @@ DriverLoop:                         ;Main driver loop
     mov Y, A
     pop A                               ;Grab value from stack
     mov COM_ChannelVolSlideValue+Y, A   ;Apply value to memory
+    and A, #$0F                         ;Grab speed 
+    mov COM_TriangleState+Y, A          ;Set triangle speed
     jmp .ReadRows
 
 .SetRetrigValue:
 
+    jmp .ReadRows
+
 .SetPanbrValue:
 
+    jmp .ReadRows
 
 .TickRoutine:               ;Routine for incrementing the tick counter and postiion within the track
     mov X, #0               ;Reset counter
@@ -668,9 +677,9 @@ DriverLoop:                         ;Main driver loop
     cmp A, #0                           ;Check if vibratovalue is 0
     beq .SkipVibrato                    ;If so then skip
     and A, #$F0                         ;Grab upper nibble for speed
-    xcn
-    asl A
-    asl A
+    xcn                                 ;Swap nibbles
+    asl A                               ;Mult by 2
+    asl A                               ;Mult by 2
     mov COM_TempTriangleSpeed, A        ;Shove triangle speed to memory
     mov A, COM_TriangleState+X          ;Shove triangle state into A
     clrc
@@ -678,8 +687,14 @@ DriverLoop:                         ;Main driver loop
     mov COM_TriangleState+X, A          ;Apply
     call CountTriangle                  ;Call triangle subroutine
     mov A, COM_TriangleState+X          ;Shove triangle state into A
-    setc                                ;Set the carry flag to avoid underflow
+    bpl .Sub                            ;Check if the negative flag is set
+    .Add
+    adc A, COM_TempTriangleSpeed        ;Add to reverse change
+    jmp .Apply                          ;Skip subtraction code
+    .Sub
+    setc                                ;Set carry flag to avoid rogue decrement
     sbc A, COM_TempTriangleSpeed        ;Subtract to reverse change
+    .Apply
     mov COM_TriangleState+X, A          ;Apply
     ;Depth
     mov X, COM_EffectChannel            ;Grab channel index
@@ -687,9 +702,6 @@ DriverLoop:                         ;Main driver loop
     and A, #$0F                         ;Grab lower nibble for depth
     mov Y, A                            ;Shove depth into Y
     mov A, COM_TriangleCounter+X        ;Grab triangle counter
-    mov COM_TempMemADDRL, A             ;Shove A into temporary memory
-    mov1 C, COM_TempMemADDRL.7          ;Move A's sign into the carry bit
-    ror A                               ;Divide by 2
     mul YA                              ;Multiply the triangle counter with the depth
     mov COM_TempPitchProcess, A         ;Shove lo byte into the temp pitch process
     mov COM_TempPitchProcess+1, Y       ;Shove hi byte into the temp pitch process
@@ -920,7 +932,7 @@ SequenceMemory:
 %SetInstrument($0, $0)
 %SetInstrument($1, $1)
 %SetInstrument($2, $2)
-%SetVib(0, $FF)
+%SetVib(0, $88)
 ;%SetInstrument($3, $8)
 ;%SetInstrument($4, $10)
 ;%SetInstrument($5, $20)
