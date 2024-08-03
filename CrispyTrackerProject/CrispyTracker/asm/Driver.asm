@@ -34,16 +34,6 @@ bne .MemClearLoop
 mov X, #$FF
 mov SP, X
 mov X, #0
-;Initialise triangle state
-mov COM_TriangleState,   #$0
-mov COM_TriangleState+1, #$0
-mov COM_TriangleState+2, #$0
-mov COM_TriangleState+3, #$0
-mov COM_TriangleState+4, #$0
-mov COM_TriangleState+5, #$0
-mov COM_TriangleState+6, #$0
-mov COM_TriangleState+7, #$0
-mov COM_TriangleState+8, #$0
 
 %spc_write(DSP_FLG, $00)
 %spc_write(DSP_MVOL_L, $7F)
@@ -237,50 +227,67 @@ DriverLoop:                         ;Main driver loop
 .PlayNote:
 
 .PlayPitch:
-    mov X, #0                       ;Reset X to 0 since we know the command type
-    mov A, Y                        ;Shove Y into A
-    and A, #%11110111               ;Sub 8 from A
-    push A                          ;Save A value
+    mov X, #0                               ;Reset X to 0 since we know the command type
+    mov A, Y                                ;Shove Y into A
+    and A, #%11110111                       ;Sub 8 from A
+    push A                                  ;Save A value
     mov X, A
-    mov Y, #1
-    mov COM_TriangleCounter+X, Y    ;Reset Triangle counter
-    mov COM_TriangleState+X, Y      ;Reset Triangle state
-    mov COM_TriangleSignHolder, Y   ;Reset Triangle state
-    xcn A                           ;Swap hi and lo nibbles
-    or A, #DSP_V0_PITCHH            ;Or A with DSP_V0_PITCHH
-    mov Y, A                        ;Shove A into Y
-    mov A, (COM_SequencePos+X)      ;Grab the sequence position and store in A
-    mov X, A                        ;Store value into stack
-    pop A                           ;Grab channel index
-    asl A                           ;Multiply by 2
-    inc A                           ;Go to the high byte
-    push X                          ;Shove value into stack
-    mov X, A                        ;Move index into X
-    pop A                           ;Grab exact value from stack
-    mov COM_ChannelPitches+X, A     ;Shove value into Channel Pitches
-    mov COM_ChannelPitchesOutput+X, A ;Shove value into Channel Pitches Copy
-    push X                          ;Store index to stack
-    mov X, #0                       ;Reset X
-    mov SPC_RegADDR, Y              ;Get to the Hi pitch
-    incw COM_SequencePos            ;Increments the sequence pos pointer
-    mov SPC_RegData, A              ;Shove pitch value into the regdata
-    dec Y                           ;Decrement Y to get to the lo pitch value
-    mov A, (COM_SequencePos+X)      ;Grab the sequence position and store in A
-    mov X, A                        ;Store value into stack
-    pop A                           ;Grab channel index
-    dec A                           ;Go to the low byte
-    push X                          ;Shove value into stack
-    mov X, A                        ;Move index into X
-    pop A                           ;Grab exact value from stack
-    mov COM_ChannelPitches+X, A     ;Shove value into Channel Pitches
-    mov COM_ChannelPitchesOutput+X, A ;Shove value into Channel Pitches Copy
-    mov X, #0                       ;Reset X
-    mov SPC_RegADDR, Y              ;Get to the Lo pitch
+    push A
+    mov Y, #0
+    
+    mov A, COM_ChannelVibratoValue          ;Grab vib value
+    and A, #$0F                             ;Grab depth
+    asl A                                   ;Multiply the speed
+    asl A
+    asl A
+    mov COM_TriangleCounterVibrato+X, Y     ;Reset Triangle counter
+    mov COM_TriangleStateVibrato+X, A       ;Reset Triangle state
+    
+    mov A, COM_ChannelTremolandoValue
+    and A, #$0F
+    asl A
+    mov COM_TriangleCounterTremo+X, Y       ;Reset Triangle counter
+    mov COM_TriangleStateTremo+X, A         ;Reset Triangle state
+
+    mov COM_TriangleCounterPanbr+X, Y       ;Reset Triangle counter
+    mov COM_TriangleStatePanbr+X, Y         ;Reset Triangle state
+    mov COM_TriangleSignHolder, Y           ;Reset Triangle state
+    pop A
+    xcn A                                   ;Swap hi and lo nibbles
+    or A, #DSP_V0_PITCHH                    ;Or A with DSP_V0_PITCHH
+    mov Y, A                                ;Shove A into Y
+    mov A, (COM_SequencePos+X)              ;Grab the sequence position and store in A
+    mov X, A                                ;Store value into stack
+    pop A                                   ;Grab channel index
+    asl A                                   ;Multiply by 2
+    inc A                                   ;Go to the high byte
+    push X                                  ;Shove value into stack
+    mov X, A                                ;Move index into X
+    pop A                                   ;Grab exact value from stack
+    mov COM_ChannelPitches+X, A             ;Shove value into Channel Pitches
+    mov COM_ChannelPitchesOutput+X, A       ;Shove value into Channel Pitches Copy
+    push X                                  ;Store index to stack
+    mov X, #0                               ;Reset X
+    mov SPC_RegADDR, Y                      ;Get to the Hi pitch
+    incw COM_SequencePos                    ;Increments the sequence pos pointer
+    mov SPC_RegData, A                      ;Shove pitch value into the regdata
+    dec Y                                   ;Decrement Y to get to the lo pitch value
+    mov A, (COM_SequencePos+X)              ;Grab the sequence position and store in A
+    mov X, A                                ;Store value into stack
+    pop A                                   ;Grab channel index
+    dec A                                   ;Go to the low byte
+    push X                                  ;Shove value into stack
+    mov X, A                                ;Move index into X
+    pop A                                   ;Grab exact value from stack
+    mov COM_ChannelPitches+X, A             ;Shove value into Channel Pitches
+    mov COM_ChannelPitchesOutput+X, A       ;Shove value into Channel Pitches Copy
+    mov X, #0                               ;Reset X
+    mov SPC_RegADDR, Y                      ;Get to the Lo pitch
     mov SPC_RegData, A
-    incw COM_SequencePos            ;Increments the sequence pos pointer
-    mov A, Y                        ;Load Y into A
+    incw COM_SequencePos                    ;Increments the sequence pos pointer
+    mov A, Y                                ;Load Y into A
     xcn A
-    mov X, A                        ;Shove channel index into X
+    mov X, A                                ;Shove channel index into X
     mov A, ChannelTable+X
     or A, COM_KONState
     mov COM_KONState, A
@@ -522,7 +529,8 @@ DriverLoop:                         ;Main driver loop
     mov A, (COM_SequencePos+X)          ;Grab position of counter
     incw COM_SequencePos                ;Increments the sequence pos pointer
     mov COM_ChannelVibratoValue+Y, A    ;Apply value to memory
-    and A, #$0F                         ;Grab speed 
+    and A, #$F0                         ;Grab speed
+    xcn A
     mov COM_TriangleStateVibrato+Y, A   ;Set triangle speed
     jmp .ReadRows
 
@@ -545,8 +553,6 @@ DriverLoop:                         ;Main driver loop
     mov Y, A
     pop A                               ;Grab value from stack
     mov COM_ChannelVolSlideValue+Y, A   ;Apply value to memory
-    and A, #$0F                         ;Grab speed 
-    mov COM_TriangleState+Y, A          ;Set triangle speed
     jmp .ReadRows
 
 .SetRetrigValue:
@@ -673,35 +679,14 @@ DriverLoop:                         ;Main driver loop
     mov COM_TempPitchProcess, #0        ;Reset temp pitch process so as to not fuck up other parts
     mov COM_TempPitchProcess+1, #0      ;Reset temp pitch process so as to not fuck up other parts
     mov COM_TempTriangleSpeed, #0
-    mov A, COM_ChannelVibratoValue+X    ;Grab vibrato value
-    cmp A, #0                           ;Check if vibratovalue is 0
-    beq .SkipVibrato                    ;If so then skip
-    and A, #$F0                         ;Grab upper nibble for speed
-    xcn                                 ;Swap nibbles
-    asl A                               ;Mult by 2
-    asl A                               ;Mult by 2
-    mov COM_TempTriangleSpeed, A        ;Shove triangle speed to memory
-    mov A, COM_TriangleState+X          ;Shove triangle state into A
-    clrc
-    adc A, COM_TempTriangleSpeed        ;Add the speed change
-    mov COM_TriangleState+X, A          ;Apply
     call CountTriangle                  ;Call triangle subroutine
-    mov A, COM_TriangleState+X          ;Shove triangle state into A
-    bpl .Sub                            ;Check if the negative flag is set
-    .Add
-    adc A, COM_TempTriangleSpeed        ;Add to reverse change
-    jmp .Apply                          ;Skip subtraction code
-    .Sub
-    setc                                ;Set carry flag to avoid rogue decrement
-    sbc A, COM_TempTriangleSpeed        ;Subtract to reverse change
-    .Apply
-    mov COM_TriangleState+X, A          ;Apply
     ;Depth
     mov X, COM_EffectChannel            ;Grab channel index
     mov A, COM_ChannelVibratoValue+X    ;Grab vibrato value
     and A, #$0F                         ;Grab lower nibble for depth
     mov Y, A                            ;Shove depth into Y
-    mov A, COM_TriangleCounter+X        ;Grab triangle counter
+    mov A, COM_TriangleCounterVibrato+X ;Grab triangle counter
+    mov COM_TempMemADDRL, A             ;Store A into temporary memory
     mul YA                              ;Multiply the triangle counter with the depth
     mov COM_TempPitchProcess, A         ;Shove lo byte into the temp pitch process
     mov COM_TempPitchProcess+1, Y       ;Shove hi byte into the temp pitch process
@@ -712,13 +697,23 @@ DriverLoop:                         ;Main driver loop
     mov A, COM_ChannelPitches+X         ;Shove lo byte into A
     inc X                               ;Increment to get the lo byte
     mov Y, COM_ChannelPitches+X         ;Shove hi byte into Y
-    dec X
+    cmp COM_TempMemADDRL, #$80          ;Check if A < 127
+    bmi .Add
+    push A
+    mov A, COM_TempPitchProcess
+    sbc A, $7F
+    mov COM_TempPitchProcess, A
+    pop A
+    subw YA, COM_TempPitchProcess       ;Add offset into the pitch value
+    jmp .Continue
+    .Add:
     addw YA, COM_TempPitchProcess       ;Add offset into the pitch value
+    .Continue:
+    dec X
     mov COM_ChannelPitchesOutput+X, A   ;Shove in lo byte into pitch lo byte
     inc X                               ;Increment
     mov COM_ChannelPitchesOutput+X, Y   ;Shove Y into hi byte
-    .SkipVibrato
-
+    
     ;-------------------;
     ;     Tremolando    ;
     ;-------------------;
@@ -727,22 +722,12 @@ DriverLoop:                         ;Main driver loop
     mov A, COM_ChannelTremolandoValue+X ;Grab the channel tremo value
     cmp A, #0                           ;Check if the tremovalue is 0 to avoid *0 or /0
     beq .SkipTremo                      ;Skip if equal to 0
-    and A, #$F0                         ;Get higher nibble for speed
-    xcn                                 ;Swap nibbles so the speed is at a sensible value
-    mov COM_TempTriangleSpeed, A        ;Shove triangle speed to memory
-    mov A, COM_TriangleState+X          ;Shove triangle state into A
-    clrc
-    adc A, COM_TempTriangleSpeed        ;Add the speed change
-    mov COM_TriangleState+X, A          ;Apply
     call CountTriangle                  ;Call triangle subroutine
-    mov A, COM_TriangleState+X          ;Shove triangle state into A
-    sbc A, COM_TempTriangleSpeed        ;Subtract to reverse change
-    mov COM_TriangleState+X, A          ;Apply
-
+    
     mov A, COM_ChannelTremolandoValue+X ;Grab the channel tremo value
     and A, #$0F                         ;Grab depth
     mov Y, A                            ;Shove depth into Y
-    mov A, COM_TriangleCounter+X        ;Grab triangle value
+    mov A, COM_TriangleCounterTremo+X   ;Grab triangle value
     lsr A                               ;Divide by 2
     lsr A                               ;Divide by 2
     lsr A                               ;Divide by 2
@@ -859,26 +844,62 @@ jmp DriverLoop
     ;       and then reference the triangle counter at the precise memory location
     ;
     ;       To change the speed, multiply the triangle state by the desired number
-    ;       REMEMBER!!! Reset the speed after changing it, otherwise the damage is collateral!!!
     ;
 CountTriangle:
-    mov X, COM_EffectChannel        ;Grab channel index
-    mov A, (COM_TriangleCounter)+X  ;Grab the triangle counter
-    clrc                            ;Clear the carry flag
-    mov COM_TriangleSignHolder, A   ;Store A into TriangleSignHolder
-    adc A, COM_TriangleState+X      ;Add to TriangleCounter the triangle state
-    mov (COM_TriangleCounter)+X, A  ;Return back to the triangle counter
-    bvc .ContinueEffects            ;Check if overflown
-    rol A                           ;Put sign bit in carry
-    eor1 C, COM_TriangleSignHolder.7;Invert carry based off of the sign bit in the sign holder
-    bcc .ContinueEffects            ;If the overflow flag is NOT set
-    mov A, COM_TriangleState+X      ;Shove triangle state into A
-    eor A, #$FF                     ;Invert to get negative
-    inc A                           ;Add one to value
-    mov COM_TriangleState+X, A      ;Return back to triangle counter
-    mov A, COM_TriangleSignHolder   ;Shove sign holder into A
-    mov (COM_TriangleCounter)+X, A  ;Shove back into triangle counter array
-    .ContinueEffects:
+    ;Vibrato
+    mov X, COM_EffectChannel                    ;Grab channel index
+    mov A, (COM_TriangleCounterVibrato)+X       ;Grab the triangle counter
+    clrc                                        ;Clear the carry flag
+    mov COM_TriangleSignHolder, A               ;Store A into TriangleSignHolder
+    adc A, COM_TriangleStateVibrato+X           ;Add to TriangleCounter the triangle state
+    mov (COM_TriangleCounterVibrato)+X, A       ;Return back to the triangle counter
+    bvc .ContinueEffectsVib                     ;Check if overflown
+    rol A                                       ;Put sign bit in carry
+    eor1 C, COM_TriangleSignHolder.7            ;Invert carry based off of the sign bit in the sign holder
+    bcc .ContinueEffectsVib                     ;If the overflow flag is NOT set
+    mov A, COM_TriangleStateVibrato+X           ;Shove triangle state into A
+    eor A, #$FF                                 ;Invert to get negative
+    inc A                                       ;Add one to value
+    mov COM_TriangleStateVibrato+X, A           ;Return back to triangle counter
+    mov A, COM_TriangleSignHolder               ;Shove sign holder into A
+    mov (COM_TriangleCounterVibrato)+X, A       ;Shove back into triangle counter array
+    .ContinueEffectsVib:
+    ;Tremolando
+    mov X, COM_EffectChannel                    ;Grab channel index
+    mov A, (COM_TriangleCounterVibrato)+X       ;Grab the triangle counter
+    clrc                                        ;Clear the carry flag
+    mov COM_TriangleSignHolder, A               ;Store A into TriangleSignHolder
+    adc A, COM_TriangleStateTremo+X             ;Add to TriangleCounter the triangle state
+    mov (COM_TriangleCounterTremo)+X, A         ;Return back to the triangle counter
+    bvc .ContinueEffectsTrem                    ;Check if overflown
+    rol A                                       ;Put sign bit in carry
+    eor1 C, COM_TriangleSignHolder.7            ;Invert carry based off of the sign bit in the sign holder
+    bcc .ContinueEffectsTrem                    ;If the overflow flag is NOT set
+    mov A, COM_TriangleStateTremo+X             ;Shove triangle state into A
+    eor A, #$FF                                 ;Invert to get negative
+    inc A                                       ;Add one to value
+    mov COM_TriangleStateTremo+X, A             ;Return back to triangle counter
+    mov A, COM_TriangleSignHolder               ;Shove sign holder into A
+    mov (COM_TriangleCounterTremo)+X, A       ;Shove back into triangle counter array
+    .ContinueEffectsTrem:
+    ;Tremolando
+    mov X, COM_EffectChannel                    ;Grab channel index
+    mov A, (COM_TriangleCounterPanbr)+X       ;Grab the triangle counter
+    clrc                                        ;Clear the carry flag
+    mov COM_TriangleSignHolder, A               ;Store A into TriangleSignHolder
+    adc A, COM_TriangleStatePanbr+X             ;Add to TriangleCounter the triangle state
+    mov (COM_TriangleCounterPanbr)+X, A         ;Return back to the triangle counter
+    bvc .ContinueEffectsPanbr                   ;Check if overflown
+    rol A                                       ;Put sign bit in carry
+    eor1 C, COM_TriangleSignHolder.7            ;Invert carry based off of the sign bit in the sign holder
+    bcc .ContinueEffectsPanbr                   ;If the overflow flag is NOT set
+    mov A, COM_TriangleStatePanbr+X             ;Shove triangle state into A
+    eor A, #$FF                                 ;Invert to get negative
+    inc A                                       ;Add one to value
+    mov COM_TriangleStatePanbr+X, A             ;Return back to triangle counter
+    mov A, COM_TriangleSignHolder               ;Shove sign holder into A
+    mov (COM_TriangleCounterPanbr)+X, A       ;Shove back into triangle counter array
+    .ContinueEffectsPanbr:
     clrv                            ;Clear half carry to avoid further flag misery
     ret
 
