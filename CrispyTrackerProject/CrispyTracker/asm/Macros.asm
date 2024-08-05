@@ -10,7 +10,7 @@ TickThresh =                $03     ;Equivelant to track speed
 SequencePos =               $04     ;Position within the sequence stream [Goes across 2 bytes]
 KONState =                  $06     ;Holds the current bitfield state of KON
 FlagVal =                   $07     ;Holds the flag value
-ChannelVol =                $08     ;Holds the channel master volume [goes across 8 bytes]
+ChannelVol =                $08     ;Holds the channel master volume [goes across 8s bytes]
 
 ;Special
 NoiseState =                $18     ;Bitfield for the NON  register
@@ -39,6 +39,7 @@ ChannelPanbrelloValue =     $7A     ;Array of values for the Panbrello
 ChannelVolSlideValue =      $82     ;Array of values for the Volume slide
 
 PortDir =                   $8A
+MulProductTemp =            $8B
 ChannelPitches =            $90     ;Array of pitch values in each channel
 ChannelPitchesOutput =      $A0     ;Array of pitches written to for every new note
 ChannelVolumeOutput =       $B0     ;Array of pitches written to for every new note

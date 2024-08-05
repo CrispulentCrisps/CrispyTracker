@@ -236,10 +236,11 @@ DriverLoop:                         ;Main driver loop
     mov Y, #0
     
     mov A, COM_ChannelVibratoValue          ;Grab vib value
-    and A, #$0F                             ;Grab depth
-    asl A                                   ;Multiply the speed
-    asl A
-    asl A
+    and A, #$F0                             ;Grab speed
+    xcn A                                   ;Swap nibbles
+    asl A                                   ;Multiply the speed !
+    asl A                                   ;Multiply the speed !!
+    asl A                                   ;Multiply the speed !!!
     mov COM_TriangleCounterVibrato+X, Y     ;Reset Triangle counter
     mov COM_TriangleStateVibrato+X, A       ;Reset Triangle state
     
@@ -539,7 +540,9 @@ DriverLoop:                         ;Main driver loop
     mov A, (COM_SequencePos+X)          ;Grab position of counter
     incw COM_SequencePos                ;Increments the sequence pos pointer
     mov COM_ChannelTremolandoValue+Y, A ;Apply value to memory
-    and A, #$0F                         ;Grab speed
+    and A, #$F0                         ;Grab speed
+    xcn A                               ;Swap Nibble
+    asl A
     mov COM_TriangleStateTremo+Y, A     ;Set triangle speed
     jmp .ReadRows
 
@@ -679,6 +682,7 @@ DriverLoop:                         ;Main driver loop
     mov COM_TempPitchProcess, #0        ;Reset temp pitch process so as to not fuck up other parts
     mov COM_TempPitchProcess+1, #0      ;Reset temp pitch process so as to not fuck up other parts
     mov COM_TempTriangleSpeed, #0
+    mov COM_TempMemADDRL, #0
     call CountTriangle                  ;Call triangle subroutine
     ;Depth
     mov X, COM_EffectChannel            ;Grab channel index
@@ -687,7 +691,7 @@ DriverLoop:                         ;Main driver loop
     mov Y, A                            ;Shove depth into Y
     mov A, COM_TriangleCounterVibrato+X ;Grab triangle counter
     mov COM_TempMemADDRL, A             ;Store A into temporary memory
-    mul YA                              ;Multiply the triangle counter with the depth
+    call SignedMul                      ;Call SignedMul subroutine
     mov COM_TempPitchProcess, A         ;Shove lo byte into the temp pitch process
     mov COM_TempPitchProcess+1, Y       ;Shove hi byte into the temp pitch process
     ;Apply
@@ -697,18 +701,7 @@ DriverLoop:                         ;Main driver loop
     mov A, COM_ChannelPitches+X         ;Shove lo byte into A
     inc X                               ;Increment to get the lo byte
     mov Y, COM_ChannelPitches+X         ;Shove hi byte into Y
-    cmp COM_TempMemADDRL, #$80          ;Check if A < 127
-    bmi .Add
-    push A
-    mov A, COM_TempPitchProcess
-    sbc A, $7F
-    mov COM_TempPitchProcess, A
-    pop A
-    subw YA, COM_TempPitchProcess       ;Add offset into the pitch value
-    jmp .Continue
-    .Add:
     addw YA, COM_TempPitchProcess       ;Add offset into the pitch value
-    .Continue:
     dec X
     mov COM_ChannelPitchesOutput+X, A   ;Shove in lo byte into pitch lo byte
     inc X                               ;Increment
@@ -722,12 +715,12 @@ DriverLoop:                         ;Main driver loop
     mov A, COM_ChannelTremolandoValue+X ;Grab the channel tremo value
     cmp A, #0                           ;Check if the tremovalue is 0 to avoid *0 or /0
     beq .SkipTremo                      ;Skip if equal to 0
-    call CountTriangle                  ;Call triangle subroutine
-    
+    call CountTriangle                  ;Call triangle subroutine    
     mov A, COM_ChannelTremolandoValue+X ;Grab the channel tremo value
     and A, #$0F                         ;Grab depth
     mov Y, A                            ;Shove depth into Y
     mov A, COM_TriangleCounterTremo+X   ;Grab triangle value
+    lsr A                               ;Divide by 2
     lsr A                               ;Divide by 2
     lsr A                               ;Divide by 2
     lsr A                               ;Divide by 2
@@ -866,7 +859,7 @@ CountTriangle:
     .ContinueEffectsVib:
     ;Tremolando
     mov X, COM_EffectChannel                    ;Grab channel index
-    mov A, (COM_TriangleCounterVibrato)+X       ;Grab the triangle counter
+    mov A, (COM_TriangleCounterTremo)+X         ;Grab the triangle counter
     clrc                                        ;Clear the carry flag
     mov COM_TriangleSignHolder, A               ;Store A into TriangleSignHolder
     adc A, COM_TriangleStateTremo+X             ;Add to TriangleCounter the triangle state
@@ -882,7 +875,7 @@ CountTriangle:
     mov A, COM_TriangleSignHolder               ;Shove sign holder into A
     mov (COM_TriangleCounterTremo)+X, A       ;Shove back into triangle counter array
     .ContinueEffectsTrem:
-    ;Tremolando
+    ;Panbrello
     mov X, COM_EffectChannel                    ;Grab channel index
     mov A, (COM_TriangleCounterPanbr)+X       ;Grab the triangle counter
     clrc                                        ;Clear the carry flag
@@ -901,6 +894,48 @@ CountTriangle:
     mov (COM_TriangleCounterPanbr)+X, A       ;Shove back into triangle counter array
     .ContinueEffectsPanbr:
     clrv                            ;Clear half carry to avoid further flag misery
+    ret
+
+    ;-----------------------;
+    ; Signed Multiplication ;
+    ;-----------------------;
+    ;   Note of usage:
+    ;       To use the Signed mult, use CALL to call the subroutine 
+    ;       where YA is to be used for said multiplication
+    ;
+    ;       [but not using MUL YA, since it doesn't take into account the sign]
+    ;       [Provided by AArt1256]
+    ;
+SignedMul:
+    ; save multipliers into temporary memory
+    mov COM_TempMemADDRL, A
+    mov COM_TempMemADDRH, Y
+    mul YA
+
+    ; save product into temporary memory
+    mov COM_MulProductTemp, A
+    mov COM_MulProductTemp+1, Y
+
+    ; check for MSB
+    mov A, COM_TempMemADDRL
+    bpl skip_mul1
+    setc
+    mov A, COM_MulProductTemp+1
+    sbc A, COM_TempMemADDRH
+    mov COM_MulProductTemp+1, A
+    skip_mul1:
+
+    ; check for MSB
+    mov A, COM_TempMemADDRH
+    bpl skip_mul2
+    setc
+    mov A, COM_MulProductTemp+1
+    sbc A, COM_TempMemADDRL
+    mov COM_MulProductTemp+1, A
+    skip_mul2:
+
+    mov A, COM_MulProductTemp
+    mov Y, COM_MulProductTemp+1
     ret
 
 fill $2000-pc()
@@ -953,7 +988,8 @@ SequenceMemory:
 %SetInstrument($0, $0)
 %SetInstrument($1, $1)
 %SetInstrument($2, $2)
-%SetVib(0, $88)
+%SetTremo(0, $F8)
+;%SetVib(0, $FF)
 ;%SetInstrument($3, $8)
 ;%SetInstrument($4, $10)
 ;%SetInstrument($5, $20)
@@ -967,7 +1003,7 @@ SequenceMemory:
 %SetDelayCoefficient(5, $02)
 %SetDelayCoefficient(6, $01)
 %SetDelayCoefficient(7, $00)
-%PlayPitch($8004, 0);Write note in
+%PlayPitch($800C, 0);Write note in
 ;%PlayPitch($0008, 1);Write note in
 ;%PlayPitch($0010, 2);Write note in
 ;%PlayPitch($0020, 3);Write note in
