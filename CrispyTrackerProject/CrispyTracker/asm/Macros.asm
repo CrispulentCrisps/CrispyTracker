@@ -10,7 +10,7 @@ TickThresh =                $03     ;Equivelant to track speed
 SequencePos =               $04     ;Position within the sequence stream [Goes across 2 bytes]
 KONState =                  $06     ;Holds the current bitfield state of KON
 FlagVal =                   $07     ;Holds the flag value
-ChannelVol =                $08     ;Holds the channel master volume [goes across 8s bytes]
+ChannelVol =                $08     ;Holds the channel master volume [goes across 16 bytes]
 
 ;Special
 NoiseState =                $18     ;Bitfield for the NON  register
@@ -18,9 +18,8 @@ EchoState =                 $19     ;Bitfield for the EON  register
 PModState =                 $1A     ;Bitfield for the PMON register
 TempORStore =               $1B     ;Temporarily stores an OR'd value
 TempVolumeProcess =         $1C     ;Used to manipulate a volume value without actually changing said volume
-TempPitchProcess =          $1D     ;Holds the Lo byte of a pitch
+TempPitchProcess =          $1E     ;Holds the pitch
 
-TempTriangleSpeed =         $1F     ;Holds the triangle state we're working with
 ;Effects
 TriangleCounterVibrato =    $20     ;LFO array for vibrato
 TriangleCounterTremo =      $28     ;LFO array for tremolando
@@ -46,12 +45,17 @@ ChannelVolumeOutput =       $B0     ;Array of pitches written to for every new n
 ChannelInstrumentIndex =    $C0     ;Array of Instrument indexes
 
 ;General Tracker State
-TrackSpeed =                $E0     ;Holds the track speed for the track
+TrackSpeed =                $C8     ;Holds the track speed for the track
+TrackSettings =             $C9     ;Holds the track settings [refer to DriverRequirements.txt]
 ;Commands
 
     ;Row commands
 EndRow =                    $00
-SetSpeed =                  $01
+
+macro SetSpeed(S)       ;Sets tick threshold for track
+db $01
+db <S>
+endmacro
 
     ;Note play
 macro PlayNote(P, C)    ;Plays note in note table
@@ -115,9 +119,10 @@ db <L>
 db <R>
 endmacro
 
-macro SetChannelVolume(C, V)   ;Set Channel Volume
+macro SetChannelVolume(C, L, R)   ;Set Channel Volume
 db $41+<C>
-db <V>
+db <L>
+db <R>
 endmacro
 
     ;Effects commands

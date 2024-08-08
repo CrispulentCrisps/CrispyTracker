@@ -106,8 +106,7 @@ Each row contains the following values:
 		68, Set Vib Value, V, puts XY into V 	[Speed : Depth]
 		70, Set Trem Value, T, puts XY into T 	[Speed : Depth]
 		78, Set Vol Slide Value, S, puts XY into S 	[Up : Down]
-		80, Set Retrig Value, R, puts XX into R [Thresh]
-		88, Set Pbr Value, B, puts XY into B	[Speed : Depth]
+		80, Set Pbr Value, B, puts XY into B	[Speed : Depth]
 
 - Effects Processing -
 
@@ -154,3 +153,16 @@ Effects list goes as:
 	EAxx Set Global Volume [xx: volume] Sets the Global Volume of the track
 
 	FFxx End Tune [xx: end tune] Will end the tune no matter the value
+	
+- Miscellaneous -
+	Settings byte:
+		The settings byte is specifically made for compatilbility on the end users part.
+		This can include:
+			01 - Mono/Stereo output [off for mono, on for stereo]
+			02 - TBD...
+			04 - TBD...
+			08 - TBD...
+			10 - TBD...
+			20 - TBD...
+			40 - TBD...
+			80 - TBD...

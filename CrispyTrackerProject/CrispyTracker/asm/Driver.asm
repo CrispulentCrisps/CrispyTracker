@@ -27,13 +27,14 @@ mov COM_TempMemADDRH, #Engine_End>>8
 mov X, #0
 mov A, #0
 .MemClearLoop:
-db $C7, $00                 ;Equivelant to mov (COM_TempMemADDRL+X), A; reason is the ASAR doesn't put this line in code, instead putting in C5 00 00
+db $C7, $00                     ;Equivelant to mov (COM_TempMemADDRL+X), A; reason is the ASAR doesn't put this line in code, instead putting in C5 00 00
 incw COM_TempMemADDRL
 bne .MemClearLoop
 
 mov X, #$FF
 mov SP, X
 mov X, #0
+mov COM_TrackSettings, #$01     ;Set the track settings
 
 %spc_write(DSP_FLG, $00)
 %spc_write(DSP_MVOL_L, $7F)
@@ -121,13 +122,15 @@ DriverLoop:                         ;Main driver loop
     
     incw COM_SequencePos        ;Increments the sequence pos pointer
     mov X, A                    ;Shove A into X
-    and A, #$F                  ;Get lower 4 nibbles to A
+    and A, #$0F                 ;Get lower 4 nibbles to A
     mov Y, A                    ;Shove lower nibbles into Y
     mov A, X                    ;Reset A to its previous state held in X
     and A, #$F0                 ;Get higher 4 nibbles to A
     mov X, A                    ;Shove higher 4 nibbles into X
                                 
                                 ;Find command type
+    cmp X, #$00                 ;Compare the higher nibble to 00
+    beq .StateCommands          ;Compared and found X = 0
     cmp X, #$10                 ;Compare the higher nibble to 10
     beq .NoteCommands           ;Compared and found X = 0
     cmp X, #$20                 ;Compare the higher nibble to 20
@@ -144,6 +147,13 @@ DriverLoop:                         ;Main driver loop
     beq .TremVolSet             ;Compared and found X = 0
     cmp X, #$80                 ;Compare the higher nibble to 80
     beq .RetPbrSet              ;Compared and found X = 0
+
+.StateCommands:
+    cmp Y, #$1
+    beq .GotoSetSpeed
+
+.GotoSetSpeed:
+    jmp .SetSpeed
 
 .NoteCommands:
     cmp Y, #$8                  ;Check if we're doing an absolute pitch or a note table
@@ -166,7 +176,7 @@ DriverLoop:                         ;Main driver loop
     beq .GotoSetDelayFeedback
     cmp Y, #$4
     bpl .GotoSetDelayCoeff
-
+    
 ;GOTO's to avoid beq and blp going out of bounds
 .GotoSetDelayCoeff:
     jmp .SetDelayCoeff
@@ -206,7 +216,6 @@ DriverLoop:                         ;Main driver loop
 
 .RetPbrSet:
     cmp Y, #8               ;Compare Y to see if we're setting the effects bitfield
-    bmi .GotoSetRetrigValue ;if it's < 0 then we go to the set the port value
     beq .GotoSetPanbrValue  ;otherwise if it's = 0 then we go to set the vibrato value
 
 .GotoSetArpValue:
@@ -219,10 +228,15 @@ DriverLoop:                         ;Main driver loop
     jmp .SetTremValue
 .GotoSetVolSlideValue:
     jmp .SetVolSlideValue
-.GotoSetRetrigValue:
-    jmp .SetRetrigValue
 .GotoSetPanbrValue:
     jmp .SetPanbrValue
+
+.SetSpeed:
+    mov X, #0                   ;Reset X to 0 since we know the command type
+    mov A, (COM_SequencePos+X)  ;Grab position of counter
+    incw COM_SequencePos        ;Increments the sequence pos pointer
+    mov COM_TrackSpeed, A       ;Shove Track speed into zp
+    jmp .ReadRows
 
 .PlayNote:
 
@@ -485,9 +499,16 @@ DriverLoop:                         ;Main driver loop
 
 .SetVolume:
     mov X, #0                       ;Reset X to 0 since we know the command type
+    dec Y                           ;Decrement Y to get to the correct channel
+    mov A, Y
+    asl A
+    mov Y, A
     mov A, (COM_SequencePos+X)      ;Grab position of counter
     incw COM_SequencePos            ;Increments the sequence pos pointer
-    dec Y                           ;Decrement Y to get to the correct channel
+    mov COM_ChannelVol+Y, A         ;Move the data into the right section of memory
+    inc Y
+    mov A, (COM_SequencePos+X)      ;Grab position of counter
+    incw COM_SequencePos            ;Increments the sequence pos pointer
     mov COM_ChannelVol+Y, A         ;Move the data into the right section of memory
     jmp .ReadRows
 
@@ -558,10 +579,6 @@ DriverLoop:                         ;Main driver loop
     mov COM_ChannelVolSlideValue+Y, A   ;Apply value to memory
     jmp .ReadRows
 
-.SetRetrigValue:
-
-    jmp .ReadRows
-
 .SetPanbrValue:
 
     jmp .ReadRows
@@ -576,7 +593,8 @@ DriverLoop:                         ;Main driver loop
     jmp .EffectsProcess     ;Process effects
     .ContinueIncrement:
     inc X                   ;Increment our counter
-    cmp X, #31              ;Check if the counter has reached the threshold
+    cmp X, COM_TrackSpeed   ;Check if the counter has reached the 
+    ;cmp X, #$31             ;Check if the counter has reached the threshold
     bmi .TickIncrement      ;Go back to the tick incrementer if the counter is not
                             ;Assuming we've hit the threshold
     mov X, #00              ;Reset counter
@@ -586,7 +604,6 @@ DriverLoop:                         ;Main driver loop
 
     .ForEffects:
     push X                          ;Store away the current tick for after the effects processing
-    mov COM_TempTriangleSpeed, #0
 
     ;------------------;
     ;    Volume Mix    ;
@@ -601,21 +618,26 @@ DriverLoop:                         ;Main driver loop
     mov COM_TempMemADDRH, Y                             ;Seperate the 2 bytes into H and L positions
     mov COM_TempMemADDRL, A                             
     
-    mov X, COM_EffectChannel
+    mov A, COM_EffectChannel
+    asl A
+    mov X, A
     mov Y, #0                                           ;Reset Y
-    mov A, (COM_TempMemADDRL)+Y                         ;Grab instrument right volume
+    mov A, (COM_TempMemADDRL)+Y                         ;Grab instrument left volume
     mov Y,COM_ChannelVol+X                              ;Grab the current master volume of the channel
     mov X, #127                                         ;Divisor
     mul YA                                              ;Multiply the instrument volume by the channel volume
     div YA, X                                           ;Divide by X
     push A                                              ;Store mixed volume to stack
     mov A, COM_EffectChannel                            ;Move index into A
-    lsr A                                               ;Multiply by 2
+    asl A                                               ;Mult by 2
     mov X, A                                            ;Move index to X
     pop A                                               ;Grab stack value
     mov COM_ChannelVolumeOutput+X, A                    ;Apply
 
-    mov X, COM_EffectChannel
+    mov A, COM_EffectChannel                            ;Grab index and shove into A for maths 
+    asl A
+    mov X, A
+    inc X
     mov Y, #1                                           ;Reset Y
     mov A, (COM_TempMemADDRL)+Y                         ;Grab instrument right volume
     mov Y,COM_ChannelVol+X                              ;Grab the current master volume of the channel
@@ -624,7 +646,7 @@ DriverLoop:                         ;Main driver loop
     div YA, X                                           ;Divide by X
     push A                                              ;Store mixed volume to stack
     mov A, COM_EffectChannel                            ;Move index into A
-    lsr A                                               ;Multiply by 2
+    asl A                                               ;Mult by 2
     inc A                                               ;Add for R volume
     mov X, A                                            ;Move index to X
     pop A                                               ;Grab stack value
@@ -681,7 +703,6 @@ DriverLoop:                         ;Main driver loop
     mov X, COM_EffectChannel            ;Grab channel index
     mov COM_TempPitchProcess, #0        ;Reset temp pitch process so as to not fuck up other parts
     mov COM_TempPitchProcess+1, #0      ;Reset temp pitch process so as to not fuck up other parts
-    mov COM_TempTriangleSpeed, #0
     mov COM_TempMemADDRL, #0
     call CountTriangle                  ;Call triangle subroutine
     ;Depth
@@ -710,12 +731,16 @@ DriverLoop:                         ;Main driver loop
     ;-------------------;
     ;     Tremolando    ;
     ;-------------------;
-    mov X, COM_EffectChannel            ;Grab channel index
+    mov A, COM_EffectChannel            ;Grab channel index
+    asl A                               ;Mult by 2
+    mov X, A                            ;Return
     mov Y, COM_ChannelVol+X             ;Grab channel volume
+    lsr A                               ;Div by 2
+    mov X, A                            ;Return
     mov A, COM_ChannelTremolandoValue+X ;Grab the channel tremo value
     cmp A, #0                           ;Check if the tremovalue is 0 to avoid *0 or /0
     beq .SkipTremo                      ;Skip if equal to 0
-    call CountTriangle                  ;Call triangle subroutine    
+    call CountTriangle                  ;Call triangle subroutine
     mov A, COM_ChannelTremolandoValue+X ;Grab the channel tremo value
     and A, #$0F                         ;Grab depth
     mov Y, A                            ;Shove depth into Y
@@ -725,11 +750,13 @@ DriverLoop:                         ;Main driver loop
     lsr A                               ;Divide by 2
     lsr A                               ;Divide by 2
     lsr A                               ;Divide by 2
-    mul YA                              ;Multiply depth and triangle counter
+    call SignedMul
     mov COM_TempVolumeProcess, A        ;Apply
+    mov COM_TempVolumeProcess+1, A      ;Apply
     jmp .AvoidWrongMov                  ;Jump to avoid a wrongful overwrite
     .SkipTremo:
     mov COM_TempVolumeProcess, #0       ;Apply
+    mov COM_TempVolumeProcess+1, #0     ;Apply
     .AvoidWrongMov:
 
     ;-------------------;
@@ -762,54 +789,71 @@ DriverLoop:                         ;Main driver loop
     ;-------------------;
     ;    Apply Effect   ;
     ;-------------------;
-    ;Volume
-    mov A, COM_EffectChannel                ;Grab channel index
-    asl A                                   ;Mult by 2
-    push A                                  ;Push for later
+    ;Volume/Panning
+    mov A, COM_EffectChannel                            ;Grab channel index
+    asl A                                               ;Mult by 2
     mov X, A
-    mov A, COM_ChannelVolumeOutput+X        ;Shove the output volume into Y
-    adc A, COM_TempVolumeProcess            ;Add volume offset
-    mov COM_ChannelVolumeOutput+X, A        ;Apply offset
-    pop A                                   ;Grab from stack
-    inc A                                   ;Increment for R volume
-    mov X, A
-    mov A, COM_ChannelVolumeOutput+X        ;Shove the output volume into Y
-    adc A, COM_TempVolumeProcess            ;Add volume offset
-    mov COM_ChannelVolumeOutput+X, A        ;Apply offset
+    mov A, COM_ChannelVolumeOutput+X                    ;Shove the output volume into A
+    adc A, COM_TempVolumeProcess                        ;Add volume offset
+    mov COM_ChannelVolumeOutput+X, A                    ;Apply offset
+    inc X
+    mov A, COM_ChannelVolumeOutput+X                    ;Shove the output volume into A
+    adc A, COM_TempVolumeProcess+1                      ;Add volume offset
+    mov COM_ChannelVolumeOutput+X, A                    ;Apply offset
 
-    mov X, COM_EffectChannel                ;Grab channel index
-    mov A, X
-    xcn A
-    mov Y, COM_ChannelVolumeOutput+X        ;Shove the output volume into Y
-    mov SPC_RegADDR, A                      ;Shove A to addr
-    mov SPC_RegData, Y                      ;Shove Master volume into L
-    inc A
-    mov X, A
-    mov Y, COM_ChannelVolumeOutput+X        ;Shove the output volume into Y
-    mov SPC_RegADDR, A                      ;Shove A to addr
-    mov SPC_RegData, Y                      ;Shove Master volume into R
+    ;Mono switch
+    mov1 C, COM_TrackSettings.0                         ;Move the mono flag into the carry bit
+    bcc .SkipMono                                       ;Check if the carry is 0
+    dec X                                               ;We already got the right index, just decrement to get the L volume
+    mov A, COM_ChannelVolumeOutput+X                    ;Shove the output volume into A
+    mov COM_TempMemADDRL, A                             ;Shove into scratch memory
 
-    ;Pitch/Panning
-    mov X, COM_EffectChannel                ;Grab channel index
-    mov A, X                                ;Shove index into A
-    asl A                                   ;Multiply by 2
-    mov X, A                                ;Move mult value into X
-    lsr A                                   ;Divide by 2
-    xcn A                                   ;Swap nibbles
-    adc A, #2                               ;Inc 2 to grab low pitch
-    mov Y, A                                ;Shove addr value into Y
-    mov A, COM_ChannelPitchesOutput+X       ;Shove lo pitch into A
-    mov SPC_RegADDR, Y                      ;Shove Y to addr
-    mov SPC_RegData, A                      ;Shove lo pitch value into data
-    pop A                                   ;Grab premult index value
-    inc A                                   ;Increment
-    mov X, A                                ;Return value
-    mov A, Y                                ;Shove Y into A
-    inc A                                   ;Increment
-    mov Y, A                                ;Return value
-    mov A, COM_ChannelPitchesOutput+X       ;Shove hi pitch into A
-    mov SPC_RegADDR, Y                      ;Shove Y to addr
-    mov SPC_RegData, A                      ;Shove hi pitch value into data
+    eor A, #$FF                                         ;Invert to remove sign
+    mov COM_ChannelVolumeOutput+X, A                    ;Return
+    inc X
+    .SkipL:                                             ;Grab R index
+    mov A, COM_ChannelVolumeOutput+X                    ;Shove the output volume into A
+    eor A, #$FF                                         ;Invert to remove sign
+    mov COM_ChannelVolumeOutput+X, A                    ;Return
+    .SkipMono:
+
+    mov X, COM_EffectChannel                            ;Grab channel index
+    mov A, X                                            ;Shove into A for maffs
+    asl A                                               ;Mult by 2
+    push A                                              ;Shove value to stack
+    mov A, COM_EffectChannel                            ;Grab channel index
+    xcn A                                               ;Swap nibbles
+    pop X                                               ;Grab index from stack
+    mov Y, COM_ChannelVolumeOutput+X                    ;Shove the output volume into Y
+    mov SPC_RegADDR, A                                  ;Shove A to addr
+    mov SPC_RegData, Y                                  ;Shove Master volume into L
+    inc A                                               ;Inc addr
+    inc X                                               ;Inc index
+    mov Y, COM_ChannelVolumeOutput+X                    ;Shove the output volume into Y
+    mov SPC_RegADDR, A                                  ;Shove A to addr
+    mov SPC_RegData, Y                                  ;Shove Master volume into R
+
+    ;Pitch
+    mov X, COM_EffectChannel                            ;Grab channel index
+    mov A, X                                            ;Shove index into A
+    asl A                                               ;Multiply by 2
+    mov X, A                                            ;Move mult value into X
+    lsr A                                               ;Divide by 2
+    xcn A                                               ;Swap nibbles
+    adc A, #2                                           ;Inc 2 to grab low pitch
+    mov Y, A                                            ;Shove addr value into Y
+    mov A, COM_ChannelPitchesOutput+X                   ;Shove lo pitch into A
+    mov SPC_RegADDR, Y                                  ;Shove Y to addr
+    mov SPC_RegData, A                                  ;Shove lo pitch value into data
+    pop A                                               ;Grab premult index value
+    inc A                                               ;Increment
+    mov X, A                                            ;Return value
+    mov A, Y                                            ;Shove Y into A
+    inc A                                               ;Increment
+    mov Y, A                                            ;Return value
+    mov A, COM_ChannelPitchesOutput+X                   ;Shove hi pitch into A
+    mov SPC_RegADDR, Y                                  ;Shove Y to addr
+    mov SPC_RegData, A                                  ;Shove hi pitch value into data
 
     ;-------------------;
     ;   FOR loop check  ;
@@ -873,11 +917,11 @@ CountTriangle:
     inc A                                       ;Add one to value
     mov COM_TriangleStateTremo+X, A             ;Return back to triangle counter
     mov A, COM_TriangleSignHolder               ;Shove sign holder into A
-    mov (COM_TriangleCounterTremo)+X, A       ;Shove back into triangle counter array
+    mov (COM_TriangleCounterTremo)+X, A         ;Shove back into triangle counter array
     .ContinueEffectsTrem:
     ;Panbrello
     mov X, COM_EffectChannel                    ;Grab channel index
-    mov A, (COM_TriangleCounterPanbr)+X       ;Grab the triangle counter
+    mov A, (COM_TriangleCounterPanbr)+X         ;Grab the triangle counter
     clrc                                        ;Clear the carry flag
     mov COM_TriangleSignHolder, A               ;Store A into TriangleSignHolder
     adc A, COM_TriangleStatePanbr+X             ;Add to TriangleCounter the triangle state
@@ -903,8 +947,8 @@ CountTriangle:
     ;       To use the Signed mult, use CALL to call the subroutine 
     ;       where YA is to be used for said multiplication
     ;
-    ;       [but not using MUL YA, since it doesn't take into account the sign]
-    ;       [Provided by AArt1256]
+    ;       [but not using MUL YA, since it doesn't take into account the sign
+    ;        Provided by AArt1256]
     ;
 SignedMul:
     ; save multipliers into temporary memory
@@ -966,30 +1010,31 @@ CoeffecientTable:   ;Writes the value for the coeffecient index
     db DSP_C7
 
 InstrumentMemory:
-%WriteInstrument($7F, $7F, $FF, $F0, $7F, $00, $00, $40)
-%WriteInstrument($7F, $7F, $FF, $F0, $7F, $00, $00, $60)
-%WriteInstrument($7F, $7F, $FF, $F0, $7F, $00, $00, $80)
+%WriteInstrument($80, $7F, $FF, $F0, $7F, $00, $00, $40)
+%WriteInstrument($7F, $80, $FF, $F0, $7F, $00, $00, $60)
+%WriteInstrument($80, $80, $FF, $F0, $7F, $00, $00, $80)
 .EndOfInstrument:
 
 SequenceMemory:
+%SetSpeed($40)
 %SetNoise($1F)
-%SetDelayTime(8)
+%SetDelayTime(4)
 %SetDelayVolume($40, $20)
 %SetDelayFeedback($7F)
 %SetMasterVolume($7F, $7F)
-%SetChannelVolume(0, $80)
-%SetChannelVolume(1, $40)
-%SetChannelVolume(2, $20)
-%SetChannelVolume(3, $10)
-%SetChannelVolume(4, $08)
-%SetChannelVolume(5, $04)
-%SetChannelVolume(6, $02)
-%SetChannelVolume(7, $01)
+%SetChannelVolume(0, $7F, $7F)
+%SetChannelVolume(1, $6F, $6F)
+%SetChannelVolume(2, $5F, $5F)
+%SetChannelVolume(3, $4F, $4F)
+%SetChannelVolume(4, $3F, $3F)
+%SetChannelVolume(5, $2F, $2F)
+%SetChannelVolume(6, $1F, $1F)
+%SetChannelVolume(7, $0F, $0F)
 %SetInstrument($0, $0)
 %SetInstrument($1, $1)
 %SetInstrument($2, $2)
-%SetTremo(0, $F8)
-;%SetVib(0, $FF)
+;%SetTremo(0, $FF)
+;%SetVib(0, $44)
 ;%SetInstrument($3, $8)
 ;%SetInstrument($4, $10)
 ;%SetInstrument($5, $20)
