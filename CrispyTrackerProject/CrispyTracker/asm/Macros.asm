@@ -1,6 +1,6 @@
-;
-;   Macro's file for Cobalt Driver
-;
+;-----------------------------------;
+;   Macro's file for Cobalt Driver  ;
+;-----------------------------------;
 
 namespace COM
 TempMemADDRL =              $00     ;General purpose addr LO

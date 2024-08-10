@@ -34,7 +34,7 @@ bne .MemClearLoop
 mov X, #$FF
 mov SP, X
 mov X, #0
-mov COM_TrackSettings, #$01     ;Set the track settings
+mov COM_TrackSettings, #$00     ;Set the track settings
 
 %spc_write(DSP_FLG, $00)
 %spc_write(DSP_MVOL_L, $7F)
@@ -239,6 +239,7 @@ DriverLoop:                         ;Main driver loop
     jmp .ReadRows
 
 .PlayNote:
+    jmp .ReadRows
 
 .PlayPitch:
     mov X, #0                               ;Reset X to 0 since we know the command type
@@ -751,7 +752,7 @@ DriverLoop:                         ;Main driver loop
     lsr A                               ;Divide by 2
     lsr A                               ;Divide by 2
     call SignedMul
-    mov COM_TempVolumeProcess, A        ;Apply
+    mov COM_TempVolumeProcess, Y        ;Apply
     mov COM_TempVolumeProcess+1, A      ;Apply
     jmp .AvoidWrongMov                  ;Jump to avoid a wrongful overwrite
     .SkipTremo:
@@ -801,24 +802,28 @@ DriverLoop:                         ;Main driver loop
     adc A, COM_TempVolumeProcess+1                      ;Add volume offset
     mov COM_ChannelVolumeOutput+X, A                    ;Apply offset
 
-    ;Mono switch
+    ;Stereo switch
     mov1 C, COM_TrackSettings.0                         ;Move the mono flag into the carry bit
     bcc .SkipMono                                       ;Check if the carry is 0
     dec X                                               ;We already got the right index, just decrement to get the L volume
     mov A, COM_ChannelVolumeOutput+X                    ;Shove the output volume into A
-    mov COM_TempMemADDRL, A                             ;Shove into scratch memory
-
+    mov COM_TempMemADDRH, A                             ;Shove into scratch memory
+    mov1 C, COM_TempMemADDRH.7                          ;Move the 7th bit into the carry bit
+    bcc .SkipL
     eor A, #$FF                                         ;Invert to remove sign
     mov COM_ChannelVolumeOutput+X, A                    ;Return
     inc X
     .SkipL:                                             ;Grab R index
     mov A, COM_ChannelVolumeOutput+X                    ;Shove the output volume into A
+    mov COM_TempMemADDRH, A                             ;Shove into scratch memory
+    mov1 C, COM_TempMemADDRH.7                          ;Move the 7th bit into the carry bit
+    bcc .SkipMono
     eor A, #$FF                                         ;Invert to remove sign
     mov COM_ChannelVolumeOutput+X, A                    ;Return
     .SkipMono:
-
-    mov X, COM_EffectChannel                            ;Grab channel index
-    mov A, X                                            ;Shove into A for maffs
+    
+    ;Apply Volume
+    mov A, COM_EffectChannel                            ;Grab channel index
     asl A                                               ;Mult by 2
     push A                                              ;Shove value to stack
     mov A, COM_EffectChannel                            ;Grab channel index
@@ -833,7 +838,7 @@ DriverLoop:                         ;Main driver loop
     mov SPC_RegADDR, A                                  ;Shove A to addr
     mov SPC_RegData, Y                                  ;Shove Master volume into R
 
-    ;Pitch
+    ;Apply Pitch
     mov X, COM_EffectChannel                            ;Grab channel index
     mov A, X                                            ;Shove index into A
     asl A                                               ;Multiply by 2
@@ -1016,7 +1021,7 @@ InstrumentMemory:
 .EndOfInstrument:
 
 SequenceMemory:
-%SetSpeed($40)
+%SetSpeed($10)
 %SetNoise($1F)
 %SetDelayTime(4)
 %SetDelayVolume($40, $20)
@@ -1033,6 +1038,11 @@ SequenceMemory:
 %SetInstrument($0, $0)
 %SetInstrument($1, $1)
 %SetInstrument($2, $2)
+%SetInstrument($0, $3)
+%SetInstrument($1, $4)
+%SetInstrument($2, $5)
+%SetInstrument($0, $6)
+%SetInstrument($1, $7)
 ;%SetTremo(0, $FF)
 ;%SetVib(0, $44)
 ;%SetInstrument($3, $8)
@@ -1048,10 +1058,10 @@ SequenceMemory:
 %SetDelayCoefficient(5, $02)
 %SetDelayCoefficient(6, $01)
 %SetDelayCoefficient(7, $00)
-%PlayPitch($800C, 0);Write note in
-;%PlayPitch($0008, 1);Write note in
-;%PlayPitch($0010, 2);Write note in
-;%PlayPitch($0020, 3);Write note in
+%PlayPitch($8008, 0);Write note in
+%PlayPitch($8007, 1);Write note in
+%PlayPitch($8006, 2);Write note in
+%PlayPitch($8005, 3);Write note in
 db COM_EndRow
 Engine_End:
 
