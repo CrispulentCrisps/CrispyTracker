@@ -43,7 +43,7 @@ mov COM_TrackSettings, #$00     ;Set the track settings
 %spc_write(DSP_EVOL_R, $40)
 %spc_write(DSP_ESA, $BF)
 %spc_write(DSP_EDL, $00)
-%spc_write(DSP_EFB, $60)
+%spc_write(DSP_EFB, $20)
 
 %spc_write(DSP_DIR, $20)
 
@@ -235,7 +235,7 @@ DriverLoop:                         ;Main driver loop
     mov X, #0                   ;Reset X to 0 since we know the command type
     mov A, (COM_SequencePos+X)  ;Grab position of counter
     incw COM_SequencePos        ;Increments the sequence pos pointer
-    mov COM_TrackSpeed, A       ;Shove Track speed into zp
+    mov COM_TickThresh, A       ;Shove Track speed into zp
     jmp .ReadRows
 
 .PlayNote:
@@ -248,6 +248,7 @@ DriverLoop:                         ;Main driver loop
     push A                                  ;Save A value
     mov X, A
     push A
+    mov COM_TempScratchMem, A               ;Store index for KON
     mov Y, #0
     
     mov A, COM_ChannelVibratoValue          ;Grab vib value
@@ -272,6 +273,7 @@ DriverLoop:                         ;Main driver loop
     xcn A                                   ;Swap hi and lo nibbles
     or A, #DSP_V0_PITCHH                    ;Or A with DSP_V0_PITCHH
     mov Y, A                                ;Shove A into Y
+    mov X, #0                               ;Reset X
     mov A, (COM_SequencePos+X)              ;Grab the sequence position and store in A
     mov X, A                                ;Store value into stack
     pop A                                   ;Grab channel index
@@ -301,9 +303,7 @@ DriverLoop:                         ;Main driver loop
     mov SPC_RegADDR, Y                      ;Get to the Lo pitch
     mov SPC_RegData, A
     incw COM_SequencePos                    ;Increments the sequence pos pointer
-    mov A, Y                                ;Load Y into A
-    xcn A
-    mov X, A                                ;Shove channel index into X
+    mov X, COM_TempScratchMem               ;Grab index from memory
     mov A, ChannelTable+X
     or A, COM_KONState
     mov COM_KONState, A
@@ -313,21 +313,19 @@ DriverLoop:                         ;Main driver loop
 
 .SetInstrument:
     mov X, #0                                           ;Reset X to 0 since we know the command type
-    mov A, (COM_SequencePos+X)                          ;Grab position of counter
+    mov A, (COM_SequencePos+X)                          ;Grab instrument index
     incw COM_SequencePos                                ;Increments the sequence pos pointer
     push Y                                              ;Store Y in stack
                                                         ;Grab the right position in memory
     mov COM_TempMemADDRL, #InstrumentMemory&$FF
     mov COM_TempMemADDRH, #(InstrumentMemory>>8)&$FF
     mov X, A                                            ;Shove index into X to shut the assembler up
-    mov COM_ChannelInstrumentIndex+X, Y                 ;Shove instrument index into the index array in zp
+    mov COM_ChannelInstrumentIndex+Y, X                 ;Shove instrument index into the index array in zp
     mov Y, #8                                           ;Multiply the offset by 8, since instruments are 8 bytes large
-    mul YA
-    addw YA, COM_TempMemADDRL
-    mov COM_TempMemADDRH, Y
-    mov COM_TempMemADDRL, A
-    mov Y, #0
-    mov A, (COM_TempMemADDRL)+Y                         ;Goto point in memory and then store in A
+    mul YA                                              ;Multiply
+    addw YA, COM_TempMemADDRL                           ;Add on the offset to the inst pointer
+    mov COM_TempMemADDRH, Y                             ;Apply
+    mov COM_TempMemADDRL, A                             ;Apply
 
     ;Set ADSR1
     mov Y, #2
@@ -354,7 +352,7 @@ DriverLoop:                         ;Main driver loop
     mov SPC_RegADDR, A              ;Put in the channel addr
     pop A
     mov SPC_RegData, A              ;Shove in value from stack into A and into this
-    
+
     ;Set Gain
     mov Y, #4
     mov A, (COM_TempMemADDRL)+Y     ;Goto point in memory and then store in A
@@ -368,7 +366,7 @@ DriverLoop:                         ;Main driver loop
     pop A
     mov SPC_RegData, A              ;Shove in value from stack into A and into this
 
-    ;Set Effect state [Currently broken]
+    ;Set Effect state
     mov Y, #5
     mov A, (COM_TempMemADDRL)+Y         ;Goto point in memory and then store in A
     pop X                               ;Grab channel index
@@ -378,6 +376,7 @@ DriverLoop:                         ;Main driver loop
     mov A, ChannelTable+X               ;Shove in the bitmask index using the channel index
     eor A, #$FF                         ;Grab the inverse of said mask
     and A, COM_PModState                ;Apply mask to PModState
+    mov COM_PModState, A                ;Apply
     pop A                               ;Grab effect state and put into A
     push A                              ;Store for later use
     and A, #%00000001                   ;Grab the first bit
@@ -393,6 +392,7 @@ DriverLoop:                         ;Main driver loop
     mov A, ChannelTable+X               ;Shove in the bitmask index using the channel index
     eor A, #$FF                         ;Grab the inverse of said mask
     and A, COM_NoiseState               ;Apply mask to NoiseState
+    mov COM_NoiseState, A               ;Apply
     pop A                               ;Grab effect state and put into A
     push A                              ;Store for later use
     and A, #%00000010                   ;Grab the first bit
@@ -408,6 +408,7 @@ DriverLoop:                         ;Main driver loop
     mov A, ChannelTable+X               ;Shove in the bitmask index using the channel index
     eor A, #$FF                         ;Grab the inverse of said mask
     and A, COM_EchoState                ;Apply mask to EchoState
+    mov COM_EchoState, A                ;Apply
     pop A                               ;Grab effect state and put into A
     push A                              ;Store for later use
     and A, #%00000100                   ;Grab the first bit
@@ -594,7 +595,7 @@ DriverLoop:                         ;Main driver loop
     jmp .EffectsProcess     ;Process effects
     .ContinueIncrement:
     inc X                   ;Increment our counter
-    cmp X, COM_TrackSpeed   ;Check if the counter has reached the 
+    cmp X, COM_TickThresh   ;Check if the counter has reached the 
     ;cmp X, #$31             ;Check if the counter has reached the threshold
     bmi .TickIncrement      ;Go back to the tick incrementer if the counter is not
                             ;Assuming we've hit the threshold
@@ -789,7 +790,7 @@ DriverLoop:                         ;Main driver loop
     
     ;-------------------;
     ;    Apply Effect   ;
-    ;-------------------;
+    ;-------------------;f
     ;Volume/Panning
     mov A, COM_EffectChannel                            ;Grab channel index
     asl A                                               ;Mult by 2
@@ -1015,17 +1016,17 @@ CoeffecientTable:   ;Writes the value for the coeffecient index
     db DSP_C7
 
 InstrumentMemory:
-%WriteInstrument($80, $7F, $FF, $F0, $7F, $00, $00, $40)
-%WriteInstrument($7F, $80, $FF, $F0, $7F, $00, $00, $60)
-%WriteInstrument($80, $80, $FF, $F0, $7F, $00, $00, $80)
+%WriteInstrument($80, $7F, $FF, $F0, $7F, %00000000, $00, $40)
+%WriteInstrument($7F, $80, $FF, $F0, $7F, %00000000, $00, $60)
+%WriteInstrument($80, $80, $FF, $F0, $7F, %00000000, $00, $80)
 .EndOfInstrument:
 
 SequenceMemory:
 %SetSpeed($10)
 %SetNoise($1F)
 %SetDelayTime(4)
-%SetDelayVolume($40, $20)
-%SetDelayFeedback($7F)
+%SetDelayVolume($20, $20)
+%SetDelayFeedback($50)
 %SetMasterVolume($7F, $7F)
 %SetChannelVolume(0, $7F, $7F)
 %SetChannelVolume(1, $6F, $6F)
@@ -1035,21 +1036,10 @@ SequenceMemory:
 %SetChannelVolume(5, $2F, $2F)
 %SetChannelVolume(6, $1F, $1F)
 %SetChannelVolume(7, $0F, $0F)
-%SetInstrument($0, $0)
-%SetInstrument($1, $1)
-%SetInstrument($2, $2)
-%SetInstrument($0, $3)
-%SetInstrument($1, $4)
-%SetInstrument($2, $5)
-%SetInstrument($0, $6)
-%SetInstrument($1, $7)
+%SetInstrument(0, $0)
+%SetInstrument(1, $1)
 ;%SetTremo(0, $FF)
 ;%SetVib(0, $44)
-;%SetInstrument($3, $8)
-;%SetInstrument($4, $10)
-;%SetInstrument($5, $20)
-;%SetInstrument($6, $40)
-;%SetInstrument($7, $80)
 %SetDelayCoefficient(0, $40)
 %SetDelayCoefficient(1, $20)
 %SetDelayCoefficient(2, $10)
@@ -1058,10 +1048,8 @@ SequenceMemory:
 %SetDelayCoefficient(5, $02)
 %SetDelayCoefficient(6, $01)
 %SetDelayCoefficient(7, $00)
-%PlayPitch($8008, 0);Write note in
-%PlayPitch($8007, 1);Write note in
-%PlayPitch($8006, 2);Write note in
-%PlayPitch($8005, 3);Write note in
+%PlayPitch($8008, $0)
+%PlayPitch($8004, $1)
 db COM_EndRow
 Engine_End:
 

@@ -5,7 +5,7 @@
 namespace COM
 TempMemADDRL =              $00     ;General purpose addr LO
 TempMemADDRH =              $01     ;General purpose addr HI
-TickAccum =                 $02     ;Accumulator for the tick amount
+TempScratchMem =            $02     ;Temporary memory to screw with
 TickThresh =                $03     ;Equivelant to track speed
 SequencePos =               $04     ;Position within the sequence stream [Goes across 2 bytes]
 KONState =                  $06     ;Holds the current bitfield state of KON
@@ -45,8 +45,7 @@ ChannelVolumeOutput =       $B0     ;Array of pitches written to for every new n
 ChannelInstrumentIndex =    $C0     ;Array of Instrument indexes
 
 ;General Tracker State
-TrackSpeed =                $C8     ;Holds the track speed for the track
-TrackSettings =             $C9     ;Holds the track settings [refer to DriverRequirements.txt]
+TrackSettings =             $C8     ;Holds the track settings [refer to DriverRequirements.txt]
 ;Commands
 
     ;Row commands
