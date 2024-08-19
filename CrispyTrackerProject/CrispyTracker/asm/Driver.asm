@@ -216,7 +216,7 @@ DriverLoop:                         ;Main driver loop
 
 .RetPbrSet:
     cmp Y, #8               ;Compare Y to see if we're setting the effects bitfield
-    beq .GotoSetPanbrValue  ;otherwise if it's = 0 then we go to set the vibrato value
+    bmi .GotoSetPanbrValue  ;otherwise if it's = 0 then we go to set the vibrato value
 
 .GotoSetArpValue:
     jmp .SetArpValue
@@ -266,8 +266,6 @@ DriverLoop:                         ;Main driver loop
     mov COM_TriangleCounterTremo+X, Y       ;Reset Triangle counter
     mov COM_TriangleStateTremo+X, A         ;Reset Triangle state
 
-    mov COM_TriangleCounterPanbr+X, Y       ;Reset Triangle counter
-    mov COM_TriangleStatePanbr+X, Y         ;Reset Triangle state
     mov COM_TriangleSignHolder, Y           ;Reset Triangle state
     pop A
     xcn A                                   ;Swap hi and lo nibbles
@@ -582,7 +580,14 @@ DriverLoop:                         ;Main driver loop
     jmp .ReadRows
 
 .SetPanbrValue:
-
+    mov X, #0                           ;Reset X to 0 since we know the command type
+    mov A, (COM_SequencePos+X)          ;Grab position of counter
+    incw COM_SequencePos                ;Increments the sequence pos pointer
+    mov COM_ChannelPanbrelloValue+Y, A  ;Apply value to memory
+    and A, #$F0                         ;Grab speed
+    xcn A                               ;Swap Nibble
+    asl A                               ;Multiply by 2
+    mov COM_TriangleStatePanbr+Y, A     ;Set triangle 
     jmp .ReadRows
 
 .TickRoutine:               ;Routine for incrementing the tick counter and postiion within the track
@@ -606,6 +611,7 @@ DriverLoop:                         ;Main driver loop
 
     .ForEffects:
     push X                          ;Store away the current tick for after the effects processing
+    call CountTriangle                  ;Call triangle subroutine
 
     ;------------------;
     ;    Volume Mix    ;
@@ -706,7 +712,6 @@ DriverLoop:                         ;Main driver loop
     mov COM_TempPitchProcess, #0        ;Reset temp pitch process so as to not fuck up other parts
     mov COM_TempPitchProcess+1, #0      ;Reset temp pitch process so as to not fuck up other parts
     mov COM_TempMemADDRL, #0
-    call CountTriangle                  ;Call triangle subroutine
     ;Depth
     mov X, COM_EffectChannel            ;Grab channel index
     mov A, COM_ChannelVibratoValue+X    ;Grab vibrato value
@@ -742,11 +747,11 @@ DriverLoop:                         ;Main driver loop
     mov A, COM_ChannelTremolandoValue+X ;Grab the channel tremo value
     cmp A, #0                           ;Check if the tremovalue is 0 to avoid *0 or /0
     beq .SkipTremo                      ;Skip if equal to 0
-    call CountTriangle                  ;Call triangle subroutine
     mov A, COM_ChannelTremolandoValue+X ;Grab the channel tremo value
     and A, #$0F                         ;Grab depth
     mov Y, A                            ;Shove depth into Y
     mov A, COM_TriangleCounterTremo+X   ;Grab triangle value
+    mov COM_TempMemADDRL, A
     lsr A                               ;Divide by 2
     lsr A                               ;Divide by 2
     lsr A                               ;Divide by 2
@@ -787,20 +792,53 @@ DriverLoop:                         ;Main driver loop
     ;-------------------;
     ;     Panbrello     ;
     ;-------------------;
-    
+    mov X, COM_EffectChannel            ;Shove channel index into X
+    mov A, COM_ChannelPanbrelloValue+X  ;Grab panbr value 
+    cmp A, #0                           ;Check if it's 0
+    beq .SkipPanbr                      ;if so then skip the panbr code
+    and A, #$0F                         ;Grab depth nibble
+    mov Y, A                            ;Store into Y for multiplication
+    mov A, COM_TriangleCounterPanbr+X   ;Shove in triangle counter value
+    lsr A                               ;Div 2
+    lsr A                               ;Div 4
+    lsr A                               ;Div 8
+    lsr A                               ;Div 16
+    call SignedMul                      ;Mult to get total volume influence
+    mov COM_TempScratchMem, A           ;Store panbrello influence to temp memory
+    ;Left
+    mov COM_TempMemADDRL, A             ;Return value
+    ;Right
+    not1 COM_TempScratchMem.7           ;Invert Sign bit
+    mov A, COM_TempScratchMem           ;Shove into A
+    mov COM_TempMemADDRH, A             ;Return value
+    ;Apply
+    mov A, COM_TempVolumeProcess        ;Grab current volume change
+    adc A, COM_TempMemADDRL             ;Add together
+    mov COM_TempVolumeProcess, A        ;Return
+    mov A, COM_TempVolumeProcess+1      ;Grab current volume change
+    sbc A, COM_TempMemADDRH             ;Sub together
+    mov COM_TempVolumeProcess+1, A      ;Return
+    .SkipPanbr:
+
     ;-------------------;
     ;    Apply Effect   ;
-    ;-------------------;f
+    ;-------------------;
     ;Volume/Panning
     mov A, COM_EffectChannel                            ;Grab channel index
     asl A                                               ;Mult by 2
     mov X, A
     mov A, COM_ChannelVolumeOutput+X                    ;Shove the output volume into A
     adc A, COM_TempVolumeProcess                        ;Add volume offset
+    bvc .SkipLCorr                                      ;Skip if the overflow isn't set
+    eor A, $FF
+    .SkipLCorr:
     mov COM_ChannelVolumeOutput+X, A                    ;Apply offset
     inc X
     mov A, COM_ChannelVolumeOutput+X                    ;Shove the output volume into A
     adc A, COM_TempVolumeProcess+1                      ;Add volume offset
+    bvc .SkipRCorr                                      ;Skip if the overflow isn't set
+    eor A, $FF
+    .SkipRCorr:
     mov COM_ChannelVolumeOutput+X, A                    ;Apply offset
 
     ;Stereo switch
@@ -826,10 +864,9 @@ DriverLoop:                         ;Main driver loop
     ;Apply Volume
     mov A, COM_EffectChannel                            ;Grab channel index
     asl A                                               ;Mult by 2
-    push A                                              ;Shove value to stack
+    mov X, A                                            ;Shove multiplied index into X
     mov A, COM_EffectChannel                            ;Grab channel index
     xcn A                                               ;Swap nibbles
-    pop X                                               ;Grab index from stack
     mov Y, COM_ChannelVolumeOutput+X                    ;Shove the output volume into Y
     mov SPC_RegADDR, A                                  ;Shove A to addr
     mov SPC_RegData, Y                                  ;Shove Master volume into L
@@ -991,10 +1028,10 @@ SignedMul:
 fill $2000-pc()
 assert pc() == $2000
 
-;Test sine sample + dir page
-db $04,$20,$04,$20
+;Test sine+saw sample + dir page
+db $08,$20,$08,$20,$23,$20,$23,$20
 db $84, $17, $45, $35, $22, $22, $31, $21, $10, $68, $01, $21, $0D, $01, $08, $0B, $C3, $3E, $5B, $09, $8B, $D7, $B1, $E0, $BC, $AF, $78
-
+db $B8, $87, $1F, $00, $F1, $0F, $1F, $00, $00, $8F, $E1, $13, $12, $2D, $52, $14, $10, $F7
 ChannelTable:   ;Writes the value for the channel bitfield
     db $01
     db $02
@@ -1016,13 +1053,13 @@ CoeffecientTable:   ;Writes the value for the coeffecient index
     db DSP_C7
 
 InstrumentMemory:
-%WriteInstrument($80, $7F, $FF, $F0, $7F, %00000000, $00, $40)
-%WriteInstrument($7F, $80, $FF, $F0, $7F, %00000000, $00, $60)
-%WriteInstrument($80, $80, $FF, $F0, $7F, %00000000, $00, $80)
+%WriteInstrument($7F, $7F, $FF, $80, $7F, %00000000, $01, $40)
+%WriteInstrument($7F, $80, $FF, $80, $7F, %00000000, $01, $60)
+%WriteInstrument($80, $80, $FF, $80, $7F, %00000000, $01, $80)
 .EndOfInstrument:
 
 SequenceMemory:
-%SetSpeed($10)
+%SetSpeed($60)
 %SetNoise($1F)
 %SetDelayTime(4)
 %SetDelayVolume($20, $20)
@@ -1038,6 +1075,7 @@ SequenceMemory:
 %SetChannelVolume(7, $0F, $0F)
 %SetInstrument(0, $0)
 %SetInstrument(1, $1)
+%SetPabr(0, $4F)
 ;%SetTremo(0, $FF)
 ;%SetVib(0, $44)
 %SetDelayCoefficient(0, $40)
@@ -1049,7 +1087,7 @@ SequenceMemory:
 %SetDelayCoefficient(6, $01)
 %SetDelayCoefficient(7, $00)
 %PlayPitch($8008, $0)
-%PlayPitch($8004, $1)
+;%PlayPitch($8004, $1)
 db COM_EndRow
 Engine_End:
 

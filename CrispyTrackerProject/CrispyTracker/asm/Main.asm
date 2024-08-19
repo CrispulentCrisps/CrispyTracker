@@ -52,19 +52,19 @@ LoadDriver:
     bne .CheckPorts             ;Go to .CheckPorts if the compare fails
 
 .WriteToPorts:
-    lda.b #DriverStart&$FF      ;Load last byte to the A register
-    sta.w HW_APUI02             ;Sends A value into HW_APUI02
-    lda.b #(DriverStart>>8)&$FF ;Load first byte to the A register
-    sta.w HW_APUI03             ;Sends A value into HW_APUI03
-    lda.b #$01                  ;Load first byte to the A register
-    sta.w HW_APUI01             ;Sends A value into HW_APUI01
-    lda.b #$CC                  ;Load first byte to the A register
-    sta.w HW_APUI00             ;Sends A value into HW_APUI00
+    lda.b #DriverStart&$FF              ;Load last byte to the A register
+    sta.w HW_APUI02                     ;Sends A value into HW_APUI02
+    lda.b #(DriverStart>>8)&$FF         ;Load first byte to the A register
+    sta.w HW_APUI03                     ;Sends A value into HW_APUI03
+    lda.b #$01                          ;Load first byte to the A register
+    sta.w HW_APUI01                     ;Sends A value into HW_APUI01
+    lda.b #$CC                          ;Load first byte to the A register
+    sta.w HW_APUI00                     ;Sends A value into HW_APUI00
 
 .ReadPort0:
-    lda.w HW_APUI00             ;Load in the value held in APU-0
-    cmp.b #$CC                  ;Compare if the current value in APU-0 is 0xCC
-    bne .ReadPort0              ;Go to .ReadPort0 if the compare fails
+    lda.w HW_APUI00                     ;Load in the value held in APU-0
+    cmp.b #$CC                          ;Compare if the current value in APU-0 is 0xCC
+    bne .ReadPort0                      ;Go to .ReadPort0 if the compare fails
 
     lda.b #ROM_Engine_Start&$FF         ;Loads first byte of the address into A
     sta.b $0                            ;Load 0 into zeropage

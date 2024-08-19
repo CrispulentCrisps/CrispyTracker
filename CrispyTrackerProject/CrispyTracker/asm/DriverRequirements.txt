@@ -25,17 +25,6 @@ Process effects including:
 	- Flag communication between the main CPU and SPC-700
 	- Halting tune
 
-Effects are stored in a bitfield as
-	- arp_flag = 		1
-	- port_flag = 		2
-	- vibrato_flag = 	4
-	- tremo_flag = 		8
-	- panbrello_flag = 	16
-	- volslide_flag = 	32
-	- port_to_flag = 	64
-	- port_ctrl_flag = 	128
-
-
 Have patterns to repeat written sequences of notes
 Store samples as brr files
 Allow for multiple tracks in a single SPC file

@@ -155,4 +155,9 @@ macro SetVolSlide(C, V)
 db $78+<C>
 db <V>
 endmacro
+
+macro SetPabr(C, V)
+db $80+<C>
+db <V>
+endmacro
 namespace off
