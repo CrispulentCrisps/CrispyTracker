@@ -790,20 +790,24 @@ DriverLoop:                         ;Main driver loop
     .SkipVolumeSlide:
     
     ;-------------------;
-    ;     Panbrello     ;
+    ;     Panbrello     ; [Known inversion issues with the volume]
     ;-------------------;
     mov X, COM_EffectChannel            ;Shove channel index into X
-    mov A, COM_ChannelPanbrelloValue+X  ;Grab panbr value 
+    mov A, COM_ChannelPanbrelloValue+X  ;Grab panbr value
     cmp A, #0                           ;Check if it's 0
     beq .SkipPanbr                      ;if so then skip the panbr code
     and A, #$0F                         ;Grab depth nibble
     mov Y, A                            ;Store into Y for multiplication
     mov A, COM_TriangleCounterPanbr+X   ;Shove in triangle counter value
-    lsr A                               ;Div 2
-    lsr A                               ;Div 4
-    lsr A                               ;Div 8
-    lsr A                               ;Div 16
-    call SignedMul                      ;Mult to get total volume influence
+    cmp A, #$80                         ;Store sign into carry
+    ror A                               ;Div 2
+    cmp A, #$80                         ;Store sign into carry
+    ror A                               ;Div 2
+    cmp A, #$80                         ;Store sign into carry
+    ror A                               ;Div 2
+    cmp A, #$80                         ;Store sign into carry
+    ror A                               ;Div 2
+    mul YA                              ;Mult to get total volume influence
     mov COM_TempScratchMem, A           ;Store panbrello influence to temp memory
     ;Left
     mov COM_TempMemADDRL, A             ;Return value
@@ -814,9 +818,16 @@ DriverLoop:                         ;Main driver loop
     ;Apply
     mov A, COM_TempVolumeProcess        ;Grab current volume change
     adc A, COM_TempMemADDRL             ;Add together
+    bvc .SkipOverflowL
+    eor A, $FF
+    .SkipOverflowL:
     mov COM_TempVolumeProcess, A        ;Return
     mov A, COM_TempVolumeProcess+1      ;Grab current volume change
+    setc
     sbc A, COM_TempMemADDRH             ;Sub together
+    bvc .SkipOverflowR
+    eor A, $FF
+    .SkipOverflowR:
     mov COM_TempVolumeProcess+1, A      ;Return
     .SkipPanbr:
 
@@ -1029,7 +1040,7 @@ fill $2000-pc()
 assert pc() == $2000
 
 ;Test sine+saw sample + dir page
-db $08,$20,$08,$20,$23,$20,$23,$20
+db $08,$20,$08,$20,$22,$20,$22,$20
 db $84, $17, $45, $35, $22, $22, $31, $21, $10, $68, $01, $21, $0D, $01, $08, $0B, $C3, $3E, $5B, $09, $8B, $D7, $B1, $E0, $BC, $AF, $78
 db $B8, $87, $1F, $00, $F1, $0F, $1F, $00, $00, $8F, $E1, $13, $12, $2D, $52, $14, $10, $F7
 ChannelTable:   ;Writes the value for the channel bitfield
@@ -1059,36 +1070,41 @@ InstrumentMemory:
 .EndOfInstrument:
 
 SequenceMemory:
-%SetSpeed($60)
-%SetNoise($1F)
-%SetDelayTime(4)
-%SetDelayVolume($20, $20)
-%SetDelayFeedback($50)
-%SetMasterVolume($7F, $7F)
-%SetChannelVolume(0, $7F, $7F)
-%SetChannelVolume(1, $6F, $6F)
-%SetChannelVolume(2, $5F, $5F)
-%SetChannelVolume(3, $4F, $4F)
-%SetChannelVolume(4, $3F, $3F)
-%SetChannelVolume(5, $2F, $2F)
-%SetChannelVolume(6, $1F, $1F)
-%SetChannelVolume(7, $0F, $0F)
-%SetInstrument(0, $0)
-%SetInstrument(1, $1)
-%SetPabr(0, $4F)
-;%SetTremo(0, $FF)
-;%SetVib(0, $44)
-%SetDelayCoefficient(0, $40)
-%SetDelayCoefficient(1, $20)
-%SetDelayCoefficient(2, $10)
-%SetDelayCoefficient(3, $08)
-%SetDelayCoefficient(4, $04)
-%SetDelayCoefficient(5, $02)
-%SetDelayCoefficient(6, $01)
-%SetDelayCoefficient(7, $00)
-%PlayPitch($8008, $0)
-;%PlayPitch($8004, $1)
-db COM_EndRow
+    .Seq1:
+    %SetSpeed($7F)
+    %SetNoise($1F)
+    %SetDelayTime(4)
+    %SetDelayVolume($20, $20)
+    %SetDelayFeedback($50)
+    %SetMasterVolume($7F, $7F)
+    %SetChannelVolume(0, $7F, $7F)
+    %SetChannelVolume(1, $6F, $6F)
+    %SetChannelVolume(2, $5F, $5F)
+    %SetChannelVolume(3, $4F, $4F)
+    %SetChannelVolume(4, $3F, $3F)
+    %SetChannelVolume(5, $2F, $2F)
+    %SetChannelVolume(6, $1F, $1F)
+    %SetChannelVolume(7, $0F, $0F)
+    %SetInstrument(0, $0)
+    %SetInstrument(1, $1)
+    ;%SetPabr(0, $4F)
+    ;%SetTremo(0, $FF)
+    ;%SetVib(0, $44)
+    %SetDelayCoefficient(0, $40)
+    %SetDelayCoefficient(1, $20)
+    %SetDelayCoefficient(2, $10)
+    %SetDelayCoefficient(3, $08)
+    %SetDelayCoefficient(4, $04)
+    %SetDelayCoefficient(5, $02)
+    %SetDelayCoefficient(6, $01)
+    %SetDelayCoefficient(7, $00)
+    %PlayPitch($8008, $0)
+    ;%PlayPitch($8004, $1)
+    db COM_EndRow
+
+PatternMemory:
+    
+
 Engine_End:
 
 arch 65816

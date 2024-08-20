@@ -43,9 +43,10 @@ ChannelPitches =            $90     ;Array of pitch values in each channel
 ChannelPitchesOutput =      $A0     ;Array of pitches written to for every new note
 ChannelVolumeOutput =       $B0     ;Array of pitches written to for every new note
 ChannelInstrumentIndex =    $C0     ;Array of Instrument indexes
+ChannelPatternIndex =       $C8     ;Array of Pattern indexes
 
 ;General Tracker State
-TrackSettings =             $C8     ;Holds the track settings [refer to DriverRequirements.txt]
+TrackSettings =             $D0     ;Holds the track settings [refer to DriverRequirements.txt]
 ;Commands
 
     ;Row commands

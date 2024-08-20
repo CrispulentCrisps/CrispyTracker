@@ -9,7 +9,7 @@
 hirom                           ;Sets the SNES mapping mode to HIROM
 
 incsrc "hardware.asm"           ;Include namespace HW which contains names for each memory and register addr in the SNES
-incsrc "Driver.asm"             ;Includes the audio driver Cobalt
+incsrc "DriverV2.asm"           ;Includes the audio driver Cobalt
 
 arch 65816                      ;sets the architecture to the 65816 CPU on the SNES
 
