@@ -69,7 +69,6 @@ Each row contains the following values:
 		//Controls
 		00, End Of Row, Skip, dicates that the end of the row has been reach, waits Skip rows 
 		01, Speed, S, Changes Tick threshold to S
-
 		//Note
 		1x, Play Note, Pitch : channel index, Pitch is an index into a pitch table, plays in channel X
 		1x+8, Play Note, Pitch : channel index, Pitch is an absolute pitch, plays in channel X

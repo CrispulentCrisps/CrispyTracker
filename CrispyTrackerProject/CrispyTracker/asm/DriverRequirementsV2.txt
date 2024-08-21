@@ -73,7 +73,9 @@ Each row contains the following values:
 
 		//Controls
 		02, Sleep, S, amount of rows to wait per row, done per channel
-
+		03, Goto, O, Goto order O within the track
+		04, Break, Resets the sequence pointers and increments the orders index
+		
 		//Note
 		10, Play Note, Pitch : Pitch is an index into a pitch table
 		11, Play Note, Pitch : Pitch is an absolute pitch
@@ -93,12 +95,14 @@ Each row contains the following values:
 		41, Set Volume, LPAN : RPAN, Sets the master volume of given channel [Also used in Panning effect. Used in conjunction with L/R inversion]
 
 		//Effects
-		48, Set Arp Value, A, puts XY into A	[Note 1 : Note 2]
-		50, Set Port Value, P, puts XX into P 	[Portamento Val]
-		58, Set Vib Value, V, puts XY into V 	[Speed : Depth]
-		60, Set Trem Value, T, puts XY into T 	[Speed : Depth]
-		68, Set Vol Slide Value, S, puts XY into S 	[Up : Down]
-		70, Set Pbr Value, B, puts XY into B	[Speed : Depth]
+		50, Set Arp Value, A, puts XY into A	[Note 1 : Note 2]
+		51, Set Port Value, P, puts XX into P 	[Portamento Val]
+		52, Set Vib Value, V, puts XY into V 	[Speed : Depth]
+		53, Set Trem Value, T, puts XY into T 	[Speed : Depth]
+		54, Set Vol Slide Value, S, puts XY into S 	[Up : Down]
+		55, Set Pbr Value, B, puts XY into B	[Speed : Depth]
+
+		FF, Stop, Stops the track from playing
 
 - Effects Processing -
 

@@ -2,51 +2,50 @@
 ;   Macro's file for Cobalt Driver  ;
 ;-----------------------------------;
 
-namespace COM
-TempMemADDRL =              $00     ;General purpose addr LO
-TempMemADDRH =              $01     ;General purpose addr HI
-TempScratchMem =            $02     ;Temporary memory to screw with
-TickThresh =                $03     ;Equivelant to track speed
-SequencePos =               $04     ;Position within the sequence stream [Goes across 2 bytes]
-KONState =                  $06     ;Holds the current bitfield state of KON
-FlagVal =                   $07     ;Holds the flag value
-ChannelVol =                $08     ;Holds the channel master volume [goes across 16 bytes]
+struct ZP $00
+.TempMemADDRL:              skip 1                  ;General purpose addr LO
+.TempMemADDRH:              skip 1                  ;General purpose addr HI
+.TempScratchMem:            skip 1                  ;Temporary memory to screw with
+.TickThresh:                skip 1                  ;Equivelant to track speed
+.KONState:                  skip 1                  ;Holds the current bitfield state of KON
+.FlagVal:                   skip 1                  ;Holds the flag value
+.ChannelVol:                skip 16                 ;Holds the channel master volume [goes across 16 bytes]
 
 ;Special
-NoiseState =                $18     ;Bitfield for the NON  register
-EchoState =                 $19     ;Bitfield for the EON  register
-PModState =                 $1A     ;Bitfield for the PMON register
-TempORStore =               $1B     ;Temporarily stores an OR'd value
-TempVolumeProcess =         $1C     ;Used to manipulate a volume value without actually changing said volume
-TempPitchProcess =          $1E     ;Holds the pitch
+.NoiseState:                skip 1                  ;Bitfield for the NON  register
+.EchoState:                 skip 1                  ;Bitfield for the EON  register
+.PModState:                 skip 1                  ;Bitfield for the PMON register
+.TempVolumeProcess:         skip 2                  ;Used to manipulate a volume value without actually changing said volume
+.TempPitchProcess:          skip 2                  ;Holds the pitch
 
 ;Effects
-TriangleCounterVibrato =    $20     ;LFO array for vibrato
-TriangleCounterTremo =      $28     ;LFO array for tremolando
-TriangleCounterPanbr =      $30     ;LFO array for panbrello
-TriangleStateVibrato =      $38     ;Array of traingle states
-TriangleStateTremo =        $40     ;Array of traingle states
-TriangleStatePanbr =        $48     ;Array of traingle states
-TriangleSignHolder =        $50     ;Holds the last triangle
-EffectChannel =             $51     ;Current channel we are processing effects on
+.CurrentChannel:            skip 1                  ;Current channel we are working with
+.SineTableDir:              skip 1                  ;Holds the state of the sine table inversion [YX inversion]
 
-ChannelArpValue =           $52     ;Array of values for the Arpeggio
-ChannelPortValue =          $5A     ;Array of values for the Portamento
-ChannelVibratoValue =       $6A     ;Array of values for the Vibrato
-ChannelTremolandoValue =    $72     ;Array of values for the Tremolando
-ChannelPanbrelloValue =     $7A     ;Array of values for the Panbrello
-ChannelVolSlideValue =      $82     ;Array of values for the Volume slide
+.ChannelArpValue:           skip 8                  ;Array of values for the Arpeggio
+.ChannelPortValue:          skip 8                  ;Array of values for the Portamento
+.ChannelVibratoValue:       skip 8                  ;Array of values for the Vibrato
+.ChannelTremolandoValue:    skip 8                  ;Array of values for the Tremolando
+.ChannelPanbrelloValue:     skip 8                  ;Array of values for the Panbrello
+.ChannelVolSlideValue:      skip 8                  ;Array of values for the Volume slide
 
-PortDir =                   $8A
-MulProductTemp =            $8B
-ChannelPitches =            $90     ;Array of pitch values in each channel
-ChannelPitchesOutput =      $A0     ;Array of pitches written to for every new note
-ChannelVolumeOutput =       $B0     ;Array of pitches written to for every new note
-ChannelInstrumentIndex =    $C0     ;Array of Instrument indexes
-ChannelPatternIndex =       $C8     ;Array of Pattern indexes
+.PortDir:                   skip 1
+.MulProductTemp:            skip 1
+.ChannelPitches:            skip 16                 ;Array of pitch values in each channel
+.ChannelPitchesOutput:      skip 16                 ;Array of pitches written to for every new note
+.ChannelVolumeOutput:       skip 16                 ;Array of pitches written to for every new note
+.ChannelInstrumentIndex:    skip 8                  ;Array of Instrument indexes
+.ChannelPatternIndex:       skip 8                  ;Array of Pattern indexes
+
+.SequenceAddr:              skip 16                 ;Array of sequence address pointers
+.OrderPos:                  skip 1                  ;Position we are within the orders table
+.OrderChangeFlag:           skip 1                  ;Flag for when we need to load in the next order sequence
+.ChannelSleepCounter:       skip 8                  ;Array of sleep counters
 
 ;General Tracker State
-TrackSettings =             $D0     ;Holds the track settings [refer to DriverRequirements.txt]
+.TrackSettings:             skip 1                  ;Holds the track settings [refer to DriverRequirements.txt]
+
+endstruct
 ;Commands
 
     ;Row commands
@@ -57,14 +56,28 @@ db $01
 db <S>
 endmacro
 
-    ;Note play
-macro PlayNote(P, C)    ;Plays note in note table
-db $10+<C>
+macro Sleep(S)          ;Sleeps for S amount of rows
+db $02
+db <S>
+endmacro
+
+macro Goto(P)          ;Break to new order
+db $03
 db <P>
 endmacro
 
-macro PlayPitch(P, C)   ;Plays absolute pitch value
-db $18+<C>
+macro Break()          ;Goto order P
+db $04
+endmacro
+
+    ;Note play
+macro PlayNote(P)       ;Plays note in note table
+db $10
+db <P>
+endmacro
+
+macro PlayPitch(P)      ;Plays absolute pitch value
+db $11
 dw <P>
 endmacro
 
@@ -80,8 +93,8 @@ db <SI>     ;Sample index
 db <P>      ;Priority
 endmacro
 
-macro SetInstrument(C, I)
-db $20+<C>
+macro SetInstrument(I)
+db $20
 db <I>
 endmacro
 
@@ -119,46 +132,44 @@ db <L>
 db <R>
 endmacro
 
-macro SetChannelVolume(C, L, R)   ;Set Channel Volume
-db $41+<C>
+macro SetChannelVolume(L, R)   ;Set Channel Volume
+db $41
 db <L>
 db <R>
 endmacro
 
     ;Effects commands
-macro SetEffectBitfield(C, V)
-db $50+<C>
+macro SetArpValue(V)
+db $50
 db <V>
 endmacro
 
-macro SetArpValue(C, V)
-db $58+<C>
-db <V>
-endmacro
-
-macro SetPort(C, V, D)
-db $60+<C>
+macro SetPort(V, D)
+db $51
 db <V>
 db <D>
 endmacro
 
-macro SetVib(C, V)
-db $68+<C>
+macro SetVib(V)
+db $52
 db <V>
 endmacro
 
-macro SetTremo(C, V)
-db $70+<C>
+macro SetTremo(V)
+db $53
 db <V>
 endmacro
 
-macro SetVolSlide(C, V)
-db $78+<C>
+macro SetVolSlide(V)
+db $54
 db <V>
 endmacro
 
-macro SetPabr(C, V)
-db $80+<C>
+macro SetPabr(V)
+db $55
 db <V>
 endmacro
-namespace off
+
+macro Stop()
+db $FF
+endmacro
