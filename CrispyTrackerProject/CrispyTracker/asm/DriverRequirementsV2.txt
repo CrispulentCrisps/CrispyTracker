@@ -68,41 +68,40 @@ Each row contains the following values:
 		[xx, name, args : args, information]
 		
 		//Global
-		00, End Of Row, Skip, dicates that the end of the row has been reach, waits Skip rows 
-		01, Speed, S, Changes Tick threshold to S
+		00, Speed, S, Changes Tick threshold to S
 
 		//Controls
-		02, Sleep, S, amount of rows to wait per row, done per channel
-		03, Goto, O, Goto order O within the track
-		04, Break, Resets the sequence pointers and increments the orders index
+		01, Sleep, S, amount of rows to wait per row, done per channel
+		02, Goto, O, Goto order O within the track
+		03, Break, Resets the sequence pointers and increments the orders index
 		
 		//Note
-		10, Play Note, Pitch : Pitch is an index into a pitch table
-		11, Play Note, Pitch : Pitch is an absolute pitch
+		04, Play Note, Pitch : Pitch is an index into a pitch table
+		05, Play Note, Pitch : Pitch is an absolute pitch
 
 		//Instrument
-		20, Set Instrument, Index
+		06, Set Instrument, Index
 		
 		//Special
-		30, Set Noise Value, Pitch, takes in a 5 bit value for the noise pitch. Noise is universal across the SNES
-		31, Echo Delay, D, Sets the delay amount for the echo [note: due to the nature of echo this can be EXTREMELY VOLATILE, so checks will absolutely have to be in place]
-		32, Echo Volume, L : R, Sets the L+R volume for the echo
-		33, Echo Feedback, F, Sets the feedback of the echo
-		3x+4, Echo Coeffecients, C, Sets the filter coeffecients [note: Values < -128 or > 127 can cause issues]
+		07, Set Noise Value, Pitch, takes in a 5 bit value for the noise pitch. Noise is universal across the SNES
+		08, Echo Delay, D, Sets the delay amount for the echo [note: due to the nature of echo this can be EXTREMELY VOLATILE, so checks will absolutely have to be in place]
+		09, Echo Volume, L : R, Sets the L+R volume for the echo
+		0A, Echo Feedback, F, Sets the feedback of the echo
+		0B-12, Echo Coeffecients, C, Sets the filter coeffecients [note: Values < -128 or > 127 can cause issues]
 
 		//Volume
-		40, Set Master Volume, LPAN : RPAN
-		41, Set Volume, LPAN : RPAN, Sets the master volume of given channel [Also used in Panning effect. Used in conjunction with L/R inversion]
+		13, Set Master Volume, LPAN : RPAN
+		14, Set Volume, LPAN : RPAN, Sets the master volume of given channel [Also used in Panning effect. Used in conjunction with L/R inversion]
 
 		//Effects
-		50, Set Arp Value, A, puts XY into A	[Note 1 : Note 2]
-		51, Set Port Value, P, puts XX into P 	[Portamento Val]
-		52, Set Vib Value, V, puts XY into V 	[Speed : Depth]
-		53, Set Trem Value, T, puts XY into T 	[Speed : Depth]
-		54, Set Vol Slide Value, S, puts XY into S 	[Up : Down]
-		55, Set Pbr Value, B, puts XY into B	[Speed : Depth]
+		15, Set Arp Value, A, puts XY into A	[Note 1 : Note 2]
+		16, Set Port Value, P, puts XX into P 	[Portamento Val]
+		17, Set Vib Value, V, puts XY into V 	[Speed : Depth]
+		18, Set Trem Value, T, puts XY into T 	[Speed : Depth]
+		19, Set Vol Slide Value, S, puts XY into S 	[Up : Down]
+		1A, Set Pbr Value, B, puts XY into B	[Speed : Depth]
 
-		FF, Stop, Stops the track from playing
+		1B, Stop, Stops the track from playing
 
 - Effects Processing -
 

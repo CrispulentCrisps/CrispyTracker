@@ -20,7 +20,6 @@ struct ZP $00
 
 ;Effects
 .CurrentChannel:            skip 1                  ;Current channel we are working with
-.SineTableDir:              skip 1                  ;Holds the state of the sine table inversion [YX inversion]
 
 .ChannelArpValue:           skip 8                  ;Array of values for the Arpeggio
 .ChannelPortValue:          skip 8                  ;Array of values for the Portamento
@@ -49,35 +48,58 @@ endstruct
 ;Commands
 
     ;Row commands
-EndRow =                    $00
+
+struct RC $00
+.SetSpeed       skip 1  ;Sets tick threshold for track
+.Sleep          skip 1  ;Sleeps for S amount of rows
+.Goto           skip 1  ;Break to new order
+.Break          skip 1  ;Goto order
+.PlayNote       skip 1  ;Plays note in note table
+.PlayPitch      skip 1  ;Plays absolute pitch value
+.SetInstrument  skip 1  ;
+.SetNoiseValue  skip 1  ;
+.EchoDelay      skip 1  ;
+.EchoVolume     skip 1  ;
+.EchoFeedback   skip 1  ;
+.EchoCoeff      skip 1  ;
+.MasterVol      skip 1  ;
+.ChannelVol     skip 1  ;
+.SetArp         skip 1  ;
+.SetPort        skip 1  ;
+.SetVibrato     skip 1  ;
+.SetTremo       skip 1  ;
+.SetVolSlide    skip 1  ;
+.SetPanbrello   skip 1  ;
+.Stop           skip 1  ;
+endstruct
 
 macro SetSpeed(S)       ;Sets tick threshold for track
-db $01
+db RC.SetSpeed
 db <S>
 endmacro
 
 macro Sleep(S)          ;Sleeps for S amount of rows
-db $02
+db RC.Sleep
 db <S>
 endmacro
 
 macro Goto(P)          ;Break to new order
-db $03
+db RC.Goto
 db <P>
 endmacro
 
 macro Break()          ;Goto order P
-db $04
+db RC.Break
 endmacro
 
     ;Note play
 macro PlayNote(P)       ;Plays note in note table
-db $10
+db RC.PlayNote
 db <P>
 endmacro
 
 macro PlayPitch(P)      ;Plays absolute pitch value
-db $11
+db RC.PlayPitch
 dw <P>
 endmacro
 
@@ -94,82 +116,82 @@ db <P>      ;Priority
 endmacro
 
 macro SetInstrument(I)
-db $20
+db RC.SetInstrument
 db <I>
 endmacro
 
     ;Special
 macro SetNoise(V)       ;Set noise value in flag register
-db $30
+db RC.SetNoiseValue
 db <V>
 endmacro
 
 macro SetDelayTime(V)   ;Set Echo delay value
-db $31
+db RC.EchoDelay
 db <V>
 endmacro
 
 macro SetDelayVolume(L, R)   ;Set Echo delay volume
-db $32
+db RC.EchoVolume
 db <L>
 db <R>
 endmacro
 
 macro SetDelayFeedback(V)   ;Set Echo delay volume
-db $33
+db RC.EchoFeedback
 db <V>
 endmacro
 
 macro SetDelayCoefficient(C, V)   ;Set Echo delay coeffecients
-db $34+<C>
+db RC.EchoCoeff+<C>
 db <V>
 endmacro
 
     ;Volume
 macro SetMasterVolume(L, R)   ;Set Master volume
-db $40
+db RC.MasterVol
 db <L>
 db <R>
 endmacro
 
 macro SetChannelVolume(L, R)   ;Set Channel Volume
-db $41
+db RC.ChannelVol
 db <L>
 db <R>
 endmacro
 
     ;Effects commands
 macro SetArpValue(V)
-db $50
+db RC.SetArp
 db <V>
 endmacro
 
 macro SetPort(V, D)
-db $51
+db RC.SetPort
 db <V>
 db <D>
 endmacro
 
 macro SetVib(V)
-db $52
+db RC.SetVibrato
 db <V>
 endmacro
 
 macro SetTremo(V)
-db $53
+db RC.SetTremo
 db <V>
 endmacro
 
 macro SetVolSlide(V)
-db $54
+db RC.SetVolSlide
 db <V>
 endmacro
 
 macro SetPabr(V)
-db $55
+db RC.SetPanbrello
 db <V>
 endmacro
 
 macro Stop()
-db $FF
+db RC.Stop
 endmacro
