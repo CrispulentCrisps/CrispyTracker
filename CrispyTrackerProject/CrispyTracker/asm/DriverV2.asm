@@ -38,8 +38,8 @@ mov X, #0
 mov ZP.TrackSettings, #$00     ;Set the track settings
 
 %spc_write(DSP_FLG, $00)
-%spc_write(DSP_MVOL_L, $7F)
-%spc_write(DSP_MVOL_R, $7F)
+%spc_write(DSP_MVOL_L, $11)
+%spc_write(DSP_MVOL_R, $11)
 %spc_write(DSP_EVOL_L, $40)
 %spc_write(DSP_EVOL_R, $40)
 %spc_write(DSP_ESA, $BF)
@@ -63,27 +63,34 @@ adc A, #$10                         ;Add 16
 bvc -
 
 mov SPC_Control, #$01               ;Set control bit to enable Timer 0
-mov SPC_Timer1, #$FF                ;Divide timer to run at ~31hz
+mov SPC_Timer1, #$20                ;Divide timer to run at ~250hz
 mov ZP.OrderChangeFlag, #$01       ;Set change flag at start to load initial pattern data
 
 DriverLoop:                         ;Main driver loop
     mov X, #0                       ;Reset counter
-    mov ZP.CurrentChannel,#$7       ;Increment channel index
     
     .TickIncrement:
     mov Y, SPC_Count1               ;Check counter
     beq .TickIncrement              ;If the timer is set to 0
     
+    call ProcessEffects
     inc X                           ;Increment our counter
     cmp X, ZP.TickThresh            ;Check if the counter has reached the 
     bmi .TickIncrement              ;Go back to the tick incrementer if the counter is not
                                     ;Assuming we've hit the threshold
     mov1 C, ZP.OrderChangeFlag.0    ;Check the order flag with the 0th bit
     bcc +                           ;Skip if the carry flag isn't set
-    dec X
+    mov X, #$07
+    mov Y, #$00
+    -                                   ;Sleep Clear Loop
+    mov ZP.ChannelSleepCounter+X, Y     ;Clear sleep counter
+    dec X                               ;Decrement counter
+    bpl -
     call ReadPatterns
+    mov ZP.OrderChangeFlag, #0
     +
 
+    mov ZP.CurrentChannel,#$7       ;Increment channel index
     .ChannelLoop:                   ;Main channel loop
     mov X, ZP.CurrentChannel
     mov Y, ZP.ChannelSleepCounter+X
@@ -96,13 +103,45 @@ DriverLoop:                         ;Main driver loop
     dec ZP.CurrentChannel
     bpl .ChannelLoop
 
-    cmp ZP.OrderChangeFlag, #1
+    cmp ZP.OrderChangeFlag, #1      ;Order change
     bne +
-    inc ZP.OrderPos
-    mov ZP.OrderChangeFlag, #0
+    mov A, ZP.OrderPosGoto
+    mov ZP.OrderPos, A
     +
     jmp DriverLoop
 
+
+ProcessEffects:
+    push X
+    mov ZP.CurrentChannel, #$07
+    .EffectsLoop:
+
+    ;Channel Mixing
+    ;Grab channel memory
+    mov ZP.TempMemADDRL, #(InstrumentMemory)&$FF        ;Create word addr to instrument memory
+    mov ZP.TempMemADDRH, #(InstrumentMemory>>8)&$FF     ;
+    mov X, ZP.CurrentChannel                            ;Shove channel index into X
+    mov A, ZP.ChannelInstrumentIndex+X                  ;Grab instrument index
+    mov Y, #$08                                         ;Shove in multiplier
+    mul YA                                              ;Multiply
+    addw YA, ZP.TempMemADDRL                            ;Add on instrument memory location
+    movw ZP.TempMemADDRL, YA                            ;Return
+    ;Mix L
+    mov A, ZP.CurrentChannel
+    asl A
+    mov ZP.TempScratchMemH, A
+    mov Y, ZP.ChannelVolume+X                           ;Shove L volume into X
+    mov X, #0                                           ;Reset X
+    mov A, (ZP.TempMemADDRL+X)                          ;Grab instrument L volume
+    mov X, #127                                         ;Shove in Divispr
+    mul YA                                              ;Multiply
+    div YA, X                                           ;Divide
+    mov A, ZP.TempScratchMemH
+
+    dec ZP.CurrentChannel
+    bpl .EffectsLoop
+    pop X
+    ret
 
 ReadPatterns:
     mov A, ZP.OrderPos                         ;Grab the current order position
@@ -135,6 +174,16 @@ ReadRows:
     dw Row_Sleep
     dw Row_Goto
     dw Row_Break
+    dw Row_PlayNote
+    dw Row_PlayPitch
+    dw Row_SetInstrument
+    dw Row_SetFlag
+    dw Row_SetDelay
+    dw Row_SetDelayVolume
+    dw Row_SetDelayFeedback
+    dw Row_SetDelayCoeff
+    dw Row_SetMasterVolume
+    dw Row_SetChannelVolume
     
 Row_SetSpeed:
     call GrabCommand
@@ -149,13 +198,138 @@ Row_Sleep:
 
 Row_Goto:   ;Broken, causes the command addr to get fucked up and read rubbish data
     call GrabCommand
-    mov ZP.OrderPos, A          ;Return pos
-    mov ZP.OrderChangeFlag, #0  ;Set the order change flag
+    mov ZP.OrderPosGoto, A      ;Return pos
+    mov ZP.OrderChangeFlag, #1  ;Set the order change flag
     ret
 
 Row_Break:
+    mov ZP.OrderPosGoto, ZP.OrderPos
+    inc ZP.OrderPosGoto
     mov ZP.OrderChangeFlag, #1  ;Set the order change flag
     ret                         ;Break out of read rows
+
+Row_PlayNote:
+
+    jmp ReadRows
+
+Row_PlayPitch:
+    ;Pitch application
+    mov A, ZP.CurrentChannel    ;Grab current channel
+    xcn A                       ;XCN for correct register addr
+    or A, #$02                  ; + 2
+    mov SPC_RegADDR, A          ;Shove into addr
+    call GrabCommand            ;Grab lo byte of the pitch
+    mov SPC_RegData, A          ;Return
+    inc SPC_RegADDR             ;Grab hi addr
+    call GrabCommand            ;Grab hi byte of the pitch
+    mov SPC_RegData, A          ;Return
+
+    ;KON State
+    mov X, ZP.CurrentChannel            ;Grab current channel
+    mov A, BitmaskTable+X               ;Get bitmask index via X
+    mov ZP.TempScratchMem, A            ;Shove into scratch memory for ORing
+    mov SPC_RegADDR, #DSP_KON           ;Shove KON addr in
+    or SPC_RegData, ZP.TempScratchMem   ;OR into A
+    jmp ReadRows
+
+Row_SetInstrument:
+    mov ZP.TempMemADDRL, #(InstrumentMemory)&$FF
+    mov ZP.TempMemADDRH, #(InstrumentMemory>>8)&$FF
+    call GrabCommand
+    mov X, ZP.CurrentChannel
+    mov ZP.ChannelInstrumentIndex+X, A
+    mov Y, #$08
+    mul YA
+    addw YA, ZP.TempMemADDRL
+    movw ZP.TempMemADDRL, YA
+
+    mov A, ZP.CurrentChannel            ;Grab current channel
+    xcn A                               ;XCN to get correct channel in memory
+    or A, #$04                          ;Add 4 for correct nibble
+    mov SPC_RegADDR, A                  ;SCRN
+    mov X, #0                           ;Reset X
+    mov A, (ZP.TempMemADDRL+X)          ;Shove value into A
+    mov SPC_RegData, A                  ;Apply
+    
+    incw ZP.TempMemADDRL                ;Increment
+    mov A, (ZP.TempMemADDRL+X)          ;Grab Value
+    inc SPC_RegADDR                     ;Inc address
+    mov SPC_RegData, A                  ;Apply
+    
+    incw ZP.TempMemADDRL                ;Increment
+    mov A, (ZP.TempMemADDRL+X)          ;Grab Value
+    inc SPC_RegADDR                     ;Inc address
+    mov SPC_RegData, A                  ;Apply
+    
+    incw ZP.TempMemADDRL                ;Increment
+    mov A, (ZP.TempMemADDRL+X)          ;Grab Value
+    inc SPC_RegADDR                     ;Inc address
+    mov SPC_RegData, A                  ;Apply
+
+    incw ZP.TempMemADDRL                ;Increment
+    mov X, ZP.CurrentChannel            ;Grab current channel
+    mov A, BitmaskTable+X               ;Grab bitfield
+    eor A, #$FF                         ;Invert current bit
+    mov ZP.TempScratchMem, A            ;Shove into temp memory
+    mov SPC_RegADDR, #DSP_PMON          ;Shove PMON into regaddr
+    mov X, #$00                         ;Reset X
+    mov ZP.TempScratchMemH, #$01        ;Shove 1 into temp memory
+    mov Y, #$03                         ;Initialise loop counter
+
+    .RestartLoop:
+    and SPC_RegData, ZP.TempScratchMem  ;AND the current bitfield with
+    mov A, (ZP.TempMemADDRL+X)          ;Grab effects state
+    and A, ZP.TempScratchMemH           ;AND effects state and current comparison bit
+    beq .SkipAppl                       
+    eor ZP.TempScratchMem, #$FF         ;Undo inversion in scratch memory
+    or SPC_RegData, ZP.TempScratchMem   ;Combine the cleared bit with the comparison bit
+    eor ZP.TempScratchMem, #$FF         ;Reinvert the channel bit
+    .SkipAppl:
+    asl ZP.TempScratchMemH              ;LShift comparison bit
+    adc SPC_RegADDR, #$10               ;Add on $10 to the address to get to other bitfields
+    dec Y                               ;Dec loop counter
+    bne .RestartLoop
+
+    jmp ReadRows
+
+Row_SetFlag:
+    call GrabCommand            ;Grab value
+    mov SPC_RegADDR, #DSP_FLG   ;Get correct addr
+    mov SPC_RegData, A          ;Apply
+    jmp ReadRows
+
+Row_SetDelay:
+
+    jmp ReadRows
+
+Row_SetDelayVolume:
+
+    jmp ReadRows
+
+Row_SetDelayFeedback:
+
+    jmp ReadRows
+
+Row_SetDelayCoeff:
+
+    jmp ReadRows
+
+Row_SetMasterVolume:
+    call GrabCommand            ;Grab L volume
+    mov SPC_RegADDR, #DSP_MVOL_L;Shove correct addr to get L master volume
+    mov SPC_RegData, A          ;Apply
+    call GrabCommand            ;Grab R volume
+    mov SPC_RegADDR, #DSP_MVOL_R;Shove correct addr to get R master volume
+    mov SPC_RegData, A          ;Apply
+    jmp ReadRows
+
+Row_SetChannelVolume:
+    call GrabCommand                ;Grab L volume
+    mov ZP.ChannelVolume+X, A       ;Apply
+    call GrabCommand                ;Grab R volume
+    mov ZP.ChannelVolume+1+X, A     ;Apply
+    jmp ReadRows
+
 
         ;----------------------------;
         ;       Command Grabber      ;
@@ -324,13 +498,13 @@ db $B8, $87, $1F, $00, $F1, $0F, $1F, $00, $00, $8F, $E1, $13, $12, $2D, $52, $1
 OrderTable:
     .Ord0:
     dw PatternMemory_Pat0
+    dw PatternMemory_Pat2
     dw PatternMemory_Pat0
+    dw PatternMemory_Pat2
     dw PatternMemory_Pat0
+    dw PatternMemory_Pat2
     dw PatternMemory_Pat0
-    dw PatternMemory_Pat0
-    dw PatternMemory_Pat0
-    dw PatternMemory_Pat0
-    dw PatternMemory_Pat0
+    dw PatternMemory_Pat2
     .Ord1:
     dw PatternMemory_Pat1
     dw PatternMemory_Pat1
@@ -343,17 +517,29 @@ OrderTable:
 
 PatternMemory:
     .Pat0:
-    %SetSpeed($04)
+    %SetSpeed($10)
+    %SetMasterVolume($7F,$7F)
+    %SetInstrument(0)
+    %SetFlag($1F)
     %Sleep($10)
     %Break()
     .Pat1:
-    %SetSpeed($10)
+    %PlayPitch($1234)
+    %SetInstrument(1)
+    %SetChannelVolume($56,$78)
     %Sleep($20)
+    %Goto($00)
+    .Pat2:
+    %PlayPitch($1234)
+    %SetInstrument(1)
+    %SetChannelVolume($56,$78)
+    %Sleep($10)
+    %Break()
 
 InstrumentMemory:
-%WriteInstrument($7F, $7F, $FF, $80, $7F, %00000000, $01, $40)
-%WriteInstrument($7F, $80, $FF, $80, $7F, %00000000, $01, $60)
-%WriteInstrument($80, $80, $FF, $80, $7F, %00000000, $01, $80)
+%WriteInstrument($01, $FF, $80, $7F, %00000111, $7F, $7F, $40)
+%WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $80, $60)
+%WriteInstrument($01, $FF, $80, $7F, %00000000, $80, $80, $80)
 .EndOfInstrument:
 
 Engine_End:

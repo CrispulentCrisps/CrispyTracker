@@ -43,13 +43,13 @@ Effects Processing
 
 Tables will be constructed into the following tables:
 	Instrument Table:
-		int8_t Vol_L;			//Left channel volume
-		int8_t Vol_R;			//Right channel volume
+		uint8_t SampleIndex;	//Index of the sample, to be used by SCRN registers while they look in the DIR page
 		uint8_t ADSR1;			//EDDD AAAA ADSR enable (E), decay rate (D), attack rate (A).
 		uint8_t ADSR2;			//SSSR RRRR Sustain level (S), sustain rate (R).
 		uint8_t Gain;			//0VVV VVVV Value(V).
-		uint8_t EffectState;	//Holds the state of the effects in the instrument to reference in DSP memory
-		uint8_t SampleIndex;	//Index of the sample, to be used by SCRN registers while they look in the DIR page
+		uint8_t EffectState;	//Holds the state of the effects in the instrument to reference in DSP memory [BIT0:PMon | BIT1:Noise | BIT2:Echo]
+		int8_t Vol_L;			//Left channel volume
+		int8_t Vol_R;			//Right channel volume
 		uint8_t Priority;		//Priority system for SFX/Instrument priority
 	
 	Pitch Table:
@@ -83,7 +83,7 @@ Each row contains the following values:
 		06, Set Instrument, Index
 		
 		//Special
-		07, Set Noise Value, Pitch, takes in a 5 bit value for the noise pitch. Noise is universal across the SNES
+		07, Set Flag Value, Value, Sets the flg register
 		08, Echo Delay, D, Sets the delay amount for the echo [note: due to the nature of echo this can be EXTREMELY VOLATILE, so checks will absolutely have to be in place]
 		09, Echo Volume, L : R, Sets the L+R volume for the echo
 		0A, Echo Feedback, F, Sets the feedback of the echo

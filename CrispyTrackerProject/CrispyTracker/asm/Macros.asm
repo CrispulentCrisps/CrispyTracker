@@ -6,15 +6,12 @@ struct ZP $00
 .TempMemADDRL:              skip 1                  ;General purpose addr LO
 .TempMemADDRH:              skip 1                  ;General purpose addr HI
 .TempScratchMem:            skip 1                  ;Temporary memory to screw with
+.TempScratchMemH:           skip 1                  ;Temporary memory to screw with
 .TickThresh:                skip 1                  ;Equivelant to track speed
 .KONState:                  skip 1                  ;Holds the current bitfield state of KON
 .FlagVal:                   skip 1                  ;Holds the flag value
-.ChannelVol:                skip 16                 ;Holds the channel master volume [goes across 16 bytes]
 
 ;Special
-.NoiseState:                skip 1                  ;Bitfield for the NON  register
-.EchoState:                 skip 1                  ;Bitfield for the EON  register
-.PModState:                 skip 1                  ;Bitfield for the PMON register
 .TempVolumeProcess:         skip 2                  ;Used to manipulate a volume value without actually changing said volume
 .TempPitchProcess:          skip 2                  ;Holds the pitch
 
@@ -32,12 +29,13 @@ struct ZP $00
 .MulProductTemp:            skip 1
 .ChannelPitches:            skip 16                 ;Array of pitch values in each channel
 .ChannelPitchesOutput:      skip 16                 ;Array of pitches written to for every new note
+.ChannelVolume:             skip 16                 ;Holds the channel master volume [goes across 16 bytes]
 .ChannelVolumeOutput:       skip 16                 ;Array of pitches written to for every new note
 .ChannelInstrumentIndex:    skip 8                  ;Array of Instrument indexes
-.ChannelPatternIndex:       skip 8                  ;Array of Pattern indexes
 
 .SequenceAddr:              skip 16                 ;Array of sequence address pointers
 .OrderPos:                  skip 1                  ;Position we are within the orders table
+.OrderPosGoto:              skip 1                  ;Aim position for reading in patterns
 .OrderChangeFlag:           skip 1                  ;Flag for when we need to load in the next order sequence
 .ChannelSleepCounter:       skip 8                  ;Array of sleep counters
 
@@ -57,7 +55,7 @@ struct RC $00
 .PlayNote       skip 1  ;Plays note in note table
 .PlayPitch      skip 1  ;Plays absolute pitch value
 .SetInstrument  skip 1  ;
-.SetNoiseValue  skip 1  ;
+.SetFlagValue   skip 1  ;
 .EchoDelay      skip 1  ;
 .EchoVolume     skip 1  ;
 .EchoFeedback   skip 1  ;
@@ -121,8 +119,8 @@ db <I>
 endmacro
 
     ;Special
-macro SetNoise(V)       ;Set noise value in flag register
-db RC.SetNoiseValue
+macro SetFlag(V)       ;Set noise value in flag register
+db RC.SetFlagValue
 db <V>
 endmacro
 
