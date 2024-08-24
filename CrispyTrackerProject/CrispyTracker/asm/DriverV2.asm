@@ -115,7 +115,6 @@ ProcessEffects:
     push X
     mov ZP.CurrentChannel, #$07
     .EffectsLoop:
-
     ;Channel Mixing
     ;Grab channel memory
     mov ZP.TempMemADDRL, #(InstrumentMemory)&$FF        ;Create word addr to instrument memory
@@ -126,17 +125,48 @@ ProcessEffects:
     mul YA                                              ;Multiply
     addw YA, ZP.TempMemADDRL                            ;Add on instrument memory location
     movw ZP.TempMemADDRL, YA                            ;Return
+    
+    mov A, ZP.CurrentChannel                            ;Grab channel index
+    asl A                                               ;Double since we are working with 2 bytes
+    mov ZP.TempScratchMemH, A                           ;Return
+
     ;Mix L
-    mov A, ZP.CurrentChannel
-    asl A
-    mov ZP.TempScratchMemH, A
+    mov X, ZP.TempScratchMemH                           ;Grab premul index
+    mov Y, #5                                           ;Reset X
+    mov A, (ZP.TempMemADDRL)+Y                          ;Grab instrument L volume
     mov Y, ZP.ChannelVolume+X                           ;Shove L volume into X
-    mov X, #0                                           ;Reset X
-    mov A, (ZP.TempMemADDRL+X)                          ;Grab instrument L volume
-    mov X, #127                                         ;Shove in Divispr
-    mul YA                                              ;Multiply
+    call SignedMul                                      ;Multiply both volumes together
+    mov X, #128                                         ;Shove in Divispr
     div YA, X                                           ;Divide
-    mov A, ZP.TempScratchMemH
+    mov ZP.ChannelVolumeOutput, A                       ;Shove into volume output
+    
+    ;Mix R
+    mov X, ZP.TempScratchMemH
+    mov Y, #6                                           ;Reset X
+    mov A, (ZP.TempMemADDRL)+Y                          ;Grab instrument R volume
+    mov Y, ZP.ChannelVolume+1+X                         ;Shove R volume into X
+    call SignedMul                                      ;Multiply both volumes together
+    mov X, #128                                         ;Shove in Divispr
+    div YA, X                                           ;Divide
+    mov ZP.ChannelVolumeOutput+1, A                     ;Shove into volume output
+
+    ;Apply Volume
+    mov X, ZP.TempScratchMemH                           ;Grab Premult channel index
+    mov Y, ZP.ChannelVolumeOutput                       ;Grab L output volume
+    mov A, ZP.CurrentChannel                            ;Grab current channel
+    xcn A                                               ;Swap nibbles to get correct channel addr
+    mov SPC_RegADDR, A                                  ;Shove channel addr
+    mov SPC_RegData, Y                                  ;Shove data in
+    inc SPC_RegADDR                                     ;Inc address to get R volume
+    mov Y, ZP.ChannelVolumeOutput+1                     ;Grab R output volume
+    mov SPC_RegData, Y                                  ;Shove data in
+    
+    ;Channel pitch application
+    mov A, ZP.CurrentChannel    ;Grab current channel
+    xcn A                       ;XCN for correct register addr
+    mov ZP.TempMemADDRL, A      ;Store multiplied index
+    or A, #$02                  ; + 2
+    mov SPC_RegADDR, A          ;Shove into addr
 
     dec ZP.CurrentChannel
     bpl .EffectsLoop
@@ -182,8 +212,22 @@ ReadRows:
     dw Row_SetDelayVolume
     dw Row_SetDelayFeedback
     dw Row_SetDelayCoeff
+    dw Row_SetDelayCoeff
+    dw Row_SetDelayCoeff
+    dw Row_SetDelayCoeff
+    dw Row_SetDelayCoeff
+    dw Row_SetDelayCoeff
+    dw Row_SetDelayCoeff
+    dw Row_SetDelayCoeff
     dw Row_SetMasterVolume
     dw Row_SetChannelVolume
+    dw Row_SetArp
+    dw Row_SetPort
+    dw Row_SetVib
+    dw Row_SetTrem
+    dw Row_SetVolSlide
+    dw Row_SetPanbr
+    dw Row_Stop
     
 Row_SetSpeed:
     call GrabCommand
@@ -214,15 +258,10 @@ Row_PlayNote:
 
 Row_PlayPitch:
     ;Pitch application
-    mov A, ZP.CurrentChannel    ;Grab current channel
-    xcn A                       ;XCN for correct register addr
-    or A, #$02                  ; + 2
-    mov SPC_RegADDR, A          ;Shove into addr
-    call GrabCommand            ;Grab lo byte of the pitch
-    mov SPC_RegData, A          ;Return
-    inc SPC_RegADDR             ;Grab hi addr
-    call GrabCommand            ;Grab hi byte of the pitch
-    mov SPC_RegData, A          ;Return
+    call GrabCommand                ;Grab lo byte of the pitch
+    mov ZP.ChannelPitches+X, A      ;Shove lo byte into pitch
+    call GrabCommand                ;Grab hi byte of the pitch
+    mov ZP.ChannelPitches+1+X, A    ;Shove hi byte into pitch
 
     ;KON State
     mov X, ZP.CurrentChannel            ;Grab current channel
@@ -329,7 +368,21 @@ Row_SetChannelVolume:
     call GrabCommand                ;Grab R volume
     mov ZP.ChannelVolume+1+X, A     ;Apply
     jmp ReadRows
-
+Row_SetArp:
+    call GrabCommand
+    jmp ReadRows
+Row_SetPort:
+    jmp ReadRows
+Row_SetVib:
+    jmp ReadRows
+Row_SetTrem:
+    jmp ReadRows
+Row_SetVolSlide:
+    jmp ReadRows
+Row_SetPanbr:
+    jmp ReadRows
+Row_Stop:
+    ret
 
         ;----------------------------;
         ;       Command Grabber      ;
@@ -396,6 +449,68 @@ GetSineValue:
     +
     mov Y, A                        ;Return value to Y
     pop A                           ;Grab original A value
+    ret
+
+    ;-----------------------;
+    ; Signed Multiplication ;
+    ;-----------------------;
+    ;
+    ;   Input:
+    ;       Y [-128, 127]
+    ;       A [-128, 127]
+    ;
+    ;   Output:
+    ;       YA [As signed value]
+    ;
+    ;   Clobber list:
+    ;       Y
+    ;       A
+    ;       X
+    ;       MulProductTemp
+    ;
+    ;        [Provided by AArt1256]
+    ;
+SignedMul:
+    ;Save L and H temp memory as we use it outside of this function
+    mov X, ZP.TempMemADDRL
+    push X
+    mov X, ZP.TempMemADDRH
+    push X
+    
+    mov ZP.TempMemADDRL, A
+    mov ZP.TempMemADDRH, Y
+    mul YA
+
+    ; save product into temporary memory
+    mov ZP.MulProductTemp, A
+    mov ZP.MulProductTemp+1, Y
+
+    ; check for MSB
+    mov A, ZP.TempMemADDRL
+    bpl .skip_mul1
+    setc
+    mov A, ZP.MulProductTemp+1
+    sbc A, ZP.TempMemADDRH
+    mov ZP.MulProductTemp+1, A
+    .skip_mul1:
+
+    ; check for MSB
+    mov A, ZP.TempMemADDRH
+    bpl .skip_mul2
+    setc
+    mov A, ZP.MulProductTemp+1
+    sbc A, ZP.TempMemADDRL
+    mov ZP.MulProductTemp+1, A
+    .skip_mul2:
+
+    mov A, ZP.MulProductTemp
+    mov Y, ZP.MulProductTemp+1
+
+    ;Restore L and H temp memory
+    pop X
+    mov ZP.TempMemADDRH, X
+    pop X
+    mov ZP.TempMemADDRL, X
     ret
 
 BitmaskTable:   ;General bitmask table
@@ -498,13 +613,13 @@ db $B8, $87, $1F, $00, $F1, $0F, $1F, $00, $00, $8F, $E1, $13, $12, $2D, $52, $1
 OrderTable:
     .Ord0:
     dw PatternMemory_Pat0
-    dw PatternMemory_Pat2
     dw PatternMemory_Pat0
-    dw PatternMemory_Pat2
     dw PatternMemory_Pat0
-    dw PatternMemory_Pat2
     dw PatternMemory_Pat0
-    dw PatternMemory_Pat2
+    dw PatternMemory_Pat0
+    dw PatternMemory_Pat0
+    dw PatternMemory_Pat0
+    dw PatternMemory_Pat0
     .Ord1:
     dw PatternMemory_Pat1
     dw PatternMemory_Pat1
@@ -519,6 +634,7 @@ PatternMemory:
     .Pat0:
     %SetSpeed($10)
     %SetMasterVolume($7F,$7F)
+    %SetChannelVolume($7F, $7F)
     %SetInstrument(0)
     %SetFlag($1F)
     %Sleep($10)
@@ -526,20 +642,19 @@ PatternMemory:
     .Pat1:
     %PlayPitch($1234)
     %SetInstrument(1)
-    %SetChannelVolume($56,$78)
     %Sleep($20)
     %Goto($00)
     .Pat2:
-    %PlayPitch($1234)
+    %PlayPitch($1248)
+    %SetChannelVolume($FF, $FF)
     %SetInstrument(1)
-    %SetChannelVolume($56,$78)
     %Sleep($10)
     %Break()
 
 InstrumentMemory:
-%WriteInstrument($01, $FF, $80, $7F, %00000111, $7F, $7F, $40)
-%WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $80, $60)
-%WriteInstrument($01, $FF, $80, $7F, %00000000, $80, $80, $80)
+%WriteInstrument($01, $FF, $80, $7F, %00000111, $1, $FF, $40)
+%WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $FF, $60)
+%WriteInstrument($01, $FF, $80, $7F, %00000000, $FF, $FF, $80)
 .EndOfInstrument:
 
 Engine_End:

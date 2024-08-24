@@ -26,11 +26,11 @@ struct ZP $00
 .ChannelVolSlideValue:      skip 8                  ;Array of values for the Volume slide
 
 .PortDir:                   skip 1
-.MulProductTemp:            skip 1
+.MulProductTemp:            skip 2
 .ChannelPitches:            skip 16                 ;Array of pitch values in each channel
-.ChannelPitchesOutput:      skip 16                 ;Array of pitches written to for every new note
+.ChannelPitchesOutput:      skip 2                  ;Pitch written to current channel
 .ChannelVolume:             skip 16                 ;Holds the channel master volume [goes across 16 bytes]
-.ChannelVolumeOutput:       skip 16                 ;Array of pitches written to for every new note
+.ChannelVolumeOutput:       skip 2                  ;Volume written to current channel
 .ChannelInstrumentIndex:    skip 8                  ;Array of Instrument indexes
 
 .SequenceAddr:              skip 16                 ;Array of sequence address pointers
