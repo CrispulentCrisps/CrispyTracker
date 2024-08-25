@@ -94,12 +94,12 @@ Each row contains the following values:
 		14, Set Volume, LPAN : RPAN, Sets the master volume of given channel [Also used in Panning effect. Used in conjunction with L/R inversion]
 
 		//Effects
-		15, Set Arp Value, A, puts XY into A	[Note 1 : Note 2]
-		16, Set Port Value, P, puts XX into P 	[Portamento Val]
-		17, Set Vib Value, V, puts XY into V 	[Speed : Depth]
-		18, Set Trem Value, T, puts XY into T 	[Speed : Depth]
-		19, Set Vol Slide Value, S, puts XY into S 	[Up : Down]
-		1A, Set Panbr Value, B, puts XY into B	[Speed : Depth]
+		15, Set Arp Value, A, puts XY into A			[Note 1 : Note 2]
+		16, Set Port Value, P, puts XX into P			[Port Val : Dir	]
+		17, Set Vib Value, V, puts XY into V 			[Speed : Depth	]
+		18, Set Trem Value, T, puts XY into T 			[Speed : Depth	]
+		19, Set Vol Slide Value, S, puts XY into S 		[Up : Down		]
+		1A, Set Panbr Value, B, puts XY into B			[Speed : Depth	]
 
 		1B, Stop, Stops the track from playing
 

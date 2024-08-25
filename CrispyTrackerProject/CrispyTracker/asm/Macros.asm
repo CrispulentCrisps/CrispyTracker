@@ -18,14 +18,14 @@ struct ZP $00
 ;Effects
 .CurrentChannel:            skip 1                  ;Current channel we are working with
 
-.ChannelArpValue:           skip 8                  ;Array of values for the Arpeggio
-.ChannelPortValue:          skip 8                  ;Array of values for the Portamento
-.ChannelVibratoValue:       skip 8                  ;Array of values for the Vibrato
-.ChannelTremolandoValue:    skip 8                  ;Array of values for the Tremolando
-.ChannelPanbrelloValue:     skip 8                  ;Array of values for the Panbrello
-.ChannelVolSlideValue:      skip 8                  ;Array of values for the Volume slide
+.SineIndex:                 skip 8                 ;Array of current indexes for sine tables
+.ArpValue:                  skip 8                  ;Array of values for the Arpeggio
+.PortValue:                 skip 8                  ;Array of values for the Portamento
+.VibratoValue:              skip 8                  ;Array of values for the Vibrato
+.TremolandoValue:           skip 8                  ;Array of values for the Tremolando
+.PanbrelloValue:            skip 8                  ;Array of values for the Panbrello
+.VolSlideValue:             skip 8                  ;Array of values for the Volume slide
 
-.PortDir:                   skip 1
 .MulProductTemp:            skip 2
 .ChannelPitches:            skip 16                 ;Array of pitch values in each channel
 .ChannelPitchesOutput:      skip 2                  ;Pitch written to current channel
@@ -59,7 +59,7 @@ struct RC $00
 .EchoDelay      skip 1  ;
 .EchoVolume     skip 1  ;
 .EchoFeedback   skip 1  ;
-.EchoCoeff      skip 1  ;
+.EchoCoeff      skip 8  ;
 .MasterVol      skip 1  ;
 .ChannelVol     skip 1  ;
 .SetArp         skip 1  ;
@@ -159,15 +159,14 @@ db <R>
 endmacro
 
     ;Effects commands
-macro SetArpValue(V)
+macro SetArp(V)
 db RC.SetArp
 db <V>
 endmacro
 
-macro SetPort(V, D)
+macro SetPort(V)
 db RC.SetPort
 db <V>
-db <D>
 endmacro
 
 macro SetVib(V)

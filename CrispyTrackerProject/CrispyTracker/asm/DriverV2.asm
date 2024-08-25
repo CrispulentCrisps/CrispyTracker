@@ -115,6 +115,50 @@ ProcessEffects:
     push X
     mov ZP.CurrentChannel, #$07
     .EffectsLoop:
+    
+    mov A, ZP.CurrentChannel                            ;Grab channel index
+    asl A                                               ;Double since we are working with 2 bytes
+    mov ZP.TempScratchMemH, A                           ;Return
+
+    ;---------------;
+    ;   Portamento  ;
+    ;---------------;
+    ;Check portamento value in current channel
+    mov X, ZP.CurrentChannel
+    mov A, ZP.PortValue+X
+    beq .SkipPort
+
+    mov ZP.TempMemADDRL, A
+    mov ZP.TempMemADDRH, #0
+    mov1 C, ZP.TempMemADDRL.7
+    bcc +
+    mov ZP.TempMemADDRH, #$FF
+    +
+    mov X, ZP.TempScratchMemH
+    mov Y, ZP.ChannelPitches+1+X
+    mov A, ZP.ChannelPitches+X
+    addw YA, ZP.TempMemADDRL
+    mov ZP.ChannelPitches+1+X, Y
+    mov ZP.ChannelPitches+X, A  
+    .SkipPort:
+    
+    ;-------------------;
+    ;       Vibrato     ;
+    ;-------------------;
+    mov X, ZP.CurrentChannel
+    mov A, ZP.VibratoValue+X
+    beq .SkipVib
+    and A, #$F0
+    xcn A
+    mov ZP.TempScratchMem, A    ;Hold speed in temporary memory
+    mov A, ZP.SineIndex+X       ;Grab sine index
+    adc A, ZP.TempScratchMem    ;Increment sine index by speed value
+    mov A, ZP.VibratoValue+X
+    and A, #$0F                 ;Grab depth
+    mov Y, ZP.SineIndex+X       ;Grab sine index value
+    call GetSineValue           ;Call sine function
+    .SkipVib:
+    
     ;Channel Mixing
     ;Grab channel memory
     mov ZP.TempMemADDRL, #(InstrumentMemory)&$FF        ;Create word addr to instrument memory
@@ -125,10 +169,6 @@ ProcessEffects:
     mul YA                                              ;Multiply
     addw YA, ZP.TempMemADDRL                            ;Add on instrument memory location
     movw ZP.TempMemADDRL, YA                            ;Return
-    
-    mov A, ZP.CurrentChannel                            ;Grab channel index
-    asl A                                               ;Double since we are working with 2 bytes
-    mov ZP.TempScratchMemH, A                           ;Return
 
     ;Mix L
     mov X, ZP.TempScratchMemH                           ;Grab premul index
@@ -162,14 +202,30 @@ ProcessEffects:
     mov SPC_RegData, Y                                  ;Shove data in
     
     ;Channel pitch application
-    mov A, ZP.CurrentChannel    ;Grab current channel
-    xcn A                       ;XCN for correct register addr
-    mov ZP.TempMemADDRL, A      ;Store multiplied index
-    or A, #$02                  ; + 2
-    mov SPC_RegADDR, A          ;Shove into addr
+    mov A, ZP.CurrentChannel                            ;Grab current channel
+    xcn A                                               ;XCN for correct register addr
+    mov ZP.TempMemADDRL, A                              ;Store multiplied index
+    or A, #$02                                          ; + 2
+    mov SPC_RegADDR, A                                  ;Shove into addr
+    
+    mov X, ZP.TempScratchMemH                           ;Grab Premult channel index
+    mov A, ZP.ChannelPitches+X                          ;Grab current channel's lo pitch
+    adc A, ZP.TempPitchProcess                          ;Add lo byte to pitch offset
+    mov ZP.ChannelPitchesOutput, A                      ;Put into output
+    mov A, ZP.ChannelPitches+1+X                        ;Grab current channel's hi pitch
+    adc A, ZP.TempPitchProcess+1                        ;Add hi byte to pitch offset
+    mov ZP.ChannelPitchesOutput+1, A                    ;Put into output
+
+    mov A, ZP.ChannelPitchesOutput                      ;Grab lo pitch
+    mov SPC_RegData, A                                  ;Return
+    inc SPC_RegADDR                                     ;Increment address
+    mov A, ZP.ChannelPitchesOutput+1                    ;Grab hi pitch
+    mov SPC_RegData, A                                  ;Return
 
     dec ZP.CurrentChannel
-    bpl .EffectsLoop
+    bmi .BreakLoop
+    jmp .EffectsLoop
+    .BreakLoop:
     pop X
     ret
 
@@ -370,16 +426,33 @@ Row_SetChannelVolume:
     jmp ReadRows
 Row_SetArp:
     call GrabCommand
+    mov X, ZP.CurrentChannel
+    mov ZP.ArpValue+X, A
     jmp ReadRows
 Row_SetPort:
+    call GrabCommand
+    mov X, ZP.CurrentChannel
+    mov ZP.PortValue+X, A
     jmp ReadRows
 Row_SetVib:
+    call GrabCommand
+    mov X, ZP.CurrentChannel
+    mov ZP.VibratoValue+X, A
     jmp ReadRows
 Row_SetTrem:
+    call GrabCommand
+    mov X, ZP.CurrentChannel
+    mov ZP.TremolandoValue+X, A
     jmp ReadRows
 Row_SetVolSlide:
+    call GrabCommand
+    mov X, ZP.CurrentChannel
+    mov ZP.VolSlideValue+X, A
     jmp ReadRows
 Row_SetPanbr:
+    call GrabCommand
+    mov X, ZP.CurrentChannel
+    mov ZP.PanbrelloValue+X, A
     jmp ReadRows
 Row_Stop:
     ret
@@ -632,27 +705,25 @@ OrderTable:
 
 PatternMemory:
     .Pat0:
+    %PlayPitch($1234)
     %SetSpeed($10)
-    %SetMasterVolume($7F,$7F)
+    ;%SetPort($F0)
+    %SetMasterVolume($7F, $7F)
     %SetChannelVolume($7F, $7F)
     %SetInstrument(0)
-    %SetFlag($1F)
     %Sleep($10)
     %Break()
     .Pat1:
-    %PlayPitch($1234)
     %SetInstrument(1)
     %Sleep($20)
     %Goto($00)
     .Pat2:
-    %PlayPitch($1248)
-    %SetChannelVolume($FF, $FF)
-    %SetInstrument(1)
+    %PlayPitch($1010)
     %Sleep($10)
     %Break()
 
 InstrumentMemory:
-%WriteInstrument($01, $FF, $80, $7F, %00000111, $1, $FF, $40)
+%WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $40)
 %WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $FF, $60)
 %WriteInstrument($01, $FF, $80, $7F, %00000000, $FF, $FF, $80)
 .EndOfInstrument:
