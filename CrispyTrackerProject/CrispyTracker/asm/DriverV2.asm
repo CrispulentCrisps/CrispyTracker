@@ -115,19 +115,20 @@ ProcessEffects:
     push X
     mov ZP.CurrentChannel, #$07
     .EffectsLoop:
-    
-    mov A, ZP.CurrentChannel                            ;Grab channel index
-    asl A                                               ;Double since we are working with 2 bytes
-    mov ZP.TempScratchMemH, A                           ;Return
+    mov ZP.TempPitchProcess, #0
+    mov ZP.TempPitchProcess+1, #0
+    mov ZP.TempVolumeProcess, #0
+    mov ZP.TempVolumeProcess+1, #0
+    mov A, ZP.CurrentChannel        ;Grab channel index
+    asl A                           ;Double since we are working with 2 bytes
+    mov ZP.TempScratchMemH, A       ;Return
 
     ;---------------;
     ;   Portamento  ;
     ;---------------;
-    ;Check portamento value in current channel
     mov X, ZP.CurrentChannel
     mov A, ZP.PortValue+X
     beq .SkipPort
-
     mov ZP.TempMemADDRL, A
     mov ZP.TempMemADDRH, #0
     mov1 C, ZP.TempMemADDRL.7
@@ -142,24 +143,64 @@ ProcessEffects:
     mov ZP.ChannelPitches+X, A  
     .SkipPort:
     
-    ;-------------------;
-    ;       Vibrato     ;
-    ;-------------------;
+    ;--------------------;
+    ;       Vibrato      ;
+    ;--------------------;
     mov X, ZP.CurrentChannel
     mov A, ZP.VibratoValue+X
     beq .SkipVib
     and A, #$F0
     xcn A
+    asl A
     mov ZP.TempScratchMem, A    ;Hold speed in temporary memory
     mov A, ZP.SineIndex+X       ;Grab sine index
     adc A, ZP.TempScratchMem    ;Increment sine index by speed value
+    mov ZP.SineIndex+X, A
+    mov Y, A                    ;Grab sine index value
     mov A, ZP.VibratoValue+X
     and A, #$0F                 ;Grab depth
-    mov Y, ZP.SineIndex+X       ;Grab sine index value
+    lsr A
     call GetSineValue           ;Call sine function
+    call SignedMul              ;multiply
+    mov ZP.R0, A
+    mov ZP.R1, Y
+    mov A, ZP.TempPitchProcess
+    mov Y, ZP.TempPitchProcess+1
+    addw YA, ZP.R0
+    movw ZP.TempPitchProcess, YA
     .SkipVib:
     
-    ;Channel Mixing
+    ;----------------;
+    ;   Tremolando   ;
+    ;----------------;
+    mov X, ZP.CurrentChannel
+    mov A, ZP.TremolandoValue+X
+    beq .SkipTrem
+    and A, #$F0
+    xcn A
+    mov ZP.TempScratchMem, A    ;Hold speed in temporary memory
+    mov A, ZP.SineIndex+X       ;Grab sine index
+    adc A, ZP.TempScratchMem    ;Increment sine index by speed value
+    mov ZP.SineIndex+X, A
+    mov Y, A                    ;Grab sine index value
+    mov A, ZP.TremolandoValue+X
+    and A, #$0F                 ;Grab depth
+    call GetSineValue           ;Call sine function
+    call SignedMul              ;multiply
+    mov X, #$80
+    div YA, X
+    mov ZP.R0, A
+    mov ZP.R1, A
+    mov A, ZP.TempVolumeProcess
+    mov Y, ZP.TempVolumeProcess+1
+    addw YA, ZP.R0
+    mov ZP.TempVolumeProcess, A
+    mov ZP.TempVolumeProcess+1, A
+    .SkipTrem:
+    
+    ;---------------------------;
+    ;       Mixing & Output     ;
+    ;---------------------------;
     ;Grab channel memory
     mov ZP.TempMemADDRL, #(InstrumentMemory)&$FF        ;Create word addr to instrument memory
     mov ZP.TempMemADDRH, #(InstrumentMemory>>8)&$FF     ;
@@ -178,6 +219,7 @@ ProcessEffects:
     call SignedMul                                      ;Multiply both volumes together
     mov X, #128                                         ;Shove in Divispr
     div YA, X                                           ;Divide
+    adc A, ZP.TempVolumeProcess
     mov ZP.ChannelVolumeOutput, A                       ;Shove into volume output
     
     ;Mix R
@@ -188,6 +230,7 @@ ProcessEffects:
     call SignedMul                                      ;Multiply both volumes together
     mov X, #128                                         ;Shove in Divispr
     div YA, X                                           ;Divide
+    adc A, ZP.TempVolumeProcess+1
     mov ZP.ChannelVolumeOutput+1, A                     ;Shove into volume output
 
     ;Apply Volume
@@ -707,14 +750,15 @@ PatternMemory:
     .Pat0:
     %PlayPitch($1234)
     %SetSpeed($10)
-    ;%SetPort($F0)
+    %SetTremo($1F)
+    ;%SetPort($02)
+    ;%SetVib($54)
     %SetMasterVolume($7F, $7F)
     %SetChannelVolume($7F, $7F)
     %SetInstrument(0)
     %Sleep($10)
     %Break()
     .Pat1:
-    %SetInstrument(1)
     %Sleep($20)
     %Goto($00)
     .Pat2:

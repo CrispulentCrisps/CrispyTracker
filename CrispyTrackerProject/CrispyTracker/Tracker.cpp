@@ -274,6 +274,9 @@ void Tracker::MenuBar()
 	BeginMainMenuBar();
 	if (BeginMenu("File"))
 	{
+		if (ImGui::MenuItem("New")) {
+			NewFile();
+		}
 		if(ImGui::MenuItem("Load")){
 			SavingFile = false;
 			LoadingFile = true;
@@ -1606,7 +1609,7 @@ void Tracker::UpdateFont()
 void Tracker::Export_View()
 {
 	string TypeNames[3] = { "WAV","MP3","OGG"};
-	string TechnicalTypeNames[3] = {"SPC","ASM","TBD"};
+	string TechnicalTypeNames[3] = {"SPC","ASM-Cobalt","TBD"};
 	string Qualitynames[8] = { "8KHz","11KHz","16KHz","22KHz","24KHz","32KHz","44KHz","48KHz" };
 	string DepthName[2] = { "8 bit", "16 bit"};
 	string SignName[2] = { "Unsigned", "Signed"};
@@ -2561,8 +2564,6 @@ void Tracker::ApplyLoad()
 	{
 		Channels[x].CurrentInstrument = 0;
 	}
-
-	UpdateAllPatterns();
 }
 
 void Tracker::ApplySubtune()
@@ -2587,6 +2588,36 @@ void Tracker::ApplySubtune()
 	}
 }
 
+void Tracker::NewFile()
+{
+	filehandler.mod.subtune.clear();
+	InitialiseNewSubtune();
+	ApplySubtune();
+	StoragePatterns.clear();
+	for (int x = 0; x < 8; x++)
+	{
+		Patterns pat = Patterns();
+		StoragePatterns.push_back(pat);
+	}
+
+	UpdateAllPatterns();
+	samples.clear();
+	samples.push_back(DefaultSample);
+	inst.clear();
+	inst.push_back(DefaultInst);
+	ShowSample = false;
+	ShowInstrument = false;
+	ShowEcho = false;
+	EchoVol = 0;
+	Delay = 0;
+	for (int x = 0; x < 8; x++)
+	{
+		EchoFilter[x] = 0;
+	}
+	SongLength = 1;
+	Maxindex = 8;
+}
+
 void Tracker::InitialiseNewSubtune()
 {
 	Subtune tune = Subtune();
@@ -2601,7 +2632,6 @@ void Tracker::InitialiseNewSubtune()
 static void TextCentered(std::string text, bool wrapped = false) {
 	auto windowWidth = ImGui::GetWindowSize().x;
 	auto textWidth = ImGui::CalcTextSize(text.c_str()).x;
-
 	ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
 	if(!wrapped)ImGui::Text(text.c_str());
 	else ImGui::TextWrapped(text.c_str());

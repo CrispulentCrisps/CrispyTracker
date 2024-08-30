@@ -7,6 +7,10 @@ struct ZP $00
 .TempMemADDRH:              skip 1                  ;General purpose addr HI
 .TempScratchMem:            skip 1                  ;Temporary memory to screw with
 .TempScratchMemH:           skip 1                  ;Temporary memory to screw with
+.R0                         skip 1                  ;Scratch memory
+.R1                         skip 1                  ;Scratch memory
+.R2                         skip 1                  ;Scratch memory
+.R3                         skip 1                  ;Scratch memory
 .TickThresh:                skip 1                  ;Equivelant to track speed
 .KONState:                  skip 1                  ;Holds the current bitfield state of KON
 .FlagVal:                   skip 1                  ;Holds the flag value

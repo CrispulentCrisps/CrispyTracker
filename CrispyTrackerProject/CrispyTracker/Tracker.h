@@ -344,6 +344,7 @@ public:
 	void LoadModuleAs();
 	void ApplyLoad();
 	void ApplySubtune();
+	void NewFile();
 	void InitialiseNewSubtune();
 	void SubtuneDeletionWarning();
 
