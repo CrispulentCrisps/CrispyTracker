@@ -153,9 +153,9 @@ ProcessEffects:
     xcn A
     asl A
     mov ZP.TempScratchMem, A    ;Hold speed in temporary memory
-    mov A, ZP.SineIndex+X       ;Grab sine index
+    mov A, ZP.SineIndexVib+X    ;Grab sine index
     adc A, ZP.TempScratchMem    ;Increment sine index by speed value
-    mov ZP.SineIndex+X, A
+    mov ZP.SineIndexVib+X, A
     mov Y, A                    ;Grab sine index value
     mov A, ZP.VibratoValue+X
     and A, #$0F                 ;Grab depth
@@ -178,26 +178,72 @@ ProcessEffects:
     beq .SkipTrem
     and A, #$F0
     xcn A
-    mov ZP.TempScratchMem, A    ;Hold speed in temporary memory
-    mov A, ZP.SineIndex+X       ;Grab sine index
-    adc A, ZP.TempScratchMem    ;Increment sine index by speed value
-    mov ZP.SineIndex+X, A
-    mov Y, A                    ;Grab sine index value
+    mov ZP.TempScratchMem, A        ;Hold speed in temporary memory
+    mov A, ZP.SineIndexTrem+X       ;Grab sine index
+    adc A, ZP.TempScratchMem        ;Increment sine index by speed value
+    mov ZP.SineIndexTrem+X, A
+    mov Y, A                        ;Grab sine index value
     mov A, ZP.TremolandoValue+X
-    and A, #$0F                 ;Grab depth
-    call GetSineValue           ;Call sine function
-    call SignedMul              ;multiply
-    mov X, #$80
-    div YA, X
-    mov ZP.R0, A
-    mov ZP.R1, A
-    mov A, ZP.TempVolumeProcess
-    mov Y, ZP.TempVolumeProcess+1
-    addw YA, ZP.R0
-    mov ZP.TempVolumeProcess, A
-    mov ZP.TempVolumeProcess+1, A
+    and A, #$0F                     ;Grab depth
+    call GetSineValue               ;Call sine function
+    call SignedMul                  ;Multiply sine influence
+    mov ZP.R0, A                    ;Shove into temp memory
+    mov ZP.R1, Y
+    lsr ZP.R1                       ;Div by 2
+    ror ZP.R0                       ;Rotate by 2
+    lsr ZP.R1                       ;Div by 2
+    ror ZP.R0                       ;Rotate by 2
+    lsr ZP.R1                       ;Div by 2
+    ror ZP.R0                       ;Rotate by 2
+    lsr ZP.R1                       ;Div by 2
+    ror ZP.R0                       ;Rotate by 2
+    mov A, ZP.TempVolumeProcess     ;Grab current volume process
+    clrc
+    adc A, ZP.R0
+    mov ZP.TempVolumeProcess, A     ;Apply
+    mov A, ZP.TempVolumeProcess+1   ;Grab current volume process
+    clrc
+    adc A, ZP.R0
+    mov ZP.TempVolumeProcess+1, A   ;Apply
     .SkipTrem:
-    
+
+    ;----------------;
+    ;    Panbrello   ;
+    ;----------------;
+    mov X, ZP.CurrentChannel
+    mov A, ZP.PanbrelloValue+X
+    beq .SkipPanbr
+    and A, #$F0
+    xcn A
+    mov ZP.TempScratchMem, A        ;Hold speed in temporary memory
+    mov A, ZP.SineIndexPanbr+X      ;Grab sine index
+    adc A, ZP.TempScratchMem        ;Increment sine index by speed value
+    mov ZP.SineIndexPanbr+X, A
+    mov Y, A                        ;Grab sine index value
+    mov A, ZP.PanbrelloValue+X
+    and A, #$0F                     ;Grab depth
+    call GetSineValue               ;Call sine function
+    call SignedMul                  ;Multiply sine influence
+    mov ZP.R0, A                    ;Shove into temp memory
+    mov ZP.R1, Y
+    lsr ZP.R1                       ;Div by 2
+    ror ZP.R0                       ;Rotate by 2
+    lsr ZP.R1                       ;Div by 2
+    ror ZP.R0                       ;Rotate by 2
+    lsr ZP.R1                       ;Div by 2
+    ror ZP.R0                       ;Rotate by 2
+    lsr ZP.R1                       ;Div by 2
+    ror ZP.R0                       ;Rotate by 2
+    mov A, ZP.TempVolumeProcess     ;Grab current volume process
+    clrc
+    adc A, ZP.R0
+    mov ZP.TempVolumeProcess, A     ;Apply
+    mov A, ZP.TempVolumeProcess+1   ;Grab current volume process
+    setc
+    sbc A, ZP.R0
+    mov ZP.TempVolumeProcess+1, A   ;Apply
+    .SkipPanbr:
+
     ;---------------------------;
     ;       Mixing & Output     ;
     ;---------------------------;
@@ -213,25 +259,47 @@ ProcessEffects:
 
     ;Mix L
     mov X, ZP.TempScratchMemH                           ;Grab premul index
-    mov Y, #5                                           ;Reset X
+    mov Y, #5                                           ;Reset Y
     mov A, (ZP.TempMemADDRL)+Y                          ;Grab instrument L volume
     mov Y, ZP.ChannelVolume+X                           ;Shove L volume into X
     call SignedMul                                      ;Multiply both volumes together
     mov X, #128                                         ;Shove in Divispr
     div YA, X                                           ;Divide
-    adc A, ZP.TempVolumeProcess
     mov ZP.ChannelVolumeOutput, A                       ;Shove into volume output
     
     ;Mix R
     mov X, ZP.TempScratchMemH
-    mov Y, #6                                           ;Reset X
+    mov Y, #6                                           ;Reset Y
     mov A, (ZP.TempMemADDRL)+Y                          ;Grab instrument R volume
     mov Y, ZP.ChannelVolume+1+X                         ;Shove R volume into X
     call SignedMul                                      ;Multiply both volumes together
     mov X, #128                                         ;Shove in Divispr
     div YA, X                                           ;Divide
-    adc A, ZP.TempVolumeProcess+1
     mov ZP.ChannelVolumeOutput+1, A                     ;Shove into volume output
+
+    ;Add Volume offset from effects
+    ;L
+    mov A, ZP.ChannelVolumeOutput
+    adc A, ZP.TempVolumeProcess
+    bvc .SkipLCorr                                      ;Overflow detection
+    bmi .NegativeL                                      ;Check negative
+    mov A, #$80                                         ;Clamp output
+    bra .SkipLCorr
+    .NegativeL:
+    mov A, #$7F                                         ;Clamp output
+    .SkipLCorr:
+    mov ZP.ChannelVolumeOutput, A
+    ;R
+    mov A, ZP.ChannelVolumeOutput+1
+    adc A, ZP.TempVolumeProcess+1
+    bvc .SkipRCorr                                      ;Overflow detection
+    bmi .NegativeR                                      ;Check negative
+    mov A, #$80                                         ;Clamp output
+    bra .SkipRCorr
+    .NegativeR:
+    mov A, #$7F                                         ;Clamp output
+    .SkipRCorr:
+    mov ZP.ChannelVolumeOutput+1, A
 
     ;Apply Volume
     mov X, ZP.TempScratchMemH                           ;Grab Premult channel index
@@ -327,6 +395,7 @@ ReadRows:
     dw Row_SetVolSlide
     dw Row_SetPanbr
     dw Row_Stop
+    dw Row_NoteRelease
     
 Row_SetSpeed:
     call GrabCommand
@@ -339,7 +408,7 @@ Row_Sleep:
     mov ZP.ChannelSleepCounter+X, A
     ret                             ;ret is exiting out of the read rows subroutine
 
-Row_Goto:   ;Broken, causes the command addr to get fucked up and read rubbish data
+Row_Goto:
     call GrabCommand
     mov ZP.OrderPosGoto, A      ;Return pos
     mov ZP.OrderChangeFlag, #1  ;Set the order change flag
@@ -431,9 +500,9 @@ Row_SetInstrument:
     jmp ReadRows
 
 Row_SetFlag:
-    call GrabCommand            ;Grab value
-    mov SPC_RegADDR, #DSP_FLG   ;Get correct addr
-    mov SPC_RegData, A          ;Apply
+    call GrabCommand                    ;Grab value
+    mov SPC_RegADDR, #DSP_FLG           ;Get correct addr
+    mov SPC_RegData, A                  ;Apply
     jmp ReadRows
 
 Row_SetDelay:
@@ -453,12 +522,12 @@ Row_SetDelayCoeff:
     jmp ReadRows
 
 Row_SetMasterVolume:
-    call GrabCommand            ;Grab L volume
-    mov SPC_RegADDR, #DSP_MVOL_L;Shove correct addr to get L master volume
-    mov SPC_RegData, A          ;Apply
-    call GrabCommand            ;Grab R volume
-    mov SPC_RegADDR, #DSP_MVOL_R;Shove correct addr to get R master volume
-    mov SPC_RegData, A          ;Apply
+    call GrabCommand                ;Grab L volume
+    mov SPC_RegADDR, #DSP_MVOL_L    ;Shove correct addr to get L master volume
+    mov SPC_RegData, A              ;Apply
+    call GrabCommand                ;Grab R volume
+    mov SPC_RegADDR, #DSP_MVOL_R    ;Shove correct addr to get R master volume
+    mov SPC_RegData, A              ;Apply
     jmp ReadRows
 
 Row_SetChannelVolume:
@@ -467,39 +536,47 @@ Row_SetChannelVolume:
     call GrabCommand                ;Grab R volume
     mov ZP.ChannelVolume+1+X, A     ;Apply
     jmp ReadRows
+
 Row_SetArp:
     call GrabCommand
     mov X, ZP.CurrentChannel
     mov ZP.ArpValue+X, A
     jmp ReadRows
+
 Row_SetPort:
     call GrabCommand
     mov X, ZP.CurrentChannel
     mov ZP.PortValue+X, A
     jmp ReadRows
+
 Row_SetVib:
     call GrabCommand
     mov X, ZP.CurrentChannel
     mov ZP.VibratoValue+X, A
     jmp ReadRows
+
 Row_SetTrem:
     call GrabCommand
     mov X, ZP.CurrentChannel
     mov ZP.TremolandoValue+X, A
     jmp ReadRows
+
 Row_SetVolSlide:
     call GrabCommand
     mov X, ZP.CurrentChannel
     mov ZP.VolSlideValue+X, A
     jmp ReadRows
+
 Row_SetPanbr:
     call GrabCommand
     mov X, ZP.CurrentChannel
     mov ZP.PanbrelloValue+X, A
     jmp ReadRows
+
 Row_Stop:
     ret
-
+Row_NoteRelease:
+    ret
         ;----------------------------;
         ;       Command Grabber      ;
         ;----------------------------;
@@ -552,10 +629,10 @@ GetSineValue:
 
     mov1 C, ZP.TempScratchMem.6     ;Shove 6th bit into carry to determine the X flip
     bcc +                           ;Jump over if (> 64 & < 128) | (> 192 & < 256)
-    mov A, #64                      ;Shove subtraction into A
+    mov A, #$3F                     ;Shove subtraction into A
+    setc
     sbc A, ZP.TempMemADDRL          ;Subtract
     +
-
     mov Y, A
     mov A, SineTable+Y              ;Add on the sine table value
     mov1 C, ZP.TempScratchMem.7     ;Shove 7th bit into carry to determine the Y flip
@@ -653,70 +730,15 @@ CoeffecientTable:   ;Writes the value for the coeffecient index
 ;It is intended that the sine gets flipped both horizontally and vertically
 ;The vertical can be done by changing the sign bit within the table
 SineTable:
-    db $00
-    db $03
-    db $06
-    db $09
-    db $0C
-    db $10
-    db $13
-    db $16
-    db $19
-    db $1C
-    db $1F
-    db $22
-    db $25
-    db $28
-    db $2B
-    db $2E
-    db $31
-    db $33
-    db $36
-    db $39
-    db $3C
-    db $3F
-    db $41
-    db $44
-    db $47
-    db $49
-    db $4C
-    db $4E
-    db $51
-    db $53
-    db $55
-    db $58
-    db $5A
-    db $5C
-    db $5E
-    db $60
-    db $62
-    db $64
-    db $66
-    db $68
-    db $6A
-    db $6B
-    db $6D
-    db $6F
-    db $70
-    db $71
-    db $73
-    db $74
-    db $75
-    db $76
-    db $78
-    db $79
-    db $7A
-    db $7A
-    db $7B
-    db $7C
-    db $7D
-    db $7D
-    db $7E
-    db $7E
-    db $7E
-    db $7F
-    db $7F
-    db $7F
+db $00,$03,$06,$09,$0C,$10,$13,$16,$19,$1C
+db $1F,$22,$25,$28,$2B,$2E,$31,$33,$36,$39
+db $3C,$3F,$41,$44,$47,$49,$4C,$4E,$51,$53
+db $55,$58,$5A,$5C,$5E,$60,$62,$64,$66,$68
+db $6A,$6B,$6D,$6F,$70,$71,$73,$74,$75,$76
+db $78,$79,$7A,$7A,$7B,$7C,$7D,$7D,$7E,$7E
+db $7E,$7F,$7F,$7F
+
+PitchTable:
 
 fill $2000-pc()
 assert pc() == $2000
@@ -726,16 +748,17 @@ db $08,$20,$08,$20,$22,$20,$22,$20
 db $84, $17, $45, $35, $22, $22, $31, $21, $10, $68, $01, $21, $0D, $01, $08, $0B, $C3, $3E, $5B, $09, $8B, $D7, $B1, $E0, $BC, $AF, $78
 db $B8, $87, $1F, $00, $F1, $0F, $1F, $00, $00, $8F, $E1, $13, $12, $2D, $52, $14, $10, $F7
 
+
 OrderTable:
     .Ord0:
     dw PatternMemory_Pat0
-    dw PatternMemory_Pat0
-    dw PatternMemory_Pat0
-    dw PatternMemory_Pat0
-    dw PatternMemory_Pat0
-    dw PatternMemory_Pat0
-    dw PatternMemory_Pat0
-    dw PatternMemory_Pat0
+    dw PatternMemory_Pat2
+    dw PatternMemory_Pat2
+    dw PatternMemory_Pat2
+    dw PatternMemory_Pat2
+    dw PatternMemory_Pat2
+    dw PatternMemory_Pat2
+    dw PatternMemory_Pat2
     .Ord1:
     dw PatternMemory_Pat1
     dw PatternMemory_Pat1
@@ -749,10 +772,10 @@ OrderTable:
 PatternMemory:
     .Pat0:
     %PlayPitch($1234)
-    %SetSpeed($10)
-    %SetTremo($1F)
-    ;%SetPort($02)
-    ;%SetVib($54)
+    %SetSpeed($40)
+    ;%SetPanbr($1F)
+    ;%SetTremo($FF)
+    ;%SetVib($FF)
     %SetMasterVolume($7F, $7F)
     %SetChannelVolume($7F, $7F)
     %SetInstrument(0)
@@ -762,14 +785,19 @@ PatternMemory:
     %Sleep($20)
     %Goto($00)
     .Pat2:
-    %PlayPitch($1010)
+    %PlayPitch($0000)
     %Sleep($10)
     %Break()
 
+    .Sfx1:
+    %PlayPitch($2000)
+    
+
 InstrumentMemory:
 %WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $40)
-%WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $FF, $60)
-%WriteInstrument($01, $FF, $80, $7F, %00000000, $FF, $FF, $80)
+%WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $60)
+%WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $80)
+%WriteInstrument($00, $FF, $80, $93, %00000000, $7F, $7F, $80)  ;Test SFX
 .EndOfInstrument:
 
 Engine_End:

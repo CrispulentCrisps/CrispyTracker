@@ -22,8 +22,11 @@ struct ZP $00
 ;Effects
 .CurrentChannel:            skip 1                  ;Current channel we are working with
 
-.SineIndex:                 skip 8                 ;Array of current indexes for sine tables
+.SineIndexVib:              skip 8                  ;Array of current indexes for sine tables
+.SineIndexTrem:             skip 8                  ;Array of current indexes for sine tables
+.SineIndexPanbr:            skip 8                  ;Array of current indexes for sine tables
 .ArpValue:                  skip 8                  ;Array of values for the Arpeggio
+.ArpTimer:                  skip 8                  ;Array of timers for the Arpeggio
 .PortValue:                 skip 8                  ;Array of values for the Portamento
 .VibratoValue:              skip 8                  ;Array of values for the Vibrato
 .TremolandoValue:           skip 8                  ;Array of values for the Tremolando
@@ -188,7 +191,7 @@ db RC.SetVolSlide
 db <V>
 endmacro
 
-macro SetPabr(V)
+macro SetPanbr(V)
 db RC.SetPanbrello
 db <V>
 endmacro

@@ -102,6 +102,7 @@ Each row contains the following values:
 		1A, Set Panbr Value, B, puts XY into B			[Speed : Depth	]
 
 		1B, Stop, Stops the track from playing
+		1C, Release, Sets KOFF on
 
 - Effects Processing -
 
