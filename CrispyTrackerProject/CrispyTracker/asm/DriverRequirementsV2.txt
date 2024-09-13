@@ -151,6 +151,13 @@ Effects list goes as:
 
 	FFxx End Tune [xx: end tune] Will end the tune no matter the value
 	
+- Sound Effects - 
+	Sound effects will use a flag system to make sure both CPUs work in sync
+	A sound effect is defined as an order that contains several patterns
+	To play a sound effect you send a byte that acts as an index into a SFX table
+
+	SFX work in 2 "virtual" channels which replace the desired channel with the state of the sound effect
+
 - Miscellaneous -
 	Settings byte:
 		The settings byte is specifically made for compatilbility on the end users part.
