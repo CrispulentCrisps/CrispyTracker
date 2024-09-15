@@ -74,25 +74,26 @@ DriverLoop:                         ;Main driver loop
     beq .TickIncrement              ;If the timer is set to 0
     
     call ProcessEffects
-    inc ZP.VCTick
-    mov A, ZP.VCTick
-    cmp A, ZP.TickThresh+1
-    bmi +
-    call ReadPatterns
-    +
-    inc ZP.VCTick+1
-    mov A, ZP.VCTick+1
-    cmp A, ZP.TickThresh+2
-    bmi +
-    call ReadPatterns
-    +
+    mov ZP.CurrentChannel,#$9       ;Set channel index
+    ;inc ZP.VCTick
+    ;mov A, ZP.VCTick
+    ;cmp A, ZP.TickThresh+1
+    ;bmi +
+    ;call ReadPatterns
+    ;+
+    ;inc ZP.VCTick+1
+    ;mov A, ZP.VCTick+1
+    ;cmp A, ZP.TickThresh+2
+    ;bmi +
+    ;call ReadPatterns
+    ;+
     inc X                           ;Increment our counter
-    cmp X, ZP.TickThresh            ;Check if the counter has reached the 
+    cmp X, ZP.TickThresh            ;Check if the counter has reached the threshold
     bmi .TickIncrement              ;Go back to the tick incrementer if the counter is not
                                     ;Assuming we've hit the threshold
     mov1 C, ZP.OrderChangeFlag.0    ;Check the order flag with the 0th bit
     bcc +                           ;Skip if the carry flag isn't set
-    mov X, #$07
+    mov X, #$09
     mov Y, #$00
     -                               ;Sleep Clear Loop
     mov ZP.ChannelSleepCounter+X, Y ;Clear sleep counter
@@ -102,7 +103,6 @@ DriverLoop:                         ;Main driver loop
     mov ZP.OrderChangeFlag, #0
     +
 
-    mov ZP.CurrentChannel,#$7       ;Set channel index
     .ChannelLoop:                   ;Main channel loop
     mov X, ZP.CurrentChannel
     mov Y, ZP.ChannelSleepCounter+X
@@ -113,7 +113,7 @@ DriverLoop:                         ;Main driver loop
     dec ZP.ChannelSleepCounter+X
     .SkipDec:
     dec ZP.CurrentChannel
-    bpl .ChannelLoop
+    bne .ChannelLoop
 
     cmp ZP.OrderChangeFlag, #1      ;Order change
     bne +
@@ -362,7 +362,7 @@ ReadPatterns:
     +
     mov A, X
     setc
-    sbc A, #$7
+    sbc A, #$8
     mov Y, A
     mov A, ZP.VCInd+Y                          ;Grab the current order position
     asl A                                      ;Multiply by 2
@@ -376,14 +376,17 @@ ReadPatterns:
     bpl +                                      ;Grab Music
     mov A, #OrderTable&$FF                     ;Shove lo table addr into A
     mov Y, #(OrderTable>>8)&$FF                ;Shove hi table addr into Y
+    addw YA, ZP.TempMemADDRL                   ;Add offset to YA
+    movw ZP.TempMemADDRL, YA                   ;Return address to memory
+    mov Y, #$F                                 ;Set Y up for loop   
     bra .ApplyOff
     +                                          ;Grab SFX
     mov A, #SfxTable&$FF                       ;Shove lo table addr into A
     mov Y, #(SfxTable>>8)&$FF                  ;Shove hi table addr into Y
-    .ApplyOff:
     addw YA, ZP.TempMemADDRL                   ;Add offset to YA
     movw ZP.TempMemADDRL, YA                   ;Return address to memory
-    mov Y, #$F                                 ;Set Y up for loop   
+    mov Y, #$3                                 ;Set Y up for loop
+    .ApplyOff:
     -                                          ;Loop point
     mov A, (ZP.TempMemADDRL)+Y                 ;Indirectly shove addr value into A
     mov ZP.SequenceAddr+Y, A                   ;Copy value to sequence addr
@@ -465,10 +468,13 @@ Row_PlayPitch:
 
     ;KON State
     mov X, ZP.CurrentChannel            ;Grab current channel
+    cmp X, #$07
+    bpl +
     mov A, BitmaskTable+X               ;Get bitmask index via X
     mov ZP.TempScratchMem, A            ;Shove into scratch memory for ORing
     mov SPC_RegADDR, #DSP_KON           ;Shove KON addr in
     or SPC_RegData, ZP.TempScratchMem   ;OR into A
+    +
     jmp ReadRows
 
 Row_SetInstrument:
@@ -507,6 +513,8 @@ Row_SetInstrument:
 
     incw ZP.TempMemADDRL                ;Increment
     mov X, ZP.CurrentChannel            ;Grab current channel
+    cmp X, #$07
+    bpl +
     mov A, BitmaskTable+X               ;Grab bitfield
     eor A, #$FF                         ;Invert current bit
     mov ZP.TempScratchMem, A            ;Shove into temp memory
@@ -514,7 +522,10 @@ Row_SetInstrument:
     mov X, #$00                         ;Reset X
     mov ZP.TempScratchMemH, #$01        ;Shove 1 into temp memory
     mov Y, #$03                         ;Initialise loop counter
-
+    +
+    mov X, ZP.CurrentChannel
+    cmp X, #$07
+    bpl +
     .RestartLoop:
     and SPC_RegData, ZP.TempScratchMem  ;AND the current bitfield with
     mov A, (ZP.TempMemADDRL+X)          ;Grab effects state
@@ -528,7 +539,7 @@ Row_SetInstrument:
     adc SPC_RegADDR, #$10               ;Add on $10 to the address to get to other bitfields
     dec Y                               ;Dec loop counter
     bne .RestartLoop
-
+    +
     jmp ReadRows
 
 Row_SetFlag:
@@ -607,7 +618,8 @@ Row_SetPanbr:
 
 Row_Stop:
     mov Y, ZP.CurrentChannel
-    mov ZP.ChannelSleepCounter+Y, #$FF     ;Send max sleep value
+    mov A, #$FF
+    mov ZP.ChannelSleepCounter+Y, A     ;Send max sleep value
     ret
 Row_NoteRelease:
     ret
@@ -630,7 +642,7 @@ Row_NoteRelease:
         ;
 GrabCommand:
     mov A, ZP.CurrentChannel            ;Grab current channel
-    asl A                               ;Mult by 2 to get the correct offset into the sequence pointers 
+    asl A                               ;Mult by 2 to get the correct offset into the sequence pointers
     mov X, A
     mov A, (ZP.SequenceAddr+X)          ;Grab command from the current channel's command stream
     cmp A, #RC.Stop
@@ -779,8 +791,8 @@ db $7E,$7F,$7F,$7F
 
 PitchTable:
 
-fill $2000-pc()
-assert pc() == $2000
+fill !CodeBuffer-pc()
+assert pc() == !CodeBuffer
 
 ;Test sine+saw sample + dir page
 db $08,$20,$08,$20,$22,$20,$22,$20
@@ -834,7 +846,7 @@ SfxTable:
 
 SfxMemory:
     .Sfx0:
-    %sleep(FF)
+    %Sleep($FF)
     %Stop()
     .Sfx1:
     %SetSpeed(4)

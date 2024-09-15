@@ -2,6 +2,8 @@
 ;   Macro's file for Cobalt Driver  ;
 ;-----------------------------------;
 
+!CodeBuffer = $0800                                 ;Section of bytes to fill
+
 struct ZP $00
 .TempMemADDRL:              skip 1                  ;General purpose addr LO
 .TempMemADDRH:              skip 1                  ;General purpose addr HI

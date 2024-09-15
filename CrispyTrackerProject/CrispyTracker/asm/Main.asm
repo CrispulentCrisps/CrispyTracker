@@ -23,7 +23,7 @@ Reset:
     xce                             ;Take the 0 in clc and shove into emulation flag, thus exiting 6502 mode
     rep #%00011000                  ;Turn off decimal mode and we set the X register to 16 bits
     sep #%00100000                  ;Set the M flag to 8 bit, used for accumulator and memory instructions
-    ldx.w #$01FF                    ;Set stack over to 0x1FFF
+    ldx.w #$1FFF                    ;Set stack over to 0x1FFF
     txs                             ;Send X register to stack
     pea.w 0                         ;Writes 2 0bytes to the stack [no # needed as every value is a direct load]
     pld                             ;Take value from stack and shove to D
