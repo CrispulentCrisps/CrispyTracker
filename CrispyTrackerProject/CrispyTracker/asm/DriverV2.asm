@@ -74,35 +74,23 @@ DriverLoop:                         ;Main driver loop
     beq .TickIncrement              ;If the timer is set to 0
     
     call ProcessEffects
-    mov ZP.CurrentChannel,#$9       ;Set channel index
-    ;inc ZP.VCTick
-    ;mov A, ZP.VCTick
-    ;cmp A, ZP.TickThresh+1
-    ;bmi +
-    ;call ReadPatterns
-    ;+
-    ;inc ZP.VCTick+1
-    ;mov A, ZP.VCTick+1
-    ;cmp A, ZP.TickThresh+2
-    ;bmi +
-    ;call ReadPatterns
-    ;+
     inc X                           ;Increment our counter
-    cmp X, ZP.TickThresh            ;Check if the counter has reached the threshold
+    cmp X, ZP.TickThresh            ;Check if the counter has reached the 
     bmi .TickIncrement              ;Go back to the tick incrementer if the counter is not
                                     ;Assuming we've hit the threshold
-    mov1 C, ZP.OrderChangeFlag.0    ;Check the order flag with the 0th bit
-    bcc +                           ;Skip if the carry flag isn't set
-    mov X, #$09
+    cmp ZP.OrderChangeFlag, #1      ;Check the order flag with the 0th bit
+    bne +                           ;Skip if the carry flag isn't set
+    mov X, #$07
     mov Y, #$00
-    -                               ;Sleep Clear Loop
-    mov ZP.ChannelSleepCounter+X, Y ;Clear sleep counter
-    dec X                           ;Decrement counter
+    -                                   ;Sleep Clear Loop
+    mov ZP.ChannelSleepCounter+X, Y     ;Clear sleep counter
+    dec X                               ;Decrement counter
     bpl -
     call ReadPatterns
     mov ZP.OrderChangeFlag, #0
     +
 
+    mov ZP.CurrentChannel,#$7       ;Increment channel index
     .ChannelLoop:                   ;Main channel loop
     mov X, ZP.CurrentChannel
     mov Y, ZP.ChannelSleepCounter+X
@@ -113,19 +101,19 @@ DriverLoop:                         ;Main driver loop
     dec ZP.ChannelSleepCounter+X
     .SkipDec:
     dec ZP.CurrentChannel
-    bne .ChannelLoop
+    bpl .ChannelLoop
 
     cmp ZP.OrderChangeFlag, #1      ;Order change
     bne +
     mov A, ZP.OrderPosGoto
     mov ZP.OrderPos, A
     +
-    bra DriverLoop
+    jmp DriverLoop
 
 
 ProcessEffects:
     push X
-    mov ZP.CurrentChannel, #$09
+    mov ZP.CurrentChannel, #$07
     .EffectsLoop:
     mov ZP.TempPitchProcess, #0
     mov ZP.TempPitchProcess+1, #0
@@ -353,40 +341,17 @@ ProcessEffects:
     ret
 
 ReadPatterns:
-    mov X, ZP.CurrentChannel                   ;Grab current channel
-    cmp X, #$7                                 ;Check if we're grabbing from SFX
-    bpl +                                      ;Jump if positive
     mov A, ZP.OrderPos                         ;Grab the current order position
     xcn A                                      ;Mult by 16
-    bra .StoreOff
-    +
-    mov A, X
-    setc
-    sbc A, #$8
-    mov Y, A
-    mov A, ZP.VCInd+Y                          ;Grab the current order position
-    asl A                                      ;Multiply by 2
-    .StoreOff:
     mov ZP.TempMemADDRH, A                     ;Shove into hi zp
     mov ZP.TempMemADDRL, A                     ;Shove into lo zp
     and ZP.TempMemADDRH, #$0F                  ;Get lo nibble
     and ZP.TempMemADDRL, #$F0                  ;Get hi nibble
-
-    cmp X, #$7                                 ;Check if we're grabbing from SFX
-    bpl +                                      ;Grab Music
     mov A, #OrderTable&$FF                     ;Shove lo table addr into A
     mov Y, #(OrderTable>>8)&$FF                ;Shove hi table addr into Y
     addw YA, ZP.TempMemADDRL                   ;Add offset to YA
     movw ZP.TempMemADDRL, YA                   ;Return address to memory
-    mov Y, #$F                                 ;Set Y up for loop   
-    bra .ApplyOff
-    +                                          ;Grab SFX
-    mov A, #SfxTable&$FF                       ;Shove lo table addr into A
-    mov Y, #(SfxTable>>8)&$FF                  ;Shove hi table addr into Y
-    addw YA, ZP.TempMemADDRL                   ;Add offset to YA
-    movw ZP.TempMemADDRL, YA                   ;Return address to memory
-    mov Y, #$3                                 ;Set Y up for loop
-    .ApplyOff:
+    mov Y, #$F                                 ;Set Y up for loop
     -                                          ;Loop point
     mov A, (ZP.TempMemADDRL)+Y                 ;Indirectly shove addr value into A
     mov ZP.SequenceAddr+Y, A                   ;Copy value to sequence addr
@@ -468,13 +433,10 @@ Row_PlayPitch:
 
     ;KON State
     mov X, ZP.CurrentChannel            ;Grab current channel
-    cmp X, #$07
-    bpl +
     mov A, BitmaskTable+X               ;Get bitmask index via X
     mov ZP.TempScratchMem, A            ;Shove into scratch memory for ORing
     mov SPC_RegADDR, #DSP_KON           ;Shove KON addr in
     or SPC_RegData, ZP.TempScratchMem   ;OR into A
-    +
     jmp ReadRows
 
 Row_SetInstrument:
@@ -513,8 +475,6 @@ Row_SetInstrument:
 
     incw ZP.TempMemADDRL                ;Increment
     mov X, ZP.CurrentChannel            ;Grab current channel
-    cmp X, #$07
-    bpl +
     mov A, BitmaskTable+X               ;Grab bitfield
     eor A, #$FF                         ;Invert current bit
     mov ZP.TempScratchMem, A            ;Shove into temp memory
@@ -522,10 +482,7 @@ Row_SetInstrument:
     mov X, #$00                         ;Reset X
     mov ZP.TempScratchMemH, #$01        ;Shove 1 into temp memory
     mov Y, #$03                         ;Initialise loop counter
-    +
-    mov X, ZP.CurrentChannel
-    cmp X, #$07
-    bpl +
+
     .RestartLoop:
     and SPC_RegData, ZP.TempScratchMem  ;AND the current bitfield with
     mov A, (ZP.TempMemADDRL+X)          ;Grab effects state
@@ -539,7 +496,7 @@ Row_SetInstrument:
     adc SPC_RegADDR, #$10               ;Add on $10 to the address to get to other bitfields
     dec Y                               ;Dec loop counter
     bne .RestartLoop
-    +
+
     jmp ReadRows
 
 Row_SetFlag:
@@ -617,14 +574,9 @@ Row_SetPanbr:
     jmp ReadRows
 
 Row_Stop:
-    mov Y, ZP.CurrentChannel
-    mov A, #$FF
-    mov ZP.ChannelSleepCounter+Y, A     ;Send max sleep value
     ret
 Row_NoteRelease:
     ret
-
-
         ;----------------------------;
         ;       Command Grabber      ;
         ;----------------------------;
@@ -645,13 +597,10 @@ GrabCommand:
     asl A                               ;Mult by 2 to get the correct offset into the sequence pointers
     mov X, A
     mov A, (ZP.SequenceAddr+X)          ;Grab command from the current channel's command stream
-    cmp A, #RC.Stop
-    beq .SkipInc
     inc ZP.SequenceAddr+X               ;Increment the channel's lo sequence pointer
     bne +                               ;Check for 0 if we've overflown
     inc ZP.SequenceAddr+1+X             ;Increment hi byte
     +
-    .SkipInc:
     ret
 
 
@@ -799,6 +748,7 @@ db $08,$20,$08,$20,$22,$20,$22,$20
 db $84, $17, $45, $35, $22, $22, $31, $21, $10, $68, $01, $21, $0D, $01, $08, $0B, $C3, $3E, $5B, $09, $8B, $D7, $B1, $E0, $BC, $AF, $78
 db $B8, $87, $1F, $00, $F1, $0F, $1F, $00, $00, $8F, $E1, $13, $12, $2D, $52, $14, $10, $F7
 
+
 OrderTable:
     .Ord0:
     dw PatternMemory_Pat0
@@ -840,39 +790,17 @@ PatternMemory:
     %Break()
 
 SfxTable:
-    dw SfxMemory_Sfx0               ;Empty sound effect to prevent rogue SFX plays
-    dw SfxMemory_Sfx1
-    dw SfxMemory_Sfx2
-
-SfxMemory:
-    .Sfx0:
-    %Sleep($FF)
-    %Stop()
     .Sfx1:
+    %PlayPitch($1800)
     %SetSpeed(4)
-    %SetChannelVolume($40, $40)
-    %SetInstrument(3)
+    %Sleep(10)
     %PlayPitch($2000)
-    %Sleep(2)
-    %PlayPitch($2400)
-    %Sleep(8)
-    %SetChannelVolume($20, $20)
-    %Sleep(12)
-    %Goto($00)
-    .Sfx2:
-    %SetSpeed(6)
-    %SetChannelVolume($CC, $CC)
-    %SetInstrument(3)
-    %PlayPitch($2000)
-    %SetPort($99)
-    %Sleep(12)
-    %Goto($00)
 
 InstrumentMemory:
 %WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $40)
 %WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $60)
 %WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $80)
-%WriteInstrument($00, $FF, $80, $93, %00000000, $7F, $7F, $FF)  ;Test SFX
+%WriteInstrument($00, $FF, $80, $93, %00000000, $7F, $7F, $80)  ;Test SFX
 .EndOfInstrument:
 
 Engine_End:

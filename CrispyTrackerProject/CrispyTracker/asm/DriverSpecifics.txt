@@ -1,0 +1,39 @@
+- - Driver Loop - -
+    MTick = 0
+    if SPC_Count1 != 0
+        //Music section 
+        Process effects() [*]
+        MTick++
+        if MTick >= TickThresh
+            int x = 0
+            if OrderChangeFlag == 1
+                x = 7
+                while x > 0
+                    ChannelSleepCounter[x] = 0
+                    x--;                
+                    ReadPatterns() [*]
+                    OrderChangeFlag = 0
+            
+            int CurrentChannel = 7
+            while CurrentChannel >= 0
+                if ChannelSleepCounter[CurrentChannel] == 0
+                    ReadRows() [*]
+                else
+                    ChannelSleepCounter[CurrentChannel]--
+                CurrentChannel--
+
+            if OrderChangeFlag == 1
+                OrderPos = OrderPosGoto
+        //Sfx Section
+        STick[0]++
+        STick[1]++
+        for x = 0; x < 2; x++
+            if STick[x] >= SThresh[x]
+                if SSleepCounter[x] == 0
+                    ReadRows() [*]
+                else
+                    SSleepCounter[x]--
+                x--
+                
+
+- - SFX Handling - -
