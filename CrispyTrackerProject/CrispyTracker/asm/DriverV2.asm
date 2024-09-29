@@ -45,13 +45,16 @@ mov ZP.TrackSettings, #$00     ;Set the track settings
 %spc_write(DSP_ESA, $BF)
 %spc_write(DSP_EDL, $00)
 %spc_write(DSP_EFB, $20)
-%spc_write(DSP_DIR, $20)
+%spc_write(DSP_DIR, $08)
+%spc_write(DSP_PMON, $00)
+%spc_write(DSP_EON, $00)
+%spc_write(DSP_NON, $00)
 
 ;Audio register reset routine
 mov A, #0
 -
 mov Y, #0                           ;Shove into reset value
-mov X, #7
+mov X, #$07
 mov SPC_RegADDR, A                  ;Shove address in
 Inner:
 mov SPC_RegData, Y                  ;Reset volume left
@@ -396,6 +399,16 @@ ReadRows:
     dw Row_SetPanbr
     dw Row_Stop
     dw Row_NoteRelease
+    ;SFX Specific, repeat 3 times since we cannot rely on the CurrentChannel byte
+    dw Row_Virt_SetSpeed
+    dw Row_Virt_SetSpeed
+    dw Row_Virt_SetSpeed
+    dw Row_Virt_Break
+    dw Row_Virt_Break
+    dw Row_Virt_Break
+    dw Row_Virt_Stop
+    dw Row_Virt_Stop
+    dw Row_Virt_Stop
     
 Row_SetSpeed:
     call GrabCommand
@@ -450,6 +463,7 @@ Row_SetInstrument:
     addw YA, ZP.TempMemADDRL
     movw ZP.TempMemADDRL, YA
 
+    ;SCRN
     mov A, ZP.CurrentChannel            ;Grab current channel
     xcn A                               ;XCN to get correct channel in memory
     or A, #$04                          ;Add 4 for correct nibble
@@ -458,21 +472,25 @@ Row_SetInstrument:
     mov A, (ZP.TempMemADDRL+X)          ;Shove value into A
     mov SPC_RegData, A                  ;Apply
     
+    ;ADSR1
     incw ZP.TempMemADDRL                ;Increment
     mov A, (ZP.TempMemADDRL+X)          ;Grab Value
     inc SPC_RegADDR                     ;Inc address
     mov SPC_RegData, A                  ;Apply
     
+    ;ADSR2
     incw ZP.TempMemADDRL                ;Increment
     mov A, (ZP.TempMemADDRL+X)          ;Grab Value
     inc SPC_RegADDR                     ;Inc address
     mov SPC_RegData, A                  ;Apply
     
+    ;GAIN
     incw ZP.TempMemADDRL                ;Increment
     mov A, (ZP.TempMemADDRL+X)          ;Grab Value
     inc SPC_RegADDR                     ;Inc address
     mov SPC_RegData, A                  ;Apply
 
+    ;PMON, EON, NON, Channel ON
     incw ZP.TempMemADDRL                ;Increment
     mov X, ZP.CurrentChannel            ;Grab current channel
     mov A, BitmaskTable+X               ;Grab bitfield
@@ -575,8 +593,35 @@ Row_SetPanbr:
 
 Row_Stop:
     ret
+
 Row_NoteRelease:
     ret
+
+;-------------------;
+;   SFX specific    ;
+;-------------------;
+Row_Virt_SetSpeed:
+    ;Store channel to prevent Grab Command getting the wrong data stream
+    mov ZP.TempScratchMemH, ZP.CurrentChannel
+    ;We undo the LShift and then subtract the virtual speed index to get the actual channel speed
+    lsr A
+    sbc A, #RC.VirtSpeed        ;Subtract the command value since we can get the SFX index by the command value
+    adc A, #$07                 ;Offset by 7 to get to correct data stream
+    mov ZP.CurrentChannel, A    ;Temporarily overwrite current channel to get correct data stream
+    mov X, A                    ;Shove A into X for indexing into the Vritual channel's sequence pointer
+    ;Grab said speed
+    call GrabCommand
+
+    ret
+
+Row_Virt_Break:
+
+    ret
+
+Row_Virt_Stop:
+
+    ret
+
         ;----------------------------;
         ;       Command Grabber      ;
         ;----------------------------;
@@ -744,7 +789,7 @@ fill !CodeBuffer-pc()
 assert pc() == !CodeBuffer
 
 ;Test sine+saw sample + dir page
-db $08,$20,$08,$20,$22,$20,$22,$20
+db $08,$08,$08,$08,$23,$08,$23,$08
 db $84, $17, $45, $35, $22, $22, $31, $21, $10, $68, $01, $21, $0D, $01, $08, $0B, $C3, $3E, $5B, $09, $8B, $D7, $B1, $E0, $BC, $AF, $78
 db $B8, $87, $1F, $00, $F1, $0F, $1F, $00, $00, $8F, $E1, $13, $12, $2D, $52, $14, $10, $F7
 

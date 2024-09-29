@@ -555,7 +555,7 @@ void Tracker::Instruments()//Showing the instruments window at the side
 			newinst.Name += to_string(index);
 			newinst.Index = index;
 			inst.push_back(newinst);
-			cout << inst.size();
+			std::cout << inst.size();
 			SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
 		}
 		//Instrument side bar
@@ -820,7 +820,7 @@ void Tracker::Channel_View()
 											col = Default;
 										}
 									}
-									TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+									TableSetBgColor(ImGuiTableBgTarget_CellBg, col);
 
 									bool IsPoint = CursorX == i && CursorY == j;
 									if (IsPoint)//i = x, j = y
@@ -832,13 +832,13 @@ void Tracker::Channel_View()
 									}
 									PushID(IDOffset + i + (j * 40));
 									//Cursor highlighting
-									if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+									if (IsWithinSelection(i, j, NOTE))
 									{
-										TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
+										TableSetBgColor(ImGuiTableBgTarget_CellBg, SelectionBoxCol);
 									}
 									else
 									{
-										TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+										TableSetBgColor(ImGuiTableBgTarget_CellBg, col);
 									}
 									if (Selectable(Channels[i].NoteView(j).c_str(), IsPoint && CursorPos == NOTE, ImGuiSelectableFlags_SelectOnClick, NoteSize))
 									{
@@ -851,13 +851,13 @@ void Tracker::Channel_View()
 									PushID(IDOffset + i + (j * 40) + 1);
 									ImGui::TableNextColumn();
 
-									if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+									if (IsWithinSelection(i, j, INSTR))
 									{
-										TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
+										TableSetBgColor(ImGuiTableBgTarget_CellBg, SelectionBoxCol);
 									}
 									else
 									{
-										TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+										TableSetBgColor(ImGuiTableBgTarget_CellBg, col);
 									}
 									if (Selectable(Channels[i].InstrumentView(j).c_str(), IsPoint && CursorPos == INSTR, ImGuiSelectableFlags_SelectOnClick, MiscSize))
 									{
@@ -869,14 +869,14 @@ void Tracker::Channel_View()
 									PopID();
 									PushID(IDOffset + i + (j * 40) + 2);
 									ImGui::TableNextColumn();
-
-									if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+									
+									if (IsWithinSelection(i, j, VOLUME))
 									{
-										TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
+										TableSetBgColor(ImGuiTableBgTarget_CellBg, SelectionBoxCol);
 									}
 									else
 									{
-										TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+										TableSetBgColor(ImGuiTableBgTarget_CellBg, col);
 									}
 									if (Selectable(Channels[i].VolumeView(j).c_str(), IsPoint && CursorPos == VOLUME, ImGuiSelectableFlags_SelectOnClick, MiscSize))
 									{
@@ -888,14 +888,14 @@ void Tracker::Channel_View()
 									PopID();
 									PushID(IDOffset + i + (j * 40) + 3);
 									ImGui::TableNextColumn();
-
-									if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+									
+									if (IsWithinSelection(i, j, EFFECT))
 									{
-										TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
+										TableSetBgColor(ImGuiTableBgTarget_CellBg, SelectionBoxCol);
 									}
 									else
 									{
-										TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+										TableSetBgColor(ImGuiTableBgTarget_CellBg, col);
 									}
 									if (Selectable(Channels[i].EffectView(j).c_str(), IsPoint && CursorPos == EFFECT, ImGuiSelectableFlags_SelectOnClick, MiscSize))
 									{
@@ -908,13 +908,13 @@ void Tracker::Channel_View()
 									PushID(IDOffset + i + (j * 40) + 4);
 									ImGui::TableNextColumn();
 
-									if (BoxSelected && j >= SelectionBoxY1 && j <= SelectionBoxY2 && i >= SelectionBoxX1 && i <= SelectionBoxX2 && CursorPos >= SelectionBoxSubX1 && CursorPos <= SelectionBoxSubX2)
+									if (IsWithinSelection(i, j, VALUE))
 									{
-										TableSetBgColor(ImGuiTableBgTarget_RowBg0, SelectionBoxCol);
+										TableSetBgColor(ImGuiTableBgTarget_CellBg, SelectionBoxCol);
 									}
 									else
 									{
-										TableSetBgColor(ImGuiTableBgTarget_RowBg0, col);
+										TableSetBgColor(ImGuiTableBgTarget_CellBg, col);
 									}
 									if (Selectable(Channels[i].Effectvalue(j).c_str(), IsPoint && CursorPos == VALUE, ImGuiSelectableFlags_SelectOnClick, MiscSize))
 									{
@@ -950,7 +950,7 @@ void Tracker::Samples()
 		SameLine();
 		if (Button("Delete", ImVec2(GetWindowWidth() * .3, 24)) && samples.size() > 1)
 		{
-			cout << "SAMPLE LIST SIZE: " << samples.size();
+			std::cout << "SAMPLE LIST SIZE: " << samples.size();
 			if (SelectedSample > samples.size())
 			{
 				samples.erase((samples.begin()) + SelectedSample);
@@ -969,7 +969,7 @@ void Tracker::Samples()
 			Sample newsamp = samples[SelectedSample];
 			newsamp.SampleName += to_string(index);
 			samples.push_back(newsamp);
-			cout << samples.size();
+			std::cout << samples.size();
 			SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
 		}
 
@@ -1519,7 +1519,7 @@ void Tracker::Info_View()
 				}
 			}
 			LastPos += (EchoSpace * GetWindowWidth() * 0.95f) / MaxRange;
-
+			UsedSpace = LastPos;
 		}
 	}
 	End();
@@ -1842,9 +1842,12 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 		{
 			if (!BoxSelected)
 			{
-				SelectionBoxX1 = SelectionBoxX2 = x;
-				SelectionBoxY1 = SelectionBoxY2 = y;
-				SelectionBoxSubX1 = SelectionBoxSubX2 = CursorPos;
+				SelectionBoxX1 = x;
+				SelectionBoxX2 = x;
+				SelectionBoxY1 = y;
+				SelectionBoxY2 = y;
+				SelectionBoxSubX1 = CursorPos + (x * 5);
+				SelectionBoxSubX2 = CursorPos + (x * 5);
 				BoxSelected = true;
 			}
 
@@ -1855,19 +1858,22 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 				break;
 			case GLFW_KEY_RIGHT:
 				CursorPos++;
-				SelectionBoxSubX2 = min(SelectionBoxSubX2 + 1, 40);
+				SelectionBoxSubX2 = min(SelectionBoxSubX2 + 1, 39);
 				break;
 			case GLFW_KEY_DOWN:
 				CursorY++;
-				SelectionBoxY2++;
+				SelectionBoxY2 = CursorY;
 				break;
 			case GLFW_KEY_UP:
 				CursorY--;
-				SelectionBoxY2--;
+				SelectionBoxY2 = CursorY;
 				break;
 			}
-			cout << "\nSelectionBoxSubX1: " << SelectionBoxSubX1 << "\n";
-			cout << "\nSelectionBoxSubX2: " << SelectionBoxSubX2 << "\n";
+			std::cout << "\nSelectionBoxSubX1: " << SelectionBoxSubX1;
+			std::cout << "\nSelectionBoxSubX2: " << SelectionBoxSubX2;
+			std::cout << "\nSelectionBoxY1: " << SelectionBoxY1;
+			std::cout << "\nSelectionBoxY2: " << SelectionBoxY2;
+			std::cout << "\nCursorPos: " << CursorPos;
 		}
 		else
 		{
@@ -1944,6 +1950,23 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 				for (int z = SelectionBoxSubX1 + (SelectionBoxX1 * 5); z < (SelectionBoxSubX2 + (SelectionBoxX2 * 5))+1; z++)
 				{
 					for (int w = SelectionBoxY1; w < SelectionBoxY2+1; w++)
+					{
+						if (z % 5 == NOTE) Channels[(z / 5)].Rows[w].note = MAX_VALUE;
+						if (z % 5 == INSTR) Channels[(z / 5)].Rows[w].instrument = MAX_VALUE;
+						if (z % 5 == VOLUME) Channels[(z / 5)].Rows[w].volume = MAX_VALUE;
+						if (z % 5 == EFFECT) Channels[(z / 5)].Rows[w].effect = MAX_VALUE;
+						if (z % 5 == VALUE) Channels[(z / 5)].Rows[w].effectvalue = MAX_VALUE;
+						ChangePatternData(z / 5, w);
+					}
+
+				}
+				BoxSelected = false;
+			}
+			else if (BoxSelected && CurrentKey == GLFW_KEY_C && CurrentMod == GLFW_MOD_CONTROL)
+			{
+				for (int z = SelectionBoxSubX1 + (SelectionBoxX1 * 5); z < (SelectionBoxSubX2 + (SelectionBoxX2 * 5)) + 1; z++)
+				{
+					for (int w = SelectionBoxY1; w < SelectionBoxY2 + 1; w++)
 					{
 						if (z % 5 == NOTE) Channels[(z / 5)].Rows[w].note = MAX_VALUE;
 						if (z % 5 == INSTR) Channels[(z / 5)].Rows[w].instrument = MAX_VALUE;
@@ -2142,7 +2165,7 @@ void Tracker::LoadSample()
 		{
 			FileName = ImGuiFileDialog::Instance()->GetFilePathName();
 			FilePath = ImGuiFileDialog::Instance()->GetCurrentPath();
-			cout << "\n" + FileName + "\n" + FilePath + "\n";
+			std::cout << "\n" + FileName + "\n" + FilePath + "\n";
 			SF_INFO soundinfo;
 			soundinfo.format = AUDIO_FORMATS;
 			soundinfo.samplerate = SPS;
@@ -2152,8 +2175,14 @@ void Tracker::LoadSample()
 			SNDFILE* file = sf_open(FileName.c_str(), SFM_READ, &soundinfo);
 			if (file)//Loaded right
 			{
-				short FileBuffer[65536];
 				Uint32 AudioLen = soundinfo.frames * soundinfo.channels;
+				short FileBuffer[65355];
+				if (AudioLen + UsedSpace > 0xFFFF)
+				{
+					ErrorMessage = FILE_ERORR_04;
+					ShowError = true;
+					return;
+				}
 				if (soundinfo.channels == 1)
 				{
 					sf_read_short(file, FileBuffer, AudioLen);
@@ -2202,7 +2231,7 @@ void Tracker::LoadSample()
 				else
 				{
 					sf_close(file);
-					cout << "\n ERROR: FILE IS EITHER EMPTY OR IS OTHERWISE UNABLE TO LOAD \n ";
+					std::cout << "\n ERROR: FILE IS EITHER EMPTY OR IS OTHERWISE UNABLE TO LOAD \n ";
 				}
 				ImPlot::SetNextAxisToFit(x);
 			}
@@ -2214,7 +2243,7 @@ void Tracker::LoadSample()
 		}
 		LoadingSample = false;
 		ImGuiFileDialog::Instance()->Close();
-		cout << FileName + "\n" + FilePath;
+		std::cout << FileName + "\n" + FilePath;
 		// close
 	}
 }
@@ -2222,7 +2251,7 @@ void Tracker::LoadSample()
 void Tracker::DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[])
 {
 	//Thank you AlexMush for the downmixing code :]
-	Sint16 constexpr sampleBufferSize = 8192;
+	Sint16 constexpr sampleBufferSize = 65355;
 	int sampleLength = sfinfo.frames / sfinfo.channels;
 	vector<Sint16> sampleBuffer;
 	sampleBuffer.reserve(sampleBufferSize * sfinfo.channels);
@@ -2254,7 +2283,7 @@ void Tracker::UpdatePatternIndex(int x, int y)//For when you are switching patte
 		//patterns->push_back(pat);
 	}
 
-	cout << "\n" << x << "\n" << y;
+	std::cout << "\n" << x << "\n" << y;
 	for (int i = 0; i < TrackLength; i++)
 	{
 		Channels[x].Rows[i].note = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].note;
@@ -2282,10 +2311,18 @@ void Tracker::UpdateAllPatterns()
 	}
 }
 
+//Checks if a given cell is within our selection box, returns true if it does
+bool Tracker::IsWithinSelection(int xin, int yin, int suboff)
+{
+	return BoxSelected &&
+		(yin >= SelectionBoxY1 && yin <= SelectionBoxY2) &&
+		((xin * 5) + CursorPos >= SelectionBoxSubX1 && (xin * 5) + suboff <= SelectionBoxSubX2);
+}
+
 void Tracker::ChangePatternData(int x, int y)
 {
-	cout << "\nCHANGED PATTERN DATA:" << "\nX: " << x << "\nY: " << y << "\nSelected Pattern " << SelectedPattern;
-	cout << "\n" << orders->size() << " : " << orders[x].size();
+	std::cout << "\nCHANGED PATTERN DATA:" << "\nX: " << x << "\nY: " << y << "\nSelected Pattern " << SelectedPattern;
+	std::cout << "\n" << orders->size() << " : " << orders[x].size();
 
 	//Put data into channel
 	orders[x][SelectedPattern].SavedRows[y].note = Channels[x].Rows[y].note;
@@ -2391,13 +2428,13 @@ void Tracker::SaveModuleAs()
 			FilePath = ImGuiFileDialog::Instance()->GetCurrentPath();
 			if (filehandler.SaveModule(FileName))
 			{
-				cout << "File save Successful :D";
+				std::cout << "File save Successful :D";
 				ImGuiFileDialog::Instance()->Close();
 				SavingFile = false;
 			}
 			else
 			{
-				cout << "File save faled";
+				std::cout << "File save faled";
 				ImGuiFileDialog::Instance()->Close();
 				SavingFile = false;
 			}
@@ -2423,14 +2460,14 @@ void Tracker::LoadModuleAs()
 			if (filehandler.LoadModule(FileName))
 			{
 				LoadingFile = false;
-				cout << "File load Successful :D";
+				std::cout << "File load Successful :D";
 				ApplyLoad();
 				ImGuiFileDialog::Instance()->Close();
 			}
 			else
 			{
 				LoadingFile = false;
-				cout << "File load faled";
+				std::cout << "File load faled";
 				ImGuiFileDialog::Instance()->Close();
 			}
 		}
@@ -2668,6 +2705,21 @@ void Tracker::SubtuneDeletionWarning()
 		}
 	}
 	End();
+}
+
+void Tracker::ParseTrack()
+{
+
+}
+
+void Tracker::GenerateCommands(int* com, int size)
+{
+
+}
+
+void Tracker::ExportTune()
+{
+
 }
 
 void Tracker::ErrorWindow()

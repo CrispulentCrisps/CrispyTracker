@@ -24,31 +24,31 @@ struct ZP $00
 ;Effects
 .CurrentChannel:            skip 1                  ;Current channel we are working with
 
-.SineIndexVib:              skip 10                 ;Array of current indexes for sine tables
-.SineIndexTrem:             skip 10                 ;Array of current indexes for sine tables
-.SineIndexPanbr:            skip 10                 ;Array of current indexes for sine tables
-.ArpValue:                  skip 10                 ;Array of values for the Arpeggio
-.ArpTimer:                  skip 10                 ;Array of timers for the Arpeggio
-.PortValue:                 skip 10                 ;Array of values for the Portamento
-.VibratoValue:              skip 10                 ;Array of values for the Vibrato
-.TremolandoValue:           skip 10                 ;Array of values for the Tremolando
-.PanbrelloValue:            skip 10                 ;Array of values for the Panbrello
-.VolSlideValue:             skip 10                 ;Array of values for the Volume slide
+.SineIndexVib:              skip 11                 ;Array of current indexes for sine tables
+.SineIndexTrem:             skip 11                 ;Array of current indexes for sine tables
+.SineIndexPanbr:            skip 11                 ;Array of current indexes for sine tables
+.ArpValue:                  skip 11                 ;Array of values for the Arpeggio
+.ArpTimer:                  skip 11                 ;Array of timers for the Arpeggio
+.PortValue:                 skip 11                 ;Array of values for the Portamento
+.VibratoValue:              skip 11                 ;Array of values for the Vibrato
+.TremolandoValue:           skip 11                 ;Array of values for the Tremolando
+.PanbrelloValue:            skip 11                 ;Array of values for the Panbrello
+.VolSlideValue:             skip 11                 ;Array of values for the Volume slide
 
 .MulProductTemp:            skip 2                  ;Temporary memory for signed multiplication
-.ChannelPitches:            skip 20                 ;Array of pitch values in each channel
+.ChannelPitches:            skip 22                 ;Array of pitch values in each channel
 .ChannelPitchesOutput:      skip 2                  ;Pitch written to current channel
-.ChannelVolume:             skip 20                 ;Holds the channel master volume [goes across 16 bytes]
+.ChannelVolume:             skip 22                 ;Holds the channel master volume [goes across 16 bytes]
 .ChannelVolumeOutput:       skip 2                  ;Volume written to current channel
-.ChannelInstrumentIndex:    skip 10                 ;Array of Instrument indexes
+.ChannelInstrumentIndex:    skip 11                 ;Array of Instrument indexes
 
-.SequenceAddr:              skip 20                 ;Array of sequence address pointers
+.SequenceAddr:              skip 22                 ;Array of sequence address pointers
 .OrderPos:                  skip 1                  ;Position we are within the orders table
 .OrderPosGoto:              skip 1                  ;Aim position for reading in patterns
 .OrderChangeFlag:           skip 1                  ;Flag for when we need to load in the next order sequence
-.ChannelSleepCounter:       skip 10                 ;Array of sleep counters
+.ChannelSleepCounter:       skip 12                 ;Array of sleep counters
 .VCTick:                    skip 2                  ;Tick counters for the virtual channels
-.VCOut:                     skip 1                  ;2 nibbles that determine which SFX is going through which channel
+.VCOut:                     skip 2                  ;3 nibbles that determine which SFX is going through which channel
 .VCInd:                     skip 2                  ;2 bytes that act as indices into the sound effect table
 ;General Tracker State
 .TrackSettings:             skip 1                  ;Holds the track settings [refer to DriverRequirements.txt]
@@ -80,6 +80,10 @@ struct RC $00
 .SetVolSlide    skip 1  ;
 .SetPanbrello   skip 1  ;
 .Stop           skip 1  ;
+.ReleaseNote    skip 1  ;
+.VirtSpeed      skip 1  ;
+.VirtBreak      skip 1  ;
+.VirtStop       skip 1  ;
 endstruct
 
 macro SetSpeed(S)       ;Sets tick threshold for track

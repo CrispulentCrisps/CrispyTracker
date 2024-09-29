@@ -236,6 +236,7 @@ public:
 
 	int SongLength = 1;
 	int Maxindex = 8;
+	int UsedSpace = 0;
 
 	int InputCount = 0;//Used for the amount of times a value has been input into the volume, effects or value
 	
@@ -334,6 +335,7 @@ public:
 	void DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[]);
 	void UpdatePatternIndex(int x, int y);
 	void UpdateAllPatterns();
+	bool IsWithinSelection(int xin, int yin, int suboff);
 
 	void ChangePatternData(int x, int y);
 	void UpdateSettings(int w);
@@ -347,6 +349,9 @@ public:
 	void NewFile();
 	void InitialiseNewSubtune();
 	void SubtuneDeletionWarning();
+	void ParseTrack();
+	void GenerateCommands(int* com, int size);
+	void ExportTune();
 
 	void ErrorWindow();
 	void DSPDebugWindow();
@@ -354,6 +359,7 @@ public:
 
 	string FilePath = "";
 	string FileName = "";
+	string PrevFiles[10] = {""};
 
 	char songbuf[256] = { 0 };
 	char authbuf[256] = { 0 };

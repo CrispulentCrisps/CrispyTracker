@@ -21,3 +21,39 @@
 
 #define FILE_ERORR_03 "AUDIO FILE LESS THAN 16 SAMPLES LARGE"
 #define FILE_ERORR_04 "SAMPLE TOO LARGE TO FIT INTO DSP MEMORY"
+
+//Tracker command bytes for SPC export
+enum Commands 
+{
+	Com_SetSpeed,
+	Com_Sleep,
+	Com_Goto,
+	Com_Break,
+	Com_PlayNote,
+	Com_PlayPitch,
+	Com_SetInstrument,
+	Com_SetFlagValue,
+	Com_EchoDelay,
+	Com_EchoVolume,
+	Com_EchoFeedback,
+	Com_EchoCoef1,
+	Com_EchoCoef2,
+	Com_EchoCoef3,
+	Com_EchoCoef4,
+	Com_EchoCoef5,
+	Com_EchoCoef6,
+	Com_EchoCoef7,
+	Com_EchoCoef8,
+	Com_MasterVol,
+	Com_ChannelVol,
+	Com_SetArp,
+	Com_SetPort,
+	Com_SetVibrato,
+	Com_SetTremo,
+	Com_SetVolSlide,
+	Com_SetPanbrello,
+	Com_ReleaseNote,
+	Com_VirtSpeed,
+	Com_VirtBreak,
+	Com_VirtStop,
+};

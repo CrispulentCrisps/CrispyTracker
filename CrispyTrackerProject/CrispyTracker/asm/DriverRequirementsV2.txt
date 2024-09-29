@@ -30,6 +30,7 @@ Store samples as brr files
 Allow for multiple tracks in a single SPC file
 
 Allow for SFX to be played in any channel at any point in time
+At most 3 SFX can be played at once
 
 - = Design = -
 
@@ -103,6 +104,11 @@ Each row contains the following values:
 
 		1B, Stop, Stops the track from playing
 		1C, Release, Sets KOFF on
+
+		//SFX-Specific
+		1D, Set Virtual speed, sets the speed of the specified sound effect channel
+		1E, Virtual Break, acts like a Break command for SFX channels
+		1F, Virtual Stop, acts like a Stop command for SFX channels
 
 - Effects Processing -
 
