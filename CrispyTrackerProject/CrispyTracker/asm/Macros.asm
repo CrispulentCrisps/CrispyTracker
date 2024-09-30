@@ -48,8 +48,7 @@ struct ZP $00
 .OrderChangeFlag:           skip 1                  ;Flag for when we need to load in the next order sequence
 .ChannelSleepCounter:       skip 12                 ;Array of sleep counters
 .VCTick:                    skip 2                  ;Tick counters for the virtual channels
-.VCOut:                     skip 2                  ;3 nibbles that determine which SFX is going through which channel
-.VCInd:                     skip 2                  ;2 bytes that act as indices into the sound effect table
+.VCOut:                     skip 2                  ;3 nibbles that determine which SFX is going through which channel. If a nibble is F we assume it's not outputting to any channel
 ;General Tracker State
 .TrackSettings:             skip 1                  ;Holds the track settings [refer to DriverRequirements.txt]
 
@@ -84,6 +83,7 @@ struct RC $00
 .VirtSpeed      skip 1  ;
 .VirtBreak      skip 1  ;
 .VirtStop       skip 1  ;
+.VirtSleep      skip 1  ;
 endstruct
 
 macro SetSpeed(S)       ;Sets tick threshold for track

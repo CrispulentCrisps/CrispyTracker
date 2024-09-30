@@ -67,7 +67,9 @@ bvc -
 
 mov SPC_Control, #$01               ;Set control bit to enable Timer 0
 mov SPC_Timer1, #$20                ;Divide timer to run at ~250hz
-mov ZP.OrderChangeFlag, #$01       ;Set change flag at start to load initial pattern data
+mov ZP.OrderChangeFlag, #$01        ;Set change flag at start to load initial pattern data
+mov ZP.VCOut, #$FF                  ;Reset the VCOut state to F to prevent channel injection
+mov ZP.VCOut+1, #$FF                ;Reset the VCOut state to F to prevent channel injection
 
 DriverLoop:                         ;Main driver loop
     mov X, #0                       ;Reset counter
@@ -409,6 +411,9 @@ ReadRows:
     dw Row_Virt_Stop
     dw Row_Virt_Stop
     dw Row_Virt_Stop
+    dw Row_Virt_Sleep
+    dw Row_Virt_Sleep
+    dw Row_Virt_Sleep
     
 Row_SetSpeed:
     call GrabCommand
@@ -601,17 +606,7 @@ Row_NoteRelease:
 ;   SFX specific    ;
 ;-------------------;
 Row_Virt_SetSpeed:
-    ;Store channel to prevent Grab Command getting the wrong data stream
-    mov ZP.TempScratchMemH, ZP.CurrentChannel
-    ;We undo the LShift and then subtract the virtual speed index to get the actual channel speed
-    lsr A
-    sbc A, #RC.VirtSpeed        ;Subtract the command value since we can get the SFX index by the command value
-    adc A, #$07                 ;Offset by 7 to get to correct data stream
-    mov ZP.CurrentChannel, A    ;Temporarily overwrite current channel to get correct data stream
-    mov X, A                    ;Shove A into X for indexing into the Vritual channel's sequence pointer
-    ;Grab said speed
-    call GrabCommand
-
+    
     ret
 
 Row_Virt_Break:
@@ -619,6 +614,10 @@ Row_Virt_Break:
     ret
 
 Row_Virt_Stop:
+
+    ret
+
+Row_Virt_Sleep:
 
     ret
 
@@ -630,7 +629,7 @@ Row_Virt_Stop:
         ;       ZP.CurrentChannel
         ;
         ;   Output:
-        ;       A: Netx byte from command list
+        ;       A: Next byte from command list
         ;       X: Current channel * 2
         ;       
         ;   Clobber list:
@@ -751,6 +750,66 @@ SignedMul:
     mov ZP.TempMemADDRL, X
     ret
 
+    ;-----------------------------------;
+    ;   Recieve sound effects from CPU  ;
+    ;-----------------------------------;
+    ;
+    ;   Input:
+    ;       N/A
+    ;
+    ;   Output:
+    ;       Parse into SFX table if APUI00 != 0
+    ;
+    ;   Clobberlist
+    ;       APU01
+    ;       ZP.R0   \   Memory address pointer
+    ;       ZP.R1   /
+    ;
+RecieveSFX:
+    push A
+    push X
+    push Y
+    mov A, HW_APUI00    ;Check for != 0 byte
+    beq .SkipSFXCheck
+    ;SFX triggered!
+    dec A               ;Dec A to adjust for byte offset
+    asl A
+    mov X, A
+    ;Setup memptr
+    mov ZP.R0, SfxTable&$FF
+    mov ZP.R1, (SfxTable>>8)&$FF
+    ;Set up Memory address for SFX table
+    mov A, (ZP.R0)+X
+    mov ZP.R2, A
+    inc X
+    mov A, (ZP.R0)+X
+    mov ZP.R3, A
+    ;Find first available SFX slot
+    mov Y, #$00
+    -
+    ;Check first SFX slot
+    mov A, ZP.VCOut+Y
+    and A, #$0F
+    cmp A, #$0F
+    beq .ProcessSFX
+    ;Check second SFX slot
+    mov A, ZP.VCOut+1+Y
+    and A, #$F0
+    xcn
+    cmp A, #$0F
+    beq .ProcessSFX
+    inc Y
+    cmp Y, #$02
+    bne -
+    ;Break loop when free slot found
+    .ProcessSFX:
+
+    ;Skip SFX if APUI00 == 0
+    .SkipSFXCheck:
+    pop Y
+    pop X
+    pop A
+
 BitmaskTable:   ;General bitmask table
     db $01
     db $02
@@ -834,12 +893,22 @@ PatternMemory:
     %Sleep($10)
     %Break()
 
-SfxTable:
+SfxDef:
     .Sfx1:
     %PlayPitch($1800)
     %SetSpeed(4)
     %Sleep(10)
     %PlayPitch($2000)
+    .Sfx2:
+    %PlayPitch($0800)
+    %SetSpeed(6)
+    %Sleep(14)
+    %SetPort($84)
+    %Sleep(12)
+
+SfxTable:
+    dw SfxDef_Sfx1
+    dw SfxDef_Sfx2
 
 InstrumentMemory:
 %WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $40)

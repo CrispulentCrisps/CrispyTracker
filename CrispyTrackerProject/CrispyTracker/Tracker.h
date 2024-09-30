@@ -49,9 +49,9 @@ public:
 	int TABLE_FLAGS = ImGuiTableFlags_SizingStretchSame;
 	int IMPLOT_FLAGS = ImPlotFlags_NoFrame | ImPlotFlags_Crosshairs;
 	int SPS = 44100;
-	string VERSION = "version: 0.7";
+	string VERSION = "version: 0.8";
 	string Fontpath = "fonts/Manaspace.ttf";
-	int AUDIO_FORMATS = SF_FORMAT_WAV | SF_FORMAT_OGG | SF_FORMAT_MPEG_LAYER_III | SF_FORMAT_RAW;
+	int AUDIO_FORMATS = SF_FORMAT_WAV | SF_FORMAT_OGG | SF_FORMAT_MPEG_LAYER_III;
 	int FrameCount = 0;
 	int Event;
 	int CurrentKey;
@@ -237,6 +237,7 @@ public:
 	int SongLength = 1;
 	int Maxindex = 8;
 	int UsedSpace = 0;
+	bool CurrentSFX = false;
 
 	int InputCount = 0;//Used for the amount of times a value has been input into the volume, effects or value
 	
@@ -340,6 +341,7 @@ public:
 	void ChangePatternData(int x, int y);
 	void UpdateSettings(int w);
 	void ResetSettings();
+	void ShiftSamples(int dir);
 
 	void UpdateModule();
 	void SaveModuleAs();
@@ -349,6 +351,7 @@ public:
 	void NewFile();
 	void InitialiseNewSubtune();
 	void SubtuneDeletionWarning();
+
 	void ParseTrack();
 	void GenerateCommands(int* com, int size);
 	void ExportTune();

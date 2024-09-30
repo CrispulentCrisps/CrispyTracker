@@ -106,7 +106,7 @@ LoadDriver:
     cmp.w HW_APUI00                     ;Check if we have got the right value into APU-0
     bne .CheckIfTransferDone
 
--                               ;Infinite loop to
+    -                           ;Infinite loop to
     bra -                       ;Prevent the code going into random memory
 
                                 ;First half of the header

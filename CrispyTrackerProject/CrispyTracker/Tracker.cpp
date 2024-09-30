@@ -538,12 +538,12 @@ void Tracker::Instruments()//Showing the instruments window at the side
 		{
 			if (SelectedInst >= inst.size())
 			{
+				inst.erase(inst.begin() + SelectedInst);
 				SelectedInst--;
-				inst.pop_back();
 			}
 			else
 			{
-				inst.pop_back();
+				inst.erase(inst.begin() + SelectedInst);
 			}
 			SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
 		}		
@@ -594,7 +594,7 @@ void Tracker::Instruments()//Showing the instruments window at the side
 
 void Tracker::Instrument_View()//Instrument editor
 {
-	if (ShowInstrument)
+	if (ShowInstrument && SelectedInst > 0)
 	{	
 		if (Begin("Instrument Editor"), true, UNIVERSAL_WINDOW_FLAGS)
 		{
@@ -941,14 +941,25 @@ void Tracker::Channel_View()
 
 void Tracker::Samples()
 {
+	float ButtonSizeMult = 1.f / 6.f;
 	if (Begin("Samples"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-		if (Button("Add", ImVec2(GetWindowWidth() * .3, 24)))
+		if (Button("Add", ImVec2(GetWindowWidth() * ButtonSizeMult, 24)))
 		{
 			LoadingSample = true;
 		}
 		SameLine();
-		if (Button("Delete", ImVec2(GetWindowWidth() * .3, 24)) && samples.size() > 1)
+		if (Button("Copy", ImVec2(GetWindowWidth() * ButtonSizeMult, 24)) && samples.size() > 1)
+		{
+			int index = samples.size();
+			Sample newsamp = samples[SelectedSample];
+			newsamp.SampleName += to_string(index);
+			samples.push_back(newsamp);
+			std::cout << samples.size();
+			SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
+		}
+		SameLine();
+		if (Button("Delete", ImVec2(GetWindowWidth() * ButtonSizeMult, 24)) && samples.size() > 1)
 		{
 			std::cout << "SAMPLE LIST SIZE: " << samples.size();
 			if (SelectedSample > samples.size())
@@ -963,14 +974,14 @@ void Tracker::Samples()
 			SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
 		}
 		SameLine();
-		if (Button("Copy", ImVec2(GetWindowWidth() * .3, 24)) && samples.size() > 1)
+		if (Button("Up", ImVec2(GetWindowWidth() * ButtonSizeMult, 24)) && samples.size() > 1)
 		{
-			int index = samples.size();
-			Sample newsamp = samples[SelectedSample];
-			newsamp.SampleName += to_string(index);
-			samples.push_back(newsamp);
-			std::cout << samples.size();
-			SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
+			ShiftSamples(-1);
+		}
+		SameLine();
+		if (Button("Down", ImVec2(GetWindowWidth() * ButtonSizeMult, 24)) && samples.size() > 1)
+		{
+			ShiftSamples(1);
 		}
 
 		if (samples.size() > 0)
@@ -1009,7 +1020,7 @@ void Tracker::Samples()
 void Tracker::Sample_View()
 {
 	//ImPlot::ShowDemoWindow();
-	if (ShowSample)
+	if (ShowSample && SelectedSample != 0)
 	{
 		if (Begin("Sample view"), true, UNIVERSAL_WINDOW_FLAGS)
 		{
@@ -1346,6 +1357,8 @@ void Tracker::Author_View()
 			ApplySubtune();
 			*/
 		}
+
+		Checkbox("SFX", &CurrentSFX);
 		Text("Song");
 		InputText("##SongTitle", songbuf, sizeof(songbuf));
 		Text("Author");
@@ -2251,16 +2264,17 @@ void Tracker::LoadSample()
 void Tracker::DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[])
 {
 	//Thank you AlexMush for the downmixing code :]
-	Sint16 constexpr sampleBufferSize = 65355;
+	size_t constexpr sampleBufferSize = 65355;
 	int sampleLength = sfinfo.frames / sfinfo.channels;
 	vector<Sint16> sampleBuffer;
-	sampleBuffer.reserve(sampleBufferSize * sfinfo.channels);
+	sampleBuffer.resize(sampleBufferSize * sfinfo.channels);
 	Sint64 sum;
 	
-	for (int a = 0; a < sampleLength; a += sampleBufferSize) 
+	for (int a = 0; a < sampleLength; a += sampleBufferSize)
 	{
-		sf_read_short(sndfile, sampleBuffer.data(), sampleBufferSize);
-		for (int i = 0; i < sampleBufferSize; i++) 
+		sf_readf_short(sndfile, sampleBuffer.data(), sampleBufferSize);
+		cout << sf_strerror(sndfile);
+		for (int i = 0; i < sampleBufferSize; i++)
 		{
 			sum = 0;
 			for (int j = 0; j < sfinfo.channels; j++)
@@ -2269,7 +2283,6 @@ void Tracker::DownMix(SNDFILE* sndfile, SF_INFO sfinfo, Sint16 outputBuffer[])
 			outputBuffer[i] = (Sint16)(sum / (double)sfinfo.channels);
 		}
 	}
-
 }
 
 void Tracker::UpdatePatternIndex(int x, int y)//For when you are switching patterns in the top menu item
@@ -2376,6 +2389,40 @@ void Tracker::ResetSettings()
 	UpdateSettings(0);
 }
 
+void Tracker::ShiftSamples(int dir)
+{
+	//Current sample we're shfting
+	int sref = SelectedSample;
+	
+	//Check sample bounds
+	if (sref + dir > 0 && sref + dir < samples.size())
+	{
+		//Swap samples
+		Sample cursamp = samples[sref];
+		Sample nexsamp = samples[sref+dir];
+		Sample bufsamp = cursamp;
+		cursamp = nexsamp;
+		nexsamp = bufsamp;
+
+		samples[sref] = cursamp;
+		samples[sref+dir] = nexsamp;
+
+		//Check and update instrument sample indices
+		for (int x = 1; x < inst.size(); x++)
+		{
+			if (inst[x].SampleIndex == sref)
+			{
+				inst[x].SampleIndex += dir;
+			}
+			else if (sref + dir)
+			{
+				inst[x].SampleIndex -= dir;
+			}
+		}
+		SelectedSample += dir;
+	}
+}
+
 void Tracker::UpdateModule()
 {
 	//Tracker
@@ -2414,6 +2461,7 @@ void Tracker::UpdateModule()
 	{
 		filehandler.mod.subtune[CurrentTune].EchoFilter[x] = EchoFilter[x];
 	}
+	filehandler.mod.subtune[CurrentTune].SFXFlag = CurrentSFX;
 }
 
 void Tracker::SaveModuleAs()
@@ -2503,6 +2551,7 @@ void Tracker::ApplyLoad()
 	TempoDivider = filehandler.mod.subtune[CurrentTune].TempoDivider;
 	Highlight1 = filehandler.mod.subtune[CurrentTune].Highlight1;
 	Highlight2 = filehandler.mod.subtune[CurrentTune].Highlight2;
+	CurrentSFX = filehandler.mod.subtune[CurrentTune].SFXFlag;
 
 	SetupInstr();
 	for (int x = 0; x < filehandler.mod.samples.size(); x++)
@@ -2623,6 +2672,7 @@ void Tracker::ApplySubtune()
 			UpdatePatternIndex(x, y);
 		}
 	}
+	CurrentSFX = filehandler.mod.subtune[CurrentTune].SFXFlag;
 }
 
 void Tracker::NewFile()

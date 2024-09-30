@@ -112,7 +112,6 @@ Each row contains the following values:
 
 - Effects Processing -
 
-	
 Effects will be categorised into 3 types
 	Type 1: DSP Writes; these will be effects that directly change register values in the DSP. This could potentially be a volatile system due to how the SNES handles things like delay buffers or coeffecients, so take care.
 	Type 2: Flag Effects; these will continue to affect the state of the channel as long as the effect is on. This includes Arps, Vibrato, Tremolando, Volume slides, Panbrello and Portamento.
@@ -162,7 +161,7 @@ Effects list goes as:
 	A sound effect is defined as an order that contains several patterns
 	To play a sound effect you send a byte that acts as an index into a SFX table
 
-	SFX work in 2 "virtual" channels which replace the desired channel with the state of the sound effect
+	SFX work in 3 "Virtual" channels which replace the desired channel with the state of the sound effect
 
 - Miscellaneous -
 	Settings byte:
