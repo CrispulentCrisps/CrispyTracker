@@ -112,21 +112,22 @@ LoadDriver:
     lda.b #$01
     sta.w HW_APUI01
     sep #$20                    ;Set A to 8bit
-    -                           ;Infinite loop to
-    inc.w MZP.SFXTimer          ;Increment timer
-    lda.b HW_APUI01             ;Check if the recieve byte has been sent
-    beq .SkipTimer
-    stz.b HW_APUI01             ;Reset the recieve port
-    beq .SkipTimer
+
+MainDriverTest:
+    inc.w MZP.SFXTimer
     lda.w MZP.SFXTimer
-    and #$80                    ;Check 7th bit
-    sta.w MZP.SFXTimer
-    bne .SkipTimer
-    lda.b #$00
-    sta.b HW_APUI00
+    and #$80
+    beq .SkipTimer
+    lda.b #$01
+    sta.w HW_APUI00
     stz.w MZP.SFXTimer
     .SkipTimer:
-    bra -                       ;Prevent the code going into random memory
+    -
+    bra -
+
+NMIHandler:
+    
+    jmp MainDriverTest
 
                                 ;First half of the header
 org $FFB0                       ;Goto FFB0
@@ -161,6 +162,6 @@ dw $FFFF
 dw $FFFF
 dw $FFFF
 dw $FFFF
-dw $FFFF
+dw NMIHandler
 dw Reset
 dw $FFFF

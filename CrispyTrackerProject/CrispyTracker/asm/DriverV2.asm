@@ -71,6 +71,11 @@ mov ZP.OrderChangeFlag, #$01        ;Set change flag at start to load initial pa
 mov ZP.VCOut, #$FF                  ;Reset the VCOut state to F to prevent channel injection
 mov ZP.VCOut+1, #$FF                ;Reset the VCOut state to F to prevent channel injection
 
+mov Apu0, #$00
+mov Apu1, #$01
+mov Apu2, #$00
+mov Apu3, #$00
+
 DriverLoop:                         ;Main driver loop
     mov X, #0                       ;Reset counter
     
@@ -78,6 +83,7 @@ DriverLoop:                         ;Main driver loop
     mov Y, SPC_Count1               ;Check counter
     beq .TickIncrement              ;If the timer is set to 0
     
+    call RecieveSFX
     call ProcessEffects
     inc X                           ;Increment our counter
     cmp X, ZP.TickThresh            ;Check if the counter has reached the 
@@ -118,7 +124,7 @@ DriverLoop:                         ;Main driver loop
 
 ProcessEffects:
     push X
-    mov ZP.CurrentChannel, #$07
+    mov ZP.CurrentChannel, #$0A
     .EffectsLoop:
     mov ZP.TempPitchProcess, #0
     mov ZP.TempPitchProcess+1, #0
@@ -249,6 +255,30 @@ ProcessEffects:
     mov ZP.TempVolumeProcess+1, A   ;Apply
     .SkipPanbr:
 
+    ;Check SFX output to inject into hardware output
+    mov Y, #$00
+    mov ZP.R0, #$18
+    -
+    mov A, ZP.VCOut+Y
+    and A, #$0F
+    beq .InjectSFX
+    dec ZP.R0
+    dec ZP.R0
+    bne -
+
+    ;Prevent doing channel mixing if working Virtual channels
+    mov A, ZP.CurrentChannel
+    and A, #$08
+    beq +
+    jmp .SkipInst
+    +
+
+    bra .EndInject
+    ;A SFX has been triggered and the output will be injected into the 
+    .InjectSFX:
+    
+    
+    .EndInject
     ;---------------------------;
     ;       Mixing & Output     ;
     ;---------------------------;
@@ -338,6 +368,8 @@ ProcessEffects:
     mov A, ZP.ChannelPitchesOutput+1                    ;Grab hi pitch
     mov SPC_RegData, A                                  ;Return
 
+    ;Jump over if working Virtual channels
+    .SkipInst:
     dec ZP.CurrentChannel
     bmi .BreakLoop
     jmp .EffectsLoop
@@ -399,7 +431,6 @@ ReadRows:
     dw Row_SetTrem
     dw Row_SetVolSlide
     dw Row_SetPanbr
-    dw Row_Stop
     dw Row_NoteRelease
     ;SFX Specific, repeat 3 times since we cannot rely on the CurrentChannel byte
     dw Row_Virt_SetSpeed
@@ -408,9 +439,6 @@ ReadRows:
     dw Row_Virt_Break
     dw Row_Virt_Break
     dw Row_Virt_Break
-    dw Row_Virt_Stop
-    dw Row_Virt_Stop
-    dw Row_Virt_Stop
     dw Row_Virt_Sleep
     dw Row_Virt_Sleep
     dw Row_Virt_Sleep
@@ -596,10 +624,13 @@ Row_SetPanbr:
     mov ZP.PanbrelloValue+X, A
     jmp ReadRows
 
-Row_Stop:
-    ret
-
 Row_NoteRelease:
+    ;KOF State
+    mov X, ZP.CurrentChannel            ;Grab current channel
+    mov A, BitmaskTable+X               ;Get bitmask index via X
+    mov ZP.TempScratchMem, A            ;Shove into scratch memory for ORing
+    mov SPC_RegADDR, #DSP_KOF           ;Shove KOF addr in
+    or SPC_RegData, ZP.TempScratchMem   ;OR into A
     ret
 
 ;-------------------;
@@ -610,10 +641,6 @@ Row_Virt_SetSpeed:
     ret
 
 Row_Virt_Break:
-
-    ret
-
-Row_Virt_Stop:
 
     ret
 
@@ -758,18 +785,20 @@ SignedMul:
     ;       N/A
     ;
     ;   Output:
-    ;       Parse into SFX table if APUI00 != 0
+    ;       Parse into SFX table if Apu0 != 0
     ;
     ;   Clobberlist
     ;       APU01
-    ;       ZP.R0   \   Memory address pointer
-    ;       ZP.R1   /
+    ;       ZP.R0   \
+    ;       ZP.R1    |  Addr pointers
+    ;       ZP.R2    |
+    ;       ZP.R3   /
     ;
 RecieveSFX:
     push A
     push X
     push Y
-    mov A, HW_APUI00    ;Check for != 0 byte
+    mov A, Apu0         ;Check for != 0 byte
     beq .SkipSFXCheck
     ;SFX triggered!
     dec A               ;Dec A to adjust for byte offset
@@ -784,7 +813,8 @@ RecieveSFX:
     inc X
     mov A, (ZP.R0)+X
     mov ZP.R3, A
-
+    ;ZP.R2+3 now hold the address to the current SFX
+    mov Y, #$00
     ;Check first SFX slot
     mov A, ZP.VCOut+Y
     and A, #$0F
@@ -804,18 +834,19 @@ RecieveSFX:
     and A, #$0F
     cmp A, #$0F
     beq .ProcessSFX
-    
     ;Assume no slots are available and skip over playing SFX
-    bra .SkipSFXCheck
+    bra .SkipSFXCheck    
     ;Break when free slot is found
     .ProcessSFX:
-    
-    ;Skip SFX if APUI00 == 0
+    mov ZP.FlagVal, #$AA
+    ;Reset the SFX byte
+    mov Apu0, #$00
+    ;Skip SFX if Apu0 == 0
     .SkipSFXCheck:
     pop Y
     pop X
-    pop A
-
+    pop A    
+    ret
 BitmaskTable:   ;General bitmask table
     db $01
     db $02

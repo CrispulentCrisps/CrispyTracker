@@ -78,11 +78,9 @@ struct RC $00
 .SetTremo       skip 1  ;
 .SetVolSlide    skip 1  ;
 .SetPanbrello   skip 1  ;
-.Stop           skip 1  ;
 .ReleaseNote    skip 1  ;
 .VirtSpeed      skip 1  ;
 .VirtBreak      skip 1  ;
-.VirtStop       skip 1  ;
 .VirtSleep      skip 1  ;
 endstruct
 
@@ -207,3 +205,8 @@ endmacro
 macro Stop()
 db RC.Stop
 endmacro
+
+Apu0 =      $F4
+Apu1 =      $F5
+Apu2 =      $F6
+Apu3 =      $F7
