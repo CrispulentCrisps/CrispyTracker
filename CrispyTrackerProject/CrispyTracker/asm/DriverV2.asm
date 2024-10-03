@@ -784,26 +784,32 @@ RecieveSFX:
     inc X
     mov A, (ZP.R0)+X
     mov ZP.R3, A
-    ;Find first available SFX slot
-    mov Y, #$00
-    -
+
     ;Check first SFX slot
     mov A, ZP.VCOut+Y
     and A, #$0F
     cmp A, #$0F
     beq .ProcessSFX
+    
     ;Check second SFX slot
-    mov A, ZP.VCOut+1+Y
+    mov A, ZP.VCOut+Y
     and A, #$F0
     xcn
     cmp A, #$0F
     beq .ProcessSFX
     inc Y
-    cmp Y, #$02
-    bne -
-    ;Break loop when free slot found
+    
+    ;Check third SFX slot
+    mov A, ZP.VCOut+Y
+    and A, #$0F
+    cmp A, #$0F
+    beq .ProcessSFX
+    
+    ;Assume no slots are available and skip over playing SFX
+    bra .SkipSFXCheck
+    ;Break when free slot is found
     .ProcessSFX:
-
+    
     ;Skip SFX if APUI00 == 0
     .SkipSFXCheck:
     pop Y

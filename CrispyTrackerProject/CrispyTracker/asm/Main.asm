@@ -10,6 +10,7 @@ hirom                           ;Sets the SNES mapping mode to HIROM
 
 incsrc "hardware.asm"           ;Include namespace HW which contains names for each memory and register addr in the SNES
 incsrc "DriverV2.asm"           ;Includes the audio driver Cobalt
+incsrc "main-h.asm"             ;Includes Test 
 
 arch 65816                      ;sets the architecture to the 65816 CPU on the SNES
 
@@ -105,8 +106,26 @@ LoadDriver:
 .CheckIfTransferDone
     cmp.w HW_APUI00                     ;Check if we have got the right value into APU-0
     bne .CheckIfTransferDone
-
+    stz.w HW_APUI00
+    stz.w HW_APUI02
+    stz.w HW_APUI03
+    lda.b #$01
+    sta.w HW_APUI01
+    sep #$20                    ;Set A to 8bit
     -                           ;Infinite loop to
+    inc.w MZP.SFXTimer          ;Increment timer
+    lda.b HW_APUI01             ;Check if the recieve byte has been sent
+    beq .SkipTimer
+    stz.b HW_APUI01             ;Reset the recieve port
+    beq .SkipTimer
+    lda.w MZP.SFXTimer
+    and #$80                    ;Check 7th bit
+    sta.w MZP.SFXTimer
+    bne .SkipTimer
+    lda.b #$00
+    sta.b HW_APUI00
+    stz.w MZP.SFXTimer
+    .SkipTimer:
     bra -                       ;Prevent the code going into random memory
 
                                 ;First half of the header
