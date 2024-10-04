@@ -63,6 +63,7 @@ bool FileHandler::LoadModule(string path)
 			mod.subtune[z].TempoDivider = AlignData<uint8_t>(compbuf, addroff++);
 			mod.subtune[z].Highlight1 = AlignData<uint8_t>(compbuf, addroff++);
 			mod.subtune[z].Highlight2 = AlignData<uint8_t>(compbuf, addroff++);
+			mod.subtune[z].SFXFlag = AlignData<uint8_t>(compbuf, addroff++);
 
 			for (int x = 0; x < 8; x++)
 			{
@@ -199,6 +200,7 @@ bool FileHandler::SaveModule(string path)
 			fwrite(&mod.subtune[x].TempoDivider, 1, 1, file);
 			fwrite(&mod.subtune[x].Highlight1, 1, 1, file);
 			fwrite(&mod.subtune[x].Highlight2, 1, 1, file);
+			fwrite(&mod.subtune[x].SFXFlag, 1, 1, file);
 
 			cout << "\nOrder memory starts at: " << ftell(file);
 			//Orders
