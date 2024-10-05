@@ -106,28 +106,44 @@ LoadDriver:
 .CheckIfTransferDone
     cmp.w HW_APUI00                     ;Check if we have got the right value into APU-0
     bne .CheckIfTransferDone
+    
+    sep #$20                    ;Set A to 8bit
     stz.w HW_APUI00
+    stz.w HW_APUI01
     stz.w HW_APUI02
     stz.w HW_APUI03
     lda.b #$01
-    sta.w HW_APUI01
-    sep #$20                    ;Set A to 8bit
+    sta.w MZP.SFXRec
+    
+MainLoop:
+    lda.b #$80
+    sta.w HW_NMITIMEN
+    -
+    bra -
 
-MainDriverTest:
+NMIDriverTest:
     inc.w MZP.SFXTimer
     lda.w MZP.SFXTimer
     and #$80
     beq .SkipTimer
     lda.b #$01
     sta.w HW_APUI00
+    lda.w MZP.SFXRec
+    sta.w HW_APUI01
+    inc.w MZP.SFXRec
     stz.w MZP.SFXTimer
     .SkipTimer:
-    -
-    bra -
+    rts
 
 NMIHandler:
-    
-    jmp MainDriverTest
+    pha
+    phx
+    phy
+    jsr.w NMIDriverTest
+    ply
+    plx
+    pla
+    rti
 
                                 ;First half of the header
 org $FFB0                       ;Goto FFB0
@@ -154,14 +170,14 @@ dw $FFFF
 dw $FFFF
 dw $FFFF
 dw $FFFF
-dw $FFFF
-dw $FFFF
-dw $FFFF
-dw $FFFF
-dw $FFFF
-dw $FFFF
-dw $FFFF
-dw $FFFF
 dw NMIHandler
+dw $FFFF
+dw $FFFF
+dw $FFFF
+dw $FFFF
+dw $FFFF
+dw $FFFF
+dw $FFFF
+dw $FFFF
 dw Reset
 dw $FFFF

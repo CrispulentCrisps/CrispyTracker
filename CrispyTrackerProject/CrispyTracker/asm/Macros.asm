@@ -2,7 +2,7 @@
 ;   Macro's file for Cobalt Driver  ;
 ;-----------------------------------;
 
-!CodeBuffer = $0800                                 ;Section of bytes to fill
+!CodeBuffer = $0900                                 ;Section of bytes to fill
 
 struct ZP $00
 .TempMemADDRL:              skip 1                  ;General purpose addr LO
@@ -16,7 +16,7 @@ struct ZP $00
 .TickThresh:                skip 3                  ;Equivelant to track speed [0th for main track speed, 1st and 2nd for Virtual channels for SFX]
 .KONState:                  skip 1                  ;Holds the current bitfield state of KON
 .FlagVal:                   skip 1                  ;Holds the flag value
-
+.SFXRec                     skip 1                  ;Byte for APU1 value expected to play SFX
 ;Special
 .TempVolumeProcess:         skip 2                  ;Used to manipulate a volume value without actually changing said volume
 .TempPitchProcess:          skip 2                  ;Holds the pitch
@@ -47,7 +47,7 @@ struct ZP $00
 .OrderPosGoto:              skip 1                  ;Aim position for reading in patterns
 .OrderChangeFlag:           skip 1                  ;Flag for when we need to load in the next order sequence
 .ChannelSleepCounter:       skip 12                 ;Array of sleep counters
-.VCTick:                    skip 2                  ;Tick counters for the virtual channels
+.VCTick:                    skip 3                  ;Tick counters for the virtual channels
 .VCOut:                     skip 2                  ;3 nibbles that determine which SFX is going through which channel. If a nibble is F we assume it's not outputting to any channel
 ;General Tracker State
 .TrackSettings:             skip 1                  ;Holds the track settings [refer to DriverRequirements.txt]
@@ -206,6 +206,10 @@ macro Stop()
 db RC.Stop
 endmacro
 
+macro SetVirtSpeed(V)
+db RC.SetVirtSpeed
+db <V>
+endmacro
 Apu0 =      $F4
 Apu1 =      $F5
 Apu2 =      $F6

@@ -45,7 +45,7 @@ mov ZP.TrackSettings, #$00     ;Set the track settings
 %spc_write(DSP_ESA, $BF)
 %spc_write(DSP_EDL, $00)
 %spc_write(DSP_EFB, $20)
-%spc_write(DSP_DIR, $08)
+%spc_write(DSP_DIR, $09)
 %spc_write(DSP_PMON, $00)
 %spc_write(DSP_EON, $00)
 %spc_write(DSP_NON, $00)
@@ -72,9 +72,10 @@ mov ZP.VCOut, #$FF                  ;Reset the VCOut state to F to prevent chann
 mov ZP.VCOut+1, #$FF                ;Reset the VCOut state to F to prevent channel injection
 
 mov Apu0, #$00
-mov Apu1, #$01
+mov Apu1, #$00
 mov Apu2, #$00
 mov Apu3, #$00
+mov ZP.SFXRec, #$01
 
 DriverLoop:                         ;Main driver loop
     mov X, #0                       ;Reset counter
@@ -257,14 +258,16 @@ ProcessEffects:
 
     ;Check SFX output to inject into hardware output
     mov Y, #$00
+    .SFXLoop:
     mov ZP.R0, #$18
     -
     mov A, ZP.VCOut+Y
-    and A, #$0F
+    and A, #$08
     beq .InjectSFX
     dec ZP.R0
     dec ZP.R0
     bne -
+    inc Y
 
     ;Prevent doing channel mixing if working Virtual channels
     mov A, ZP.CurrentChannel
@@ -782,7 +785,7 @@ SignedMul:
     ;-----------------------------------;
     ;
     ;   Input:
-    ;       N/A
+    ;       Apu0    SFX index to play
     ;
     ;   Output:
     ;       Parse into SFX table if Apu0 != 0
@@ -798,10 +801,12 @@ RecieveSFX:
     push A
     push X
     push Y
-    mov A, Apu0         ;Check for != 0 byte
-    beq .SkipSFXCheck
+    mov A, Apu1         ;Check SEND byte
+    cmp A, ZP.SFXRec
+    bne .SkipSFXCheck
     ;SFX triggered!
-    dec A               ;Dec A to adjust for byte offset
+    inc ZP.FlagVal
+    mov A, Apu0         ;Check for != 0 byte
     asl A
     mov X, A
     ;Setup memptr
@@ -838,15 +843,19 @@ RecieveSFX:
     bra .SkipSFXCheck    
     ;Break when free slot is found
     .ProcessSFX:
-    mov ZP.FlagVal, #$AA
     ;Reset the SFX byte
     mov Apu0, #$00
+
+    ;Increment recieve flag
+    inc ZP.SFXRec
+    mov Apu1, ZP.SFXRec
     ;Skip SFX if Apu0 == 0
     .SkipSFXCheck:
     pop Y
     pop X
-    pop A    
+    pop A
     ret
+    
 BitmaskTable:   ;General bitmask table
     db $01
     db $02
@@ -885,7 +894,7 @@ fill !CodeBuffer-pc()
 assert pc() == !CodeBuffer
 
 ;Test sine+saw sample + dir page
-db $08,$08,$08,$08,$23,$08,$23,$08
+db $08,$09,$08,$09,$23,$09,$23,$09
 db $84, $17, $45, $35, $22, $22, $31, $21, $10, $68, $01, $21, $0D, $01, $08, $0B, $C3, $3E, $5B, $09, $8B, $D7, $B1, $E0, $BC, $AF, $78
 db $B8, $87, $1F, $00, $F1, $0F, $1F, $00, $00, $8F, $E1, $13, $12, $2D, $52, $14, $10, $F7
 
@@ -933,12 +942,12 @@ PatternMemory:
 SfxDef:
     .Sfx1:
     %PlayPitch($1800)
-    %SetSpeed(4)
+    %SetVirtSpeed(4)
     %Sleep(10)
     %PlayPitch($2000)
     .Sfx2:
     %PlayPitch($0800)
-    %SetSpeed(6)
+    %SetVirtSpeed(6)
     %Sleep(14)
     %SetPort($84)
     %Sleep(12)
