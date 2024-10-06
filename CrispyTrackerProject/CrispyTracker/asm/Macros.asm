@@ -53,6 +53,9 @@ struct ZP $00
 .TrackSettings:             skip 1                  ;Holds the track settings [refer to DriverRequirements.txt]
 
 endstruct
+struct OP $0100
+
+endstruct
 ;Commands
 
     ;Row commands
@@ -61,7 +64,7 @@ struct RC $00
 .SetSpeed       skip 1  ;Sets tick threshold for track
 .Sleep          skip 1  ;Sleeps for S amount of rows
 .Goto           skip 1  ;Break to new order
-.Break          skip 1  ;Goto order
+.Break          skip 1  ;Goto next order
 .PlayNote       skip 1  ;Plays note in note table
 .PlayPitch      skip 1  ;Plays absolute pitch value
 .SetInstrument  skip 1  ;
@@ -207,7 +210,7 @@ db RC.Stop
 endmacro
 
 macro SetVirtSpeed(V)
-db RC.SetVirtSpeed
+db RC.VirtSpeed
 db <V>
 endmacro
 Apu0 =      $F4

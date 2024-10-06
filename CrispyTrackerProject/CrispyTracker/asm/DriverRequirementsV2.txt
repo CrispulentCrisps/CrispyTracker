@@ -161,7 +161,7 @@ Effects list goes as:
 	A sound effect is defined as an order that contains several patterns
 	To play a sound effect you send a byte that acts as an index into a SFX table
 
-	SFX work in 3 "Virtual" channels which replace the desired channel with the state of the sound effect
+	SFX work in 8 "Virtual" channels which replace the desired channel with the state of the sound effect
 
 - Miscellaneous -
 	Settings byte:

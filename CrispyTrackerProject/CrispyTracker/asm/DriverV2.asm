@@ -824,28 +824,44 @@ RecieveSFX:
     mov A, ZP.VCOut+Y
     and A, #$0F
     cmp A, #$0F
-    beq .ProcessSFX
-    
+    beq .ProcessSFX    
     ;Check second SFX slot
     mov A, ZP.VCOut+Y
     and A, #$F0
     xcn
     cmp A, #$0F
     beq .ProcessSFX
-    inc Y
-    
+    inc Y    
     ;Check third SFX slot
     mov A, ZP.VCOut+Y
     and A, #$0F
     cmp A, #$0F
     beq .ProcessSFX
     ;Assume no slots are available and skip over playing SFX
-    bra .SkipSFXCheck    
+    bra .SkipSFXCheck
+
     ;Break when free slot is found
     .ProcessSFX:
     ;Reset the SFX byte
     mov Apu0, #$00
-
+    
+    .SfxDecide
+    ;Check currently unused channels
+    mov Y, #$07
+    .FreeChan:
+    ;Check PMON to blacklist that channel and the one next to it where the pitch info is taken
+    mov A, Y
+    mov X, A
+    mov SPC_RegADDR, #DSP_PMON
+    mov A, SPC_RegData
+    and A, BitmaskTable+X
+    dec Y                   ;Decrement Y to skip over next channel if PMON is being used
+    bne .BlacklistChan      ;Skip over if a channel is using PMON
+    inc Y                   ;Reverse decrement if PMON isn't on
+    .BlacklistChan:
+    dec Y
+    bpl .FreeChan
+    
     ;Increment recieve flag
     inc ZP.SFXRec
     mov Apu1, ZP.SFXRec

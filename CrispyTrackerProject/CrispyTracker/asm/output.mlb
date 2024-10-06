@@ -14,8 +14,8 @@ SpcRam:0000F4:Apu0
 SpcRam:0000F5:Apu1
 SpcRam:0000F6:Apu2
 SpcRam:0000F7:Apu3
-SpcRam:000762:BitmaskTable
-SpcRam:00076A:CoeffecientTable
+SpcRam:000776:BitmaskTable
+SpcRam:00077E:CoeffecientTable
 SpcRam:000295:DriverLoop
 SpcRam:0002BF:DriverLoop_ChannelLoop
 SpcRam:0002CD:DriverLoop_SkipDec
@@ -51,7 +51,7 @@ SpcRam:000955:PatternMemory
 SpcRam:000955:PatternMemory_Pat0
 SpcRam:000965:PatternMemory_Pat1
 SpcRam:000969:PatternMemory_Pat2
-SpcRam:0007B2:PitchTable
+SpcRam:0007C6:PitchTable
 SpcRam:0002E0:ProcessEffects
 SpcRam:0004CA:ProcessEffects_BreakLoop
 SpcRam:0002E4:ProcessEffects_EffectsLoop
@@ -96,8 +96,11 @@ SpcRam:0004CC:ReadPatterns
 SpcRam:0004EF:ReadRows
 SpcRam:0004F7:ReadRows_RowJumpTable
 SpcRam:00070E:RecieveSFX
+SpcRam:000769:RecieveSFX_BlacklistChan
+SpcRam:00075A:RecieveSFX_FreeChan
 SpcRam:000755:RecieveSFX_ProcessSFX
-SpcRam:00075E:RecieveSFX_SkipSFXCheck
+SpcRam:000758:RecieveSFX_SfxDecide
+SpcRam:000772:RecieveSFX_SkipSFXCheck
 SpcRam:008000:Reset
 SpcRam:00801E:Reset_ResetOffset
 SpcRam:00055E:Row_Break
@@ -149,7 +152,7 @@ SpcRam:000984:SfxTable
 SpcRam:0006CC:SignedMul
 SpcRam:0006F0:SignedMul_skip_mul1
 SpcRam:0006FF:SignedMul_skip_mul2
-SpcRam:000772:SineTable
+SpcRam:000786:SineTable
 SpcRam:000000:ZP
 SpcRam:00003F:ZP_ArpTimer
 SpcRam:000034:ZP_ArpValue
