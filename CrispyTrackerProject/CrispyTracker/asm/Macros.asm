@@ -13,10 +13,15 @@ struct ZP $00
 .R1                         skip 1                  ;Scratch memory
 .R2                         skip 1                  ;Scratch memory
 .R3                         skip 1                  ;Scratch memory
+.MulProductTemp:            skip 2                  ;Temporary memory for signed multiplication
 .TickThresh:                skip 3                  ;Equivelant to track speed [0th for main track speed, 1st and 2nd for Virtual channels for SFX]
 .KONState:                  skip 1                  ;Holds the current bitfield state of KON
 .FlagVal:                   skip 1                  ;Holds the flag value
 .SFXRec                     skip 1                  ;Byte for APU1 value expected to play SFX
+
+;Sequencing
+.SequenceAddr:              skip 32                 ;Array of sequence address pointers
+
 ;Special
 .TempVolumeProcess:         skip 2                  ;Used to manipulate a volume value without actually changing said volume
 .TempPitchProcess:          skip 2                  ;Holds the pitch
@@ -24,38 +29,39 @@ struct ZP $00
 ;Effects
 .CurrentChannel:            skip 1                  ;Current channel we are working with
 
-.SineIndexVib:              skip 11                 ;Array of current indexes for sine tables
-.SineIndexTrem:             skip 11                 ;Array of current indexes for sine tables
-.SineIndexPanbr:            skip 11                 ;Array of current indexes for sine tables
-.ArpValue:                  skip 11                 ;Array of values for the Arpeggio
-.ArpTimer:                  skip 11                 ;Array of timers for the Arpeggio
-.PortValue:                 skip 11                 ;Array of values for the Portamento
-.VibratoValue:              skip 11                 ;Array of values for the Vibrato
-.TremolandoValue:           skip 11                 ;Array of values for the Tremolando
-.PanbrelloValue:            skip 11                 ;Array of values for the Panbrello
-.VolSlideValue:             skip 11                 ;Array of values for the Volume slide
+.SineIndexVib:              skip 16                 ;Array of current indexes for sine tables
+.SineIndexTrem:             skip 16                 ;Array of current indexes for sine tables
+.SineIndexPanbr:            skip 16                 ;Array of current indexes for sine tables
+.ArpValue:                  skip 16                 ;Array of values for the Arpeggio
+.ArpTimer:                  skip 16                 ;Array of timers for the Arpeggio
+.VolSlideValue:             skip 16                 ;Array of values for the Volume slide
+.PortValue:                 skip 16                 ;Array of values for the Portamento
+.VibratoValue:              skip 16                 ;Array of values for the Vibrato
+.TremolandoValue:           skip 16                 ;Array of values for the Tremolando
+.PanbrelloValue:            skip 16                 ;Array of values for the Panbrello
 
-.MulProductTemp:            skip 2                  ;Temporary memory for signed multiplication
-.ChannelPitches:            skip 22                 ;Array of pitch values in each channel
 .ChannelPitchesOutput:      skip 2                  ;Pitch written to current channel
-.ChannelVolume:             skip 22                 ;Holds the channel master volume [goes across 16 bytes]
 .ChannelVolumeOutput:       skip 2                  ;Volume written to current channel
-.ChannelInstrumentIndex:    skip 11                 ;Array of Instrument indexes
 
-.SequenceAddr:              skip 22                 ;Array of sequence address pointers
+;SFX Specific
+.VCTick:                    skip 3                  ;Tick counters for the virtual channels
+.VCOut:                     skip 2                  ;3 nibbles that determine which SFX is going through which channel. If a nibble is F we assume it's not outputting to any channel
+
+;General Tracker State
+.TrackSettings:             skip 1                  ;Holds the track settings [refer to DriverRequirements.txt]
+endstruct
+
+struct OP $0100
+;Sequencing
 .OrderPos:                  skip 1                  ;Position we are within the orders table
 .OrderPosGoto:              skip 1                  ;Aim position for reading in patterns
 .OrderChangeFlag:           skip 1                  ;Flag for when we need to load in the next order sequence
-.ChannelSleepCounter:       skip 12                 ;Array of sleep counters
-.VCTick:                    skip 3                  ;Tick counters for the virtual channels
-.VCOut:                     skip 2                  ;3 nibbles that determine which SFX is going through which channel. If a nibble is F we assume it's not outputting to any channel
-;General Tracker State
-.TrackSettings:             skip 1                  ;Holds the track settings [refer to DriverRequirements.txt]
-
+.ChannelSleepCounter:       skip 16                 ;Array of sleep counters
+.ChannelInstrumentIndex:    skip 16                 ;Array of Instrument indexes
+.ChannelPitches:            skip 32                 ;Array of pitch values in each channel
+.ChannelVolume:             skip 32                 ;Holds the channel master volume [goes across 16 bytes]
 endstruct
-struct OP $0100
 
-endstruct
 ;Commands
 
     ;Row commands

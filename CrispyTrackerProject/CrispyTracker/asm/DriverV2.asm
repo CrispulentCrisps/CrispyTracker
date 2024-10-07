@@ -34,7 +34,17 @@ bne .MemClearLoop
 
 mov X, #$FF
 mov SP, X
-mov X, #0
+setp
+mov SP, X
+clrp
+mov X, #$00
+mov Y, #$00
+mov A, #$00
+-
+mov $0100+Y, A
+dec Y
+bne -
+
 mov ZP.TrackSettings, #$00     ;Set the track settings
 
 %spc_write(DSP_FLG, $00)
@@ -67,7 +77,9 @@ bvc -
 
 mov SPC_Control, #$01               ;Set control bit to enable Timer 0
 mov SPC_Timer1, #$20                ;Divide timer to run at ~250hz
-mov ZP.OrderChangeFlag, #$01        ;Set change flag at start to load initial pattern data
+setp
+mov OP.OrderChangeFlag, #$01        ;Set change flag at start to load initial pattern data
+clrp
 mov ZP.VCOut, #$FF                  ;Reset the VCOut state to F to prevent channel injection
 mov ZP.VCOut+1, #$FF                ;Reset the VCOut state to F to prevent channel injection
 
@@ -90,36 +102,44 @@ DriverLoop:                         ;Main driver loop
     cmp X, ZP.TickThresh            ;Check if the counter has reached the 
     bmi .TickIncrement              ;Go back to the tick incrementer if the counter is not
                                     ;Assuming we've hit the threshold
-    cmp ZP.OrderChangeFlag, #1      ;Check the order flag with the 0th bit
+    setp
+    cmp OP.OrderChangeFlag, #1      ;Check the order flag with the 0th bit
     bne +                           ;Skip if the carry flag isn't set
     mov X, #$07
     mov Y, #$00
     -                                   ;Sleep Clear Loop
-    mov ZP.ChannelSleepCounter+X, Y     ;Clear sleep counter
+    mov OP.ChannelSleepCounter+X, Y     ;Clear sleep counter
     dec X                               ;Decrement counter
     bpl -
     call ReadPatterns
-    mov ZP.OrderChangeFlag, #0
+    setp
+    mov OP.OrderChangeFlag, #0
     +
-
+    clrp
+    
     mov ZP.CurrentChannel,#$7       ;Increment channel index
     .ChannelLoop:                   ;Main channel loop
     mov X, ZP.CurrentChannel
-    mov Y, ZP.ChannelSleepCounter+X
+    setp
+    mov Y, OP.ChannelSleepCounter+X
+    clrp
     bne .SkipRow                    ;Check if the sleep counter != 0
     call ReadRows
     bra .SkipDec
     .SkipRow:                       ;Sleep counter routine
-    dec ZP.ChannelSleepCounter+X
+    setp
+    dec OP.ChannelSleepCounter+X
+    clrp
     .SkipDec:
     dec ZP.CurrentChannel
     bpl .ChannelLoop
-
-    cmp ZP.OrderChangeFlag, #1      ;Order change
+    setp
+    cmp OP.OrderChangeFlag, #1      ;Order change
     bne +
-    mov A, ZP.OrderPosGoto
-    mov ZP.OrderPos, A
+    mov A, OP.OrderPosGoto
+    mov OP.OrderPos, A
     +
+    clrp
     jmp DriverLoop
 
 
@@ -135,6 +155,61 @@ ProcessEffects:
     asl A                           ;Double since we are working with 2 bytes
     mov ZP.TempScratchMemH, A       ;Return
 
+    ;-------------------;
+    ;   Volume Slide    ;
+    ;-------------------;
+    mov A, ZP.CurrentChannel
+    asl A
+    mov X, A
+    mov A, ZP.VolSlideValue+X
+    beq .SkipVSlide
+    mov ZP.R0, A
+    and A, #$0F
+    mov ZP.R1, A
+    beq .Up
+    ;Dec volume
+    setp
+    mov A, OP.ChannelVolume+X
+    clrp
+    setc
+    sbc A, ZP.R1
+    setp
+    mov OP.ChannelVolume+X, A
+    clrp
+    inc X
+    setp
+    mov A, OP.ChannelVolume+X
+    clrp
+    setc
+    sbc A, ZP.R1
+    setp
+    mov OP.ChannelVolume+X, A
+    clrp
+    bra .SkipVSlide
+    .Up:
+    ;Inc volume
+    mov A, ZP.R0
+    xcn
+    mov ZP.R1, A
+    setp
+    mov A, OP.ChannelVolume+X
+    clrc
+    clrp
+    adc A, ZP.R1
+    setp
+    mov OP.ChannelVolume+X, A
+    clrp
+    inc X
+    setp
+    mov A, OP.ChannelVolume+X
+    clrp
+    clrc
+    adc A, ZP.R1
+    setp
+    mov OP.ChannelVolume+X, A
+    clrp
+    .SkipVSlide:
+
     ;---------------;
     ;   Portamento  ;
     ;---------------;
@@ -148,11 +223,15 @@ ProcessEffects:
     mov ZP.TempMemADDRH, #$FF
     +
     mov X, ZP.TempScratchMemH
-    mov Y, ZP.ChannelPitches+1+X
-    mov A, ZP.ChannelPitches+X
+    setp
+    mov Y, OP.ChannelPitches+1+X
+    mov A, OP.ChannelPitches+X
+    clrp
     addw YA, ZP.TempMemADDRL
-    mov ZP.ChannelPitches+1+X, Y
-    mov ZP.ChannelPitches+X, A  
+    setp
+    mov OP.ChannelPitches+1+X, Y
+    mov OP.ChannelPitches+X, A  
+    clrp
     .SkipPort:
     
     ;--------------------;
@@ -289,7 +368,9 @@ ProcessEffects:
     mov ZP.TempMemADDRL, #(InstrumentMemory)&$FF        ;Create word addr to instrument memory
     mov ZP.TempMemADDRH, #(InstrumentMemory>>8)&$FF     ;
     mov X, ZP.CurrentChannel                            ;Shove channel index into X
-    mov A, ZP.ChannelInstrumentIndex+X                  ;Grab instrument index
+    setp
+    mov A, OP.ChannelInstrumentIndex+X                  ;Grab instrument index
+    clrp
     mov Y, #$08                                         ;Shove in multiplier
     mul YA                                              ;Multiply
     addw YA, ZP.TempMemADDRL                            ;Add on instrument memory location
@@ -299,7 +380,9 @@ ProcessEffects:
     mov X, ZP.TempScratchMemH                           ;Grab premul index
     mov Y, #5                                           ;Reset Y
     mov A, (ZP.TempMemADDRL)+Y                          ;Grab instrument L volume
-    mov Y, ZP.ChannelVolume+X                           ;Shove L volume into X
+    setp
+    mov Y, OP.ChannelVolume+X                           ;Shove L volume into X
+    clrp
     call SignedMul                                      ;Multiply both volumes together
     mov X, #128                                         ;Shove in Divispr
     div YA, X                                           ;Divide
@@ -309,7 +392,9 @@ ProcessEffects:
     mov X, ZP.TempScratchMemH
     mov Y, #6                                           ;Reset Y
     mov A, (ZP.TempMemADDRL)+Y                          ;Grab instrument R volume
-    mov Y, ZP.ChannelVolume+1+X                         ;Shove R volume into X
+    setp
+    mov Y, OP.ChannelVolume+1+X                         ;Shove R volume into X
+    clrp
     call SignedMul                                      ;Multiply both volumes together
     mov X, #128                                         ;Shove in Divispr
     div YA, X                                           ;Divide
@@ -358,11 +443,16 @@ ProcessEffects:
     mov SPC_RegADDR, A                                  ;Shove into addr
     
     mov X, ZP.TempScratchMemH                           ;Grab Premult channel index
-    mov A, ZP.ChannelPitches+X                          ;Grab current channel's lo pitch
+    setp
+    mov A, OP.ChannelPitches+X                          ;Grab current channel's lo pitch
+    clrp
     adc A, ZP.TempPitchProcess                          ;Add lo byte to pitch offset
     mov ZP.ChannelPitchesOutput, A                      ;Put into output
-    mov A, ZP.ChannelPitches+1+X                        ;Grab current channel's hi pitch
+    setp
+    mov A, OP.ChannelPitches+1+X                        ;Grab current channel's hi pitch
+    clrp
     adc A, ZP.TempPitchProcess+1                        ;Add hi byte to pitch offset
+    setp
     mov ZP.ChannelPitchesOutput+1, A                    ;Put into output
 
     mov A, ZP.ChannelPitchesOutput                      ;Grab lo pitch
@@ -370,7 +460,7 @@ ProcessEffects:
     inc SPC_RegADDR                                     ;Increment address
     mov A, ZP.ChannelPitchesOutput+1                    ;Grab hi pitch
     mov SPC_RegData, A                                  ;Return
-
+    clrp
     ;Jump over if working Virtual channels
     .SkipInst:
     dec ZP.CurrentChannel
@@ -381,7 +471,9 @@ ProcessEffects:
     ret
 
 ReadPatterns:
-    mov A, ZP.OrderPos                         ;Grab the current order position
+    setp
+    mov A, OP.OrderPos                         ;Grab the current order position
+    clrp
     xcn A                                      ;Mult by 16
     mov ZP.TempMemADDRH, A                     ;Shove into hi zp
     mov ZP.TempMemADDRL, A                     ;Shove into lo zp
@@ -454,19 +546,25 @@ Row_SetSpeed:
 Row_Sleep:
     call GrabCommand
     mov X, ZP.CurrentChannel
-    mov ZP.ChannelSleepCounter+X, A
+    setp
+    mov OP.ChannelSleepCounter+X, A
+    clrp
     ret                             ;ret is exiting out of the read rows subroutine
 
 Row_Goto:
     call GrabCommand
-    mov ZP.OrderPosGoto, A      ;Return pos
-    mov ZP.OrderChangeFlag, #1  ;Set the order change flag
+    setp
+    mov OP.OrderPosGoto, A      ;Return pos
+    mov OP.OrderChangeFlag, #1  ;Set the order change flag
+    clrp
     ret
 
 Row_Break:
-    mov ZP.OrderPosGoto, ZP.OrderPos
-    inc ZP.OrderPosGoto
-    mov ZP.OrderChangeFlag, #1  ;Set the order change flag
+    setp
+    mov OP.OrderPosGoto, OP.OrderPos
+    inc OP.OrderPosGoto
+    mov OP.OrderChangeFlag, #1  ;Set the order change flag
+    clrp
     ret                         ;Break out of read rows
 
 Row_PlayNote:
@@ -476,9 +574,9 @@ Row_PlayNote:
 Row_PlayPitch:
     ;Pitch application
     call GrabCommand                ;Grab lo byte of the pitch
-    mov ZP.ChannelPitches+X, A      ;Shove lo byte into pitch
+    mov OP.ChannelPitches+X, A      ;Shove lo byte into pitch
     call GrabCommand                ;Grab hi byte of the pitch
-    mov ZP.ChannelPitches+1+X, A    ;Shove hi byte into pitch
+    mov OP.ChannelPitches+1+X, A    ;Shove hi byte into pitch
 
     ;KON State
     mov X, ZP.CurrentChannel            ;Grab current channel
@@ -493,7 +591,9 @@ Row_SetInstrument:
     mov ZP.TempMemADDRH, #(InstrumentMemory>>8)&$FF
     call GrabCommand
     mov X, ZP.CurrentChannel
-    mov ZP.ChannelInstrumentIndex+X, A
+    setp
+    mov OP.ChannelInstrumentIndex+X, A
+    clrp
     mov Y, #$08
     mul YA
     addw YA, ZP.TempMemADDRL
@@ -586,9 +686,13 @@ Row_SetMasterVolume:
 
 Row_SetChannelVolume:
     call GrabCommand                ;Grab L volume
-    mov ZP.ChannelVolume+X, A       ;Apply
+    setp
+    mov OP.ChannelVolume+X, A       ;Apply
+    clrp
     call GrabCommand                ;Grab R volume
-    mov ZP.ChannelVolume+1+X, A     ;Apply
+    setp
+    mov OP.ChannelVolume+1+X, A     ;Apply
+    clrp
     jmp ReadRows
 
 Row_SetArp:
@@ -939,9 +1043,6 @@ PatternMemory:
     .Pat0:
     %PlayPitch($1234)
     %SetSpeed($40)
-    ;%SetPanbr($1F)
-    ;%SetTremo($FF)
-    ;%SetVib($FF)
     %SetMasterVolume($7F, $7F)
     %SetChannelVolume($7F, $7F)
     %SetInstrument(0)
