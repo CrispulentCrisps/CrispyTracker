@@ -48,8 +48,8 @@ bne -
 mov ZP.TrackSettings, #$00     ;Set the track settings
 
 %spc_write(DSP_FLG, $00)
-%spc_write(DSP_MVOL_L, $11)
-%spc_write(DSP_MVOL_R, $11)
+%spc_write(DSP_MVOL_L, $00)
+%spc_write(DSP_MVOL_R, $00)
 %spc_write(DSP_EVOL_L, $40)
 %spc_write(DSP_EVOL_R, $40)
 %spc_write(DSP_ESA, $BF)
@@ -111,6 +111,7 @@ DriverLoop:                         ;Main driver loop
     mov OP.ChannelSleepCounter+X, Y     ;Clear sleep counter
     dec X                               ;Decrement counter
     bpl -
+    clrp
     call ReadPatterns
     setp
     mov OP.OrderChangeFlag, #0
@@ -145,7 +146,7 @@ DriverLoop:                         ;Main driver loop
 
 ProcessEffects:
     push X
-    mov ZP.CurrentChannel, #$0A
+    mov ZP.CurrentChannel, #$0F
     .EffectsLoop:
     mov ZP.TempPitchProcess, #0
     mov ZP.TempPitchProcess+1, #0
@@ -910,62 +911,49 @@ RecieveSFX:
     bne .SkipSFXCheck
     ;SFX triggered!
     inc ZP.FlagVal
-    mov A, Apu0         ;Check for != 0 byte
-    asl A
-    mov X, A
+    mov A, Apu0         ;Grab index into SFX table
+    mov Y, #$10
+    mul YA              ;Offset index by 16
     ;Setup memptr
-    mov ZP.R0, SfxTable&$FF
-    mov ZP.R1, (SfxTable>>8)&$FF
-    ;Set up Memory address for SFX table
-    mov A, (ZP.R0)+X
-    mov ZP.R2, A
-    inc X
-    mov A, (ZP.R0)+X
-    mov ZP.R3, A
-    ;ZP.R2+3 now hold the address to the current SFX
-    mov Y, #$00
-    ;Check first SFX slot
-    mov A, ZP.VCOut+Y
-    and A, #$0F
-    cmp A, #$0F
-    beq .ProcessSFX    
-    ;Check second SFX slot
-    mov A, ZP.VCOut+Y
-    and A, #$F0
-    xcn
-    cmp A, #$0F
-    beq .ProcessSFX
-    inc Y    
-    ;Check third SFX slot
-    mov A, ZP.VCOut+Y
-    and A, #$0F
-    cmp A, #$0F
-    beq .ProcessSFX
-    ;Assume no slots are available and skip over playing SFX
-    bra .SkipSFXCheck
+    mov ZP.R0, #SfxTable&$FF
+    mov ZP.R1, #(SfxTable>>8)&$FF
+    addw YA, ZP.R0
+    movw ZP.R0, YA
+    ;Now ZP.R0 + ZP.R1 hold the pointer to the current SFX
+    
+    ;Next, we see what channels are actually going to be played
+    mov ZP.R2, #$FF ;\
+    mov ZP.R3, #$FF ;/  Comparison for YA
+    mov ZP.R4, #$07 ;   Index
+    -
+    mov X, #$00
+    incw (ZP.R0)
+    mov A, (ZP.R0+X)
+    mov Y, A
+    decw (ZP.R0)
+    mov A, (ZP.R0+X)
+    cmpw YA, ZP.R2      ;Check for blank entries
+    beq .SkipSetSFX     ;Skip over if we've found one
+    ;We've found a valid SFX channel!
 
-    ;Break when free slot is found
-    .ProcessSFX:
-    ;Reset the SFX byte
-    mov Apu0, #$00
+    ;Store away SFX address to the correct sequence addr
+    movw YA, (ZP.R0)
+    movw ZP.TempMemADDRL, YA    ;Store away the address into temp mem
+    mov A, ZP.R4
+    asl A
+    mov Y, A
+    mov A, ZP.TempMemADDRL      ;Grab lo addr
+    mov ZP.SequenceAddr+16+Y, A
+    inc Y
+    mov A, ZP.TempMemADDRH      ;Grab hi addr
+    mov ZP.SequenceAddr+16+Y, A
     
-    .SfxDecide
-    ;Check currently unused channels
-    mov Y, #$07
-    .FreeChan:
-    ;Check PMON to blacklist that channel and the one next to it where the pitch info is taken
-    mov A, Y
-    mov X, A
-    mov SPC_RegADDR, #DSP_PMON
-    mov A, SPC_RegData
-    and A, BitmaskTable+X
-    dec Y                   ;Decrement Y to skip over next channel if PMON is being used
-    bne .BlacklistChan      ;Skip over if a channel is using PMON
-    inc Y                   ;Reverse decrement if PMON isn't on
-    .BlacklistChan:
-    dec Y
-    bpl .FreeChan
-    
+    .SkipSetSFX:
+    ;Increment pointer
+    incw (ZP.R0)
+    incw (ZP.R0)
+    dec ZP.R4
+    bpl -
     ;Increment recieve flag
     inc ZP.SFXRec
     mov Apu1, ZP.SFXRec
@@ -1056,22 +1044,47 @@ PatternMemory:
     %Sleep($10)
     %Break()
 
-SfxDef:
-    .Sfx1:
+SfxPat:
+    .Sfx1_0:
     %PlayPitch($1800)
     %SetVirtSpeed(4)
     %Sleep(10)
     %PlayPitch($2000)
-    .Sfx2:
+    %VirtStop()
+    .Sfx1_1:
+    %PlayPitch($2200)
+    %SetVirtSpeed(4)
+    %Sleep(10)
+    %PlayPitch($2400)
+    %VirtStop()
+
+    .Sfx2_0:
     %PlayPitch($0800)
     %SetVirtSpeed(6)
     %Sleep(14)
     %SetPort($84)
     %Sleep(12)
-
+    %VirtStop()
+    
 SfxTable:
-    dw SfxDef_Sfx1
-    dw SfxDef_Sfx2
+    .SFX_1:
+        dw $FFFF
+        dw $FFFF
+        dw $FFFF
+        dw $FFFF
+        dw $FFFF
+        dw $FFFF
+        dw SfxPat_Sfx1_0
+        dw SfxPat_Sfx1_1
+    .SFX_2:
+        dw SfxPat_Sfx2_0
+        dw $FFFF
+        dw $FFFF
+        dw $FFFF
+        dw $FFFF
+        dw $FFFF
+        dw $FFFF
+        dw $FFFF
 
 InstrumentMemory:
 %WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $40)

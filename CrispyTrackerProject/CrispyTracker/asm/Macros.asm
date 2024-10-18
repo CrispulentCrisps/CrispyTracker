@@ -13,6 +13,7 @@ struct ZP $00
 .R1                         skip 1                  ;Scratch memory
 .R2                         skip 1                  ;Scratch memory
 .R3                         skip 1                  ;Scratch memory
+.R4                         skip 1                  ;Scratch memory
 .MulProductTemp:            skip 2                  ;Temporary memory for signed multiplication
 .TickThresh:                skip 3                  ;Equivelant to track speed [0th for main track speed, 1st and 2nd for Virtual channels for SFX]
 .KONState:                  skip 1                  ;Holds the current bitfield state of KON
@@ -44,8 +45,9 @@ struct ZP $00
 .ChannelVolumeOutput:       skip 2                  ;Volume written to current channel
 
 ;SFX Specific
-.VCTick:                    skip 3                  ;Tick counters for the virtual channels
-.VCOut:                     skip 2                  ;3 nibbles that determine which SFX is going through which channel. If a nibble is F we assume it's not outputting to any channel
+.VCTick:                    skip 8                  ;Tick counters for the virtual channels
+.VCTickThresh:              skip 8                  ;Tick thresholders for SFX
+.VCOut:                     skip 4                  ;8 nibbles that determine which SFX is going through which channel. If a nibble is F we assume it's not outputting to any channel
 
 ;General Tracker State
 .TrackSettings:             skip 1                  ;Holds the track settings [refer to DriverRequirements.txt]
@@ -91,6 +93,7 @@ struct RC $00
 .VirtSpeed      skip 1  ;
 .VirtBreak      skip 1  ;
 .VirtSleep      skip 1  ;
+.VirtStop       skip 1  ;
 endstruct
 
 macro SetSpeed(S)       ;Sets tick threshold for track
@@ -219,6 +222,11 @@ macro SetVirtSpeed(V)
 db RC.VirtSpeed
 db <V>
 endmacro
+
+macro VirtStop()
+db RC.VirtStop
+endmacro
+
 Apu0 =      $F4
 Apu1 =      $F5
 Apu2 =      $F6
