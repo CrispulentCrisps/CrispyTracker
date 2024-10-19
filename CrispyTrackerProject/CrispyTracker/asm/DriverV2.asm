@@ -102,6 +102,7 @@ DriverLoop:                         ;Main driver loop
     cmp X, ZP.TickThresh            ;Check if the counter has reached the 
     bmi .TickIncrement              ;Go back to the tick incrementer if the counter is not
                                     ;Assuming we've hit the threshold
+    call HandleSFX                  ;Handle SFX interpreting
     setp
     cmp OP.OrderChangeFlag, #1      ;Check the order flag with the 0th bit
     bne +                           ;Skip if the carry flag isn't set
@@ -495,6 +496,10 @@ ReadPatterns:
 
 ReadRows:
     call GrabCommand
+    ;Skip null ptrs
+    bne +
+    ret
+    +
     asl A                               ;Mult by 2 to prevent reading in the wrong address byte
     mov X, A                            ;Shove into X for the jump table
     jmp (.RowJumpTable+X)               ;Goto jumptable + command index
@@ -528,15 +533,9 @@ ReadRows:
     dw Row_SetVolSlide
     dw Row_SetPanbr
     dw Row_NoteRelease
-    ;SFX Specific, repeat 3 times since we cannot rely on the CurrentChannel byte
-    dw Row_Virt_SetSpeed
-    dw Row_Virt_SetSpeed
+    ;SFX Specific
     dw Row_Virt_SetSpeed
     dw Row_Virt_Break
-    dw Row_Virt_Break
-    dw Row_Virt_Break
-    dw Row_Virt_Sleep
-    dw Row_Virt_Sleep
     dw Row_Virt_Sleep
     
 Row_SetSpeed:
@@ -964,6 +963,13 @@ RecieveSFX:
     pop A
     ret
     
+HandleSFX:
+    ;Handle timers
+    mov X, #$07
+    setp
+    clrp
+    ret
+
 BitmaskTable:   ;General bitmask table
     db $01
     db $02
@@ -996,8 +1002,6 @@ db $6A,$6B,$6D,$6F,$70,$71,$73,$74,$75,$76
 db $78,$79,$7A,$7A,$7B,$7C,$7D,$7D,$7E,$7E
 db $7E,$7F,$7F,$7F
 
-PitchTable:
-
 fill !CodeBuffer-pc()
 assert pc() == !CodeBuffer
 
@@ -1005,6 +1009,8 @@ assert pc() == !CodeBuffer
 db $08,$09,$08,$09,$23,$09,$23,$09
 db $84, $17, $45, $35, $22, $22, $31, $21, $10, $68, $01, $21, $0D, $01, $08, $0B, $C3, $3E, $5B, $09, $8B, $D7, $B1, $E0, $BC, $AF, $78
 db $B8, $87, $1F, $00, $F1, $0F, $1F, $00, $00, $8F, $E1, $13, $12, $2D, $52, $14, $10, $F7
+
+PitchTable:
 
 
 OrderTable:
@@ -1090,7 +1096,7 @@ InstrumentMemory:
 %WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $40)
 %WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $60)
 %WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $80)
-%WriteInstrument($00, $FF, $80, $93, %00000000, $7F, $7F, $80)  ;Test SFX
+%WriteInstrument($00, $FF, $80, $93, %00000001, $60, $60, $80)  ;Test SFX
 .EndOfInstrument:
 
 Engine_End:
