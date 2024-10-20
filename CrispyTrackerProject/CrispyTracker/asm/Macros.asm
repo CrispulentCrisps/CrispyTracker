@@ -15,7 +15,7 @@ struct ZP $00
 .R3                         skip 1                  ;Scratch memory
 .R4                         skip 1                  ;Scratch memory
 .MulProductTemp:            skip 2                  ;Temporary memory for signed multiplication
-.TickThresh:                skip 3                  ;Equivelant to track speed [0th for main track speed, 1st and 2nd for Virtual channels for SFX]
+.TickThresh:                skip 1                  ;Equivelant to track speed
 .KONState:                  skip 1                  ;Holds the current bitfield state of KON
 .FlagVal:                   skip 1                  ;Holds the flag value
 .SFXRec                     skip 1                  ;Byte for APU1 value expected to play SFX
@@ -55,9 +55,10 @@ endstruct
 
 struct OP $0100
 ;Sequencing
-.OrderPos:                  skip 1                  ;Position we are within the orders table
-.OrderPosGoto:              skip 1                  ;Aim position for reading in patterns
-.OrderChangeFlag:           skip 1                  ;Flag for when we need to load in the next order sequence
+.VirtThresh:                skip 8                  ;Speed threshold for SFX
+.OrderPos:                  skip 9                  ;Position we are within the orders table
+.OrderPosGoto:              skip 9                  ;Aim position for reading in patterns
+.OrderChangeFlag:           skip 9                  ;Flag for when we need to load in the next order sequence
 .ChannelSleepCounter:       skip 16                 ;Array of sleep counters
 .ChannelInstrumentIndex:    skip 16                 ;Array of Instrument indexes
 .ChannelPitches:            skip 32                 ;Array of pitch values in each channel
@@ -220,6 +221,11 @@ endmacro
 
 macro SetVirtSpeed(V)
 db RC.VirtSpeed
+db <V>
+endmacro
+
+macro VirtSleep(V)
+db RC.VirtSleep
 db <V>
 endmacro
 
