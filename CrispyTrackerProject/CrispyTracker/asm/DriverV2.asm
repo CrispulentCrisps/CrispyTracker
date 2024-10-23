@@ -89,15 +89,6 @@ mov Apu2, #$00
 mov Apu3, #$00
 mov ZP.SFXRec, #$01
 
-mov X, #$0F
-mov A, #$01
-setp
--
-mov OP.ChannelSleepCounter+X, A
-dec X
-bpl -
-clrp
-
 DriverLoop:                         ;Main driver loop
     mov X, #0                       ;Reset counter
     
@@ -537,34 +528,43 @@ ReadPatterns:
     
 HandleSFX:
     ;Handle timers
-    mov ZP.CurrentChannel, #$0F
-    mov X, ZP.CurrentChannel
+    mov ZP.CurrentChannel, #$07
     .SfxLoop:
-    mov ZP.CurrentChannel, X
+    mov X, ZP.CurrentChannel
+    ;Check if our tick counter has reached 0
+    mov A, ZP.VCTick+X
+    bne .DecTick
     setp
-    mov A, OP.VirtThresh+X
-    bne .ApplySleep
-    mov A, OP.ChannelSleepCounter+X
-    dec A
-    clrp
-    bne .ApplySleep
+    mov A, OP.OrderChangeFlag+X
+    beq .SkipPatternRead
+    ;Setup pattern read
     mov ZP.R0, #SfxTable&$FF
     mov ZP.R1, #(SfxTable>>8)&$FF
     setp
-    mov A, OP.OrderPos-7+X              ;-7 to offset channel pos
+    mov A, OP.OrderPos+1+X
     clrp
     mov ZP.R2, X
     call ReadPatterns
-    setp
-    mov A, OP.VirtThresh+X
-    .ApplySleep:
-    mov OP.ChannelSleepCounter+X, A
+    mov A, ZP.VCTickThresh+X
+    mov ZP.VCTick+X, A
+    .SkipPatternRead:
     clrp
+    ;If tick timer == 0 then we decrement our sleep counter
+    setp
+    mov A, OP.ChannelSleepCounter+8+X
+    bne .ApplySleep
+    clrp    
     call ReadRows
+    .DecTick:
+    dec ZP.VCTick+X
+    .ApplySleep:
+    setp
+    mov OP.ChannelSleepCounter+8+X, A
+    clrp
     .SkipSleep:
     clrp
-    dec X
-    cmp X, #$07
+    dec ZP.CurrentChannel
+    mov X, ZP.CurrentChannel
     bne .SfxLoop
     mov ZP.CurrentChannel, #$00
     ret
@@ -823,9 +823,7 @@ Row_NoteRelease:
 Row_Virt_SetSpeed:
     mov X, ZP.CurrentChannel
     call GrabCommand
-    setp
-    mov OP.VirtThresh+X, A
-    clrp
+    mov ZP.VCTickThresh+X, A
     ret
 
 Row_Virt_Break:
@@ -836,7 +834,7 @@ Row_Virt_Sleep:
     mov X, ZP.CurrentChannel
     call GrabCommand
     setp
-    mov OP.ChannelSleepCounter+$10+X, A
+    mov OP.ChannelSleepCounter+$08+X, A
     clrp
     ret
 
@@ -1169,6 +1167,10 @@ SfxPat:
     %SetPort($84)
     %Sleep(12)
     %VirtStop()
+
+SubtuneList:
+    dw OrderTable_Ord0
+    dw SfxTable_SFX_1
 
 InstrumentMemory:
 %WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $40)

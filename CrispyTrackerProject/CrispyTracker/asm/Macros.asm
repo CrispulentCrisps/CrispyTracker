@@ -55,7 +55,6 @@ endstruct
 
 struct OP $0100
 ;Sequencing
-.VirtThresh:                skip 8                  ;Speed threshold for SFX
 .OrderPos:                  skip 9                  ;Position we are within the orders table
 .OrderPosGoto:              skip 9                  ;Aim position for reading in patterns
 .OrderChangeFlag:           skip 9                  ;Flag for when we need to load in the next order sequence
