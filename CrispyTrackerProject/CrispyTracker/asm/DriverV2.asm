@@ -628,9 +628,7 @@ Row_SetSpeed:
     and A, #$07
     mov Y, A
     call GrabCommand
-    setp
     mov ZP.VCTickThresh+Y, A
-    clrp
     jmp ReadRows
 
 Row_Sleep:
@@ -1150,6 +1148,7 @@ SfxTable:
 
 SfxPat:
     .Null:
+    %SetSpeed($CC)
     %Sleep(255)
     .Sfx1_0:
     %PlayPitch($1800)
