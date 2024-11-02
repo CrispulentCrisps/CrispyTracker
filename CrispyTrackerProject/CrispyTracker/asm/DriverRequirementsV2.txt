@@ -162,12 +162,21 @@ Effects list goes as:
 	To play a sound effect you send a byte that acts as an index into a SFX table
 	SFX work in 8 "Virtual" channels which replace the desired channel with the state of the sound effect
 
+- Audio Controller -
+	The program comes with a few independent adjustment capabities to allow the programmer to adjust the music in game when needed
+	These take in 2 bytes from PORT 2 [command ID] and PORT 3 [command Value]
+	The commands include:
+		- Change Settings Byte 	[0]	//Sets value for settings byte [See Miscellaneous]
+		- Master volume change 	[1]	//Changes the Master Volume L+R on the APU
+		- Set Channel Mask		[2]	//Sets bitfield for multi-channel controls
+		- Set Channel Volumes	[3]	//Sets channels to PORT3 value
+
 - Miscellaneous -
 	Settings byte:
 		The settings byte is specifically made for compatilbility on the end users part.
 		This can include:
 			01 - Mono/Stereo output [off for mono, on for stereo]
-			02 - TBD...
+			02 - Echo On/Off		[0 for echo on, 1 for echo off]
 			04 - TBD...
 			08 - TBD...
 			10 - TBD...

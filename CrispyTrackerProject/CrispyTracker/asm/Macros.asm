@@ -51,6 +51,7 @@ struct ZP $00
 
 ;General Tracker State
 .TrackSettings:             skip 1                  ;Holds the track settings [refer to DriverRequirements.txt]
+.StopFlag                   skip 1                  ;Stops the track from progressing
 endstruct
 
 struct OP $0100
@@ -216,11 +217,6 @@ endmacro
 
 macro Stop()
 db RC.Stop
-endmacro
-
-macro SetVirtSpeed(V)
-db RC.VirtSpeed
-db <V>
 endmacro
 
 macro VirtSleep(V)

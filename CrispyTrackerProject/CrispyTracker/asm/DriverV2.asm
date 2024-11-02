@@ -528,43 +528,50 @@ ReadPatterns:
     
 HandleSFX:
     ;Handle timers
-    mov ZP.CurrentChannel, #$07
+    mov ZP.CurrentChannel, #$0F
     .SfxLoop:
     mov X, ZP.CurrentChannel
     ;Check if our tick counter has reached 0
-    mov A, ZP.VCTick+X
+    mov A, ZP.VCTick-8+X
     bne .DecTick
+    mov A, ZP.CurrentChannel
+    and A, #$07
+    mov X, A
     setp
-    mov A, OP.OrderChangeFlag+X
+    mov A, OP.OrderChangeFlag+1+X
     beq .SkipPatternRead
     ;Setup pattern read
+    clrp
+    mov X, ZP.CurrentChannel
     mov ZP.R0, #SfxTable&$FF
     mov ZP.R1, #(SfxTable>>8)&$FF
     setp
     mov A, OP.OrderPos+1+X
     clrp
+    mov X, ZP.CurrentChannel
     mov ZP.R2, X
     call ReadPatterns
-    mov A, ZP.VCTickThresh+X
-    mov ZP.VCTick+X, A
+    mov A, ZP.VCTickThresh-8+X
+    mov ZP.VCTick-8+X, A
     .SkipPatternRead:
-    clrp
     ;If tick timer == 0 then we decrement our sleep counter
+    mov X, ZP.CurrentChannel
     setp
-    mov A, OP.ChannelSleepCounter+8+X
+    mov A, OP.ChannelSleepCounter+X
     bne .ApplySleep
     clrp    
     call ReadRows
     .DecTick:
-    dec ZP.VCTick+X
+    dec ZP.VCTick-8+X
     .ApplySleep:
     setp
-    mov OP.ChannelSleepCounter+8+X, A
+    mov OP.ChannelSleepCounter+X, A
     clrp
     .SkipSleep:
     clrp
     dec ZP.CurrentChannel
     mov X, ZP.CurrentChannel
+    cmp X, #$07
     bne .SfxLoop
     mov ZP.CurrentChannel, #$00
     ret
@@ -605,13 +612,25 @@ ReadRows:
     dw Row_SetPanbr
     dw Row_NoteRelease
     ;SFX Specific
-    dw Row_Virt_SetSpeed
     dw Row_Virt_Break
-    dw Row_Virt_Sleep
     
 Row_SetSpeed:
+    clrp
+    mov A, ZP.CurrentChannel
+    and A, #$08
+    bne +
+    ;Music
     call GrabCommand
     mov ZP.TickThresh, A
+    jmp ReadRows
+    +
+    mov A, ZP.CurrentChannel
+    and A, #$07
+    mov Y, A
+    call GrabCommand
+    setp
+    mov ZP.VCTickThresh+Y, A
+    clrp
     jmp ReadRows
 
 Row_Sleep:
@@ -639,7 +658,6 @@ Row_Break:
     ret                         ;Break out of read rows
 
 Row_PlayNote:
-
     jmp ReadRows
 
 Row_PlayPitch:
@@ -820,22 +838,9 @@ Row_NoteRelease:
 ;-------------------;
 ;   SFX specific    ;
 ;-------------------;
-Row_Virt_SetSpeed:
-    mov X, ZP.CurrentChannel
-    call GrabCommand
-    mov ZP.VCTickThresh+X, A
-    ret
 
 Row_Virt_Break:
 
-    ret
-
-Row_Virt_Sleep:
-    mov X, ZP.CurrentChannel
-    call GrabCommand
-    setp
-    mov OP.ChannelSleepCounter+$08+X, A
-    clrp
     ret
 
         ;----------------------------;
@@ -1123,7 +1128,6 @@ PatternMemory:
     %Sleep($10)
     %Break()
 
-    
 SfxTable:
     .SFX_1:
         dw SfxPat_Null
@@ -1149,20 +1153,19 @@ SfxPat:
     %Sleep(255)
     .Sfx1_0:
     %PlayPitch($1800)
-    %SetVirtSpeed(4)
+    %SetSpeed(4)
     %Sleep(10)
     %PlayPitch($2000)
     %VirtStop()
     .Sfx1_1:
     %PlayPitch($2200)
-    %SetVirtSpeed(4)
+    %SetSpeed(4)
     %Sleep(10)
     %PlayPitch($2400)
     %VirtStop()
-
     .Sfx2_0:
     %PlayPitch($0800)
-    %SetVirtSpeed(6)
+    %SetSpeed(6)
     %Sleep(14)
     %SetPort($84)
     %Sleep(12)
