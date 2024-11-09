@@ -175,8 +175,8 @@ Effects list goes as:
 	Settings byte:
 		The settings byte is specifically made for compatilbility on the end users part.
 		This can include:
-			01 - Mono/Stereo output [off for mono, on for stereo]
-			02 - Echo On/Off		[0 for echo on, 1 for echo off]
+			01 - Force Mono 		[off for stereo, on for mono]
+			02 - Disable Echo		[0 for echo on, 1 for echo off]
 			04 - TBD...
 			08 - TBD...
 			10 - TBD...

@@ -45,7 +45,7 @@ mov $0100+Y, A
 dec Y
 bne -
 
-mov ZP.TrackSettings, #$00     ;Set the track settings
+mov ZP.TrackSettings, #$01     ;Set the track settings
 
 %spc_write(DSP_FLG, $00)
 %spc_write(DSP_MVOL_L, $00)
@@ -55,7 +55,7 @@ mov ZP.TrackSettings, #$00     ;Set the track settings
 %spc_write(DSP_ESA, $BF)
 %spc_write(DSP_EDL, $00)
 %spc_write(DSP_EFB, $20)
-%spc_write(DSP_DIR, $09)
+%spc_write(DSP_DIR, $0A)
 %spc_write(DSP_PMON, $00)
 %spc_write(DSP_EON, $00)
 %spc_write(DSP_NON, $00)
@@ -78,10 +78,17 @@ bvc -
 mov SPC_Control, #$01               ;Set control bit to enable Timer 0
 mov SPC_Timer1, #$20                ;Divide timer to run at ~250hz
 setp
-mov OP.OrderChangeFlag, #$01        ;Set change flag at start to load initial pattern data
+mov A, #$01
+mov Y, #$08
+-
+mov OP.OrderChangeFlag+Y, A         ;Set change flag at start to load initial pattern data for both SFX and music
+dec Y
+bpl -
 clrp
-mov ZP.VCOut, #$FF                  ;Reset the VCOut state to F to prevent channel injection
+mov ZP.VCOut,   #$FF                ;Reset the VCOut state to F to prevent channel injection
 mov ZP.VCOut+1, #$FF                ;Reset the VCOut state to F to prevent channel injection
+mov ZP.VCOut+2, #$FF                ;Reset the VCOut state to F to prevent channel injection
+mov ZP.VCOut+3, #$FF                ;Reset the VCOut state to F to prevent channel injection
 
 mov Apu0, #$00
 mov Apu1, #$00
@@ -108,7 +115,7 @@ DriverLoop:                         ;Main driver loop
     mov X, #$07
     mov Y, #$00
     -                                   ;Sleep Clear Loop
-    mov OP.ChannelSleepCounter+X, Y     ;Clear sleep counter
+    mov.b OP.ChannelSleepCounter+X, Y     ;Clear sleep counter
     dec X                               ;Decrement counter
     bpl -
     clrp
@@ -120,7 +127,7 @@ DriverLoop:                         ;Main driver loop
     mov ZP.R2, Y
     call ReadPatterns
     setp
-    mov OP.OrderChangeFlag, #0
+    mov OP.OrderChangeFlag, #$00
     +
     clrp
     
@@ -128,7 +135,7 @@ DriverLoop:                         ;Main driver loop
     .ChannelLoop:                   ;Main channel loop
     mov X, ZP.CurrentChannel
     setp
-    mov Y, OP.ChannelSleepCounter+X
+    mov.b Y, OP.ChannelSleepCounter+X
     clrp
     bne .SkipRow                    ;Check if the sleep counter != 0
     call ReadRows
@@ -155,9 +162,9 @@ ProcessEffects:
     push X
     mov ZP.CurrentChannel, #$0F
     .EffectsLoop:
-    mov ZP.TempPitchProcess, #0
-    mov ZP.TempPitchProcess+1, #0
-    mov ZP.TempVolumeProcess, #0
+    mov ZP.TempPitchProcess,    #0
+    mov ZP.TempPitchProcess+1,  #0
+    mov ZP.TempVolumeProcess,   #0
     mov ZP.TempVolumeProcess+1, #0
     mov A, ZP.CurrentChannel        ;Grab channel index
     asl A                           ;Double since we are working with 2 bytes
@@ -232,12 +239,12 @@ ProcessEffects:
     +
     mov X, ZP.TempScratchMemH
     setp
-    mov Y, OP.ChannelPitches+1+X
+    mov.b Y, OP.ChannelPitches+1+X
     mov A, OP.ChannelPitches+X
     clrp
     addw YA, ZP.TempMemADDRL
     setp
-    mov OP.ChannelPitches+1+X, Y
+    mov.b OP.ChannelPitches+1+X, Y
     mov OP.ChannelPitches+X, A  
     clrp
     .SkipPort:
@@ -389,7 +396,7 @@ ProcessEffects:
     mov Y, #5                                           ;Reset Y
     mov A, (ZP.TempMemADDRL)+Y                          ;Grab instrument L volume
     setp
-    mov Y, OP.ChannelVolume+X                           ;Shove L volume into X
+    mov.b Y, OP.ChannelVolume+X                           ;Shove L volume into X
     clrp
     call SignedMul                                      ;Multiply both volumes together
     mov X, #128                                         ;Shove in Divispr
@@ -401,7 +408,7 @@ ProcessEffects:
     mov Y, #6                                           ;Reset Y
     mov A, (ZP.TempMemADDRL)+Y                          ;Grab instrument R volume
     setp
-    mov Y, OP.ChannelVolume+1+X                         ;Shove R volume into X
+    mov.b Y, OP.ChannelVolume+1+X                       ;Shove R volume into X
     clrp
     call SignedMul                                      ;Multiply both volumes together
     mov X, #128                                         ;Shove in Divispr
@@ -431,6 +438,13 @@ ProcessEffects:
     mov A, #$7F                                         ;Clamp output
     .SkipRCorr:
     mov ZP.ChannelVolumeOutput+1, A
+
+    ;Force output to mono
+    mov C, ZP.TrackSettings.0
+    bcc .SkipMono
+    clr1 ZP.ChannelVolumeOutput.7
+    clr1 ZP.ChannelVolumeOutput+1.7
+    .SkipMono:
 
     ;Apply Volume
     mov X, ZP.TempScratchMemH                           ;Grab Premult channel index
@@ -492,9 +506,15 @@ ReadPatterns:
     and A, #$08
     beq +
     mov ZP.R3, #$01
+    mov A, ZP.R2
+    and A, #$07
+    setp
+    mov A, OP.OrderPos+1+X                     ;Grab the current order position [sfx]
+    bra .OrderRead
     +
     setp
-    mov A, OP.OrderPos+X                       ;Grab the current order position
+    mov A, OP.OrderPos                         ;Grab the current order position [music]
+    .OrderRead:
     clrp
     xcn A                                      ;Mult by 16
     mov ZP.TempMemADDRH, A                     ;Shove into hi zp
@@ -546,7 +566,7 @@ HandleSFX:
     mov ZP.R0, #SfxTable&$FF
     mov ZP.R1, #(SfxTable>>8)&$FF
     setp
-    mov A, OP.OrderPos+1+X
+    mov A, OP.OrderPos-7+X
     clrp
     mov X, ZP.CurrentChannel
     mov ZP.R2, X
@@ -1005,20 +1025,22 @@ RecieveSFX:
     addw YA, ZP.R0
     movw ZP.R0, YA
     ;Now ZP.R0 + ZP.R1 hold the pointer to the current SFX
-    
+
+    ;Store pointer to VCOut
+    mov ZP.R2, #(ZP.VCOut&$FF)+3
+    mov ZP.R3, #(ZP.VCOut>>8&$FF)+3
+
     ;Next, we see what channels are actually going to be played
-    mov ZP.R2, #$FF ;\
-    mov ZP.R3, #$FF ;/  Comparison for YA
-    mov ZP.R4, #$07 ;   Index
+    mov ZP.R4, #$03     ;Index
     -
-    mov X, #$00
-    incw (ZP.R0)
-    mov A, (ZP.R0+X)
-    mov Y, A
-    decw (ZP.R0)
-    mov A, (ZP.R0+X)
-    cmpw YA, ZP.R2      ;Check for blank entries
-    beq .SkipSetSFX     ;Skip over if we've found one
+    mov A, (ZP.R2)
+    and A, #$08         ;Check if value is F
+    bne .SkipSetSFX     ;Skip over if we've found one a SFX channel in use
+    mov A, (ZP.R2)
+    and A, #$80
+    bne .SkipSetSFX     ;Skip over if we've found one a SFX channel in use
+    ;decrement VCOut pointer
+    dec ZP.R2
     ;We've found a valid SFX channel!
 
     ;Store away SFX address to the correct sequence addr
@@ -1084,49 +1106,59 @@ fill !CodeBuffer-pc()
 assert pc() == !CodeBuffer
 
 ;Test sine+saw sample + dir page
-db $08,$09,$08,$09,$23,$09,$23,$09
+db $08,$0A,$08,$0A,$23,$0A,$23,$0A
 db $84, $17, $45, $35, $22, $22, $31, $21, $10, $68, $01, $21, $0D, $01, $08, $0B, $C3, $3E, $5B, $09, $8B, $D7
 db $B1, $E0, $BC, $AF, $78
 db $B8, $87, $1F, $00, $F1, $0F, $1F, $00, $00, $8F, $E1, $13, $12, $2D, $52, $14, $10, $F7
 
 OrderTable:
     .Ord0:
-    dw PatternMemory_Pat0
-    dw PatternMemory_Pat2
-    dw PatternMemory_Pat2
-    dw PatternMemory_Pat2
-    dw PatternMemory_Pat2
-    dw PatternMemory_Pat2
-    dw PatternMemory_Pat2
-    dw PatternMemory_Pat2
+        dw PatternMemory_Pat0
+        dw PatternMemory_Pat1
+        dw PatternMemory_Pat1
+        dw PatternMemory_Pat1
+        dw PatternMemory_Pat1
+        dw PatternMemory_Pat1
+        dw PatternMemory_Pat1
+        dw PatternMemory_Pat1
     .Ord1:
-    dw PatternMemory_Pat1
-    dw PatternMemory_Pat1
-    dw PatternMemory_Pat1
-    dw PatternMemory_Pat1
-    dw PatternMemory_Pat1
-    dw PatternMemory_Pat1
-    dw PatternMemory_Pat1
-    dw PatternMemory_Pat1
+        dw PatternMemory_Pat2
+        dw PatternMemory_Pat1
+        dw PatternMemory_Pat1
+        dw PatternMemory_Pat1
+        dw PatternMemory_Pat1
+        dw PatternMemory_Pat1
+        dw PatternMemory_Pat1
+        dw PatternMemory_Pat1
 
 PatternMemory:
     .Pat0:
-    %PlayPitch($1234)
-    %SetSpeed($40)
+    %PlayPitch($0900)
+    %SetSpeed($06)
     %SetMasterVolume($7F, $7F)
     %SetChannelVolume($7F, $7F)
     %SetInstrument(0)
     %Sleep($10)
     %Break()
     .Pat1:
-    %Sleep($20)
-    %Goto($00)
-    .Pat2:
-    %PlayPitch($1000)
-    %Sleep($10)
+    %Sleep($FF)
     %Break()
+    .Pat2:
+    %PlayPitch($0C00)
+    %Sleep($10)
+    %Goto(0)
 
+;For some reason the sequence addr returns the pointer address, not the value from the addr
 SfxTable:
+    .SFX_Null:
+        dw SfxPat_Null
+        dw SfxPat_Null
+        dw SfxPat_Null
+        dw SfxPat_Null
+        dw SfxPat_Null
+        dw SfxPat_Null
+        dw SfxPat_Null
+        dw SfxPat_Null
     .SFX_1:
         dw SfxPat_Null
         dw SfxPat_Null
@@ -1148,27 +1180,28 @@ SfxTable:
 
 SfxPat:
     .Null:
-    %SetSpeed($CC)
+    %SetSpeed($FF)
     %Sleep(255)
+    %Goto(0)
     .Sfx1_0:
-    %PlayPitch($1800)
     %SetSpeed(4)
+    %PlayPitch($1800)
     %Sleep(10)
     %PlayPitch($2000)
-    %VirtStop()
+    %Break()
     .Sfx1_1:
+    %SetSpeed(6)
     %PlayPitch($2200)
-    %SetSpeed(4)
     %Sleep(10)
     %PlayPitch($2400)
-    %VirtStop()
+    %Break()
     .Sfx2_0:
+    %SetSpeed(9)
     %PlayPitch($0800)
-    %SetSpeed(6)
     %Sleep(14)
     %SetPort($84)
     %Sleep(12)
-    %VirtStop()
+    %Break()
 
 SubtuneList:
     dw OrderTable_Ord0

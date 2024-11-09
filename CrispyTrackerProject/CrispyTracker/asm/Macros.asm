@@ -2,7 +2,7 @@
 ;   Macro's file for Cobalt Driver  ;
 ;-----------------------------------;
 
-!CodeBuffer = $0900                                 ;Section of bytes to fill
+!CodeBuffer = $0A00                                 ;Section of bytes to fill
 
 struct ZP $00
 .TempMemADDRL:              skip 1                  ;General purpose addr LO
@@ -70,31 +70,28 @@ endstruct
     ;Row commands
 
 struct RC $00
-.SetSpeed       skip 1  ;Sets tick threshold for track
-.Sleep          skip 1  ;Sleeps for S amount of rows
-.Goto           skip 1  ;Break to new order
-.Break          skip 1  ;Goto next order
-.PlayNote       skip 1  ;Plays note in note table
-.PlayPitch      skip 1  ;Plays absolute pitch value
-.SetInstrument  skip 1  ;
-.SetFlagValue   skip 1  ;
-.EchoDelay      skip 1  ;
-.EchoVolume     skip 1  ;
-.EchoFeedback   skip 1  ;
-.EchoCoeff      skip 8  ;
-.MasterVol      skip 1  ;
-.ChannelVol     skip 1  ;
-.SetArp         skip 1  ;
-.SetPort        skip 1  ;
-.SetVibrato     skip 1  ;
-.SetTremo       skip 1  ;
-.SetVolSlide    skip 1  ;
-.SetPanbrello   skip 1  ;
-.ReleaseNote    skip 1  ;
-.VirtSpeed      skip 1  ;
-.VirtBreak      skip 1  ;
-.VirtSleep      skip 1  ;
-.VirtStop       skip 1  ;
+.SetSpeed       skip 1  ;Sets tick threshold for track  |   $00
+.Sleep          skip 1  ;Sleeps for S amount of rows    |   $01   
+.Goto           skip 1  ;Break to new order             |   $02
+.Break          skip 1  ;Goto next order                |   $03
+.PlayNote       skip 1  ;Plays note in note table       |   $04
+.PlayPitch      skip 1  ;Plays absolute pitch value     |   $05
+.SetInstrument  skip 1  ;Set instrument index           |   $06
+.SetFlagValue   skip 1  ;Set FLG register               |   $07
+.EchoDelay      skip 1  ;Set echo delay value           |   $08
+.EchoVolume     skip 1  ;Set echo L/R volume            |   $09
+.EchoFeedback   skip 1  ;Set echo feedback value        |   $0A
+.EchoCoeff      skip 8  ;Set echo coeffecients          |   $0B-$12
+.MasterVol      skip 1  ;Set Master L/R volumes         |   $13
+.ChannelVol     skip 1  ;Set individual channel volume  |   $14
+.SetArp         skip 1  ;Set Arpeggio effect value      |   $15
+.SetPort        skip 1  ;Set Portamento effect value    |   $16
+.SetVibrato     skip 1  ;Set Vibrato effect value       |   $17
+.SetTremo       skip 1  ;Set Tremolando effect value    |   $18
+.SetVolSlide    skip 1  ;Set Volume Slide effect value  |   $19
+.SetPanbrello   skip 1  ;Set Panbrello effect value     |   $1A
+.ReleaseNote    skip 1  ;Set KOFF for given channel     |   $1B
+.Stop           skip 1  ;Set STOP flag for tune         |   $1C
 endstruct
 
 macro SetSpeed(S)       ;Sets tick threshold for track
@@ -222,10 +219,6 @@ endmacro
 macro VirtSleep(V)
 db RC.VirtSleep
 db <V>
-endmacro
-
-macro VirtStop()
-db RC.VirtStop
 endmacro
 
 Apu0 =      $F4
