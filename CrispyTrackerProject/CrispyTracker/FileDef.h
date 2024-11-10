@@ -28,6 +28,7 @@ typedef struct Subtune {
 	uint8_t Delay = 0;
 	uint8_t Feedback = 64;
 	int8_t EchoFilter[8] = { 127, 0, 0 , 0 , 0 , 0 , 0 , 0 };
+	uint8_t SFXFlag = 0;
 };
 
 typedef struct Module {
@@ -73,6 +74,5 @@ typedef struct PatternEntry {
 //This is for a single tune that can be used in the SPC file
 typedef struct SubtuneEntry {
 	uint16_t SongADDR;		//Where in memory the start of the song is. This is defined as the first pattern in memory
-	uint8_t SongSpeed;		//Speed of said song in terms of ticks per row
 	uint8_t SongResetADDR;	//Where the song restarts
 };

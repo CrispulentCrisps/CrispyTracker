@@ -1,15 +1,15 @@
 #pragma once
 
 //Macros here define the reserved positions in the tracker commands
-#define NULL_COMMAND 256		//Empty =section in rows, denoted with .. or ...
-#define RELEASE_COMMAND 257		//Puts the instrument in the release state
-#define STOP_COMMAND 258		//Fully stops the audio, most likely done with KOF and setting the volume to 0
+#define NULL_COMMAND		256		//Empty =section in rows, denoted with .. or ...
+#define RELEASE_COMMAND		257		//Puts the instrument in the release state
+#define STOP_COMMAND		258		//Fully stops the audio, most likely done with KOF and setting the volume to 0
 
 //Maximum column values
-#define MAX_INSTRUMENT 127
-#define MAX_VOLUME 127
-#define MAX_EFFECT 255
-#define MAX_EFFECT_VALUE 255
+#define MAX_INSTRUMENT		127
+#define MAX_VOLUME			127
+#define MAX_EFFECT			255
+#define MAX_EFFECT_VALUE	255
 
 //File handling
 #define FILE_EXT ".ctf"
@@ -23,7 +23,7 @@
 #define FILE_ERORR_04 "SAMPLE TOO LARGE TO FIT INTO DSP MEMORY"
 
 //Tracker command bytes for SPC export
-enum Commands 
+enum ComType
 {
 	Com_SetSpeed,
 	Com_Sleep,
@@ -56,4 +56,54 @@ enum Commands
 	Com_VirtSpeed,
 	Com_VirtBreak,
 	Com_VirtStop,
+};
+
+typedef struct Command 
+{
+	ComType type;
+	unsigned short val;
+};
+
+typedef struct Row {
+	unsigned short note = NULL_COMMAND;
+	unsigned short octave = NULL_COMMAND;
+	unsigned short instrument = NULL_COMMAND;
+	unsigned short volume = NULL_COMMAND;
+	unsigned short effect = NULL_COMMAND;
+	unsigned short effectvalue = NULL_COMMAND;
+};
+
+enum ExportTypes {
+	WAV = 0,
+	MP3 = 1,
+	OGG = 2,
+	SPC = 3,
+	ASM = 4,
+};
+
+enum ExportSign
+{
+	UNSIGNED =	0,
+	SIGNED =	1,
+};
+
+enum ExportDepth
+{
+	EIGHT =			0,
+	SIXTEEN =		1,
+	TWENTYFOUR =	2,
+	THIRTYTWO =		3,
+	SIXTYFOUR =		4,
+};
+
+//Assuming it's an export for audio
+enum ExportQuality {
+	KHZ_8 =		0,
+	KHZ_11 =	1,
+	KHZ_16 =	2,
+	KHZ_22 =	3,
+	KHZ_24 =	4,
+	KHZ_32 =	5,
+	KHZ_44 =	6,
+	KHZ_48 =	7,
 };

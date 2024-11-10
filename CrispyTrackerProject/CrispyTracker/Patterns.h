@@ -1,15 +1,8 @@
 #pragma once
 #include "Channel.h"
+#include "Macros.h"
 
 using namespace std;
-typedef struct Row {
-	uint16_t note = NULL_COMMAND;
-	uint16_t octave = NULL_COMMAND;
-	uint16_t instrument = NULL_COMMAND;
-	uint16_t volume = NULL_COMMAND;
-	uint16_t effect = NULL_COMMAND;
-	uint16_t effectvalue = NULL_COMMAND;
-};
 
 class Patterns
 {

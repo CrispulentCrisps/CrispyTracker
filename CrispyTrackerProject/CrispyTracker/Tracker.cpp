@@ -49,6 +49,7 @@ void Tracker::Initialise(int StartLength)
 	SManager.CheckSettingsFolder();
 	SManager.ReadSettingsFile();
 	UpdateSettings(1);
+	ComList.clear();
 }
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -245,6 +246,7 @@ void Tracker::Render()
 		Settings_View();
 		Misc_View();
 		EchoSettings();
+		if (ShowExportDialog) ExportTune();
 		if (ShowExport)	Export_View();
 		if (SavingFile) SaveModuleAs();
 		if (LoadingFile) LoadModuleAs();
@@ -348,6 +350,7 @@ void Tracker::MenuBar()
 			}
 			TreePop();
 		}
+
 		ImGui::EndMenu();
 	}
 
@@ -1622,10 +1625,9 @@ void Tracker::UpdateFont()
 void Tracker::Export_View()
 {
 	string TypeNames[3] = { "WAV","MP3","OGG"};
-	string TechnicalTypeNames[3] = {"SPC","ASM-Cobalt","TBD"};
+	string TechnicalTypeNames[3] = {"SPC","ASM-Cobalt","ASM"};
 	string Qualitynames[8] = { "8KHz","11KHz","16KHz","22KHz","24KHz","32KHz","44KHz","48KHz" };
-	string DepthName[2] = { "8 bit", "16 bit"};
-	string SignName[2] = { "Unsigned", "Signed"};
+	string DepthName[4] = { "8 bit", "16 bit", "24 bit", "32 bit" };
 	ImVec2 center = GetMainViewport()->GetCenter();
 	SetNextWindowPos(center, 0, ImVec2(0.5f, 0.5f));
 	if(Begin("Export", 0, UNIVERSAL_WINDOW_FLAGS)){
@@ -1674,17 +1676,6 @@ void Tracker::Export_View()
 					}
 					SameLine();
 				}
-				NewLine();
-				Text("Bit Sign");
-				for (int n = 0; n < 2; n++)
-				{
-					bool Selected = (SelectedSignType == n);
-					if (RadioButton(SignName[n].c_str(), Selected)) {
-						SelectedSignType = n;
-					}
-					SameLine();
-				}
-
 				EndTabItem();
 			}
 			if (BeginTabItem("Technical Export",0, TAB_FLAGS))
@@ -1705,18 +1696,6 @@ void Tracker::Export_View()
 					}
 					EndCombo();
 				}
-
-				NewLine();
-				/*
-				Text("Address");
-				if (SG.Emu_APU.SONG_ADDR > 65535) {
-					SG.Emu_APU.SONG_ADDR = 65535;
-				}
-				if (SG.Emu_APU.SONG_ADDR < 0) {
-					SG.Emu_APU.SONG_ADDR = 0;
-				}
-				InputInt("##addr", (int*)&SG.Emu_APU.SONG_ADDR, 0x10, 0x1000);
-				*/
 				EndTabItem();
 			}
 			NewLine();
@@ -1726,7 +1705,10 @@ void Tracker::Export_View()
 				ShowExport = false;
 			}
 			SameLine();
-			if (Button("EXPORT", size)) {
+			if (Button("EXPORT", size)) 
+			{
+				ShowExportDialog = true;
+				ShowExport = false;
 			}
 
 			EndTabBar();
@@ -2703,6 +2685,7 @@ void Tracker::NewFile()
 	}
 	SongLength = 1;
 	Maxindex = 8;
+	ComList.clear();
 }
 
 void Tracker::InitialiseNewSubtune()
@@ -2757,19 +2740,140 @@ void Tracker::SubtuneDeletionWarning()
 	End();
 }
 
+//Go through every pattern in the patterns list and generate a command per row
 void Tracker::ParseTrack()
 {
-
+	ComList.clear();
+	for (int x = 0; x < StoragePatterns.size(); x++)
+	{
+		for (int y = 0; y < 256; y++)
+		{
+			Command com = Command();
+			Row r = StoragePatterns[x].SavedRows[y];
+			if (r.note != NULL_COMMAND)
+			{
+				if (r.note < NULL_COMMAND)
+				{
+					com.type == Com_PlayNote;
+					com.val = r.note;
+				}
+			}
+		}
+	}
 }
-
-void Tracker::GenerateCommands(int* com, int size)
+//Generates assosiated data from the commands list to be put into the emulator memory
+void Tracker::GenerateCommands()
 {
 
 }
 
 void Tracker::ExportTune()
 {
+	ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose Path", ".", ".");
+	if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
+	{
+		// action if OK
+		if (ImGuiFileDialog::Instance()->IsOk())
+		{
+			FilePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+			GenerateAudioFile(FilePath);
+			ImGuiFileDialog::Instance()->Close();
+			ShowExportDialog = false;
+		}
+	}
+}
 
+void Tracker::GenerateAudioFile(string path)
+{
+	SF_INFO info;
+
+	switch (E_Type)
+	{
+	case WAV:
+		info.format = SF_FORMAT_WAV;
+		break;
+	case MP3:
+		info.format = SF_FORMAT_MPEG_LAYER_III;
+		break;
+	case OGG:
+		info.format = SF_FORMAT_VORBIS;
+		break;
+	case SPC:
+		return;	//temporary return until proper export
+		break;
+	case ASM:
+		return;
+		break;
+	default:
+		info.format = SF_FORMAT_WAV;
+		break;
+	}
+	int srate = 0;
+	switch (E_Quality)
+	{
+	case KHZ_8:
+		srate = 8000;
+		break;
+	case KHZ_11:
+		srate = 11000;
+		break;
+	case KHZ_16:
+		srate = 16000;
+		break;
+	case KHZ_22:
+		srate = 22500;
+		break;
+	case KHZ_24:
+		srate = 24000;
+		break;
+	case KHZ_32:
+		srate = 32000;
+		break;
+	case KHZ_44:
+		srate = 44100;
+		break;
+	case KHZ_48:
+		srate = 48000;
+		break;
+	default:
+		srate = 48000;
+		break;
+	}
+	info.samplerate = srate;
+	
+	switch (E_Depth)
+	{
+	case EIGHT:
+		info.format |= SF_FORMAT_PCM_S8;
+		break;
+	case SIXTEEN:
+		info.format |= SF_FORMAT_PCM_16;
+		break;
+	case TWENTYFOUR:
+		info.format |= SF_FORMAT_PCM_24;
+		break;
+	case THIRTYTWO:
+		info.format |= SF_FORMAT_PCM_32;
+		break;
+	default:
+		info.format |= SF_FORMAT_PCM_16;
+		break;
+	}
+
+	info.channels = 2;
+	SNDFILE* output = sf_open(path.c_str(), SFM_WRITE, &info);
+
+	//Test code for export capabilities
+	float p = 0;
+	int buf[44100];
+	for (int x = 0; x < 44100; x++)
+	{
+		p += PI / 44.f;
+		buf[x] = sin(p);
+	}
+
+	sf_write_raw(output, &buf, 44100);
+	sf_close(output);
 }
 
 void Tracker::ErrorWindow()
@@ -2783,7 +2887,6 @@ void Tracker::ErrorWindow()
 		if (Button("Close", ImVec2(64, TextSize * 1.5))) {
 			ShowError = false;
 		}
-
 	}
 	End();
 }

@@ -50,8 +50,8 @@ struct ZP $00
 .VCOut:                     skip 4                  ;8 nibbles that determine which SFX is going through which channel. If a nibble is F we assume it's not outputting to any channel
 
 ;General Tracker State
-.TrackSettings:             skip 1                  ;Holds the track settings [refer to DriverRequirements.txt]
 .StopFlag                   skip 1                  ;Stops the track from progressing
+.TrackSettings:             skip 1                  ;Holds the track settings [refer to DriverRequirements.txt]
 endstruct
 
 struct OP $0100
@@ -69,29 +69,29 @@ endstruct
 
     ;Row commands
 
-struct RC $00
+struct RC $FF00
 .SetSpeed       skip 1  ;Sets tick threshold for track  |   $00
-.Sleep          skip 1  ;Sleeps for S amount of rows    |   $01   
+.Sleep          skip 1  ;Sleeps for S amount of rows    |   $01
 .Goto           skip 1  ;Break to new order             |   $02
 .Break          skip 1  ;Goto next order                |   $03
-.PlayNote       skip 1  ;Plays note in note table       |   $04
-.PlayPitch      skip 1  ;Plays absolute pitch value     |   $05
-.SetInstrument  skip 1  ;Set instrument index           |   $06
-.SetFlagValue   skip 1  ;Set FLG register               |   $07
-.EchoDelay      skip 1  ;Set echo delay value           |   $08
-.EchoVolume     skip 1  ;Set echo L/R volume            |   $09
-.EchoFeedback   skip 1  ;Set echo feedback value        |   $0A
-.EchoCoeff      skip 8  ;Set echo coeffecients          |   $0B-$12
-.MasterVol      skip 1  ;Set Master L/R volumes         |   $13
-.ChannelVol     skip 1  ;Set individual channel volume  |   $14
-.SetArp         skip 1  ;Set Arpeggio effect value      |   $15
-.SetPort        skip 1  ;Set Portamento effect value    |   $16
-.SetVibrato     skip 1  ;Set Vibrato effect value       |   $17
-.SetTremo       skip 1  ;Set Tremolando effect value    |   $18
-.SetVolSlide    skip 1  ;Set Volume Slide effect value  |   $19
-.SetPanbrello   skip 1  ;Set Panbrello effect value     |   $1A
-.ReleaseNote    skip 1  ;Set KOFF for given channel     |   $1B
-.Stop           skip 1  ;Set STOP flag for tune         |   $1C
+.PlayPitch      skip 1  ;Plays absolute pitch value     |   $04
+.SetInstrument  skip 1  ;Set instrument index           |   $05
+.SetFlagValue   skip 1  ;Set FLG register               |   $06
+.EchoDelay      skip 1  ;Set echo delay value           |   $07
+.EchoVolume     skip 1  ;Set echo L/R volume            |   $08
+.EchoFeedback   skip 1  ;Set echo feedback value        |   $09
+.EchoCoeff      skip 8  ;Set echo coeffecients          |   $0A-$11
+.MasterVol      skip 1  ;Set Master L/R volumes         |   $12
+.ChannelVol     skip 1  ;Set individual channel volume  |   $13
+.SetArp         skip 1  ;Set Arpeggio effect value      |   $14
+.SetPort        skip 1  ;Set Portamento effect value    |   $15
+.SetVibrato     skip 1  ;Set Vibrato effect value       |   $16
+.SetTremo       skip 1  ;Set Tremolando effect value    |   $17
+.SetVolSlide    skip 1  ;Set Volume Slide effect value  |   $18
+.SetPanbrello   skip 1  ;Set Panbrello effect value     |   $19
+.ReleaseNote    skip 1  ;Set KOFF for given channel     |   $1A
+.Stop           skip 1  ;Set STOP flag for tune         |   $1B
+.NanBuff        skip 4  ;Buffer for future commands     |   $1C-1F
 endstruct
 
 macro SetSpeed(S)       ;Sets tick threshold for track

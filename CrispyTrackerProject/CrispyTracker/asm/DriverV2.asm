@@ -545,7 +545,6 @@ ReadPatterns:
     bpl -                                      ;Loop
     ret
 
-    
 HandleSFX:
     ;Handle timers
     mov ZP.CurrentChannel, #$0F
@@ -607,7 +606,6 @@ ReadRows:
     dw Row_Sleep
     dw Row_Goto
     dw Row_Break
-    dw Row_PlayNote
     dw Row_PlayPitch
     dw Row_SetInstrument
     dw Row_SetFlag
@@ -631,8 +629,7 @@ ReadRows:
     dw Row_SetVolSlide
     dw Row_SetPanbr
     dw Row_NoteRelease
-    ;SFX Specific
-    dw Row_Virt_Break
+    dw Row_Stop
     
 Row_SetSpeed:
     clrp
@@ -675,9 +672,6 @@ Row_Break:
     clrp
     ret                         ;Break out of read rows
 
-Row_PlayNote:
-    jmp ReadRows
-
 Row_PlayPitch:
     ;Pitch application
     call GrabCommand                ;Grab lo byte of the pitch
@@ -685,12 +679,46 @@ Row_PlayPitch:
     call GrabCommand                ;Grab hi byte of the pitch
     mov OP.ChannelPitches+1+X, A    ;Shove hi byte into pitch
 
+    mov A, ZP.CurrentChannel        ;Check if handling SFX or Music
+    and A, #$08
+    bne +
+    ;Music
     ;KON State
     mov X, ZP.CurrentChannel            ;Grab current channel
     mov A, BitmaskTable+X               ;Get bitmask index via X
     mov ZP.TempScratchMem, A            ;Shove into scratch memory for ORing
     mov SPC_RegADDR, #DSP_KON           ;Shove KON addr in
     or SPC_RegData, ZP.TempScratchMem   ;OR into A
+    ;Mask out lo nibble in VCOUT
+    mov ZP.R0, #$F0
+    and A, #$01
+    beq ++
+    ;Mask out hi nibble in VCOUT
+    mov ZP.R0, #$0F
+    ++
+    mov A, ZP.CurrentChannel        ;Check if handling SFX or Music
+    lsr A
+    mov X, A
+    mov A, ZP.VCOut+X
+    and A, ZP.R0                    ;Mask out corresponding nibble
+    mov ZP.VCOut+X, A
+    jmp ReadRows
+    +
+    ;SFX
+    ;Mask out lo nibble in VCOUT
+    mov ZP.R0, #$F0
+    and A, #$01
+    beq ++
+    ;Mask out hi nibble in VCOUT
+    mov ZP.R0, #$0F
+    ++
+    mov A, ZP.CurrentChannel        ;Check if handling SFX or Music
+    and A, #$07
+    lsr A
+    mov X, A
+    mov A, ZP.VCOut+X
+    and A, ZP.R0                    ;Mask out corresponding nibble
+    mov ZP.VCOut+X, A
     jmp ReadRows
 
 Row_SetInstrument:
@@ -853,12 +881,8 @@ Row_NoteRelease:
     or SPC_RegData, ZP.TempScratchMem   ;OR into A
     ret
 
-;-------------------;
-;   SFX specific    ;
-;-------------------;
-
-Row_Virt_Break:
-
+Row_Stop:
+    mov ZP.StopFlag, #$01
     ret
 
         ;----------------------------;
@@ -1112,24 +1136,25 @@ db $B1, $E0, $BC, $AF, $78
 db $B8, $87, $1F, $00, $F1, $0F, $1F, $00, $00, $8F, $E1, $13, $12, $2D, $52, $14, $10, $F7
 
 OrderTable:
-    .Ord0:
-        dw PatternMemory_Pat0
-        dw PatternMemory_Pat1
-        dw PatternMemory_Pat1
-        dw PatternMemory_Pat1
-        dw PatternMemory_Pat1
-        dw PatternMemory_Pat1
-        dw PatternMemory_Pat1
-        dw PatternMemory_Pat1
-    .Ord1:
-        dw PatternMemory_Pat2
-        dw PatternMemory_Pat1
-        dw PatternMemory_Pat1
-        dw PatternMemory_Pat1
-        dw PatternMemory_Pat1
-        dw PatternMemory_Pat1
-        dw PatternMemory_Pat1
-        dw PatternMemory_Pat1
+    .Tune0:
+        .Ord0:
+            dw PatternMemory_Pat0
+            dw PatternMemory_Pat1
+            dw PatternMemory_Pat1
+            dw PatternMemory_Pat1
+            dw PatternMemory_Pat1
+            dw PatternMemory_Pat1
+            dw PatternMemory_Pat1
+            dw PatternMemory_Pat1
+        .Ord1:
+            dw PatternMemory_Pat2
+            dw PatternMemory_Pat1
+            dw PatternMemory_Pat1
+            dw PatternMemory_Pat1
+            dw PatternMemory_Pat1
+            dw PatternMemory_Pat1
+            dw PatternMemory_Pat1
+            dw PatternMemory_Pat1
 
 PatternMemory:
     .Pat0:
@@ -1204,7 +1229,7 @@ SfxPat:
     %Break()
 
 SubtuneList:
-    dw OrderTable_Ord0
+    dw OrderTable_Tune0
     dw SfxTable_SFX_1
 
 InstrumentMemory:

@@ -55,6 +55,7 @@ void SnesAPUHandler::APU_Startup()
 	//Calculate pitch table
 	//Current issue is the tuning seems to be off C and closer to G (b/2)
 	int addroff = 0;
+	int index = 0;
 	for (int x = 0; x < 9; x++)
 	{
 		std::cout << "\n Octave: " << x << " ";
@@ -62,11 +63,13 @@ void SnesAPUHandler::APU_Startup()
 		{
 			float exactpitch = StartValues[y] * (1 << x);
 			PitchTable.push_back((uint16_t)(exactpitch));
-			std::cout << PitchTable[y + (12 * x)] << ",";
+			float pit = pow(2.0, (index-48) / 12.0);
+			std::cout << "\ndb " << (int)((pit * 16000 * 16.0) / 125.0);
 			//Write pitch table to memory as reference
 			//DSP_MEMORY[Pitch_Table_Page + addroff] = PitchTable[y + (12 * x)] & 0xFF;
 			//DSP_MEMORY[Pitch_Table_Page + addroff + 1] = (PitchTable[y + (12 * x)] >> 8) & 0xFF;
-			addroff += 2;
+			//addroff += 2;
+			index++;
 		}
 		std::cout << "\n";
 	}
@@ -394,7 +397,7 @@ void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos
 	{
 		uint16_t Pitch = 0;
 		uint8_t Note1 = (EffectHandle.Arp_Value[id]) & 0x0F;
-		uint8_t Note2 = (EffectHandle.Arp_Value[id] >> 4) & 0x0F;
+		uint8_t Note2 = (EffectHandle.Arp_Value[id] >> 4) & 0x0F;	
 		EffectHandle.ArpCounter[id]++;
 		if (EffectHandle.ArpCounter[id] >= EffectHandle.Arp_Control)
 		{
@@ -450,7 +453,7 @@ void SnesAPUHandler::APU_Process_Effects(Channel* ch, Instrument* inst, int ypos
 		spc_dsp_write(Dsp, ChannelRegs[id].pit_h, (pit >> 8) & 0xFF);
 	}
 	
-	//Tremolando	
+	//Tremolando
 	if ((EffectHandle.Effect_Flags[id] >> 3) & 1)//Check if the effect flag is on
 	{
 		uint8_t depth = EffectHandle.Tremo_Value[id] & 0x0F;
@@ -558,7 +561,8 @@ void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 			}
 			else
 			{
-				std::cout << "\nERROR: ATTEMPTING TO OVERWRITE IPL ROM\nADDR-OFF: " << AddrOff << "\nBRR BLOCK: " << j;
+				std::cout << "\nERROR: SAMPLE TOO LARGE\nADDR-OFF: " << AddrOff << "\nBRR BLOCK: " << j;
+				break;
 			}
 		}
 	}

@@ -55,6 +55,9 @@ public:
 	//Release (0-31)
 	int Release;
 
+	//Priority (0-255)
+	int Priority;
+
 	int NoteOff = 0;
 
 	uint16_t InstADDR;

@@ -2,6 +2,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "FileDef.h"
 #include "miniz.h"
+#include "Libraries/libsndfile/include/sndfile.h"
 
 #if !CT_UNIX
 #include <mmdeviceapi.h>

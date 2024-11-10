@@ -23,7 +23,6 @@
 #include "Libraries/imgui/imgui.h"
 #include "Libraries/imgui/backends/imgui_impl_opengl3.h"
 #include "Libraries/ImGuiFileDialog-0.6.5/ImGuiFileDialog.h"
-#include "Libraries/libsndfile/include/sndfile.h"
 #include "Libraries/implot-0.16/implot.h"
 #include "Libraries/implot-0.16/implot_internal.h"
 
@@ -219,6 +218,8 @@ public:
 
 	int VolumeScale = 127;	//(0-127)
 
+	vector<Command> ComList;
+
 	//Echo settings
 	int Delay = 0;		//(0-15)
 	int Feedback = 64;	//(0-127)
@@ -240,41 +241,8 @@ public:
 	bool CurrentSFX = false;
 
 	int InputCount = 0;//Used for the amount of times a value has been input into the volume, effects or value
-	
-	enum ExportTypes {
-		WAV = 0,
-		MP3 = 1,
-		OGG = 2,
-		SPC = 3,
-		ASM = 4,
-	};
-
-	enum ExportSign
-	{
-		UNSIGNED = 0,
-		SIGNED = 1,
-	};
-
-	enum ExportDepth
-	{
-		EIGHT = 0,
-		SIXTEEN = 1,
-	};
-
-	//Assuming it's an export for audio
-	enum ExportQuality {
-		KHZ_8 = 0,
-		KHZ_11 = 1,
-		KHZ_16 = 2,
-		KHZ_22 = 3,
-		KHZ_24 = 4,
-		KHZ_32 = 5,
-		KHZ_44 = 6,
-		KHZ_48 = 7,
-	};
 
 	ExportTypes E_Type;
-	ExportSign E_Sign;
 	ExportDepth E_Depth;
 	ExportQuality E_Quality;
 	int SelectedExportType = 2;
@@ -283,6 +251,7 @@ public:
 	int SelectedDepthType = 1;
 	int SelectedQualityType = 7;
 	bool ShowExport = false;
+	bool ShowExportDialog = false;
 	
 	//Error handling
 	bool ShowError = false;
@@ -353,8 +322,9 @@ public:
 	void SubtuneDeletionWarning();
 
 	void ParseTrack();
-	void GenerateCommands(int* com, int size);
+	void GenerateCommands();
 	void ExportTune();
+	void GenerateAudioFile(string path);
 
 	void ErrorWindow();
 	void DSPDebugWindow();
@@ -371,36 +341,36 @@ public:
 	string Credits = "Crispytracker: " + VERSION;//Is actually used for the title
 	
 	//Visuals
-	ImColor WindowBG = IM_COL32(11, 11, 22, 255);
-	ImColor Default = IM_COL32(22, 22, 44, 255);
-	ImColor H2Col = IM_COL32(66, 66, 88, 255);
-	ImColor H1Col = IM_COL32(44, 44, 66, 255);
-	ImColor CursorCol = IM_COL32(122, 122, 188, 255);
+	ImColor WindowBG =				IM_COL32(11, 11, 22, 255);
+	ImColor Default =				IM_COL32(22, 22, 44, 255);
+	ImColor H2Col =					IM_COL32(66, 66, 88, 255);
+	ImColor H1Col =					IM_COL32(44, 44, 66, 255);
+	ImColor CursorCol =				IM_COL32(122, 122, 188, 255);
 
-	ImColor Dark_Default = IM_COL32(22, 22, 33, 255);
-	ImColor Dark_H2Col = IM_COL32(66, 66, 88, 255);
-	ImColor Dark_H1Col = IM_COL32(33, 33, 66, 255);
-	ImColor Dark_CursorCol = IM_COL32(122, 122, 188, 255);
+	ImColor Dark_Default =			IM_COL32(22, 22, 33, 255);
+	ImColor Dark_H2Col =			IM_COL32(66, 66, 88, 255);
+	ImColor Dark_H1Col =			IM_COL32(33, 33, 66, 255);
+	ImColor Dark_CursorCol =		IM_COL32(122, 122, 188, 255);
 
-	ImColor Editing_H2Col = IM_COL32(66, 88, 110, 255);
-	ImColor Editing_H1Col = IM_COL32(33, 66, 88, 255);
+	ImColor Editing_H2Col =			IM_COL32(66, 88, 110, 255);
+	ImColor Editing_H1Col =			IM_COL32(33, 66, 88, 255);
 
-	ImColor SelectionBoxCol = IM_COL32(66, 66, 128, 255);
+	ImColor SelectionBoxCol =		IM_COL32(66, 66, 128, 255);
 
-	ImVec4 AttackColour = ImVec4(.44, .44, .88, 1);
-	ImVec4 DecayColour = ImVec4(.22, .88, .22, 1);
-	ImVec4 SustainColour = ImVec4(.88, .88, .22, 1);
-	ImVec4 ReleaseColour = ImVec4(.77, .33, .33, 1);
+	ImVec4 AttackColour =			ImVec4(.44, .44, .88, 1);
+	ImVec4 DecayColour =			ImVec4(.22, .88, .22, 1);
+	ImVec4 SustainColour =			ImVec4(.88, .88, .22, 1);
+	ImVec4 ReleaseColour =			ImVec4(.77, .33, .33, 1);
 
 
-	ImColor Graph_Colour_Line1 = IM_COL32(99, 99, 196, 255);
-	ImColor Graph_Colour_Line2 = IM_COL32(66, 66, 128, 255);
-	ImColor Graph_Colour_Line3 = IM_COL32(33, 33, 64, 255);
+	ImColor Graph_Colour_Line1 =	IM_COL32(99, 99, 196, 255);
+	ImColor Graph_Colour_Line2 =	IM_COL32(66, 66, 128, 255);
+	ImColor Graph_Colour_Line3 =	IM_COL32(33, 33, 64, 255);
 
-	ImColor ReservedColour = IM_COL32(255, 255, 255, 255);
-	ImColor InstColour = IM_COL32(88, 88, 196, 255);
-	ImColor SampColour = IM_COL32(144, 144, 255, 255);
-	ImColor EchoColour = IM_COL32(44, 44, 128, 255);
+	ImColor ReservedColour =		IM_COL32(255, 255, 255, 255);
+	ImColor InstColour =			IM_COL32(88, 88, 196, 255);
+	ImColor SampColour =			IM_COL32(144, 144, 255, 255);
+	ImColor EchoColour =			IM_COL32(44, 44, 128, 255);
 	
 	int PlotLineWeight = 1;
 	ImU32 colorDataRGB[3] = { Graph_Colour_Line1, Graph_Colour_Line2, Graph_Colour_Line3 };
