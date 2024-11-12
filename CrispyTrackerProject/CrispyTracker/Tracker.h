@@ -8,6 +8,7 @@
 //
 
 #pragma once
+#define _CRT_SECURE_NO_WARNINGS
 #ifndef Tracker
 
 #include "SettingsManager.h"
@@ -242,9 +243,9 @@ public:
 
 	int InputCount = 0;//Used for the amount of times a value has been input into the volume, effects or value
 
-	ExportTypes E_Type;
-	ExportDepth E_Depth;
-	ExportQuality E_Quality;
+	int E_Type;
+	int E_Depth;
+	int E_Quality;
 	int SelectedExportType = 2;
 	int SelectedTechnicalType = 0;
 	int SelectedSignType = 1;
@@ -324,7 +325,7 @@ public:
 	void ParseTrack();
 	void GenerateCommands();
 	void ExportTune();
-	void GenerateAudioFile(string path);
+	void GenerateAudioFile(string path, string name);
 
 	void ErrorWindow();
 	void DSPDebugWindow();
