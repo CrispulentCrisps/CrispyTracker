@@ -124,6 +124,10 @@ db RC.PlayPitch
 dw <P>
 endmacro
 
+macro ReleaseNote()      ;Sets release in ADSR
+db RC.ReleaseNote
+endmacro
+
     ;Instrument
 macro WriteInstrument(L, R, AD1, AD2, G, ES, SI, P)
 db <L>      ;Left volume
@@ -214,11 +218,6 @@ endmacro
 
 macro Stop()
 db RC.Stop
-endmacro
-
-macro VirtSleep(V)
-db RC.VirtSleep
-db <V>
 endmacro
 
 Apu0 =      $F4

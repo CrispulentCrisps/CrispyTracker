@@ -115,7 +115,7 @@ DriverLoop:                         ;Main driver loop
     mov X, #$07
     mov Y, #$00
     -                                   ;Sleep Clear Loop
-    mov.b OP.ChannelSleepCounter+X, Y     ;Clear sleep counter
+    mov.b OP.ChannelSleepCounter+X, Y   ;Clear sleep counter
     dec X                               ;Decrement counter
     bpl -
     clrp
@@ -689,18 +689,18 @@ Row_PlayPitch:
     mov ZP.TempScratchMem, A            ;Shove into scratch memory for ORing
     mov SPC_RegADDR, #DSP_KON           ;Shove KON addr in
     or SPC_RegData, ZP.TempScratchMem   ;OR into A
-    ;Mask out lo nibble in VCOUT
+    ;Mask in lo nibble in VCOUT
     mov ZP.R0, #$F0
     and A, #$01
     beq ++
-    ;Mask out hi nibble in VCOUT
+    ;Mask in hi nibble in VCOUT
     mov ZP.R0, #$0F
     ++
     mov A, ZP.CurrentChannel        ;Check if handling SFX or Music
     lsr A
     mov X, A
     mov A, ZP.VCOut+X
-    and A, ZP.R0                    ;Mask out corresponding nibble
+    or A, ZP.R0                     ;Mask in corresponding nibble
     mov ZP.VCOut+X, A
     jmp ReadRows
     +
@@ -1158,19 +1158,23 @@ OrderTable:
 
 PatternMemory:
     .Pat0:
-    %PlayPitch($0900)
-    %SetSpeed($06)
+    %SetSpeed($04)
     %SetMasterVolume($7F, $7F)
     %SetChannelVolume($7F, $7F)
     %SetInstrument(0)
-    %Sleep($10)
+    %PlayPitch($0900)
+    %Sleep($04)
     %Break()
     .Pat1:
     %Sleep($FF)
     %Break()
     .Pat2:
     %PlayPitch($0C00)
-    %Sleep($10)
+    %Sleep($04)
+    %PlayPitch($0D80)
+    %Sleep($02)
+    %PlayPitch($0F00)
+    %Sleep($02)
     %Goto(0)
 
 ;For some reason the sequence addr returns the pointer address, not the value from the addr
