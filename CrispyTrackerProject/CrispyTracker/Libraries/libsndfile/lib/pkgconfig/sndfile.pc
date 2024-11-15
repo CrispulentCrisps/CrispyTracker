@@ -1,0 +1,13 @@
+prefix=C:/Users/david/Documents/C_Games/libsndfile/output/build
+exec_prefix=${prefix}
+libdir=C:/Users/david/Documents/C_Games/libsndfile/output/build/lib
+includedir=C:/Users/david/Documents/C_Games/libsndfile/output/build/include
+
+Name: sndfile
+Description: A library for reading and writing audio files
+Requires:
+Requires.private:  
+Version: 1.2.2
+Libs: -L${libdir} -lsndfile
+Libs.private: 
+Cflags: -I${includedir}

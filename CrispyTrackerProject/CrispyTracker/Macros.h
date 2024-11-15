@@ -74,36 +74,38 @@ typedef struct Row {
 };
 
 enum ExportTypes {
-	WAV = 0,
-	MP3 = 1,
-	OGG = 2,
-	SPC = 3,
-	ASM = 4,
+	WAV,
+	MP3,
+	OPUS,
+	VORBIS,
+	FLAC,
+	SPC,
+	ASM,
 };
 
 enum ExportSign
 {
-	UNSIGNED =	0,
-	SIGNED =	1,
+	UNSIGNED,
+	SIGNED,
 };
 
 enum ExportDepth
 {
-	EIGHT =			0,
-	SIXTEEN =		1,
-	TWENTYFOUR =	2,
-	THIRTYTWO =		3,
-	SIXTYFOUR =		4,
+	EIGHT,
+	SIXTEEN,
+	TWENTYFOUR,
+	THIRTYTWO,
+	SIXTYFOUR,
 };
 
 //Assuming it's an export for audio
 enum ExportQuality {
-	KHZ_8 =		0,
-	KHZ_11 =	1,
-	KHZ_16 =	2,
-	KHZ_22 =	3,
-	KHZ_24 =	4,
-	KHZ_32 =	5,
-	KHZ_44 =	6,
-	KHZ_48 =	7,
+	KHZ_8,
+	KHZ_11,
+	KHZ_16,
+	KHZ_22,
+	KHZ_24,
+	KHZ_32,
+	KHZ_44,
+	KHZ_48,
 };

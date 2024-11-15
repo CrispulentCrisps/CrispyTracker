@@ -26,7 +26,6 @@
 #include "Libraries/ImGuiFileDialog-0.6.5/ImGuiFileDialog.h"
 #include "Libraries/implot-0.16/implot.h"
 #include "Libraries/implot-0.16/implot_internal.h"
-
 #if !CT_UNIX
 #include <mmdeviceapi.h>
 #include <Audioclient.h>
@@ -51,7 +50,7 @@ public:
 	int SPS = 44100;
 	string VERSION = "version: 0.8";
 	string Fontpath = "fonts/Manaspace.ttf";
-	int AUDIO_FORMATS = SF_FORMAT_WAV | SF_FORMAT_OGG | SF_FORMAT_MPEG_LAYER_III;
+	int AUDIO_FORMATS = SF_FORMAT_WAV | SF_FORMAT_OGG | SF_FORMAT_MPEG;
 	int FrameCount = 0;
 	int Event;
 	int CurrentKey;

@@ -54,11 +54,16 @@ if(_IMPORT_PREFIX STREQUAL "/")
 endif()
 
 # Create imported target SndFile::sndfile
-add_library(SndFile::sndfile SHARED IMPORTED)
+add_library(SndFile::sndfile STATIC IMPORTED)
 
 set_target_properties(SndFile::sndfile PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"
+  INTERFACE_LINK_LIBRARIES "\$<LINK_ONLY:\$<\$<BOOL:>:m>>;\$<LINK_ONLY:\$<\$<BOOL:OFF>:Ogg::ogg>>;\$<LINK_ONLY:\$<\$<BOOL:OFF>:Vorbis::vorbisenc>>;\$<LINK_ONLY:\$<\$<BOOL:OFF>:FLAC::FLAC>>;\$<LINK_ONLY:\$<\$<AND:\$<BOOL:OFF>,\$<BOOL:OFF>,\$<BOOL:OFF>>:Speex::Speex>>;\$<LINK_ONLY:\$<\$<BOOL:OFF>:Opus::opus>>;\$<LINK_ONLY:\$<\$<BOOL:OFF>:MPG123::libmpg123>>;\$<LINK_ONLY:\$<\$<BOOL:OFF>:mp3lame::mp3lame>>"
 )
+
+if(CMAKE_VERSION VERSION_LESS 2.8.12)
+  message(FATAL_ERROR "This file relies on consumers using CMake 2.8.12 or greater.")
+endif()
 
 # Load information for each installed configuration.
 file(GLOB _cmake_config_files "${CMAKE_CURRENT_LIST_DIR}/SndFileTargets-*.cmake")

@@ -1624,7 +1624,7 @@ void Tracker::UpdateFont()
 
 void Tracker::Export_View()
 {
-	string TypeNames[3] = { "WAV","MP3","OGG"};
+	string TypeNames[5] = { "WAV","MP3","OGG OPUS","OGG VORBIS","FLAC" };
 	string TechnicalTypeNames[3] = {"SPC","ASM-Cobalt","ASM"};
 	string Qualitynames[8] = { "8KHz","11KHz","16KHz","22KHz","24KHz","32KHz","44KHz","48KHz" };
 	string DepthName[4] = { "8 bit", "16 bit", "24 bit", "32 bit" };
@@ -1635,7 +1635,7 @@ void Tracker::Export_View()
 			if (BeginTabItem("Audio Export", 0, TAB_ITEM_FLAGS)) {
 				Text("Export Type");
 				if (BeginCombo("##Export Type", TypeNames[SelectedExportType].c_str())) {
-					for (int x = 0; x < 3; x++)
+					for (int x = 0; x < 5; x++)
 					{
 						bool Selected = (SelectedExportType == x);
 						if (Selectable(TypeNames[x].c_str(), Selected))
@@ -1668,7 +1668,7 @@ void Tracker::Export_View()
 				}
 				NewLine();
 				Text("Bit Depth");
-				for (int n = 0; n < 2; n++)
+				for (int n = 0; n < 4; n++)
 				{
 					bool Selected = (SelectedDepthType == n);
 					if (RadioButton(DepthName[n].c_str(), Selected)) {
@@ -2772,7 +2772,32 @@ void Tracker::GenerateCommands()
 
 void Tracker::ExportTune()
 {
-	ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose Path", ".wav, .ogg, .mp3", ".");
+	string ftype = "";
+	switch (E_Type)
+	{
+	case WAV:
+		ftype = ".wav";
+		break;
+	case MP3:
+		ftype = ".mp3";
+		break;
+	case OPUS:
+		ftype = ".ogg";
+		break;
+	case VORBIS:
+		ftype = ".ogg";
+		break;
+	case FLAC :
+		ftype = ".flac";
+		break;
+	case SPC:
+		ftype = ".spc";
+		break;
+	case ASM:
+		ftype = ".s";
+		break;
+	}
+	ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose Path", ftype.c_str(), ".");
 	if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
 	{
 		// action if OK
@@ -2797,25 +2822,35 @@ void Tracker::GenerateAudioFile(string path, string name)
 	{
 	case WAV:
 		info.format = SF_FORMAT_WAV;
-		filetype = ".wav";
 		break;
 	case MP3:
-		info.format = SF_FORMAT_MPEG_LAYER_III;
-		filetype = ".mp3";
+		info.format = SF_FORMAT_MPEG | SF_FORMAT_MPEG_LAYER_III;
 		break;
-	case OGG:
-		info.format = SF_FORMAT_VORBIS;
-		filetype = ".ogg";
+	case OPUS:
+		info.format = SF_FORMAT_OGG | SF_FORMAT_OPUS;
+		break;
+	case VORBIS:
+		info.format = SF_FORMAT_OGG | SF_FORMAT_VORBIS;
+		break;
+	case FLAC:
+		info.format = SF_FORMAT_FLAC;
 		break;
 	case SPC:
-		filetype = ".spc";
 		return;	//temporary return until proper export
 		break;
 	case ASM:
-		filetype = ".bin";
 		return;	//temporary return until proper export
 		break;
 	}
+	if (E_Type == WAV)
+	{
+		info.format |= SF_ENDIAN_CPU;
+	}
+	else if (E_Type == OPUS || E_Type == VORBIS || E_Type == MP3 || E_Type == FLAC)
+	{
+		info.format |= SF_ENDIAN_FILE;
+	}
+
 	int srate = 0;
 	switch (E_Quality)
 	{
@@ -2849,42 +2884,56 @@ void Tracker::GenerateAudioFile(string path, string name)
 	}
 	info.samplerate = srate;
 	
-	switch (E_Depth)
+	if (E_Type == WAV || E_Type == FLAC)
 	{
-	case EIGHT:
-		if (E_Type != SF_FORMAT_WAV) info.format |= SF_FORMAT_PCM_S8;
-		else info.format |= SF_FORMAT_PCM_U8;							//Make sure we use unsigned for wav files
-		break;
-	case SIXTEEN:
-		info.format |= SF_FORMAT_PCM_16;
-		break;
-	case TWENTYFOUR:
-		info.format |= SF_FORMAT_PCM_24;
-		break;
-	case THIRTYTWO:
-		info.format |= SF_FORMAT_PCM_32;
-		break;
-	default:
-		info.format |= SF_FORMAT_PCM_16;
-		break;
+		switch (E_Depth)
+		{
+		case EIGHT:
+			if (E_Type != WAV) info.format |= SF_FORMAT_PCM_S8;
+			else info.format |= SF_FORMAT_PCM_U8;							//Make sure we use unsigned for wav files
+			break;
+		case SIXTEEN:
+			info.format |= SF_FORMAT_PCM_16;
+			break;
+		case TWENTYFOUR:
+			info.format |= SF_FORMAT_PCM_24;
+			break;
+		case THIRTYTWO:
+			if (E_Type != FLAC) info.format |= SF_FORMAT_PCM_32;
+			else info.format |= SF_FORMAT_PCM_24;							//FLAC can only go 24bit and below
+			break;
+		default:
+			info.format |= SF_FORMAT_PCM_16;
+			break;
+		}
 	}
 	info.channels = 2;
-	//Write file contents	[current null file for output]
-	string fname = (path + "\\" + name + filetype);
-	FILE* outbuf = fopen("temp.wav", "wb");
-	SNDFILE* output = sf_open(fname.c_str(), SFM_RDWR, &info);
-	cout << "\n" << sf_strerror(output);
-	//Test code for export capabilities
-	float p = 0;
-	int buf[44100];
-	for (int x = 0; x < 44100; x++)
+	//Write file contents
+	string fname = (path + "\\" + name);
+	FILE* outbuf = fopen(fname.c_str(), "wb");
+	if (!sf_format_check(&info))
 	{
-		p += PI / 44.f;
-		buf[x] = sin(p);
+		SNDFILE* output = sf_open(fname.c_str(), SFM_WRITE, &info);
+		cout << "\nERROR " << sf_error(output) << " - " << sf_strerror(output);
+		return;
 	}
+	else
+	{
+		SNDFILE* output = sf_open(fname.c_str(), SFM_WRITE, &info);
+		cout << "\nERROR " << sf_error(output) << " - " << sf_strerror(output);
+		//Test code for export capabilities
+		float p = 0;
+		short buf[88200];
+		for (int x = 0; x < 88200; x++)
+		{
+			p += PI / 44.f;
+			buf[x] = sin(p) * 65355/2;
+		}
 
-	sf_write_raw(output, &buf, 44100);
-	sf_close(output);
+		sf_writef_short(output, buf, 44100);
+		cout << "\nERROR " << sf_error(output) << " - " << sf_strerror(output);
+		cout << "\nERROR: " << sf_error_number(sf_close(output));
+	}
 	fclose(outbuf);
 }
 
