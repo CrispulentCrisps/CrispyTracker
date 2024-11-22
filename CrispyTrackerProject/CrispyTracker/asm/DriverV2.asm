@@ -52,10 +52,10 @@ mov ZP.TrackSettings, #$01     ;Set the track settings
 %spc_write(DSP_MVOL_R, $00)
 %spc_write(DSP_EVOL_L, $40)
 %spc_write(DSP_EVOL_R, $40)
-%spc_write(DSP_ESA, $BF)
+%spc_write(DSP_ESA, $CF)
 %spc_write(DSP_EDL, $00)
 %spc_write(DSP_EFB, $20)
-%spc_write(DSP_DIR, $0A)
+%spc_write(DSP_DIR, $0C)
 %spc_write(DSP_PMON, $00)
 %spc_write(DSP_EON, $00)
 %spc_write(DSP_NON, $00)
@@ -801,19 +801,37 @@ Row_SetFlag:
     jmp ReadRows
 
 Row_SetDelay:
-
+    call GrabCommand                ;Grab delay value
+    mov SPC_RegADDR, #DSP_EDL
+    mov SPC_RegData, A
     jmp ReadRows
 
 Row_SetDelayVolume:
-
+    call GrabCommand                ;Grab delay value
+    mov SPC_RegADDR, #DSP_EVOL_L
+    mov SPC_RegData, A
+    call GrabCommand                ;Grab delay value
+    mov SPC_RegADDR, #DSP_EVOL_R
+    mov SPC_RegData, A
     jmp ReadRows
 
 Row_SetDelayFeedback:
-
+    call GrabCommand                ;Grab delay value
+    mov SPC_RegADDR, #DSP_EFB
+    mov SPC_RegData, A
     jmp ReadRows
 
 Row_SetDelayCoeff:
-
+    mov A, X
+    lsr A                       ;Divide A by 2 since it's premultiplied for the jump table
+    setc
+    sbc A, #(RC.EchoCoeff)&$FF  ;Grab current coeffecient
+    xcn
+    clrc
+    adc A, #$0F
+    mov SPC_RegADDR, A
+    call GrabCommand                ;Grab coeff value
+    mov SPC_RegData, A              ;Apply
     jmp ReadRows
 
 Row_SetMasterVolume:
@@ -930,11 +948,9 @@ GrabCommand:
 GetSineValue:
     push A
     mov ZP.TempScratchMem, Y        ;Shove the index into scratch mem
-    
     mov A, Y                        ;Shove index into A for modulo
     and A, #$3F                     ;Remove last 2 bits to clamp to 0-63
     mov ZP.TempMemADDRL, A          ;Shove value into temporary memory
-
     mov1 C, ZP.TempScratchMem.6     ;Shove 6th bit into carry to determine the X flip
     bcc +                           ;Jump over if (> 64 & < 128) | (> 192 & < 256)
     mov A, #$3F                     ;Shove subtraction into A
@@ -1129,8 +1145,10 @@ db $7E,$7F,$7F,$7F
 fill !CodeBuffer-pc()
 assert pc() == !CodeBuffer
 
+DirTable:                          ;These are just for debugging purposes
 ;Test sine+saw sample + dir page
-db $08,$0A,$08,$0A,$23,$0A,$23,$0A
+db $08,$0C,$08,$0C,$23,$0C,$23,$0C
+SampleSrc:                          ;These are just for debugging purposes
 db $84, $17, $45, $35, $22, $22, $31, $21, $10, $68, $01, $21, $0D, $01, $08, $0B, $C3, $3E, $5B, $09, $8B, $D7
 db $B1, $E0, $BC, $AF, $78
 db $B8, $87, $1F, $00, $F1, $0F, $1F, $00, $00, $8F, $E1, $13, $12, $2D, $52, $14, $10, $F7
@@ -1158,6 +1176,17 @@ OrderTable:
 
 PatternMemory:
     .Pat0:
+    %SetDelayCoefficient(0, $FF/16)
+    %SetDelayCoefficient(1, $EE/16)
+    %SetDelayCoefficient(2, $DD/16)
+    %SetDelayCoefficient(3, $CC/16)
+    %SetDelayCoefficient(4, $BB/16)
+    %SetDelayCoefficient(5, $AA/16)
+    %SetDelayCoefficient(6, $99/16)
+    %SetDelayCoefficient(7, $88/16)
+    %SetDelayTime(4)
+    %SetDelayVolume($60,$60)
+    %SetDelayFeedback($40)
     %SetSpeed($04)
     %SetMasterVolume($7F, $7F)
     %SetChannelVolume($7F, $7F)
@@ -1237,7 +1266,7 @@ SubtuneList:
     dw SfxTable_SFX_1
 
 InstrumentMemory:
-%WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $40)
+%WriteInstrument($00, $FF, $80, $7F, %00000100, $7F, $7F, $40)
 %WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $60)
 %WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $80)
 %WriteInstrument($00, $FF, $80, $93, %00000001, $60, $60, $80)  ;Test SFX

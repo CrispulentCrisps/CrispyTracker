@@ -2,7 +2,7 @@
 ;   Macro's file for Cobalt Driver  ;
 ;-----------------------------------;
 
-!CodeBuffer = $0A00                                 ;Section of bytes to fill
+!CodeBuffer = $0C00                                 ;Section of bytes to fill
 
 struct ZP $00
 .TempMemADDRL:              skip 1                  ;General purpose addr LO
@@ -129,6 +129,17 @@ db RC.ReleaseNote
 endmacro
 
     ;Instrument
+    ;
+    ;   Written to the CPU in order:
+    ;       SCRN
+    ;       ADSR1
+    ;       ADSR2
+    ;       GAIN
+    ;       EFX state [PMON, NON, EON]
+    ;       KON
+    ;       LVOL
+    ;       RVOL
+    ;
 macro WriteInstrument(L, R, AD1, AD2, G, ES, SI, P)
 db <L>      ;Left volume
 db <R>      ;Right volume
@@ -162,7 +173,7 @@ db <L>
 db <R>
 endmacro
 
-macro SetDelayFeedback(V)   ;Set Echo delay volume
+macro SetDelayFeedback(V)   ;Set Echo feedback
 db RC.EchoFeedback
 db <V>
 endmacro
