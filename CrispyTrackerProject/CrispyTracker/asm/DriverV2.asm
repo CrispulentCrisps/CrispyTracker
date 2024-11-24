@@ -47,30 +47,17 @@ bne -
 
 mov ZP.TrackSettings, #$01     ;Set the track settings
 
-%spc_write(DSP_FLG, $00)
-%spc_write(DSP_MVOL_L, $00)
-%spc_write(DSP_MVOL_R, $00)
-%spc_write(DSP_EVOL_L, $40)
-%spc_write(DSP_EVOL_R, $40)
-%spc_write(DSP_ESA, $CF)
-%spc_write(DSP_EDL, $00)
-%spc_write(DSP_EFB, $20)
-%spc_write(DSP_DIR, $0C)
-%spc_write(DSP_PMON, $00)
-%spc_write(DSP_EON, $00)
-%spc_write(DSP_NON, $00)
-
 ;Audio register reset routine
 mov A, #0
 -
-mov Y, #0                           ;Shove into reset value
-mov X, #$07
+mov Y, #$00                         ;Shove into reset value
+mov X, #$0F
 mov SPC_RegADDR, A                  ;Shove address in
 Inner:
 mov SPC_RegData, Y                  ;Reset volume left
 inc SPC_RegADDR                     ;Increment address value
 dec X                               ;Decrement the loop counter
-bne Inner
+bpl Inner
 clrc                                ;Clear carry
 adc A, #$10                         ;Add 16
 bvc -
@@ -95,6 +82,19 @@ mov Apu1, #$00
 mov Apu2, #$00
 mov Apu3, #$00
 mov ZP.SFXRec, #$01
+
+%spc_write(DSP_FLG, $00)
+%spc_write(DSP_MVOL_L, $00)
+%spc_write(DSP_MVOL_R, $00)
+%spc_write(DSP_EVOL_L, $40)
+%spc_write(DSP_EVOL_R, $40)
+%spc_write(DSP_ESA, $C0)
+%spc_write(DSP_EDL, $00)
+%spc_write(DSP_EFB, $20)
+%spc_write(DSP_DIR, $0C)
+%spc_write(DSP_PMON, $00)
+%spc_write(DSP_EON, $00)
+%spc_write(DSP_NON, $00)
 
 DriverLoop:                         ;Main driver loop
     mov X, #0                       ;Reset counter
@@ -531,7 +531,7 @@ ReadPatterns:
     mov Y, #$0F                                ;Set Y up for loop
     -                                          ;Loop point
     mov A, (ZP.TempMemADDRL)+Y                 ;Indirectly shove addr value into A
-    mov ZP.SequenceAddr+Y, A                   ;Copy value to sequence addr
+    mov ZP.SequenceAddr+Y, A                   ;Copy value to sequence addr 
     dec Y                                      ;Decrement loop counter
     bpl -                                      ;Loop
     ret
@@ -639,14 +639,14 @@ Row_SetSpeed:
     ;Music
     call GrabCommand
     mov ZP.TickThresh, A
-    jmp ReadRows
+    bra ReadRows
     +
     mov A, ZP.CurrentChannel
     and A, #$07
     mov Y, A
     call GrabCommand
     mov ZP.VCTickThresh+Y, A
-    jmp ReadRows
+    bra ReadRows
 
 Row_Sleep:
     call GrabCommand
@@ -791,7 +791,6 @@ Row_SetInstrument:
     adc SPC_RegADDR, #$10               ;Add on $10 to the address to get to other bitfields
     dec Y                               ;Dec loop counter
     bne .RestartLoop
-
     jmp ReadRows
 
 Row_SetFlag:
@@ -1065,24 +1064,20 @@ RecieveSFX:
     addw YA, ZP.R0
     movw ZP.R0, YA
     ;Now ZP.R0 + ZP.R1 hold the pointer to the current SFX
-
-    ;Store pointer to VCOut
-    mov ZP.R2, #(ZP.VCOut&$FF)+3
-    mov ZP.R3, #(ZP.VCOut>>8&$FF)+3
-
+    mov X, #$03
     ;Next, we see what channels are actually going to be played
     mov ZP.R4, #$03     ;Index
     -
-    mov A, (ZP.R2)
+    mov A, ZP.VCOut+X
     and A, #$08         ;Check if value is F
-    bne .SkipSetSFX     ;Skip over if we've found one a SFX channel in use
-    mov A, (ZP.R2)
+    beq +               ;Jump to SFX set if value is F
+    bra .SFXFound
+    +
+    mov A, ZP.VCOut+X
     and A, #$80
-    bne .SkipSetSFX     ;Skip over if we've found one a SFX channel in use
-    ;decrement VCOut pointer
-    dec ZP.R2
+    beq .SkipSetSFX     ;Skip over if we've found one a SFX channel in use
+    .SFXFound:
     ;We've found a valid SFX channel!
-
     ;Store away SFX address to the correct sequence addr
     movw YA, (ZP.R0)
     movw ZP.TempMemADDRL, YA    ;Store away the address into temp mem
@@ -1099,6 +1094,7 @@ RecieveSFX:
     incw (ZP.R0)
     incw (ZP.R0)
     dec ZP.R4
+    dec X
     bpl -
     ;Increment recieve flag
     inc ZP.SFXRec
@@ -1191,18 +1187,33 @@ PatternMemory:
     %SetMasterVolume($7F, $7F)
     %SetChannelVolume($7F, $7F)
     %SetInstrument(0)
-    %PlayPitch($0900)
-    %Sleep($04)
+    %SetVib($00)
+    %PlayPitch($1000)
+    %Sleep($02)
+    %PlayPitch($2000)
+    %Sleep($02)
+    %PlayPitch($1E00)
+    %Sleep($02)
+    %PlayPitch($1C00)
+    %Sleep($02)
+    %PlayPitch($1A00)
+    %Sleep($02)
+    %PlayPitch($1800)
+    %Sleep($02)
+    %PlayPitch($1600)
+    %Sleep($02)
+    %PlayPitch($1400)
+    %Sleep($02)
+    %PlayPitch($1200)
+    %Sleep($02)
+    %PlayPitch($1000)
+    %Sleep($02)
     %Break()
     .Pat1:
     %Sleep($FF)
     %Break()
     .Pat2:
-    %PlayPitch($0C00)
-    %Sleep($04)
-    %PlayPitch($0D80)
-    %Sleep($02)
-    %PlayPitch($0F00)
+    %SetVib($F4)
     %Sleep($02)
     %Goto(0)
 
@@ -1238,38 +1249,41 @@ SfxTable:
 
 SfxPat:
     .Null:
-    %SetSpeed($FF)
+    %SetSpeed($CC)
     %Sleep(255)
     %Goto(0)
     .Sfx1_0:
     %SetSpeed(4)
+    %SetChannelVolume($7F, $7F)
+    %SetInstrument($3)
     %PlayPitch($1800)
-    %Sleep(10)
+    %Sleep($10)
     %PlayPitch($2000)
+    %Sleep($10)
     %Break()
     .Sfx1_1:
     %SetSpeed(6)
     %PlayPitch($2200)
-    %Sleep(10)
+    %Sleep($10)
     %PlayPitch($2400)
     %Break()
     .Sfx2_0:
     %SetSpeed(9)
     %PlayPitch($0800)
-    %Sleep(14)
+    %Sleep($0E)
     %SetPort($84)
     %Sleep(12)
-    %Break()
+    %Goto(0)
 
 SubtuneList:
     dw OrderTable_Tune0
     dw SfxTable_SFX_1
 
 InstrumentMemory:
-%WriteInstrument($00, $FF, $80, $7F, %00000100, $7F, $7F, $40)
+%WriteInstrument($00, $FF, $80, $7F, %00000000, $7F, $7F, $40)
 %WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $60)
 %WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $80)
-%WriteInstrument($00, $FF, $80, $93, %00000001, $60, $60, $80)  ;Test SFX
+%WriteInstrument($00, $FF, $80, $93, %00000000, $60, $60, $80)  ;Test SFX
 .EndOfInstrument:
 
 Engine_End:

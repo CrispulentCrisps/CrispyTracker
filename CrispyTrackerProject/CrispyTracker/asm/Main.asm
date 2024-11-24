@@ -37,7 +37,7 @@ Reset:
     plb                         ;Pull B
 
     ;Now we turn the screen black to avoid garbage data being written to the screen
-    lda.b #%10000000            ;Load 0 into A
+    lda.b #%10000000            ;Load 80 into A
     sta.w HW_INIDISP            ;Sends A value to HW_INIDISP
 
                                 ;This section of code is here to load the IPL rom into the SPC700 to have it start up
