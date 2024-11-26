@@ -86,8 +86,8 @@ mov ZP.SFXRec, #$01
 %spc_write(DSP_FLG, $00)
 %spc_write(DSP_MVOL_L, $00)
 %spc_write(DSP_MVOL_R, $00)
-%spc_write(DSP_EVOL_L, $40)
-%spc_write(DSP_EVOL_R, $40)
+%spc_write(DSP_EVOL_L, $00)
+%spc_write(DSP_EVOL_R, $00)
 %spc_write(DSP_ESA, $C0)
 %spc_write(DSP_EDL, $00)
 %spc_write(DSP_EFB, $20)
@@ -103,8 +103,12 @@ DriverLoop:                         ;Main driver loop
     mov Y, SPC_Count1               ;Check counter
     beq .TickIncrement              ;If the timer is set to 0
     
-    call RecieveSFX
+    call RecieveSub
     call ProcessEffects
+
+    mov A, ZP.StopFlag              ;Stop track from progressing
+    bne .TickIncrement
+
     inc X                           ;Increment our counter
     cmp X, ZP.TickThresh            ;Check if the counter has reached the 
     bmi .TickIncrement              ;Go back to the tick incrementer if the counter is not
@@ -658,9 +662,11 @@ Row_Sleep:
 
 Row_Goto:
     call GrabCommand
+    call GetGotoInd
     setp
-    mov OP.OrderPosGoto, A      ;Return pos
-    mov OP.OrderChangeFlag, #1  ;Set the order change flag
+    mov OP.OrderPosGoto, A          ;Return pos
+    mov A, #$01
+    mov OP.OrderChangeFlag+X, A     ;Set the order change flag
     clrp
     ret
 
@@ -668,9 +674,11 @@ Row_Break:
     setp
     mov OP.OrderPosGoto, OP.OrderPos
     inc OP.OrderPosGoto
-    mov OP.OrderChangeFlag, #1  ;Set the order change flag
+    mov A, #$01
+    call GetGotoInd
+    mov OP.OrderChangeFlag+X, A         ;Set the order change flag
     clrp
-    ret                         ;Break out of read rows
+    ret                                 ;Break out of ReadRows
 
 Row_PlayPitch:
     ;Pitch application
@@ -929,6 +937,39 @@ GrabCommand:
     ret
 
 
+        ;---------------------------;
+        ;       Get GOTO Index      ;
+        ;---------------------------;
+        ;
+        ;   Input:
+        ;       ZP.CurrentChannel
+        ;
+        ;   Output:
+        ;       X: Goto Index 
+        ;           if (ZP.CurrentChannel < 8) return 0
+        ;           else return (ZP.CurrentChannel&0x08)+1
+        ;       
+        ;   Clobber list:
+        ;       X: command indexing
+        ;
+        ;
+GetGotoInd:
+    push P
+    clrp
+    push A                          ;Store away A value if need be
+    mov X, #$00                     ;Assume music track flag index
+    mov A, ZP.CurrentChannel
+    and A, #$08
+    beq +
+    mov A, ZP.CurrentChannel        ;Grab current channel
+    and A, #$07                     ;Get channel equivelant
+    inc A                           ;Increment since first flag is for the music track
+    mov X, A                        ;Move into X
+    +
+    pop A
+    pop P
+    ret
+
         ;----------------------------;
         ;       Sine Generator       ;
         ;----------------------------;
@@ -1029,15 +1070,16 @@ SignedMul:
     mov ZP.TempMemADDRL, X
     ret
 
-    ;-----------------------------------;
-    ;   Recieve sound effects from CPU  ;
-    ;-----------------------------------;
+    ;------------------------------;
+    ;   Recieve Subtunes from CPU  ;
+    ;------------------------------;
     ;
     ;   Input:
-    ;       Apu0    SFX index to play
+    ;       Apu0    Subtune index to play
+    ;       Apu2    
     ;
     ;   Output:
-    ;       Parse into SFX table if Apu0 != 0
+    ;       Parse into Subtune table if Apu0 != 0
     ;
     ;   Clobberlist
     ;       APU01
@@ -1046,49 +1088,59 @@ SignedMul:
     ;       ZP.R2    |
     ;       ZP.R3   /
     ;
-RecieveSFX:
+
+    ;                                   TODO:   Fix up code here to work for both subtunes _and_ SFX
+RecieveSub:
     push A
     push X
     push Y
-    mov A, Apu1         ;Check SEND byte
+    mov A, Apu1                         ;Check SEND byte
     cmp A, ZP.SFXRec
     bne .SkipSFXCheck
-    ;SFX triggered!
+                                        ;SFX triggered!
     inc ZP.FlagVal
-    mov A, Apu0         ;Grab index into SFX table
+                                        ;Setup music ptr
+    mov ZP.R0, #SubtuneList&$FF
+    mov ZP.R1, #(SubtuneList>>8)&$FF
+    mov A, Apu2
+    cmp A, #ProCom.PlaySfx&$FF          ;Check if we're playing a SFX
+    bne +
+                                        ;Setup SFX ptr
+    mov ZP.R0, #SFXList&$FF
+    mov ZP.R1, #(SFXList>>8)&$FF
+    +
+
+    mov A, Apu0                         ;Grab index into Order table
     mov Y, #$10
-    mul YA              ;Offset index by 16
-    ;Setup memptr
-    mov ZP.R0, #SfxTable&$FF
-    mov ZP.R1, #(SfxTable>>8)&$FF
+    mul YA                              ;Offset index by 16
     addw YA, ZP.R0
     movw ZP.R0, YA
-    ;Now ZP.R0 + ZP.R1 hold the pointer to the current SFX
+                                        ;Now ZP.R0 + ZP.R1 hold the pointer to the current SFX
     mov X, #$03
-    ;Next, we see what channels are actually going to be played
-    mov ZP.R4, #$03     ;Index
+                                        ;Next, we see what channels are actually going to be played
+    mov ZP.R4, #$03                     ;Index
     -
     mov A, ZP.VCOut+X
-    and A, #$08         ;Check if value is F
-    beq +               ;Jump to SFX set if value is F
+    and A, #$08                         ;Check if value is F
+    beq +                               ;Jump to SFX set if value is F
     bra .SFXFound
     +
     mov A, ZP.VCOut+X
     and A, #$80
-    beq .SkipSetSFX     ;Skip over if we've found one a SFX channel in use
+    beq .SkipSetSFX                     ;Skip over if we've found one a SFX channel in use
     .SFXFound:
-    ;We've found a valid SFX channel!
-    ;Store away SFX address to the correct sequence addr
+                                        ;We've found a valid SFX channel!
+                                        ;Store away SFX address to the correct sequence addr
     movw YA, (ZP.R0)
-    movw ZP.TempMemADDRL, YA    ;Store away the address into temp mem
+    movw ZP.TempMemADDRL, YA            ;Store away the address into temp mem
     mov A, ZP.R4
     asl A
     mov Y, A
-    mov A, ZP.TempMemADDRL      ;Grab lo addr
+    mov A, ZP.TempMemADDRL              ;Grab lo addr
     mov ZP.SequenceAddr+16+Y, A
     inc Y
-    mov A, ZP.TempMemADDRH      ;Grab hi addr
-    mov ZP.SequenceAddr+16+Y, A    
+    mov A, ZP.TempMemADDRH              ;Grab hi addr
+    mov ZP.SequenceAddr+16+Y, A
     .SkipSetSFX:
     ;Increment pointer
     incw (ZP.R0)
@@ -1096,6 +1148,7 @@ RecieveSFX:
     dec ZP.R4
     dec X
     bpl -
+    .ReturnSub:
     ;Increment recieve flag
     inc ZP.SFXRec
     mov Apu1, ZP.SFXRec
@@ -1185,7 +1238,7 @@ PatternMemory:
     %SetDelayFeedback($40)
     %SetSpeed($04)
     %SetMasterVolume($7F, $7F)
-    %SetChannelVolume($7F, $7F)
+    %SetChannelVolume($40, $40)
     %SetInstrument(0)
     %SetVib($00)
     %PlayPitch($1000)
@@ -1249,7 +1302,7 @@ SfxTable:
 
 SfxPat:
     .Null:
-    %SetSpeed($CC)
+    %SetSpeed($F0)
     %Sleep(255)
     %Goto(0)
     .Sfx1_0:
@@ -1275,8 +1328,12 @@ SfxPat:
     %Sleep(12)
     %Goto(0)
 
+    ;List of available music tracks
 SubtuneList:
     dw OrderTable_Tune0
+
+    ;List of available sound effects
+SFXList:
     dw SfxTable_SFX_1
 
 InstrumentMemory:

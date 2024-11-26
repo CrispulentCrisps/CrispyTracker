@@ -66,9 +66,7 @@ struct OP $0100
 endstruct
 
 ;Commands
-
     ;Row commands
-
 struct RC $FF00
 .SetSpeed       skip 1  ;Sets tick threshold for track  |   $00
 .Sleep          skip 1  ;Sleeps for S amount of rows    |   $01
@@ -92,6 +90,17 @@ struct RC $FF00
 .ReleaseNote    skip 1  ;Set KOFF for given channel     |   $1A
 .Stop           skip 1  ;Set STOP flag for tune         |   $1B
 .NanBuff        skip 4  ;Buffer for future commands     |   $1C-1F
+endstruct
+
+; [bm] means the Bitmask applies to given channels
+struct ProCom   $FE00
+.PlayMusic      skip 1  ;Play music track               |   $00
+.PlaySfx        skip 1  ;Play sound effect              |   $01
+.SetMasterVol   skip 1  ;Set master volume of the SNES  |   $02
+.SetBitmask     skip 1  ;Set bitmask value for effects  |   $03
+.SetChannelVol  skip 1  ;Set channel volume             |   $04 [bm]
+.SetSettings    skip 1  ;Set settings byte              |   $05
+.SetDriverDiv   skip 1  ;Set timer divider              |   $06
 endstruct
 
 macro SetSpeed(S)       ;Sets tick threshold for track
