@@ -63,7 +63,7 @@ adc A, #$10                         ;Add 16
 bvc -
 
 mov SPC_Control, #$01               ;Set control bit to enable Timer 0
-mov SPC_Timer1, #$20                ;Divide timer to run at ~250hz
+mov SPC_Timer1, #$20                ;Divide timer to run at ~125hz
 setp
 mov A, #$01
 mov Y, #$08
@@ -164,7 +164,16 @@ DriverLoop:                         ;Main driver loop
 
 ProcessEffects:
     push X
+    mov A, ZP.UpdateSwitch
+    inc A
+    and A, #$01
+    mov ZP.UpdateSwitch, A
+
+    mov ZP.CurrentChannel, #$07
+    mov A, ZP.UpdateSwitch
+    bne +
     mov ZP.CurrentChannel, #$0F
+    +
     .EffectsLoop:
     mov ZP.TempPitchProcess,    #0
     mov ZP.TempPitchProcess+1,  #0
@@ -181,7 +190,6 @@ ProcessEffects:
     asl A
     mov X, A
     mov A, ZP.VolSlideValue+X
-    beq .SkipVSlide
     mov ZP.R0, A
     and A, #$0F
     mov ZP.R1, A
@@ -234,7 +242,6 @@ ProcessEffects:
     ;---------------;
     mov X, ZP.CurrentChannel
     mov A, ZP.PortValue+X
-    beq .SkipPort
     mov ZP.TempMemADDRL, A
     mov ZP.TempMemADDRH, #0
     mov1 C, ZP.TempMemADDRL.7
@@ -251,14 +258,12 @@ ProcessEffects:
     mov.b OP.ChannelPitches+1+X, Y
     mov OP.ChannelPitches+X, A  
     clrp
-    .SkipPort:
     
     ;--------------------;
     ;       Vibrato      ;
     ;--------------------;
     mov X, ZP.CurrentChannel
     mov A, ZP.VibratoValue+X
-    beq .SkipVib
     and A, #$F0
     xcn A
     asl A
@@ -269,7 +274,6 @@ ProcessEffects:
     mov Y, A                    ;Grab sine index value
     mov A, ZP.VibratoValue+X
     and A, #$0F                 ;Grab depth
-    lsr A
     call GetSineValue           ;Call sine function
     call SignedMul              ;multiply
     mov ZP.R0, A
@@ -278,14 +282,12 @@ ProcessEffects:
     mov Y, ZP.TempPitchProcess+1
     addw YA, ZP.R0
     movw ZP.TempPitchProcess, YA
-    .SkipVib:
     
     ;----------------;
     ;   Tremolando   ;
     ;----------------;
     mov X, ZP.CurrentChannel
     mov A, ZP.TremolandoValue+X
-    beq .SkipTrem
     and A, #$F0
     xcn A
     mov ZP.TempScratchMem, A        ;Hold speed in temporary memory
@@ -315,14 +317,12 @@ ProcessEffects:
     clrc
     adc A, ZP.R0
     mov ZP.TempVolumeProcess+1, A   ;Apply
-    .SkipTrem:
 
     ;----------------;
     ;    Panbrello   ;
     ;----------------;
     mov X, ZP.CurrentChannel
     mov A, ZP.PanbrelloValue+X
-    beq .SkipPanbr
     and A, #$F0
     xcn A
     mov ZP.TempScratchMem, A        ;Hold speed in temporary memory
@@ -352,7 +352,6 @@ ProcessEffects:
     setc
     sbc A, ZP.R0
     mov ZP.TempVolumeProcess+1, A   ;Apply
-    .SkipPanbr:
 
     ;Check SFX output to inject into hardware output
     mov Y, #$00
@@ -383,40 +382,16 @@ ProcessEffects:
     ;---------------------------;
     ;       Mixing & Output     ;
     ;---------------------------;
-    ;Grab channel memory
-    mov ZP.TempMemADDRL, #(InstrumentMemory)&$FF        ;Create word addr to instrument memory
-    mov ZP.TempMemADDRH, #(InstrumentMemory>>8)&$FF     ;
-    mov X, ZP.CurrentChannel                            ;Shove channel index into X
-    setp
-    mov A, OP.ChannelInstrumentIndex+X                  ;Grab instrument index
-    clrp
-    mov Y, #$08                                         ;Shove in multiplier
-    mul YA                                              ;Multiply
-    addw YA, ZP.TempMemADDRL                            ;Add on instrument memory location
-    movw ZP.TempMemADDRL, YA                            ;Return
-
-    ;Mix L
-    mov X, ZP.TempScratchMemH                           ;Grab premul index
-    mov Y, #5                                           ;Reset Y
-    mov A, (ZP.TempMemADDRL)+Y                          ;Grab instrument L volume
-    setp
-    mov.b Y, OP.ChannelVolume+X                           ;Shove L volume into X
-    clrp
-    call SignedMul                                      ;Multiply both volumes together
-    mov X, #128                                         ;Shove in Divispr
-    div YA, X                                           ;Divide
-    mov ZP.ChannelVolumeOutput, A                       ;Shove into volume output
-    
-    ;Mix R
     mov X, ZP.TempScratchMemH
-    mov Y, #6                                           ;Reset Y
-    mov A, (ZP.TempMemADDRL)+Y                          ;Grab instrument R volume
     setp
-    mov.b Y, OP.ChannelVolume+1+X                       ;Shove R volume into X
+    mov.b A, OP.ChannelVolume+X
     clrp
-    call SignedMul                                      ;Multiply both volumes together
-    mov X, #128                                         ;Shove in Divispr
-    div YA, X                                           ;Divide
+    mov ZP.ChannelVolumeOutput, A                     ;Shove into volume output
+    
+    mov X, ZP.TempScratchMemH
+    setp
+    mov.b A, OP.ChannelVolume+1+X
+    clrp
     mov ZP.ChannelVolumeOutput+1, A                     ;Shove into volume output
 
     ;Add Volume offset from effects
@@ -489,6 +464,17 @@ ProcessEffects:
     clrp
     ;Jump over if working Virtual channels
     .SkipInst:
+    
+    mov A, ZP.UpdateSwitch
+    bne .MusicFX
+    ;SFX loop
+    dec ZP.CurrentChannel
+    mov A, ZP.CurrentChannel
+    cmp A, #$07
+    beq .BreakLoop
+    jmp .EffectsLoop
+    ;Music loop
+    .MusicFX:
     dec ZP.CurrentChannel
     bmi .BreakLoop
     jmp .EffectsLoop
@@ -555,8 +541,11 @@ HandleSFX:
     .SfxLoop:
     mov X, ZP.CurrentChannel
     ;Check if our tick counter has reached 0
-    mov A, ZP.VCTick-8+X
+    setp
+    mov A, OP.ChannelSleepCounter+X
     bne .DecTick
+    ;Read pattern if the counter is currently 0
+    clrp
     mov A, ZP.CurrentChannel
     and A, #$07
     mov X, A
@@ -575,7 +564,7 @@ HandleSFX:
     mov ZP.R2, X
     call ReadPatterns
     mov A, ZP.VCTickThresh-8+X
-    mov ZP.VCTick-8+X, A
+    mov A, OP.ChannelSleepCounter+X
     .SkipPatternRead:
     ;If tick timer == 0 then we decrement our sleep counter
     mov X, ZP.CurrentChannel
@@ -584,13 +573,11 @@ HandleSFX:
     bne .ApplySleep
     clrp    
     call ReadRows
-    .DecTick:
-    dec ZP.VCTick-8+X
     .ApplySleep:
-    setp
     mov OP.ChannelSleepCounter+X, A
-    clrp
     .SkipSleep:
+    .DecTick:
+    dec OP.ChannelSleepCounter+X
     clrp
     dec ZP.CurrentChannel
     mov X, ZP.CurrentChannel
@@ -601,6 +588,13 @@ HandleSFX:
 
 ReadRows:
     call GrabCommand
+    mov ZP.R0, A
+    setc
+    sbc A, #RC.PlayNote&$FF
+    bcc +
+    jmp (Row_PlayNote)
+    +
+    mov A, ZP.R0
     asl A                               ;Mult by 2 to prevent reading in the wrong address byte
     mov X, A                            ;Shove into X for the jump table
     jmp (.RowJumpTable+X)               ;Goto jumptable + command index
@@ -634,6 +628,7 @@ ReadRows:
     dw Row_SetPanbr
     dw Row_NoteRelease
     dw Row_Stop
+    dw Row_PlayNote
     
 Row_SetSpeed:
     clrp
@@ -680,6 +675,22 @@ Row_Break:
     clrp
     ret                                 ;Break out of ReadRows
 
+Row_PlayNote:
+    mov A, ZP.R0                    ;Grab pitch index
+    setc
+    sbc A, #(RC.PlayNote)&$FF       ;Offset index by PlayNote
+    asl A
+    mov Y, A
+    mov A, PitchTable+Y             ;Grab lo pitch in table
+    setp
+    mov OP.ChannelPitches+X, A
+    clrp
+    mov A, PitchTable+1+Y          ;Grab hi pitch in table
+    setp
+    mov OP.ChannelPitches+1+X, A
+    clrp
+    bra Row_PlayPitch_SetKOn
+
 Row_PlayPitch:
     ;Pitch application
     call GrabCommand                ;Grab lo byte of the pitch
@@ -687,6 +698,7 @@ Row_PlayPitch:
     call GrabCommand                ;Grab hi byte of the pitch
     mov OP.ChannelPitches+1+X, A    ;Shove hi byte into pitch
 
+.SetKOn:
     mov A, ZP.CurrentChannel        ;Check if handling SFX or Music
     and A, #$08
     bne +
@@ -737,7 +749,7 @@ Row_SetInstrument:
     setp
     mov OP.ChannelInstrumentIndex+X, A
     clrp
-    mov Y, #$08
+    mov Y, #!InstWidth
     mul YA
     addw YA, ZP.TempMemADDRL
     movw ZP.TempMemADDRL, YA
@@ -1096,59 +1108,47 @@ RecieveSub:
     push Y
     mov A, Apu1                         ;Check SEND byte
     cmp A, ZP.SFXRec
-    bne .SkipSFXCheck
-                                        ;SFX triggered!
+    bne .SkipSFXCheck                   ;if SFXRec != SFXRec before then new a new subtune will be selected
     inc ZP.FlagVal
-                                        ;Setup music ptr
+    mov X, #$00                         ;Setup music ptr
     mov ZP.R0, #SubtuneList&$FF
     mov ZP.R1, #(SubtuneList>>8)&$FF
-    mov A, Apu2
-    cmp A, #ProCom.PlaySfx&$FF          ;Check if we're playing a SFX
-    bne +
-                                        ;Setup SFX ptr
-    mov ZP.R0, #SFXList&$FF
+    mov A, Apu2                         ;if APU2 != 0 then we just assume it's playing a SFX, otherwise we assume
+    beq +
+    mov ZP.R0, #SFXList&$FF             ;Setup SFX ptr
     mov ZP.R1, #(SFXList>>8)&$FF
+    mov X, #$10                         ;Offset address by $10 bytes
     +
 
     mov A, Apu0                         ;Grab index into Order table
-    mov Y, #$10
+    mov Y, #$02
     mul YA                              ;Offset index by 16
     addw YA, ZP.R0
     movw ZP.R0, YA
                                         ;Now ZP.R0 + ZP.R1 hold the pointer to the current SFX
-    mov X, #$03
-                                        ;Next, we see what channels are actually going to be played
-    mov ZP.R4, #$03                     ;Index
-    -
-    mov A, ZP.VCOut+X
-    and A, #$08                         ;Check if value is F
-    beq +                               ;Jump to SFX set if value is F
-    bra .SFXFound
-    +
-    mov A, ZP.VCOut+X
-    and A, #$80
-    beq .SkipSetSFX                     ;Skip over if we've found one a SFX channel in use
-    .SFXFound:
-                                        ;We've found a valid SFX channel!
                                         ;Store away SFX address to the correct sequence addr
     movw YA, (ZP.R0)
     movw ZP.TempMemADDRL, YA            ;Store away the address into temp mem
-    mov A, ZP.R4
-    asl A
-    mov Y, A
     mov A, ZP.TempMemADDRL              ;Grab lo addr
-    mov ZP.SequenceAddr+16+Y, A
-    inc Y
+    mov ZP.SequenceAddr+X, A
+    inc X
     mov A, ZP.TempMemADDRH              ;Grab hi addr
-    mov ZP.SequenceAddr+16+Y, A
-    .SkipSetSFX:
-    ;Increment pointer
-    incw (ZP.R0)
-    incw (ZP.R0)
-    dec ZP.R4
-    dec X
+    mov ZP.SequenceAddr+X, A
+
+    ;Clear sleep timers
+    mov A, X
+    dec A
+    lsr A
+    mov X, A
+    mov A, #$00
+    mov Y, #$07
+    setp
+    -
+    mov OP.ChannelSleepCounter+X, A
+    inc X
+    dec Y
     bpl -
-    .ReturnSub:
+    clrp
     ;Increment recieve flag
     inc ZP.SFXRec
     mov Apu1, ZP.SFXRec
@@ -1202,10 +1202,15 @@ db $84, $17, $45, $35, $22, $22, $31, $21, $10, $68, $01, $21, $0D, $01, $08, $0
 db $B1, $E0, $BC, $AF, $78
 db $B8, $87, $1F, $00, $F1, $0F, $1F, $00, $00, $8F, $E1, $13, $12, $2D, $52, $14, $10, $F7
 
+PitchTable:
+    dw $2000
+    dw $1000
+    skip $1BC
+
 OrderTable:
     .Tune0:
         .Ord0:
-            dw PatternMemory_Pat0
+            dw PatternMemory_Pat3
             dw PatternMemory_Pat1
             dw PatternMemory_Pat1
             dw PatternMemory_Pat1
@@ -1266,9 +1271,19 @@ PatternMemory:
     %Sleep($FF)
     %Break()
     .Pat2:
-    %SetVib($F4)
-    %Sleep($02)
+    %SetVib($F2)
+    %Sleep($04)
     %Goto(0)
+    .Pat3:
+    %SetMasterVolume($7F, $7F)
+    %SetChannelVolume($60, $60)
+    %SetInstrument($0)
+    %SetSpeed($4)
+    %PlayNote($00)
+    %Sleep($6)
+    %PlayNote($01)
+    %Sleep($6)
+    %Goto($01)
 
 ;For some reason the sequence addr returns the pointer address, not the value from the addr
 SfxTable:
@@ -1302,11 +1317,11 @@ SfxTable:
 
 SfxPat:
     .Null:
-    %SetSpeed($F0)
+    %SetSpeed($FE)
     %Sleep(255)
     %Goto(0)
     .Sfx1_0:
-    %SetSpeed(4)
+    %SetSpeed($01)
     %SetChannelVolume($7F, $7F)
     %SetInstrument($3)
     %PlayPitch($1800)
@@ -1315,13 +1330,13 @@ SfxPat:
     %Sleep($10)
     %Break()
     .Sfx1_1:
-    %SetSpeed(6)
+    %SetSpeed($02)
     %PlayPitch($2200)
     %Sleep($10)
     %PlayPitch($2400)
     %Break()
     .Sfx2_0:
-    %SetSpeed(9)
+    %SetSpeed($03)
     %PlayPitch($0800)
     %Sleep($0E)
     %SetPort($84)
@@ -1337,10 +1352,10 @@ SFXList:
     dw SfxTable_SFX_1
 
 InstrumentMemory:
-%WriteInstrument($00, $FF, $80, $7F, %00000000, $7F, $7F, $40)
-%WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $60)
-%WriteInstrument($01, $FF, $80, $7F, %00000000, $7F, $7F, $80)
-%WriteInstrument($00, $FF, $80, $93, %00000000, $60, $60, $80)  ;Test SFX
+%WriteInstrument($00, $FF, $80, $7F, %00000000)
+%WriteInstrument($01, $FF, $80, $7F, %00000000)
+%WriteInstrument($01, $FF, $80, $7F, %00000000)
+%WriteInstrument($00, $FF, $80, $93, %00000000)  ;Test SFX
 .EndOfInstrument:
 
 Engine_End:

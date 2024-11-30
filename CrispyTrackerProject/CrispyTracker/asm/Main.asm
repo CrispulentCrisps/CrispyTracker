@@ -126,8 +126,9 @@ NMIDriverTest:
     lda.w MZP.SFXTimer
     and #$80
     beq .SkipTimer
-    lda.b #$01
+    lda.b #$00
     sta.w HW_APUI00     ;Subtune index
+    lda.b #$01
     sta.w HW_APUI02     ;Audio type [SFX]
     lda.w MZP.SFXRec
     sta.w HW_APUI01

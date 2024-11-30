@@ -29,6 +29,7 @@ struct ZP $00
 
 ;Effects
 .CurrentChannel:            skip 1                  ;Current channel we are working with
+.UpdateSwitch               skip 1                  ;Determine if we're updating the "virtual" or hardware channels     [0 for hardware, 1 for virtual]
 
 .SineIndexVib:              skip 16                 ;Array of current indexes for sine tables
 .SineIndexTrem:             skip 16                 ;Array of current indexes for sine tables
@@ -45,7 +46,6 @@ struct ZP $00
 .ChannelVolumeOutput:       skip 2                  ;Volume written to current channel
 
 ;SFX Specific
-.VCTick:                    skip 8                  ;Tick counters for the virtual channels
 .VCTickThresh:              skip 8                  ;Tick thresholders for SFX
 .VCOut:                     skip 4                  ;8 nibbles that determine which SFX is going through which channel. If a nibble is F we assume it's not outputting to any channel
 
@@ -65,42 +65,51 @@ struct OP $0100
 .ChannelVolume:             skip 32                 ;Holds the channel master volume [goes across 16 bytes]
 endstruct
 
+!ProcARP =                  $00
+!ProcVSL =                  $01
+!ProcPRT =                  $02
+!ProcVIB =                  $03
+!ProcTRM =                  $04
+!ProcPBR =                  $05
+
 ;Commands
     ;Row commands
 struct RC $FF00
-.SetSpeed       skip 1  ;Sets tick threshold for track  |   $00
-.Sleep          skip 1  ;Sleeps for S amount of rows    |   $01
-.Goto           skip 1  ;Break to new order             |   $02
-.Break          skip 1  ;Goto next order                |   $03
-.PlayPitch      skip 1  ;Plays absolute pitch value     |   $04
-.SetInstrument  skip 1  ;Set instrument index           |   $05
-.SetFlagValue   skip 1  ;Set FLG register               |   $06
-.EchoDelay      skip 1  ;Set echo delay value           |   $07
-.EchoVolume     skip 1  ;Set echo L/R volume            |   $08
-.EchoFeedback   skip 1  ;Set echo feedback value        |   $09
-.EchoCoeff      skip 8  ;Set echo coeffecients          |   $0A-$11
-.MasterVol      skip 1  ;Set Master L/R volumes         |   $12
-.ChannelVol     skip 1  ;Set individual channel volume  |   $13
-.SetArp         skip 1  ;Set Arpeggio effect value      |   $14
-.SetPort        skip 1  ;Set Portamento effect value    |   $15
-.SetVibrato     skip 1  ;Set Vibrato effect value       |   $16
-.SetTremo       skip 1  ;Set Tremolando effect value    |   $17
-.SetVolSlide    skip 1  ;Set Volume Slide effect value  |   $18
-.SetPanbrello   skip 1  ;Set Panbrello effect value     |   $19
-.ReleaseNote    skip 1  ;Set KOFF for given channel     |   $1A
-.Stop           skip 1  ;Set STOP flag for tune         |   $1B
-.NanBuff        skip 4  ;Buffer for future commands     |   $1C-1F
+.SetSpeed                   skip 1  ;Sets tick threshold for track  |   $00     
+.Sleep                      skip 1  ;Sleeps for S amount of rows    |   $01     
+.Goto                       skip 1  ;Break to new order             |   $02     
+.Break                      skip 1  ;Goto next order                |   $03     
+.PlayPitch                  skip 1  ;Plays absolute pitch value     |   $04     
+.SetInstrument              skip 1  ;Set instrument index           |   $05     
+.SetFlagValue               skip 1  ;Set FLG register               |   $06     
+.EchoDelay                  skip 1  ;Set echo delay value           |   $07     
+.EchoVolume                 skip 1  ;Set echo L/R volume            |   $08     
+.EchoFeedback               skip 1  ;Set echo feedback value        |   $09     
+.EchoCoeff                  skip 8  ;Set echo coeffecients          |   $0A-$11 
+.MasterVol                  skip 1  ;Set Master L/R volumes         |   $12     
+.ChannelVol                 skip 1  ;Set individual channel volume  |   $13     
+.SetArp                     skip 1  ;Set Arpeggio effect value      |   $14     
+.SetPort                    skip 1  ;Set Portamento effect value    |   $15     
+.SetVibrato                 skip 1  ;Set Vibrato effect value       |   $16     
+.SetTremo                   skip 1  ;Set Tremolando effect value    |   $17     
+.SetVolSlide                skip 1  ;Set Volume Slide effect value  |   $18     
+.SetPanbrello               skip 1  ;Set Panbrello effect value     |   $19     
+.ReleaseNote                skip 1  ;Set KOFF for given channel     |   $1A     
+.Stop                       skip 1  ;Set STOP flag for tune         |   $1B     
+.NanBuff                    skip 4  ;Buffer for future commands     |   $1C-1F 
+.PlayNote                   skip 1  ;Play pitch from table          |   $20-FF 
 endstruct
 
 ; [bm] means the Bitmask applies to given channels
+;   Programmer Commands
 struct ProCom   $FE00
-.PlayMusic      skip 1  ;Play music track               |   $00
-.PlaySfx        skip 1  ;Play sound effect              |   $01
-.SetMasterVol   skip 1  ;Set master volume of the SNES  |   $02
-.SetBitmask     skip 1  ;Set bitmask value for effects  |   $03
-.SetChannelVol  skip 1  ;Set channel volume             |   $04 [bm]
-.SetSettings    skip 1  ;Set settings byte              |   $05
-.SetDriverDiv   skip 1  ;Set timer divider              |   $06
+.PlayMusic                  skip 1  ;Play music track               |   $00
+.PlaySfx                    skip 1  ;Play sound effect              |   $01
+.SetMasterVol               skip 1  ;Set master volume of the SNES  |   $02
+.SetBitmask                 skip 1  ;Set bitmask value for effects  |   $03
+.SetChannelVol              skip 1  ;Set channel volume             |   $04 [bm]
+.SetSettings                skip 1  ;Set settings byte              |   $05
+.SetDriverDiv               skip 1  ;Set timer divider              |   $06
 endstruct
 
 macro SetSpeed(S)       ;Sets tick threshold for track
@@ -149,16 +158,15 @@ endmacro
     ;       LVOL
     ;       RVOL
     ;
-macro WriteInstrument(L, R, AD1, AD2, G, ES, SI, P)
-db <L>      ;Left volume
-db <R>      ;Right volume
+macro WriteInstrument(AD1, AD2, G, ES, SI)
 db <AD1>    ;ADSR1
 db <AD2>    ;ADSR2
 db <G>      ;Gain
 db <ES>     ;Effect state
 db <SI>     ;Sample index
-db <P>      ;Priority
 endmacro
+
+!InstWidth =    $05
 
 macro SetInstrument(I)
 db RC.SetInstrument
