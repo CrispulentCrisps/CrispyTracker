@@ -376,8 +376,10 @@ ProcessEffects:
     bra .EndInject
     ;A SFX has been triggered and the output will be injected into the 
     .InjectSFX:
-    
-    
+    mov A, X
+    clrc
+    adc A, #$08
+    mov X, A    
     .EndInject
     ;---------------------------;
     ;       Mixing & Output     ;
@@ -1117,27 +1119,42 @@ RecieveSub:
     beq +
     mov ZP.R0, #SFXList&$FF             ;Setup SFX ptr
     mov ZP.R1, #(SFXList>>8)&$FF
+    mov X, #$00                         ;Set X to 0 for some pointer shenanigans
+    mov A, (ZP.R0+X)
+    mov ZP.R2, A
+    incw ZP.R0
+    mov A, (ZP.R0+X)
+    mov ZP.R3, A
+    mov ZP.R0, ZP.R2
+    mov ZP.R1, ZP.R3
     mov X, #$10                         ;Offset address by $10 bytes
     +
 
-    mov A, Apu0                         ;Grab index into Order table
-    mov Y, #$02
+    mov A, Apu0                         ;Grab index into Subtune table
+    mov Y, #$10
     mul YA                              ;Offset index by 16
     addw YA, ZP.R0
     movw ZP.R0, YA
                                         ;Now ZP.R0 + ZP.R1 hold the pointer to the current SFX
                                         ;Store away SFX address to the correct sequence addr
-    movw YA, (ZP.R0)
-    movw ZP.TempMemADDRL, YA            ;Store away the address into temp mem
-    mov A, ZP.TempMemADDRL              ;Grab lo addr
+    mov ZP.R2, #$0F
+    mov Y, #$00
+    .AddrLoop:
+    mov A, (ZP.R0)+Y
     mov ZP.SequenceAddr+X, A
     inc X
-    mov A, ZP.TempMemADDRH              ;Grab hi addr
+    incw ZP.R0
+    mov A, (ZP.R0)+Y
     mov ZP.SequenceAddr+X, A
+    inc X
+    incw ZP.R0
+    dec ZP.R2
+    bpl .AddrLoop
 
     ;Clear sleep timers
     mov A, X
-    dec A
+    setc
+    sbc A, #$08
     lsr A
     mov X, A
     mov A, #$00
@@ -1203,14 +1220,14 @@ db $B1, $E0, $BC, $AF, $78
 db $B8, $87, $1F, $00, $F1, $0F, $1F, $00, $00, $8F, $E1, $13, $12, $2D, $52, $14, $10, $F7
 
 PitchTable:
-    dw $2000
-    dw $1000
-    skip $1BC
+    for t = 0..224
+        dw $0000
+    endfor
 
 OrderTable:
     .Tune0:
         .Ord0:
-            dw PatternMemory_Pat3
+            dw PatternMemory_Pat0
             dw PatternMemory_Pat1
             dw PatternMemory_Pat1
             dw PatternMemory_Pat1
@@ -1277,12 +1294,18 @@ PatternMemory:
     .Pat3:
     %SetMasterVolume($7F, $7F)
     %SetChannelVolume($60, $60)
-    %SetInstrument($0)
-    %SetSpeed($4)
+    %SetInstrument($00)
+    %SetSpeed($04)
     %PlayNote($00)
-    %Sleep($6)
+    %Sleep($06)
     %PlayNote($01)
-    %Sleep($6)
+    %Sleep($06)
+    %PlayNote($02)
+    %Sleep($06)
+    %PlayNote($03)
+    %Sleep($06)
+    %PlayNote($04)
+    %Sleep($06)
     %Goto($01)
 
 ;For some reason the sequence addr returns the pointer address, not the value from the addr

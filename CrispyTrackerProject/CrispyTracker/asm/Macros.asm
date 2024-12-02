@@ -19,6 +19,7 @@ struct ZP $00
 .KONState:                  skip 1                  ;Holds the current bitfield state of KON
 .FlagVal:                   skip 1                  ;Holds the flag value
 .SFXRec                     skip 1                  ;Byte for APU1 value expected to play SFX
+.UpdateSwitch               skip 1                  ;Determine if we're updating the "virtual" or hardware channels     [0 for hardware, 1 for virtual]
 
 ;Sequencing
 .SequenceAddr:              skip 32                 ;Array of sequence address pointers
@@ -27,10 +28,9 @@ struct ZP $00
 .TempVolumeProcess:         skip 2                  ;Used to manipulate a volume value without actually changing said volume
 .TempPitchProcess:          skip 2                  ;Holds the pitch
 
-;Effects
 .CurrentChannel:            skip 1                  ;Current channel we are working with
-.UpdateSwitch               skip 1                  ;Determine if we're updating the "virtual" or hardware channels     [0 for hardware, 1 for virtual]
 
+;Effects
 .SineIndexVib:              skip 16                 ;Array of current indexes for sine tables
 .SineIndexTrem:             skip 16                 ;Array of current indexes for sine tables
 .SineIndexPanbr:            skip 16                 ;Array of current indexes for sine tables
@@ -133,8 +133,7 @@ endmacro
 
     ;Note play
 macro PlayNote(P)       ;Plays note in note table
-db RC.PlayNote
-db <P>
+db RC.PlayNote+<P>
 endmacro
 
 macro PlayPitch(P)      ;Plays absolute pitch value
