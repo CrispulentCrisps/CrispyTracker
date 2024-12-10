@@ -533,6 +533,59 @@ void SnesAPUHandler::APU_Kill()
 	spc_dsp_delete(Dsp);
 }
 
+void SnesAPUHandler::SPCWrite(size_t bytes)
+{
+	DSP_MEMORY[SPCPtr] = bytes;
+	SPCPtr += sizeof(bytes);
+}
+
+void SnesAPUHandler::WriteCommand(Command com)
+{
+	switch (com.type)
+	{
+	case com_SetSpeed:
+		break;
+	case com_Sleep:
+		break;
+	case com_Goto:
+		break;
+	case com_Break:
+		break;
+	case com_PlayPitch:
+		break;
+	case com_SetInstrument:
+		break;
+	case com_SetFlagValue:
+		break;
+	case com_EchoDelay:
+		break;
+	case com_EchoVolume:
+		break;
+	case com_EchoFeedback:
+		break;
+	case com_EchoCoeff:
+		break;
+	case com_ChannelVol:
+		break;
+	case com_SetArp:
+		break;
+	case com_SetPort:
+		break;
+	case com_SetVibrato:
+		break;
+	case com_SetTremo:
+		break;
+	case com_SetVolSlide:
+		break;
+	case com_SetPanbrello:
+		break;
+	case com_ReleaseNote:
+		break;
+	case com_Stop:
+		break;
+	}
+}
+
 //Writes all sample data into memory from [Sample_Mem_Page]
 void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 {

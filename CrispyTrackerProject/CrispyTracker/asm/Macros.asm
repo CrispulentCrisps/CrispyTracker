@@ -65,12 +65,12 @@ struct OP $0100
 .ChannelVolume:             skip 32                 ;Holds the channel master volume [goes across 16 bytes]
 endstruct
 
-!ProcARP =                  $00
-!ProcVSL =                  $01
-!ProcPRT =                  $02
-!ProcVIB =                  $03
-!ProcTRM =                  $04
-!ProcPBR =                  $05
+InstPtr =                   $01E0
+OrderPtr =                  $01E2
+SfxListPtr =                $01E4
+SfxPatPtr =                 $01E6
+SubPtr =                    $01E8
+PitchPtr =                  $01EA
 
 ;Commands
     ;Row commands
@@ -85,18 +85,17 @@ struct RC $FF00
 .EchoDelay                  skip 1  ;Set echo delay value           |   $07     
 .EchoVolume                 skip 1  ;Set echo L/R volume            |   $08     
 .EchoFeedback               skip 1  ;Set echo feedback value        |   $09     
-.EchoCoeff                  skip 8  ;Set echo coeffecients          |   $0A-$11 
-.MasterVol                  skip 1  ;Set Master L/R volumes         |   $12     
-.ChannelVol                 skip 1  ;Set individual channel volume  |   $13     
-.SetArp                     skip 1  ;Set Arpeggio effect value      |   $14     
-.SetPort                    skip 1  ;Set Portamento effect value    |   $15     
-.SetVibrato                 skip 1  ;Set Vibrato effect value       |   $16     
-.SetTremo                   skip 1  ;Set Tremolando effect value    |   $17     
-.SetVolSlide                skip 1  ;Set Volume Slide effect value  |   $18     
-.SetPanbrello               skip 1  ;Set Panbrello effect value     |   $19     
-.ReleaseNote                skip 1  ;Set KOFF for given channel     |   $1A     
-.Stop                       skip 1  ;Set STOP flag for tune         |   $1B     
-.NanBuff                    skip 4  ;Buffer for future commands     |   $1C-1F 
+.EchoCoeff                  skip 8  ;Set echo coeffecients          |   $0A-$11      
+.ChannelVol                 skip 1  ;Set individual channel volume  |   $12     
+.SetArp                     skip 1  ;Set Arpeggio effect value      |   $13     
+.SetPort                    skip 1  ;Set Portamento effect value    |   $14     
+.SetVibrato                 skip 1  ;Set Vibrato effect value       |   $15     
+.SetTremo                   skip 1  ;Set Tremolando effect value    |   $16     
+.SetVolSlide                skip 1  ;Set Volume Slide effect value  |   $17     
+.SetPanbrello               skip 1  ;Set Panbrello effect value     |   $18     
+.ReleaseNote                skip 1  ;Set KOFF for given channel     |   $19     
+.Stop                       skip 1  ;Set STOP flag for tune         |   $1A     
+.NanBuff                    skip 5  ;Buffer for future commands     |   $1B-1F 
 .PlayNote                   skip 1  ;Play pitch from table          |   $20-FF 
 endstruct
 
@@ -200,12 +199,6 @@ db <V>
 endmacro
 
     ;Volume
-macro SetMasterVolume(L, R)   ;Set Master volume
-db RC.MasterVol
-db <L>
-db <R>
-endmacro
-
 macro SetChannelVolume(L, R)   ;Set Channel Volume
 db RC.ChannelVol
 db <L>

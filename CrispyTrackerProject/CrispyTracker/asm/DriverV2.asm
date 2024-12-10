@@ -63,7 +63,7 @@ adc A, #$10                         ;Add 16
 bvc -
 
 mov SPC_Control, #$01               ;Set control bit to enable Timer 0
-mov SPC_Timer1, #$20                ;Divide timer to run at ~125hz
+mov SPC_Timer1, #$20                ;Divide timer to run at ~250hz
 setp
 mov A, #$01
 mov Y, #$08
@@ -84,8 +84,8 @@ mov Apu3, #$00
 mov ZP.SFXRec, #$01
 
 %spc_write(DSP_FLG, $00)
-%spc_write(DSP_MVOL_L, $00)
-%spc_write(DSP_MVOL_R, $00)
+%spc_write(DSP_MVOL_L, $7F)
+%spc_write(DSP_MVOL_R, $7F)
 %spc_write(DSP_EVOL_L, $00)
 %spc_write(DSP_EVOL_R, $00)
 %spc_write(DSP_ESA, $C0)
@@ -95,6 +95,36 @@ mov ZP.SFXRec, #$01
 %spc_write(DSP_PMON, $00)
 %spc_write(DSP_EON, $00)
 %spc_write(DSP_NON, $00)
+
+mov A, #(PitchTable)&$FF
+mov PitchPtr, A
+mov A, #(PitchTable>>8)&$FF
+mov PitchPtr+1, A
+
+mov A, #(InstrumentMemory)&$FF
+mov InstPtr, A
+mov A, #(InstrumentMemory>>8)&$FF
+mov InstPtr+1, A
+
+mov A, #OrderTable&$FF
+mov OrderPtr, A
+mov A, #(OrderTable>>8)&$FF
+mov OrderPtr+1, A
+
+mov A, #SfxTable&$FF
+mov SfxPatPtr, A
+mov A, #(SfxTable>>8)&$FF
+mov SfxPatPtr+1, A
+
+mov A, #SFXList&$FF
+mov SfxListPtr, A
+mov A, #(SFXList>>8)&$FF
+mov SfxListPtr+1, A
+
+mov A, #SubtuneList&$FF
+mov SubPtr, A
+mov A, #(SubtuneList>>8)&$FF
+mov SubPtr+1, A
 
 DriverLoop:                         ;Main driver loop
     mov X, #0                       ;Reset counter
@@ -123,8 +153,10 @@ DriverLoop:                         ;Main driver loop
     dec X                               ;Decrement counter
     bpl -
     clrp
-    mov ZP.R0, #OrderTable&$FF
-    mov ZP.R1, #(OrderTable>>8)&$FF
+    mov A, OrderPtr
+    mov ZP.R0, A
+    mov A, OrderPtr+1
+    mov ZP.R1, A
     setp
     mov Y, OP.OrderPos
     clrp
@@ -554,11 +586,18 @@ HandleSFX:
     setp
     mov A, OP.OrderChangeFlag+1+X
     beq .SkipPatternRead
+    ;Erase flag
+    mov A, #$00
+    mov OP.OrderChangeFlag+1+X, A
     ;Setup pattern read
     clrp
-    mov X, ZP.CurrentChannel
-    mov ZP.R0, #SfxTable&$FF
-    mov ZP.R1, #(SfxTable>>8)&$FF
+    mov A, ZP.CurrentChannel
+    asl A
+    mov X, A
+    mov A, SfxPatPtr
+    mov Y, SfxPatPtr+1
+    mov ZP.R0, A
+    mov ZP.R1, Y
     setp
     mov A, OP.OrderPos-7+X
     clrp
@@ -620,7 +659,6 @@ ReadRows:
     dw Row_SetDelayCoeff
     dw Row_SetDelayCoeff
     dw Row_SetDelayCoeff
-    dw Row_SetMasterVolume
     dw Row_SetChannelVolume
     dw Row_SetArp
     dw Row_SetPort
@@ -683,12 +721,11 @@ Row_PlayNote:
     sbc A, #(RC.PlayNote)&$FF       ;Offset index by PlayNote
     asl A
     mov Y, A
-    mov A, PitchTable+Y             ;Grab lo pitch in table
     setp
+    mov A, (PitchPtr)+Y             ;Grab lo pitch in table
     mov OP.ChannelPitches+X, A
-    clrp
-    mov A, PitchTable+1+Y          ;Grab hi pitch in table
-    setp
+    inc Y
+    mov A, (PitchPtr)+Y          ;Grab hi pitch in table
     mov OP.ChannelPitches+1+X, A
     clrp
     bra Row_PlayPitch_SetKOn
@@ -703,7 +740,7 @@ Row_PlayPitch:
 .SetKOn:
     mov A, ZP.CurrentChannel        ;Check if handling SFX or Music
     and A, #$08
-    bne +
+    bne .GotoSFX
     ;Music
     ;KON State
     mov X, ZP.CurrentChannel            ;Grab current channel
@@ -714,10 +751,10 @@ Row_PlayPitch:
     ;Mask in lo nibble in VCOUT
     mov ZP.R0, #$F0
     and A, #$01
-    beq ++
+    beq .MSXHi
     ;Mask in hi nibble in VCOUT
     mov ZP.R0, #$0F
-    ++
+    .MSXHi:
     mov A, ZP.CurrentChannel        ;Check if handling SFX or Music
     lsr A
     mov X, A
@@ -725,15 +762,15 @@ Row_PlayPitch:
     or A, ZP.R0                     ;Mask in corresponding nibble
     mov ZP.VCOut+X, A
     jmp ReadRows
-    +
+    .GotoSFX:
     ;SFX
     ;Mask out lo nibble in VCOUT
     mov ZP.R0, #$F0
     and A, #$01
-    beq ++
+    beq .SFXHi
     ;Mask out hi nibble in VCOUT
     mov ZP.R0, #$0F
-    ++
+    .SFXHi:
     mov A, ZP.CurrentChannel        ;Check if handling SFX or Music
     and A, #$07
     lsr A
@@ -744,8 +781,11 @@ Row_PlayPitch:
     jmp ReadRows
 
 Row_SetInstrument:
-    mov ZP.TempMemADDRL, #(InstrumentMemory)&$FF
-    mov ZP.TempMemADDRH, #(InstrumentMemory>>8)&$FF
+    mov A, InstPtr
+    mov Y, InstPtr+1
+    clrp
+    mov ZP.TempMemADDRL, A
+    mov ZP.TempMemADDRH, Y
     call GrabCommand
     mov X, ZP.CurrentChannel
     setp
@@ -852,15 +892,6 @@ Row_SetDelayCoeff:
     adc A, #$0F
     mov SPC_RegADDR, A
     call GrabCommand                ;Grab coeff value
-    mov SPC_RegData, A              ;Apply
-    jmp ReadRows
-
-Row_SetMasterVolume:
-    call GrabCommand                ;Grab L volume
-    mov SPC_RegADDR, #DSP_MVOL_L    ;Shove correct addr to get L master volume
-    mov SPC_RegData, A              ;Apply
-    call GrabCommand                ;Grab R volume
-    mov SPC_RegADDR, #DSP_MVOL_R    ;Shove correct addr to get R master volume
     mov SPC_RegData, A              ;Apply
     jmp ReadRows
 
@@ -1102,7 +1133,6 @@ SignedMul:
     ;       ZP.R2    |
     ;       ZP.R3   /
     ;
-
     ;                                   TODO:   Fix up code here to work for both subtunes _and_ SFX
 RecieveSub:
     push A
@@ -1113,30 +1143,28 @@ RecieveSub:
     bne .SkipSFXCheck                   ;if SFXRec != SFXRec before then new a new subtune will be selected
     inc ZP.FlagVal
     mov X, #$00                         ;Setup music ptr
-    mov ZP.R0, #SubtuneList&$FF
-    mov ZP.R1, #(SubtuneList>>8)&$FF
+    mov A, SubPtr
+    mov Y, SubPtr+1
+    mov ZP.R0, A
+    mov ZP.R1, Y
     mov A, Apu2                         ;if APU2 != 0 then we just assume it's playing a SFX, otherwise we assume
     beq +
-    mov ZP.R0, #SFXList&$FF             ;Setup SFX ptr
-    mov ZP.R1, #(SFXList>>8)&$FF
+    mov A, SfxListPtr
+    mov Y, SfxListPtr+1
+    mov ZP.R0, A             ;Setup SFX ptr
+    mov ZP.R1, Y
     mov X, #$00                         ;Set X to 0 for some pointer shenanigans
     mov A, (ZP.R0+X)
     mov ZP.R2, A
     incw ZP.R0
-    mov A, (ZP.R0+X)
+    mov A, (ZP.R0+X)                    ;Write pointer to subtune pointer list
     mov ZP.R3, A
-    mov ZP.R0, ZP.R2
+    mov ZP.R0, ZP.R2                    ;Return pointer address to ZP.R0 so we can write the correct SFX indices
     mov ZP.R1, ZP.R3
     mov X, #$10                         ;Offset address by $10 bytes
     +
 
-    mov A, Apu0                         ;Grab index into Subtune table
-    mov Y, #$10
-    mul YA                              ;Offset index by 16
-    addw YA, ZP.R0
-    movw ZP.R0, YA
-                                        ;Now ZP.R0 + ZP.R1 hold the pointer to the current SFX
-                                        ;Store away SFX address to the correct sequence addr
+    ;Store away SFX address to the correct sequence addr
     mov ZP.R2, #$0F
     mov Y, #$00
     .AddrLoop:
@@ -1154,15 +1182,17 @@ RecieveSub:
     ;Clear sleep timers
     mov A, X
     setc
-    sbc A, #$08
     lsr A
+    sbc A, #$08
     mov X, A
-    mov A, #$00
     mov Y, #$07
     setp
     -
+    mov A, #$00
     mov OP.ChannelSleepCounter+X, A
-    inc X
+    mov A, #$01
+    mov OP.OrderChangeFlag+1+Y, A
+    dec X
     dec Y
     bpl -
     clrp
@@ -1171,6 +1201,16 @@ RecieveSub:
     mov Apu1, ZP.SFXRec
     ;Skip SFX if Apu0 == 0
     .SkipSFXCheck:
+    pop Y
+    pop X
+    pop A
+    ret
+
+CheckProgrammerControls:
+    push A
+    push X
+    push Y
+
     pop Y
     pop X
     pop A
@@ -1214,20 +1254,21 @@ assert pc() == !CodeBuffer
 DirTable:                          ;These are just for debugging purposes
 ;Test sine+saw sample + dir page
 db $08,$0C,$08,$0C,$23,$0C,$23,$0C
-SampleSrc:                          ;These are just for debugging purposes
+
+SampleTable:                        ;These are just for debugging purposes
 db $84, $17, $45, $35, $22, $22, $31, $21, $10, $68, $01, $21, $0D, $01, $08, $0B, $C3, $3E, $5B, $09, $8B, $D7
 db $B1, $E0, $BC, $AF, $78
 db $B8, $87, $1F, $00, $F1, $0F, $1F, $00, $00, $8F, $E1, $13, $12, $2D, $52, $14, $10, $F7
 
 PitchTable:
     for t = 0..224
-        dw $0000
+        dw $0000+(!t*$0100)
     endfor
 
 OrderTable:
     .Tune0:
         .Ord0:
-            dw PatternMemory_Pat0
+            dw PatternMemory_Pat3
             dw PatternMemory_Pat1
             dw PatternMemory_Pat1
             dw PatternMemory_Pat1
@@ -1259,7 +1300,6 @@ PatternMemory:
     %SetDelayVolume($60,$60)
     %SetDelayFeedback($40)
     %SetSpeed($04)
-    %SetMasterVolume($7F, $7F)
     %SetChannelVolume($40, $40)
     %SetInstrument(0)
     %SetVib($00)
@@ -1292,23 +1332,21 @@ PatternMemory:
     %Sleep($04)
     %Goto(0)
     .Pat3:
-    %SetMasterVolume($7F, $7F)
     %SetChannelVolume($60, $60)
     %SetInstrument($00)
     %SetSpeed($04)
-    %PlayNote($00)
-    %Sleep($06)
-    %PlayNote($01)
-    %Sleep($06)
     %PlayNote($02)
-    %Sleep($06)
-    %PlayNote($03)
     %Sleep($06)
     %PlayNote($04)
     %Sleep($06)
+    %PlayNote($08)
+    %Sleep($06)
+    %PlayNote($10)
+    %Sleep($06)
+    %PlayNote($20)
+    %Sleep($06)
     %Goto($01)
 
-;For some reason the sequence addr returns the pointer address, not the value from the addr
 SfxTable:
     .SFX_Null:
         dw SfxPat_Null
@@ -1379,7 +1417,6 @@ InstrumentMemory:
 %WriteInstrument($01, $FF, $80, $7F, %00000000)
 %WriteInstrument($01, $FF, $80, $7F, %00000000)
 %WriteInstrument($00, $FF, $80, $93, %00000000)  ;Test SFX
-.EndOfInstrument:
 
 Engine_End:
 

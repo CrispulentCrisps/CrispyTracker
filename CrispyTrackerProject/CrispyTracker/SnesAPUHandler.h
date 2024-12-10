@@ -80,6 +80,7 @@ enum Region {
 
 class SnesAPUHandler
 {
+
 public:
     SNES_SPC* Spc = spc_new();
     spc_dsp_t* Dsp = spc_dsp_new();
@@ -139,6 +140,8 @@ public:
     uint8_t KONState;
     uint8_t KOFState;
 
+    uint16_t SPCPtr = DATA_START;
+    
     void APU_Startup();
     void APU_Update(spc_sample_t* Output, int BufferSize);
     void APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int ypos);
@@ -147,6 +150,8 @@ public:
     void APU_Process_Effects(Channel* ch, Instrument* inst, int ypos, int& speed, int& patindex, int currenttick);
 
     void APU_Kill();
+    void SPCWrite(size_t bytes);
+    void WriteCommand(Command com);
     void APU_Set_Sample_Memory(std::vector<Sample>& samp);
     void APU_Set_Sample_Directory(std::vector<Sample>& samp);
     void APU_Evaluate_BRR_Loop(Sample* sample, int LoopPoint);

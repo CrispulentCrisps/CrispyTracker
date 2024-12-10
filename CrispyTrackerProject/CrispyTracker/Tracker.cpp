@@ -364,6 +364,7 @@ void Tracker::MenuBar()
 
 	Text("	|	%.3f ms/frame (%.1f FPS)", 1000.0 / (ImGui::GetIO().Framerate), (ImGui::GetIO().Framerate));
 	Text(VERSION.c_str());
+	Text(ColumnText(CursorPos).c_str());
 	EndMainMenuBar();
 
 }
@@ -750,7 +751,7 @@ void Tracker::Channel_View()
 		if (BeginTable("ChannelView", 9, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInner, ImVec2(GetWindowWidth() * .9 + (TextSize * 8), 0)) != NULL)
 		{
 			string ind;
-			ImVec2 RowVec = ImVec2((GetWindowWidth() / 9.0) / 6.0, (double)TextSize - (TextSize / 3.0));
+			ImVec2 RowVec = ImVec2(0, (double)TextSize - (TextSize / 3.0));
 			//Actual pattern data
 			if (ImGui::TableNextColumn()) {
 				// This index is for each individual channel on the snes
@@ -789,17 +790,18 @@ void Tracker::Channel_View()
 						else if (j > -1)
 						{
 							//Channel
-							//the *12 is for the char amount + 1 for spacing
-							ImVec2 sizevec = ImVec2(TextSize * 9, RowVec.y);
-							if (BeginTable("RowView", 5, TABLE_FLAGS, sizevec))
+							ImVec2 sizevec = ImVec2(GetWindowWidth() / 9.0, RowVec.y);
+							if (BeginTable("RowView", MaxSubcolumn, TABLE_FLAGS, sizevec))
 							{
 								ImVec2 NoteSize = ImVec2(TextSize * 1.75, RowVec.y);
-								ImVec2 MiscSize = ImVec2(TextSize, RowVec.y);
-								TableSetupColumn("note", ImGuiTableColumnFlags_WidthFixed, 0.0);
-								TableSetupColumn("vol", ImGuiTableColumnFlags_WidthFixed, 0.0);
-								TableSetupColumn("inst", ImGuiTableColumnFlags_WidthFixed, 0.0);
-								TableSetupColumn("effe", ImGuiTableColumnFlags_WidthFixed, 0.0);
-								TableSetupColumn("val", ImGuiTableColumnFlags_WidthFixed, 0.0);
+								ImVec2 MiscSize = ImVec2(TextSize * 0.95, RowVec.y);
+								TableSetupColumn("note", ImGuiTableColumnFlags_WidthFixed,	0.0);
+								TableSetupColumn("vol", ImGuiTableColumnFlags_WidthFixed,	0.0);
+								TableSetupColumn("inst", ImGuiTableColumnFlags_WidthFixed,	0.0);
+								TableSetupColumn("effe", ImGuiTableColumnFlags_WidthFixed,	0.0);
+								TableSetupColumn("val", ImGuiTableColumnFlags_WidthFixed,	0.0);
+								TableSetupColumn("effe2", ImGuiTableColumnFlags_WidthFixed, 0.0);
+								TableSetupColumn("val2", ImGuiTableColumnFlags_WidthFixed,	0.0);
 								if (ImGui::TableNextColumn()) 
 								{
 									//Row Highlighting
@@ -922,6 +924,42 @@ void Tracker::Channel_View()
 									if (Selectable(Channels[i].Effectvalue(j).c_str(), IsPoint && CursorPos == VALUE, ImGuiSelectableFlags_SelectOnClick, MiscSize))
 									{
 										CursorPos = VALUE;
+										CursorX = i;
+										CursorY = j;
+										SetScrollY(ScrollValue());
+									}
+									ImGui::TableNextColumn();
+
+									if (IsWithinSelection(i, j, EFFECT2))
+									{
+										TableSetBgColor(ImGuiTableBgTarget_CellBg, SelectionBoxCol);
+									}
+									else
+									{
+										TableSetBgColor(ImGuiTableBgTarget_CellBg, col);
+									}
+									if (Selectable(Channels[i].EffectView(j).c_str(), IsPoint && CursorPos == EFFECT2, ImGuiSelectableFlags_SelectOnClick, MiscSize))
+									{
+										CursorPos = EFFECT2;
+										CursorX = i;
+										CursorY = j;
+										SetScrollY(ScrollValue());
+									}
+									PopID();
+									PushID(IDOffset + i + (j * 40) + 4);
+									ImGui::TableNextColumn();
+
+									if (IsWithinSelection(i, j, VALUE2))
+									{
+										TableSetBgColor(ImGuiTableBgTarget_CellBg, SelectionBoxCol);
+									}
+									else
+									{
+										TableSetBgColor(ImGuiTableBgTarget_CellBg, col);
+									}
+									if (Selectable(Channels[i].Effectvalue(j).c_str(), IsPoint && CursorPos == VALUE2, ImGuiSelectableFlags_SelectOnClick, MiscSize))
+									{
+										CursorPos = VALUE2;
 										CursorX = i;
 										CursorY = j;
 										SetScrollY(ScrollValue());
@@ -1722,6 +1760,38 @@ void Tracker::Export_View()
 
 void Tracker::EffectsText(int effect)
 {
+
+}
+
+string Tracker::ColumnText(int column)
+{
+	switch (column)
+	{
+	case 0:
+		return "	|	Note column";
+		break;
+	case 1:
+		return "	|	Instrument column";
+		break;
+	case 2:
+		return "	|	Volume column";
+		break;
+	case 3:
+		return "	|	Effects column 1";
+		break;
+	case 4:
+		return "	|	Effects Value column 1";
+		break;
+	case 5:
+		return "	|	Effects column 2";
+		break;
+	case 6:
+		return "	|	Effects Value column 2";
+		break;
+	default:
+		return "";
+		break;
+	}
 }
 
 //Core updates to the tracker state
@@ -1751,6 +1821,8 @@ void Tracker::RunTracker()
 				Channels[i].Rows[j].volume =		StoragePatterns[currentindex].SavedRows[j].volume;
 				Channels[i].Rows[j].effect =		StoragePatterns[currentindex].SavedRows[j].effect;
 				Channels[i].Rows[j].effectvalue =	StoragePatterns[currentindex].SavedRows[j].effectvalue;
+				Channels[i].Rows[j].effect2 =		StoragePatterns[currentindex].SavedRows[j].effect2;
+				Channels[i].Rows[j].effectvalue2 =	StoragePatterns[currentindex].SavedRows[j].effectvalue2;
 			}
 		}
 	}
@@ -1844,8 +1916,8 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 				SelectionBoxX2 = x;
 				SelectionBoxY1 = y;
 				SelectionBoxY2 = y;
-				SelectionBoxSubX1 = CursorPos + (x * 5);
-				SelectionBoxSubX2 = CursorPos + (x * 5);
+				SelectionBoxSubX1 = CursorPos + (x * MaxSubcolumn);
+				SelectionBoxSubX2 = CursorPos + (x * MaxSubcolumn);
 				BoxSelected = true;
 			}
 
@@ -1945,16 +2017,18 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 		{
 			if (BoxSelected && CurrentKey == GLFW_KEY_DELETE)
 			{
-				for (int z = SelectionBoxSubX1 + (SelectionBoxX1 * 5); z < (SelectionBoxSubX2 + (SelectionBoxX2 * 5))+1; z++)
+				for (int z = SelectionBoxSubX1 + (SelectionBoxX1 * MaxSubcolumn); z < (SelectionBoxSubX2 + (SelectionBoxX2 * MaxSubcolumn))+1; z++)
 				{
 					for (int w = SelectionBoxY1; w < SelectionBoxY2+1; w++)
 					{
-						if (z % 5 == NOTE) Channels[(z / 5)].Rows[w].note = MAX_VALUE;
-						if (z % 5 == INSTR) Channels[(z / 5)].Rows[w].instrument = MAX_VALUE;
-						if (z % 5 == VOLUME) Channels[(z / 5)].Rows[w].volume = MAX_VALUE;
-						if (z % 5 == EFFECT) Channels[(z / 5)].Rows[w].effect = MAX_VALUE;
-						if (z % 5 == VALUE) Channels[(z / 5)].Rows[w].effectvalue = MAX_VALUE;
-						ChangePatternData(z / 5, w);
+						if (z % MaxSubcolumn == NOTE) Channels[(z / 5)].Rows[w].note = MAX_VALUE;
+						if (z % MaxSubcolumn == INSTR) Channels[(z / 5)].Rows[w].instrument = MAX_VALUE;
+						if (z % MaxSubcolumn == VOLUME) Channels[(z / 5)].Rows[w].volume = MAX_VALUE;
+						if (z % MaxSubcolumn == EFFECT) Channels[(z / 5)].Rows[w].effect = MAX_VALUE;
+						if (z % MaxSubcolumn == VALUE) Channels[(z / 5)].Rows[w].effectvalue = MAX_VALUE;
+						if (z % MaxSubcolumn == EFFECT2) Channels[(z / 5)].Rows[w].effect2 = MAX_VALUE;
+						if (z % MaxSubcolumn == VALUE2) Channels[(z / 5)].Rows[w].effectvalue2 = MAX_VALUE;
+						ChangePatternData(z / MaxSubcolumn, w);
 					}
 
 				}
@@ -1962,16 +2036,18 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 			}
 			else if (BoxSelected && CurrentKey == GLFW_KEY_C && CurrentMod == GLFW_MOD_CONTROL)
 			{
-				for (int z = SelectionBoxSubX1 + (SelectionBoxX1 * 5); z < (SelectionBoxSubX2 + (SelectionBoxX2 * 5)) + 1; z++)
+				for (int z = SelectionBoxSubX1 + (SelectionBoxX1 * MaxSubcolumn); z < (SelectionBoxSubX2 + (SelectionBoxX2 * MaxSubcolumn)) + 1; z++)
 				{
 					for (int w = SelectionBoxY1; w < SelectionBoxY2 + 1; w++)
 					{
-						if (z % 5 == NOTE) Channels[(z / 5)].Rows[w].note = MAX_VALUE;
-						if (z % 5 == INSTR) Channels[(z / 5)].Rows[w].instrument = MAX_VALUE;
-						if (z % 5 == VOLUME) Channels[(z / 5)].Rows[w].volume = MAX_VALUE;
-						if (z % 5 == EFFECT) Channels[(z / 5)].Rows[w].effect = MAX_VALUE;
-						if (z % 5 == VALUE) Channels[(z / 5)].Rows[w].effectvalue = MAX_VALUE;
-						ChangePatternData(z / 5, w);
+						if (z % MaxSubcolumn == NOTE)		Channels[(z / MaxSubcolumn)].Rows[w].note = MAX_VALUE;
+						if (z % MaxSubcolumn == INSTR)		Channels[(z / MaxSubcolumn)].Rows[w].instrument = MAX_VALUE;
+						if (z % MaxSubcolumn == VOLUME)		Channels[(z / MaxSubcolumn)].Rows[w].volume = MAX_VALUE;
+						if (z % MaxSubcolumn == EFFECT)		Channels[(z / MaxSubcolumn)].Rows[w].effect = MAX_VALUE;
+						if (z % MaxSubcolumn == VALUE)		Channels[(z / MaxSubcolumn)].Rows[w].effectvalue = MAX_VALUE;
+						if (z % MaxSubcolumn == EFFECT2)	Channels[(z / MaxSubcolumn)].Rows[w].effect2 = MAX_VALUE;
+						if (z % MaxSubcolumn == VALUE2)		Channels[(z / MaxSubcolumn)].Rows[w].effectvalue2 = MAX_VALUE;
+						ChangePatternData(z / MaxSubcolumn, w);
 					}
 
 				}
@@ -2095,6 +2171,42 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 						}
 					}
 					break;
+				case EFFECT2:
+					for (int i = 0; i < 16; i++)
+					{
+						if (CurrentKey == VolInput[i])
+						{
+							Channels[x].Rows[y].effect2 = Channels[x].EvaluateHexInput(i, y, MAX_EFFECT, EFFECT2);
+							ChangePatternData(x, y);
+							break;
+						}
+						else if (CurrentKey == GLFW_KEY_DELETE)
+						{
+							Channels[x].Rows[y].effect2 = MAX_VALUE;
+							CursorY += Step;
+							ChangePatternData(x, y);
+							break;
+						}
+					}
+					break;
+				case VALUE2:
+					for (int i = 0; i < 16; i++)
+					{
+						if (CurrentKey == VolInput[i])
+						{
+							Channels[x].Rows[y].effectvalue2 = Channels[x].EvaluateHexInput(i, y, MAX_EFFECT_VALUE, VALUE2);
+							ChangePatternData(x, y);
+							break;
+						}
+						else if (CurrentKey == GLFW_KEY_DELETE)
+						{
+							Channels[x].Rows[y].effectvalue2 = MAX_VALUE;
+							CursorY += Step;
+							ChangePatternData(x, y);
+							break;
+						}
+					}
+					break;
 				}
 				if (CursorY >= TrackLength)
 				{
@@ -2118,7 +2230,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 	{
 		SelectionBoxX2 = 7;
 	}
-	if (CurPos > VALUE)
+	if (CurPos > VALUE2)
 	{
 		CursorX ++;
 		CursorPos = NOTE;
@@ -2126,7 +2238,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 	else if (CurPos < 0  && CursorX > 0)
 	{
 		CursorX--;
-		CursorPos = VALUE;
+		CursorPos = VALUE2;
 	}
 
 	if (CursorY < 0)
@@ -2144,10 +2256,10 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 		CurPos = 0;
 		CursorX = 0;
 	}
-	else if (CursorPos > VALUE && CursorX == 7)
+	else if (CursorPos > VALUE2 && CursorX == 7)
 	{
-		CursorPos = VALUE;
-		CurPos = VALUE;
+		CursorPos = VALUE2;
+		CurPos = VALUE2;
 		CursorX = 7;
 	}
 
@@ -2290,6 +2402,8 @@ void Tracker::UpdatePatternIndex(int x, int y)//For when you are switching patte
 		Channels[x].Rows[i].volume = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].volume;
 		Channels[x].Rows[i].effect = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].effect;
 		Channels[x].Rows[i].effectvalue = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].effectvalue;
+		Channels[x].Rows[i].effect2 = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].effect2;
+		Channels[x].Rows[i].effectvalue2 = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].effectvalue2;
 	}
 }
 
@@ -2305,6 +2419,8 @@ void Tracker::UpdateAllPatterns()
 			Channels[x].Rows[i].volume = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].volume;
 			Channels[x].Rows[i].effect = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].effect;
 			Channels[x].Rows[i].effectvalue = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].effectvalue;
+			Channels[x].Rows[i].effect2 = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].effect2;
+			Channels[x].Rows[i].effectvalue2 = StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[i].effectvalue2;
 		}
 	}
 }
@@ -2314,7 +2430,7 @@ bool Tracker::IsWithinSelection(int xin, int yin, int suboff)
 {
 	return BoxSelected &&
 		(yin >= SelectionBoxY1 && yin <= SelectionBoxY2) &&
-		((xin * 5) + CursorPos >= SelectionBoxSubX1 && (xin * 5) + suboff <= SelectionBoxSubX2);
+		((xin * MaxSubcolumn) + CursorPos >= SelectionBoxSubX1 && (xin * MaxSubcolumn) + suboff <= SelectionBoxSubX2);
 }
 
 void Tracker::ChangePatternData(int x, int y)
@@ -2329,6 +2445,8 @@ void Tracker::ChangePatternData(int x, int y)
 	orders[x][SelectedPattern].SavedRows[y].volume = Channels[x].Rows[y].volume;
 	orders[x][SelectedPattern].SavedRows[y].effect = Channels[x].Rows[y].effect;
 	orders[x][SelectedPattern].SavedRows[y].effectvalue = Channels[x].Rows[y].effectvalue;
+	orders[x][SelectedPattern].SavedRows[y].effect2 = Channels[x].Rows[y].effect2;
+	orders[x][SelectedPattern].SavedRows[y].effectvalue2 = Channels[x].Rows[y].effectvalue2;
 
 	//Put data into channel
 	StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[y].note = Channels[x].Rows[y].note;
@@ -2337,6 +2455,8 @@ void Tracker::ChangePatternData(int x, int y)
 	StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[y].volume = Channels[x].Rows[y].volume;
 	StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[y].effect = Channels[x].Rows[y].effect;
 	StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[y].effectvalue = Channels[x].Rows[y].effectvalue;
+	StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[y].effect2 = Channels[x].Rows[y].effect2;
+	StoragePatterns[orders[x][SelectedPattern].Index].SavedRows[y].effectvalue2 = Channels[x].Rows[y].effectvalue2;
 }
 
 void Tracker::UpdateSettings(int w)
@@ -2600,6 +2720,8 @@ void Tracker::ApplyLoad()
 			pat.SavedRows[y].volume = curpat.SavedRows[y].volume;
 			pat.SavedRows[y].effect = curpat.SavedRows[y].effect;
 			pat.SavedRows[y].effectvalue = curpat.SavedRows[y].effectvalue;
+			pat.SavedRows[y].effect2 = curpat.SavedRows[y].effect2;
+			pat.SavedRows[y].effectvalue2 = curpat.SavedRows[y].effectvalue2;
 		}
 		StoragePatterns.push_back(pat);
 	}
@@ -2749,19 +2871,6 @@ void Tracker::ParseTrack()
 	ComList.clear();
 	for (int x = 0; x < StoragePatterns.size(); x++)
 	{
-		for (int y = 0; y < 256; y++)
-		{
-			Command com = Command();
-			Row r = StoragePatterns[x].SavedRows[y];
-			if (r.note != NULL_COMMAND)
-			{
-				if (r.note < NULL_COMMAND)
-				{
-					com.type == Com_PlayNote;
-					com.val = r.note;
-				}
-			}
-		}
 	}
 }
 //Generates assosiated data from the commands list to be put into the emulator memory

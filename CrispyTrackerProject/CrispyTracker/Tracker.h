@@ -233,7 +233,11 @@ public:
 		VOLUME =	2,
 		EFFECT =	3,
 		VALUE =		4,
+		EFFECT2 =	5,
+		VALUE2 =	6,
 	};
+
+	const int MaxSubcolumn = 7;
 
 	int SongLength = 1;
 	int Maxindex = 8;
@@ -293,6 +297,7 @@ public:
 	void UpdateFont();
 	void Export_View();
 	void EffectsText(int effect);
+	string ColumnText(int column);
 	//
 
 	void RunTracker(); //For when the tracker is playing the tune

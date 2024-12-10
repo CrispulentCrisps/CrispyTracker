@@ -22,46 +22,45 @@
 #define FILE_ERORR_03 "AUDIO FILE LESS THAN 16 SAMPLES LARGE"
 #define FILE_ERORR_04 "SAMPLE TOO LARGE TO FIT INTO DSP MEMORY"
 
+#define DRIVER_INSTPTR		(uint16_t)	0x01E0	//Pointer to [Instrument	] data
+#define DRIVER_ORDERPTR		(uint16_t)	0x01E2	//Pointer to [Order			] data
+#define DRIVER_SFXLISTPTR	(uint16_t)	0x01E4	//Pointer to [SFX Subtunes	] data
+#define DRIVER_SFXPATPTR	(uint16_t)	0x01E6	//Pointer to [SFX Patterns	] data
+#define DRIVER_SUBPTR		(uint16_t)	0x01E8	//Pointer to [Music Subtunes] data
+#define DRIVER_PITCHPTR		(uint16_t)	0x01EA	//Pointer to [PitchTable	] data
+#define DRIVER_START		(uint16_t)	0x0200	//Where driver starts in memory
+#define DATA_START			(uint16_t)	0x0C00	//Where dynamic data starts for the driver to interpret
+
 //Tracker command bytes for SPC export
 enum ComType
 {
-	Com_SetSpeed,
-	Com_Sleep,
-	Com_Goto,
-	Com_Break,
-	Com_PlayNote,
-	Com_PlayPitch,
-	Com_SetInstrument,
-	Com_SetFlagValue,
-	Com_EchoDelay,
-	Com_EchoVolume,
-	Com_EchoFeedback,
-	Com_EchoCoef1,
-	Com_EchoCoef2,
-	Com_EchoCoef3,
-	Com_EchoCoef4,
-	Com_EchoCoef5,
-	Com_EchoCoef6,
-	Com_EchoCoef7,
-	Com_EchoCoef8,
-	Com_MasterVol,
-	Com_ChannelVol,
-	Com_SetArp,
-	Com_SetPort,
-	Com_SetVibrato,
-	Com_SetTremo,
-	Com_SetVolSlide,
-	Com_SetPanbrello,
-	Com_ReleaseNote,
-	Com_VirtSpeed,
-	Com_VirtBreak,
-	Com_VirtStop,
+	com_SetSpeed,			//Sets tick threshold for track | $00
+	com_Sleep,				//Sleeps for S amount of rows	| $01
+	com_Goto,				//Break to new order			| $02
+	com_Break,				//Goto next order				| $03
+	com_PlayPitch,			//Plays absolute pitch value	| $04
+	com_SetInstrument,		//Set instrument index			| $05
+	com_SetFlagValue,		//Set FLG register				| $06
+	com_EchoDelay,			//Set echo delay value			| $07
+	com_EchoVolume,			//Set echo L / R volume			| $08
+	com_EchoFeedback,		//Set echo feedback value		| $09
+	com_EchoCoeff,			//Set echo coeffecients			| $0A - $11
+	com_ChannelVol,			//Set individual channel volume | $12
+	com_SetArp,				//Set Arpeggio effect value		| $13
+	com_SetPort,			//Set Portamento effect value	| $14
+	com_SetVibrato,			//Set Vibrato effect value		| $15
+	com_SetTremo,			//Set Tremolando effect value	| $16
+	com_SetVolSlide,		//Set Volume Slide effect value | $17
+	com_SetPanbrello,		//Set Panbrello effect value	| $18
+	com_ReleaseNote,		//Set KOFF for given channel	| $19
+	com_Stop,				//Set STOP flag for tune		| $1A
+	com_PlayNote,			//Play pitch from table         | $20-FF 
 };
 
 typedef struct Command 
 {
 	ComType type;
-	unsigned short val;
+	size_t val;
 };
 
 typedef struct Row {
@@ -71,6 +70,8 @@ typedef struct Row {
 	unsigned short volume = NULL_COMMAND;
 	unsigned short effect = NULL_COMMAND;
 	unsigned short effectvalue = NULL_COMMAND;
+	unsigned short effect2 = NULL_COMMAND;
+	unsigned short effectvalue2 = NULL_COMMAND;
 };
 
 enum ExportTypes {
