@@ -106,7 +106,10 @@ LoadDriver:
 .CheckIfTransferDone
     cmp.w HW_APUI00                     ;Check if we have got the right value into APU-0
     bne .CheckIfTransferDone
-    
+
+    sep #$20
+    lda.b #$80
+    sta.w HW_NMITIMEN
     sep #$20                    ;Set A to 8bit
     stz.w HW_APUI00
     stz.w HW_APUI01
@@ -115,17 +118,46 @@ LoadDriver:
     lda.b #$01
     sta.w MZP.SFXRec
     
+SendTune:
+    stz.w MZP.NMIDone
+    jsr PlayMusic
+    
 MainLoop:
-    lda.b #$80
-    sta.w HW_NMITIMEN
     -
+    lda.w MZP.NMIDone
+    bne SendTune
     bra -
 
 NMIDriverTest:
+    sep #$20
     inc.w MZP.SFXTimer
     lda.w MZP.SFXTimer
-    and #$80
+    bit #$80
     beq .SkipTimer
+    inc.w MZP.NMIDone
+    stz.w MZP.SFXTimer
+    jsr PlaySFX
+    .SkipTimer:
+    rts
+
+PlayMusic:
+    lda.w HW_APUI01
+    cmp.w MZP.SFXRec
+    bne +
+    lda.b #$00
+    sta.w HW_APUI00     ;Subtune index
+    lda.b #$00
+    sta.w HW_APUI02     ;Audio type [SFX]
+    lda.w MZP.SFXRec
+    sta.w HW_APUI01
+    inc.w MZP.SFXRec
+    +
+    rts
+
+PlaySFX:
+    lda.w HW_APUI01
+    cmp.w MZP.SFXRec
+    bne +
     lda.b #$00
     sta.w HW_APUI00     ;Subtune index
     lda.b #$01
@@ -133,8 +165,7 @@ NMIDriverTest:
     lda.w MZP.SFXRec
     sta.w HW_APUI01
     inc.w MZP.SFXRec
-    stz.w MZP.SFXTimer
-    .SkipTimer:
+    +
     rts
 
 NMIHandler:

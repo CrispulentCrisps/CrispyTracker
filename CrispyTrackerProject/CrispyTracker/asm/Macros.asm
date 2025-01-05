@@ -29,7 +29,7 @@ struct ZP $00
 .TempPitchProcess:          skip 2                  ;Holds the pitch
 
 .CurrentChannel:            skip 1                  ;Current channel we are working with
-
+.InjectionChannel:          skip 1                  ;Current channel we're injecting into
 ;Effects
 .SineIndexVib:              skip 16                 ;Array of current indexes for sine tables
 .SineIndexTrem:             skip 16                 ;Array of current indexes for sine tables
@@ -47,10 +47,9 @@ struct ZP $00
 
 ;SFX Specific
 .VCTickThresh:              skip 8                  ;Tick thresholders for SFX
-.VCOut:                     skip 4                  ;8 nibbles that determine which SFX is going through which channel. If a nibble is F we assume it's not outputting to any channel
+.VCOut:                     skip 8                  ;8 bytes that determine which SFX is going through which channel. [0 = OFF, 1 = ON]
 
 ;General Tracker State
-.StopFlag                   skip 1                  ;Stops the track from progressing
 .TrackSettings:             skip 1                  ;Holds the track settings [refer to DriverRequirements.txt]
 endstruct
 
@@ -63,6 +62,7 @@ struct OP $0100
 .ChannelInstrumentIndex:    skip 16                 ;Array of Instrument indexes
 .ChannelPitches:            skip 32                 ;Array of pitch values in each channel
 .ChannelVolume:             skip 32                 ;Holds the channel master volume [goes across 16 bytes]
+.StopFlag:                  skip 9                  ;Flag to stop track from progressing
 endstruct
 
 InstPtr =                   $01E0

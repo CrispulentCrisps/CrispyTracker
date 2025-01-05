@@ -165,6 +165,7 @@ Effects list goes as:
 		- Master volume change 	[1]	//Changes the Master Volume L+R on the APU
 		- Set Channel Mask		[2]	//Sets bitfield for multi-channel controls
 		- Set Channel Volumes	[3]	//Sets channels to PORT3 value
+		- Set stop flag			[4]	//Sets the stop flag on for the current music track
 
 - Miscellaneous -
 	Settings byte:
