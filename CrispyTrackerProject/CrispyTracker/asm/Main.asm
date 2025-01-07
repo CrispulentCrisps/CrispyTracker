@@ -147,7 +147,7 @@ PlayMusic:
     lda.b #$00
     sta.w HW_APUI00     ;Subtune index
     lda.b #$00
-    sta.w HW_APUI02     ;Audio type [SFX]
+    sta.w HW_APUI02     ;Audio type [Music]
     lda.w MZP.SFXRec
     sta.w HW_APUI01
     inc.w MZP.SFXRec
@@ -158,7 +158,7 @@ PlaySFX:
     lda.w HW_APUI01
     cmp.w MZP.SFXRec
     bne +
-    lda.b #$00
+    lda.b #$01
     sta.w HW_APUI00     ;Subtune index
     lda.b #$01
     sta.w HW_APUI02     ;Audio type [SFX]

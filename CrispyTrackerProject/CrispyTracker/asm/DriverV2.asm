@@ -45,7 +45,7 @@ mov $0100+Y, A
 dec.b Y
 bne -
 
-mov ZP.TrackSettings, #$01     ;Set the track settings
+mov ZP.TrackSettings, #$00     ;Set the track settings
 
 ;Audio register reset routine
 mov A, #0
@@ -416,7 +416,7 @@ ProcessEffects:
     mov.b A, ZP.CurrentChannel
     asl A
     mov.b ZP.TempScratchMemH, A
-    mov.b X, ZP.TempScratchMemH
+    mov.b X, A
     setp
     mov.b A, OP.ChannelVolume+X
     clrp
@@ -434,10 +434,10 @@ ProcessEffects:
     adc.b A, ZP.TempVolumeProcess
     bvc .SkipLCorr                                      ;Overflow detection
     bmi .NegativeL                                      ;Check negative
-    mov.b A, #$80                                         ;Clamp output
+    mov.b A, #$80                                       ;Clamp output
     bra .SkipLCorr
     .NegativeL:
-    mov.b A, #$7F                                         ;Clamp output
+    mov.b A, #$7F                                       ;Clamp output
     .SkipLCorr:
     mov ZP.ChannelVolumeOutput, A
     ;R
@@ -445,10 +445,10 @@ ProcessEffects:
     adc.b A, ZP.TempVolumeProcess+1
     bvc .SkipRCorr                                      ;Overflow detection
     bmi .NegativeR                                      ;Check negative
-    mov.b A, #$80                                         ;Clamp output
+    mov.b A, #$80                                       ;Clamp output
     bra .SkipRCorr
     .NegativeR:
-    mov.b A, #$7F                                         ;Clamp output
+    mov.b A, #$7F                                       ;Clamp output
     .SkipRCorr:
     mov.b ZP.ChannelVolumeOutput+1, A
 
@@ -460,11 +460,10 @@ ProcessEffects:
     .SkipMono:
 
     ;Apply Volume
-    mov.b.b X, ZP.TempScratchMemH                           ;Grab Premult channel index
+    mov.b X, ZP.TempScratchMemH                           ;Grab Premult channel index
     mov.b Y, ZP.ChannelVolumeOutput                       ;Grab L output volume
     mov.b A, ZP.InjectionChannel                          ;Grab current channel
-    and.b A, #$07
-    xcn A                                               ;Swap nibbles to get correct channel addr
+    xcn A                                                 ;Swap nibbles to get correct channel addr
     mov.b SPC_RegADDR, A                                  ;Shove channel addr
     mov.b SPC_RegData, Y                                  ;Shove data in
     inc.b SPC_RegADDR                                     ;Inc address to get R volume
@@ -563,7 +562,7 @@ ReadPatterns:
     -                                          ;Loop point
     mov.b A, (ZP.TempMemADDRL)+Y               ;Indirectly shove addr value into A
     mov.b ZP.SequenceAddr+$10+Y, A             ;Copy value to sequence addr
-    dec.b Y                                      ;Decrement loop counter
+    dec.b Y                                    ;Decrement loop counter
     bpl -                                      ;Loop
     ret
 
@@ -736,9 +735,13 @@ Row_PlayNote:
 Row_PlayPitch:
     ;Pitch application
     call GrabCommand                ;Grab lo byte of the pitch
+    setp
     mov.b OP.ChannelPitches+X, A      ;Shove lo byte into pitch
+    clrp
     call GrabCommand                ;Grab hi byte of the pitch
+    setp
     mov.b OP.ChannelPitches+1+X, A    ;Shove hi byte into pitch
+    clrp
     .SetKOn:
     mov.b A, ZP.CurrentChannel        ;Check if handling SFX or Music
     and.b A, #$08
@@ -758,13 +761,12 @@ Row_PlayPitch:
     .GotoSFX:
     ;SFX flag on
     mov.b X, ZP.CurrentChannel            ;Grab index
-    mov A, #$0F
     mov ZP.VCOut-8+X, A                 ;Offset VCOUT by 8 beacause working with virtual channels
     jmp ReadRows
 
 Row_SetInstrument:
-    mov A, InstPtr
-    mov Y, InstPtr+1
+    mov.w A, InstPtr
+    mov.w Y, InstPtr+1
     clrp
     mov.b ZP.TempMemADDRL, A
     mov.b ZP.TempMemADDRH, Y
@@ -783,33 +785,20 @@ Row_SetInstrument:
     beq +
     jmp ReadRows
     +
-
     ;SCRN
     mov.b A, ZP.CurrentChannel            ;Grab current channel
-    xcn A                               ;XCN to get correct channel in memory
+    xcn A                                 ;XCN to get correct channel in memory
     or.b A, #$04                          ;Add 4 for correct nibble
     mov.b SPC_RegADDR, A                  ;SCRN
-    mov.b X, #0                           ;Reset X
+    mov.b Y, #$03
+    .ApplyInst:
+    mov.b X, #$00                         ;Reset X
     mov.b A, (ZP.TempMemADDRL+X)          ;Shove value into A
     mov.b SPC_RegData, A                  ;Apply
-    
-    ;ADSR1
-    incw ZP.TempMemADDRL                ;Increment
-    mov.b A, (ZP.TempMemADDRL+X)          ;Grab Value
-    inc.b SPC_RegADDR                     ;Inc address
-    mov.b SPC_RegData, A                  ;Apply
-    
-    ;ADSR2
-    incw ZP.TempMemADDRL                ;Increment
-    mov A, (ZP.TempMemADDRL+X)          ;Grab Value
-    inc.b SPC_RegADDR                     ;Inc address
-    mov.b SPC_RegData, A                  ;Apply
-    
-    ;GAIN
-    incw ZP.TempMemADDRL                ;Increment
-    mov.b A, (ZP.TempMemADDRL+X)          ;Grab Value
-    inc.b SPC_RegADDR                     ;Inc address
-    mov.b SPC_RegData, A                  ;Apply
+    incw ZP.TempMemADDRL
+    inc.b SPC_RegADDR
+    dec Y
+    bpl .ApplyInst
 
     ;PMON, EON, NON, Channel ON
     incw ZP.TempMemADDRL                ;Increment
@@ -1431,9 +1420,9 @@ SfxPat:
     %SetSpeed($02)
     %SetChannelVolume($99, $99)
     %SetInstrument($0)
-    %PlayPitch($2200)
+    %PlayNote($05)
     %Sleep($10)
-    %PlayPitch($2400)
+    %PlayNote($05)
     %Stop()
     .Sfx2_0:
     %SetSpeed($03)

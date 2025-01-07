@@ -93,10 +93,10 @@ struct RC $FF00
 .SetTremo                   skip 1  ;Set Tremolando effect value    |   $16     
 .SetVolSlide                skip 1  ;Set Volume Slide effect value  |   $17     
 .SetPanbrello               skip 1  ;Set Panbrello effect value     |   $18     
-.ReleaseNote                skip 1  ;Set KOFF for given channel     |   $19     
-.Stop                       skip 1  ;Set STOP flag for tune         |   $1A     
-.NanBuff                    skip 5  ;Buffer for future commands     |   $1B-1F 
-.PlayNote                   skip 1  ;Play pitch from table          |   $20-FF 
+.ReleaseNote                skip 1  ;Set KOFF for given channel     |   $19
+.Stop                       skip 1  ;Set STOP flag for tune         |   $1A
+.NanBuff                    skip 5  ;Buffer for future commands     |   $1B-1F
+.PlayNote                   skip 1  ;Play pitch from table          |   $20-FF
 endstruct
 
 ; [bm] means the Bitmask applies to given channels
