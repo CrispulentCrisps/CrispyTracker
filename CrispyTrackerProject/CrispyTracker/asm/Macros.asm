@@ -153,8 +153,6 @@ endmacro
     ;       GAIN
     ;       EFX state [PMON, NON, EON]
     ;       KON
-    ;       LVOL
-    ;       RVOL
     ;
 macro WriteInstrument(AD1, AD2, G, ES, SI)
 db <AD1>    ;ADSR1

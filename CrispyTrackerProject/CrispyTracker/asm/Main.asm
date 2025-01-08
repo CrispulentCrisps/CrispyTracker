@@ -117,11 +117,15 @@ LoadDriver:
     stz.w HW_APUI03
     lda.b #$01
     sta.w MZP.SFXRec
+    stz.w MZP.MusicPlayed
     
 SendTune:
     stz.w MZP.NMIDone
+    lda.w MZP.MusicPlayed
+    bne +
     jsr PlayMusic
-    
+    +
+
 MainLoop:
     -
     lda.w MZP.NMIDone
@@ -130,11 +134,11 @@ MainLoop:
 
 NMIDriverTest:
     sep #$20
+    inc.w MZP.NMIDone
     inc.w MZP.SFXTimer
     lda.w MZP.SFXTimer
     bit #$80
     beq .SkipTimer
-    inc.w MZP.NMIDone
     stz.w MZP.SFXTimer
     jsr PlaySFX
     .SkipTimer:
@@ -151,6 +155,8 @@ PlayMusic:
     lda.w MZP.SFXRec
     sta.w HW_APUI01
     inc.w MZP.SFXRec
+    lda.b #$01
+    sta.w MZP.MusicPlayed
     +
     rts
 
@@ -181,7 +187,7 @@ NMIHandler:
                                 ;First half of the header
 org $FFB0                       ;Goto FFB0
 db "00"                         ;ROM Region
-db "CTTC"                       ;Unique code for identification
+db "CAUD"                       ;Unique code for identification
 fill 6                          ;Fill 6 bytes
 db 0,0,0,0
                                 ;Second half of header

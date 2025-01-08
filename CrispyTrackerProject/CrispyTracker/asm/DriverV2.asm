@@ -211,10 +211,10 @@ ProcessEffects:
     mov.b ZP.CurrentChannel, #$0F
     +
     .EffectsLoop:
-    mov.b ZP.TempPitchProcess,    #0
-    mov.b ZP.TempPitchProcess+1,  #0
-    mov.b ZP.TempVolumeProcess,   #0
-    mov.b ZP.TempVolumeProcess+1, #0
+    mov.b ZP.TempPitchProcess,    #$00
+    mov.b ZP.TempPitchProcess+1,  #$00
+    mov.b ZP.TempVolumeProcess,   #$00
+    mov.b ZP.TempVolumeProcess+1, #$00
     mov.b A, ZP.CurrentChannel        ;Grab channel index
     asl A                           ;Double since we are working with 2 bytes
     mov.b ZP.TempScratchMemH, A       ;Return
@@ -413,6 +413,59 @@ ProcessEffects:
     ;       Mixing & Output     ;
     ;---------------------------;
     .OutputAudio:
+    ;Grab current instrument
+    mov.w A, InstPtr
+    mov.w Y, InstPtr+1
+    clrp
+    mov.b ZP.TempMemADDRL, A
+    mov.b ZP.TempMemADDRH, Y
+    mov.b X, ZP.CurrentChannel
+    setp
+    mov.b A, OP.ChannelInstrumentIndex+X
+    clrp
+    mov.b Y, #!InstWidth
+    mul YA
+    addw.b YA, ZP.TempMemADDRL
+    movw.b ZP.TempMemADDRL, YA
+    mov.b A, ZP.InjectionChannel
+    xcn
+    or.b A, #$04
+    mov.b SPC_RegADDR, A
+    mov.b X, #$00
+    mov Y, #$03
+
+    .InstWrite:
+    mov.b A, (ZP.TempMemADDRL+X)
+    mov.b SPC_RegData, A
+    inc.b SPC_RegADDR
+    incw.b ZP.TempMemADDRL
+    dec Y
+    bpl .InstWrite
+
+    ;PMON, EON, NON, Channel ON
+    mov.b X, ZP.InjectionChannel              ;Grab current channel
+    mov.w A, BitmaskTable+X                 ;Grab bitfield
+    eor.b A, #$FF                           ;Invert current bit
+    mov.b ZP.TempScratchMem, A              ;Shove into temp memory
+    mov.b SPC_RegADDR, #DSP_PMON            ;Shove PMON into regaddr
+    mov.b X, #$00                           ;Reset X
+    mov.b ZP.TempScratchMemH, #$01          ;Shove 1 into temp memory
+    mov.b Y, #$03                           ;Initialise loop counter
+
+    .RestartLoop:
+    and.b SPC_RegData, ZP.TempScratchMem    ;AND the current bitfield with inverted bitmask table
+    mov.b A, (ZP.TempMemADDRL+X)            ;Grab effects state
+    and.b A, ZP.TempScratchMemH             ;AND effects state and current comparison bit
+    beq .SkipAppl                           
+    eor.b ZP.TempScratchMem, #$FF           ;Undo inversion in scratch memory
+    or.b SPC_RegData, ZP.TempScratchMem     ;Combine the cleared bit with the comparison bit
+    eor.b ZP.TempScratchMem, #$FF           ;Reinvert the channel bit
+    .SkipAppl:  
+    asl.b ZP.TempScratchMemH                ;LShift comparison bit
+    adc.b SPC_RegADDR, #$10                 ;Add on $10 to the address to get to other bitfields
+    dec.b Y                                 ;Dec loop counter
+    bne .RestartLoop
+
     mov.b A, ZP.CurrentChannel
     asl A
     mov.b ZP.TempScratchMemH, A
@@ -743,16 +796,19 @@ Row_PlayPitch:
     mov.b OP.ChannelPitches+1+X, A    ;Shove hi byte into pitch
     clrp
     .SetKOn:
-    mov.b A, ZP.CurrentChannel        ;Check if handling SFX or Music
-    and.b A, #$08
-    bne .GotoSFX
-    ;Music
     ;KON State
-    mov.b X, ZP.CurrentChannel            ;Grab current channel
+    mov.b A, ZP.CurrentChannel            ;Grab current channel
+    and.b A, #$07
+    mov X, A
     mov.w A, BitmaskTable+X               ;Get bitmask index via X
     mov.b ZP.TempScratchMem, A            ;Shove into scratch memory for ORing
     mov.b SPC_RegADDR, #DSP_KON           ;Shove KON addr in
     or.b SPC_RegData, ZP.TempScratchMem   ;OR into SPC_RegData
+
+    mov.b A, ZP.CurrentChannel        ;Check if handling SFX or Music
+    and.b A, #$08
+    bne .GotoSFX
+    ;Music
     ;Set SFX flag off
     mov.b X, ZP.CurrentChannel            ;Grab index
     mov.b A, #$00
@@ -760,8 +816,8 @@ Row_PlayPitch:
     jmp ReadRows
     .GotoSFX:
     ;SFX flag on
-    mov.b X, ZP.CurrentChannel            ;Grab index
-    mov ZP.VCOut-8+X, A                 ;Offset VCOUT by 8 beacause working with virtual channels
+    mov.b X, ZP.CurrentChannel              ;Grab index
+    mov ZP.VCOut-8+X, A                     ;Offset VCOUT by 8 beacause working with virtual channels
     jmp ReadRows
 
 Row_SetInstrument:
@@ -801,35 +857,34 @@ Row_SetInstrument:
     bpl .ApplyInst
 
     ;PMON, EON, NON, Channel ON
-    incw ZP.TempMemADDRL                ;Increment
-    mov.b X, ZP.CurrentChannel            ;Grab current channel
-    mov.w A, BitmaskTable+X               ;Grab bitfield
-    eor.b A, #$FF                         ;Invert current bit
-    mov.b ZP.TempScratchMem, A            ;Shove into temp memory
-    mov.b SPC_RegADDR, #DSP_PMON          ;Shove PMON into regaddr
-    mov.b X, #$00                         ;Reset X
-    mov.b ZP.TempScratchMemH, #$01        ;Shove 1 into temp memory
-    mov.b Y, #$03                         ;Initialise loop counter
+    mov.b X, ZP.CurrentChannel              ;Grab current channel
+    mov.w A, BitmaskTable+X                 ;Grab bitfield
+    eor.b A, #$FF                           ;Invert current bit
+    mov.b ZP.TempScratchMem, A              ;Shove into temp memory
+    mov.b SPC_RegADDR, #DSP_PMON            ;Shove PMON into regaddr
+    mov.b X, #$00                           ;Reset X
+    mov.b ZP.TempScratchMemH, #$01          ;Shove 1 into temp memory
+    mov.b Y, #$03                           ;Initialise loop counter
 
     .RestartLoop:
-    and.b SPC_RegData, ZP.TempScratchMem  ;AND the current bitfield with
-    mov.b A, (ZP.TempMemADDRL+X)          ;Grab effects state
-    and.b A, ZP.TempScratchMemH           ;AND effects state and current comparison bit
-    beq .SkipAppl                       
-    eor.b ZP.TempScratchMem, #$FF         ;Undo inversion in scratch memory
-    or.b SPC_RegData, ZP.TempScratchMem   ;Combine the cleared bit with the comparison bit
-    eor.b ZP.TempScratchMem, #$FF         ;Reinvert the channel bit
-    .SkipAppl:
-    asl.b ZP.TempScratchMemH              ;LShift comparison bit
-    adc.b SPC_RegADDR, #$10               ;Add on $10 to the address to get to other bitfields
-    dec.b Y                               ;Dec loop counter
+    and.b SPC_RegData, ZP.TempScratchMem    ;AND the current bitfield with inverted bitmask table
+    mov.b A, (ZP.TempMemADDRL+X)            ;Grab effects state
+    and.b A, ZP.TempScratchMemH             ;AND effects state and current comparison bit
+    beq .SkipAppl                           
+    eor.b ZP.TempScratchMem, #$FF           ;Undo inversion in scratch memory
+    or.b SPC_RegData, ZP.TempScratchMem     ;Combine the cleared bit with the comparison bit
+    eor.b ZP.TempScratchMem, #$FF           ;Reinvert the channel bit
+    .SkipAppl:  
+    asl.b ZP.TempScratchMemH                ;LShift comparison bit
+    adc.b SPC_RegADDR, #$10                 ;Add on $10 to the address to get to other bitfields
+    dec.b Y                                 ;Dec loop counter
     bne .RestartLoop
     jmp ReadRows
 
 Row_SetFlag:
-    call GrabCommand                    ;Grab value
-    mov.b SPC_RegADDR, #DSP_FLG           ;Get correct addr
-    mov.b SPC_RegData, A                  ;Apply
+    call GrabCommand                        ;Grab value
+    mov.b SPC_RegADDR, #DSP_FLG             ;Get correct addr
+    mov.b SPC_RegData, A                    ;Apply
     jmp ReadRows
 
 Row_SetDelay:
@@ -916,7 +971,7 @@ Row_SetPanbr:
 Row_NoteRelease:
     ;KOF State
     mov.b X, ZP.CurrentChannel            ;Grab current channel
-    mov A, BitmaskTable+X               ;Get bitmask index via X
+    mov A, BitmaskTable+X                 ;Get bitmask index via X
     mov.b ZP.TempScratchMem, A            ;Shove into scratch memory for ORing
     mov.b SPC_RegADDR, #DSP_KOF           ;Shove KOF addr in
     or.b SPC_RegData, ZP.TempScratchMem   ;OR into A
@@ -1248,6 +1303,16 @@ BitmaskTable:   ;General bitmask table
     db $40
     db $80
 
+InvmaskTable:   ;Inverted bitmask table
+    db $FE
+    db $FD
+    db $FB
+    db $F7
+    db $EF
+    db $DF
+    db $BF
+    db $7F
+
 CoeffecientTable:   ;Writes the value for the coeffecient index
     db DSP_C0
     db DSP_C1
@@ -1310,20 +1375,9 @@ OrderTable:
 
 PatternMemory:
     .Pat0:
-    %SetDelayCoefficient(0, $FF/16)
-    %SetDelayCoefficient(1, $EE/16)
-    %SetDelayCoefficient(2, $DD/16)
-    %SetDelayCoefficient(3, $CC/16)
-    %SetDelayCoefficient(4, $BB/16)
-    %SetDelayCoefficient(5, $AA/16)
-    %SetDelayCoefficient(6, $99/16)
-    %SetDelayCoefficient(7, $88/16)
-    %SetDelayTime(4)
-    %SetDelayVolume($60,$60)
-    %SetDelayFeedback($40)
     %SetSpeed($04)
     %SetChannelVolume($40, $40)
-    %SetInstrument(0)
+    %SetInstrument($01)
     %SetVib($00)
     %PlayPitch($1000)
     %Sleep($02)
@@ -1347,15 +1401,26 @@ PatternMemory:
     %Sleep($02)
     %Break()
     .Pat1:
+    %SetDelayCoefficient(0, $FF/16)
+    %SetDelayCoefficient(1, $EE/16)
+    %SetDelayCoefficient(2, $DD/16)
+    %SetDelayCoefficient(3, $CC/16)
+    %SetDelayCoefficient(4, $BB/16)
+    %SetDelayCoefficient(5, $AA/16)
+    %SetDelayCoefficient(6, $99/16)
+    %SetDelayCoefficient(7, $88/16)
+    %SetDelayTime($04)
+    %SetDelayVolume($60,$60)
+    %SetDelayFeedback($40)
     %Sleep($FF)
     %Break()
     .Pat2:
-    %SetVib($F2)
+    %SetVib($F1)
     %Sleep($04)
     %Goto(0)
     .Pat3:
     %SetChannelVolume($60, $60)
-    %SetInstrument($00)
+    %SetInstrument($01)
     %SetSpeed($04)
     %PlayNote($02)
     %Sleep($06)
@@ -1407,7 +1472,7 @@ SfxPat:
     .Sfx1_0:
     %SetSpeed($04)
     %SetChannelVolume($7F, $7F)
-    %SetInstrument($0)
+    %SetInstrument($1)
     %PlayPitch($1800)
     %Sleep($0A)
     %SetChannelVolume($66, $66)
@@ -1419,17 +1484,21 @@ SfxPat:
     .Sfx1_1:
     %SetSpeed($02)
     %SetChannelVolume($99, $99)
-    %SetInstrument($0)
+    %SetInstrument($02)
     %PlayNote($05)
     %Sleep($10)
     %PlayNote($05)
+    %Sleep($10)
     %Stop()
     .Sfx2_0:
-    %SetSpeed($03)
+    %SetFlag($1F)
+    %SetChannelVolume($5F, $5F)
+    %SetInstrument($04)
+    %SetSpeed($08)
     %PlayPitch($0800)
     %Sleep($0E)
     %SetPort($84)
-    %Sleep(12)
+    %Sleep($12)
     %Stop()
 
     ;List of available music tracks, holds the order position within each respective table
@@ -1442,10 +1511,11 @@ SFXList:
     db (SfxTable_SFX_2-SfxTable)/16
 
 InstrumentMemory:
-%WriteInstrument($01, $FF, $80, $7F, %00000000)
-%WriteInstrument($01, $FF, $80, $7F, %00000000)
-%WriteInstrument($01, $FF, $80, $7F, %00000000)
-%WriteInstrument($00, $FF, $80, $93, %00000000)  ;Test SFX
+    %WriteInstrument($00, $00, $00, $00, $00)
+    %WriteInstrument($01, $FF, $80, $7F, $04)
+    %WriteInstrument($01, $FF, $80, $7F, $00)
+    %WriteInstrument($01, $FF, $80, $7F, $00)
+    %WriteInstrument($00, $FF, $80, $7F, $02)  ;Test SFX
 
 Engine_End:
 
