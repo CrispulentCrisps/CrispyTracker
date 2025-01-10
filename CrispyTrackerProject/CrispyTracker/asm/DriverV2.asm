@@ -583,11 +583,11 @@ ReadPatterns:
     mov.b A, ZP.R2
     and.b A, #$07
     setp
-    mov.b A, OP.OrderPos+1+X                     ;Grab the current order position [sfx]
+    mov.b A, OP.OrderPos+1+X                   ;Grab the current order position [sfx]
     bra .OrderRead
     +
     setp
-    mov.b A, OP.OrderPos                         ;Grab the current order position [music]
+    mov.b A, OP.OrderPos                       ;Grab the current order position [music]
     .OrderRead:
     clrp
     xcn A                                      ;Mult by 16
@@ -611,12 +611,15 @@ ReadPatterns:
     ret
 
     .SFXAddr:
-    mov.b Y, #$0F                              ;Set Y up for loop
-    -                                          ;Loop point
+    mov.b A, ZP.R2
+    and.b A, #$07
+    asl.b A
+    mov Y, A
     mov.b A, (ZP.TempMemADDRL)+Y               ;Indirectly shove addr value into A
     mov.b ZP.SequenceAddr+$10+Y, A             ;Copy value to sequence addr
-    dec.b Y                                    ;Decrement loop counter
-    bpl -                                      ;Loop
+    inc.b Y                                    ;Decrement loop counter
+    mov.b A, (ZP.TempMemADDRL)+Y               ;Indirectly shove addr value into A
+    mov.b ZP.SequenceAddr+$10+Y, A             ;Copy value to sequence addr
     ret
 
 HandleSFX:
@@ -644,17 +647,20 @@ HandleSFX:
     ;Setup pattern read
     clrp
     mov.b A, ZP.CurrentChannel
+    and A, #$07
     mov.b X, A
     mov.w A, SfxPatPtr
     mov.w Y, SfxPatPtr+1
     mov.b ZP.R0, A
     mov.b ZP.R1, Y
+    ;Note, don't do -7 on the OrderPos, you'll end up reading at $01F9
     setp
-    mov.b A, OP.OrderPos-7+X
+    mov.b A, OP.OrderPos+1+X
     clrp
     mov.b ZP.R2, ZP.CurrentChannel
     call ReadPatterns
     clrp
+    mov.B X, ZP.CurrentChannel
     mov.b A, ZP.VCTickThresh+X
     setp
     mov.b OP.ChannelSleepCounter+X, A
@@ -981,8 +987,14 @@ Row_Stop:
     setp
     call GetGotoInd
     mov.b A, #$01
+    setp
     mov.b OP.StopFlag+X, A
     clrp
+    mov A, X
+    beq +
+    mov A, #$00
+    mov.b ZP.VCOut+X, A
+    +
     ret
 
         ;----------------------------;
@@ -1177,6 +1189,7 @@ RecieveSub:
     jmp .SkipSFXCheck
     +
     inc.b ZP.FlagVal
+    mov.b ZP.TempScratchMem, Apu2
     mov.b A, Apu0
     mov.b ZP.R4, A
     mov.b X, #$00                         ;Setup music ptr
@@ -1186,7 +1199,7 @@ RecieveSub:
     addw YA, ZP.R4
     mov.b ZP.R0, A
     mov.b ZP.R1, Y                        ;Pointer constructed
-    mov.b A, Apu2                         ;if APU2 != 0 then we just assume it's playing a SFX, otherwise we assume it's a music track
+    mov.b A, ZP.TempScratchMem            ;if APU2 != 0 then we just assume it's playing a SFX, otherwise we assume it's a music track
     beq +
     ;SFX
     mov A, SfxListPtr
@@ -1222,7 +1235,7 @@ RecieveSub:
     ;Clear sleep timers
     .ClearSleep:
     mov.b Y, #$07
-    mov.b X, Apu2
+    mov.b X, ZP.TempScratchMem
     beq +
     ;SFX
     setp
@@ -1375,7 +1388,7 @@ OrderTable:
 
 PatternMemory:
     .Pat0:
-    %SetSpeed($04)
+    %SetSpeed($06)
     %SetChannelVolume($40, $40)
     %SetInstrument($01)
     %SetVib($00)
@@ -1421,7 +1434,7 @@ PatternMemory:
     .Pat3:
     %SetChannelVolume($60, $60)
     %SetInstrument($01)
-    %SetSpeed($04)
+    %SetSpeed($08)
     %PlayNote($02)
     %Sleep($06)
     %PlayNote($04)
@@ -1491,12 +1504,12 @@ SfxPat:
     %Sleep($10)
     %Stop()
     .Sfx2_0:
-    %SetFlag($1F)
     %SetChannelVolume($5F, $5F)
     %SetInstrument($04)
     %SetSpeed($08)
-    %PlayPitch($0800)
+    %PlayNote($20)
     %Sleep($0E)
+    %PlayNote($22)
     %SetPort($84)
     %Sleep($12)
     %Stop()
@@ -1515,7 +1528,7 @@ InstrumentMemory:
     %WriteInstrument($01, $FF, $80, $7F, $04)
     %WriteInstrument($01, $FF, $80, $7F, $00)
     %WriteInstrument($01, $FF, $80, $7F, $00)
-    %WriteInstrument($00, $FF, $80, $7F, $02)  ;Test SFX
+    %WriteInstrument($00, $FF, $80, $7F, $04)  ;Test SFX
 
 Engine_End:
 
