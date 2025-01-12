@@ -16,7 +16,7 @@ string Channel::NoteView(int index)
 	}
 	else if (Rows[index].note == RELEASE_COMMAND)
 	{
-		return "!!!";
+		return "~~~";
 	}
 	else
 	{
@@ -92,6 +92,33 @@ string Channel::Effectvalue(int index)
 	}
 }
 
+string Channel::EffectView2(int index)
+{
+	if (Rows[index].effect2 == NULL_COMMAND)
+	{
+		return "..";
+	}
+	else
+	{
+		char buf[10];
+		sprintf_s(buf, "%02X", Rows[index].effect2);
+		return buf;
+	}
+}
+
+string Channel::Effectvalue2(int index)
+{
+	if (Rows[index].effectvalue2 == NULL_COMMAND)
+	{
+		return "..";
+	}
+	else
+	{
+		char buf[10];
+		sprintf_s(buf, "%02X", Rows[index].effectvalue2);
+		return buf;
+	}
+}
 int Channel::EvaluateHexInput(int input, int index, int max, int valuetype)
 {
 	//Value type gets the subcolumn in the given row
@@ -111,6 +138,12 @@ int Channel::EvaluateHexInput(int input, int index, int max, int valuetype)
 		break;
 	case 4:
 		CurrentValue = Rows[index].effectvalue;
+		break;
+	case 5:
+		CurrentValue = Rows[index].effect2;
+		break;
+	case 6:
+		CurrentValue = Rows[index].effectvalue2;
 		break;
 	}
 
@@ -133,6 +166,8 @@ void Channel::SetUp(int Length)
 	row.instrument = NULL_COMMAND;
 	row.effect = NULL_COMMAND;
 	row.effectvalue = NULL_COMMAND;
+	row.effect2 = NULL_COMMAND;
+	row.effectvalue2 = NULL_COMMAND;
 	for (int i = 0; i < Length; i++)
 	{
 		Rows.push_back(row);

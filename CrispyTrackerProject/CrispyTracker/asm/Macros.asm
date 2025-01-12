@@ -50,6 +50,8 @@ struct ZP $00
 .VCOut:                     skip 8                  ;8 bytes that determine which SFX is going through which channel. [0 = OFF, 1 = ON]
 
 ;General Tracker State
+.FadeFlag                   skip 1                  ;Fades out master volume
+.FadeSpeed                  skip 1                  ;Speed fade is applied
 .TrackSettings:             skip 1                  ;Holds the track settings [refer to DriverRequirements.txt]
 endstruct
 
@@ -101,14 +103,14 @@ endstruct
 
 ; [bm] means the Bitmask applies to given channels
 ;   Programmer Commands
-struct ProCom   $FE00
+struct ProCom $FE00
 .PlayMusic                  skip 1  ;Play music track               |   $00
 .PlaySfx                    skip 1  ;Play sound effect              |   $01
 .SetMasterVol               skip 1  ;Set master volume of the SNES  |   $02
-.SetBitmask                 skip 1  ;Set bitmask value for effects  |   $03
-.SetChannelVol              skip 1  ;Set channel volume             |   $04 [bm]
-.SetSettings                skip 1  ;Set settings byte              |   $05
-.SetDriverDiv               skip 1  ;Set timer divider              |   $06
+.SetSettings                skip 1  ;Set settings byte              |   $03
+.SetDriverDiv               skip 1  ;Set timer divider              |   $04
+.FadeAudio                  skip 1  ;Fade audio based on input      |   $05
+.ResetAPU                   skip 1  ;Go to IPL rom and load SPC     |   $06
 endstruct
 
 macro SetSpeed(S)       ;Sets tick threshold for track

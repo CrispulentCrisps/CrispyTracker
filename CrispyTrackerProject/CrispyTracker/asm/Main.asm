@@ -137,10 +137,11 @@ NMIDriverTest:
     inc.w MZP.NMIDone
     inc.w MZP.SFXTimer
     lda.w MZP.SFXTimer
-    bit #$80
-    beq .SkipTimer
+    cmp.b #$C0
+    bne .SkipTimer
     stz.w MZP.SFXTimer
     jsr PlaySFX
+    ;jsr ProComSetDivider
     .SkipTimer:
     rts
 
@@ -168,6 +169,48 @@ PlaySFX:
     sta.w HW_APUI00     ;Subtune index
     lda.b #$01
     sta.w HW_APUI02     ;Audio type [SFX]
+    lda.w MZP.SFXRec
+    sta.w HW_APUI01
+    inc.w MZP.SFXRec
+    +
+    rts
+
+ProComSetMasterVolume:
+    lda.w HW_APUI01
+    cmp.w MZP.SFXRec
+    bne +
+    lda.b #$11
+    sta.w HW_APUI00     ;Audio Value
+    lda.b #$02
+    sta.w HW_APUI02     ;Audio type [ProCom - Master volume]
+    lda.w MZP.SFXRec
+    sta.w HW_APUI01
+    inc.w MZP.SFXRec
+    +
+    rts
+
+ProComSettings:
+    lda.w HW_APUI01
+    cmp.w MZP.SFXRec
+    bne +
+    lda.b #$CC
+    sta.w HW_APUI00     ;Settings Value
+    lda.b #$03
+    sta.w HW_APUI02     ;Audio type [ProCom - Settings byte]
+    lda.w MZP.SFXRec
+    sta.w HW_APUI01
+    inc.w MZP.SFXRec
+    +
+    rts
+
+ProComSetDivider:
+    lda.w HW_APUI01
+    cmp.w MZP.SFXRec
+    bne +
+    lda.b #$80
+    sta.w HW_APUI00     ;Settings Value
+    lda.b #$04
+    sta.w HW_APUI02     ;Audio type [ProCom - Driver timer divider]
     lda.w MZP.SFXRec
     sta.w HW_APUI01
     inc.w MZP.SFXRec

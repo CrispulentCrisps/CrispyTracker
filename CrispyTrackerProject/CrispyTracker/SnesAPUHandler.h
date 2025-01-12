@@ -101,11 +101,10 @@ public:
 
     DSP_Ch_Reg ChannelRegs[8];
 
-    uint16_t InstAddr       = 0x0200;  //Instrument adress
-    uint16_t SequenceAddr   = 0x0200;  //Sequence entry address
-    uint16_t PatternAddr    = 0x0200;  //Pattern address
-    uint16_t SubtuneAddr    = 0x0200;  //Subtune address
-
+    u16 InstAddr       = 0x0200;  //Instrument adress
+    u16 SequenceAddr   = 0x0200;  //Sequence entry address
+    u16 PatternAddr    = 0x0200;  //Pattern address
+    u16 SubtuneAddr    = 0x0200;  //Subtune address
     std::vector<InstEntry> InstMem;
     std::vector<SequenceEntry> SeqMem;
     std::vector<PatternEntry> PatMem;
@@ -128,9 +127,9 @@ public:
     
     Region reg;
 
-    uint16_t LastSamplePoint;
+    u16 LastSamplePoint;
 
-    std::vector<uint16_t> PitchTable;
+    std::vector<u16> PitchTable;
 
     EffectsHandler EffectHandle;
 
@@ -140,8 +139,10 @@ public:
     uint8_t KONState;
     uint8_t KOFState;
 
-    uint16_t SPCPtr = DATA_START;
+    u16 SPCPtr = DATA_START;
     
+    void WriteSPC(size_t data);
+
     void APU_Startup();
     void APU_Update(spc_sample_t* Output, int BufferSize);
     void APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int ypos);
@@ -156,7 +157,7 @@ public:
     void APU_Set_Sample_Directory(std::vector<Sample>& samp);
     void APU_Evaluate_BRR_Loop(Sample* sample, int LoopPoint);
     void APU_Evaluate_BRR_Loop_Start(Sample* sample);
-    void APU_Write_Flag_Mem(uint16_t* flags);
+    void APU_Write_Flag_Mem(u16* flags);
     void APU_Update_Instrument_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);
     void APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);
     void APU_Update_Pattern_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);

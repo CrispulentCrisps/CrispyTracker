@@ -1,5 +1,12 @@
 #include "SnesAPUHandler.h"
 
+
+void SnesAPUHandler::WriteSPC(size_t data)
+{
+	DSP_MEMORY[SPCPtr] = data;
+	SPCPtr += sizeof(data);
+}
+
 //Boots up the emulation core
 void SnesAPUHandler::APU_Startup()
 {
@@ -535,54 +542,18 @@ void SnesAPUHandler::APU_Kill()
 
 void SnesAPUHandler::SPCWrite(size_t bytes)
 {
-	DSP_MEMORY[SPCPtr] = bytes;
-	SPCPtr += sizeof(bytes);
+	for (int x = 0; x < sizeof(bytes); x++)
+	{
+		DSP_MEMORY[SPCPtr++] = (bytes>>(x*8))&0xFF;
+	}
 }
 
 void SnesAPUHandler::WriteCommand(Command com)
 {
-	switch (com.type)
+	SPCWrite(com.type);
+	if (com.type < com_PlayNote)
 	{
-	case com_SetSpeed:
-		break;
-	case com_Sleep:
-		break;
-	case com_Goto:
-		break;
-	case com_Break:
-		break;
-	case com_PlayPitch:
-		break;
-	case com_SetInstrument:
-		break;
-	case com_SetFlagValue:
-		break;
-	case com_EchoDelay:
-		break;
-	case com_EchoVolume:
-		break;
-	case com_EchoFeedback:
-		break;
-	case com_EchoCoeff:
-		break;
-	case com_ChannelVol:
-		break;
-	case com_SetArp:
-		break;
-	case com_SetPort:
-		break;
-	case com_SetVibrato:
-		break;
-	case com_SetTremo:
-		break;
-	case com_SetVolSlide:
-		break;
-	case com_SetPanbrello:
-		break;
-	case com_ReleaseNote:
-		break;
-	case com_Stop:
-		break;
+		SPCWrite(com.val);
 	}
 }
 

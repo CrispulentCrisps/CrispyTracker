@@ -15,6 +15,8 @@
 #define FILE_EXT ".ctf"
 #define FILE_HEAD 0xDEADBEEF
 
+#define VERSION_100	0
+
 //File errors
 #define FILE_ERORR_01 "FILE CORRUPTED"
 #define FILE_ERORR_02 "FILE NOT FOUND"

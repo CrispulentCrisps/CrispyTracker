@@ -373,11 +373,14 @@ void Tracker::CreditsWindow()
 {
 	if (Begin("CreditsWindow"), true, UNIVERSAL_WINDOW_FLAGS) {
 		PushFont(Largefont);
-		Text("CREDITS");
+		Text(">>>CREDITS<<<");
 		PopFont();
 		NewLine();
 		NewLine();
+
+		PushFont(Largefont);
 		Text("Code:");
+		PopFont();
 
 		BulletText("Crisps");
 		BulletText("Alexmush");
@@ -386,14 +389,30 @@ void Tracker::CreditsWindow()
 		BulletText("Tim4242");
 
 		NewLine();
+		NewLine();
+		PushFont(Largefont);
 		Text("Emulator Code:");
+		PopFont();
 		BulletText("snes_spc by John Reagan, fork of the SPC emulation from Blargg");
 		BulletText("BRRTools by Optiroc");
 
 		NewLine();
+		NewLine();
+		PushFont(Largefont);
 		Text("Driver Code:");
+		PopFont();
 		BulletText("Crisps");
 
+		NewLine();
+		NewLine();
+		NewLine();
+		PushFont(Largefont);
+		Text("Happy Composing!!!");
+		PopFont();
+		NewLine();
+		Text("Hope to hear some bangers from you :]");
+
+		NewLine();
 		if (Button("Back to editor", ImVec2(128, TextSize * 1.5))) ShowCredits = false;
 	}
 	End();
@@ -435,13 +454,35 @@ void Tracker::Patterns_View()
 					Selectable(to_string(orders[x][y].Index).c_str());
 
 					if (IsItemClicked(ImGuiMouseButton_Right)) {
-						orders[x][y].Index > 0 ? orders[x][y].Index-- : orders[x][y].Index = 0;
+						if (IsKeyDown(ImGuiKey_ModCtrl))
+						{
+							orders[x][y].Index - 10 > 0 ? orders[x][y].Index -= 10 : orders[x][y].Index = 0;
+						}
+						else if (IsKeyDown(ImGuiKey_ModShift))
+						{
+							orders[x][y].Index - 5 > 0 ? orders[x][y].Index -= 5 : orders[x][y].Index = 0;
+						}
+						else
+						{
+							orders[x][y].Index > 0 ? orders[x][y].Index-- : orders[x][y].Index = 0;
+						}
 						SelectedPattern = y;
 						UpdatePatternIndex(x, y);
 						UpdateAllPatterns();
 					}
 					else if (IsItemClicked(ImGuiMouseButton_Left)) {
-						orders[x][y].Index++;
+						if (IsKeyDown(ImGuiKey_ModCtrl))
+						{
+							orders[x][y].Index + 10 < 255 ? orders[x][y].Index += 10 : orders[x][y].Index = 255;
+						}
+						else if (IsKeyDown(ImGuiKey_ModShift))
+						{
+							orders[x][y].Index + 5 < 255 ? orders[x][y].Index += 5 : orders[x][y].Index = 255;
+						}
+						else
+						{
+							orders[x][y].Index < 255 ? orders[x][y].Index++ : orders[x][y].Index = 255;
+						}
 						SelectedPattern = y;
 						UpdatePatternIndex(x, y);
 						UpdateAllPatterns();
@@ -938,7 +979,7 @@ void Tracker::Channel_View()
 									{
 										TableSetBgColor(ImGuiTableBgTarget_CellBg, col);
 									}
-									if (Selectable(Channels[i].EffectView(j).c_str(), IsPoint && CursorPos == EFFECT2, ImGuiSelectableFlags_SelectOnClick, MiscSize))
+									if (Selectable(Channels[i].EffectView2(j).c_str(), IsPoint && CursorPos == EFFECT2, ImGuiSelectableFlags_SelectOnClick, MiscSize))
 									{
 										CursorPos = EFFECT2;
 										CursorX = i;
@@ -957,7 +998,7 @@ void Tracker::Channel_View()
 									{
 										TableSetBgColor(ImGuiTableBgTarget_CellBg, col);
 									}
-									if (Selectable(Channels[i].Effectvalue(j).c_str(), IsPoint && CursorPos == VALUE2, ImGuiSelectableFlags_SelectOnClick, MiscSize))
+									if (Selectable(Channels[i].Effectvalue2(j).c_str(), IsPoint && CursorPos == VALUE2, ImGuiSelectableFlags_SelectOnClick, MiscSize))
 									{
 										CursorPos = VALUE2;
 										CursorX = i;
@@ -2386,10 +2427,14 @@ void Tracker::UpdatePatternIndex(int x, int y)//For when you are switching patte
 {
 	if (orders[x][y].Index > Maxindex - 1)
 	{
+		int len = (orders[x][y].Index - Maxindex) + 1;
+		for (int z = 0; z < len; z++)
+		{
+			Patterns pat = DefaultPattern;
+			pat.Index = orders[x][y].Index + z;
+			StoragePatterns.push_back(pat);
+		}
 		Maxindex = orders[x][y].Index;
-		Patterns pat;
-		pat = DefaultPattern;
-		StoragePatterns.push_back(pat);
 		//patterns->push_back(pat);
 	}
 
@@ -2784,7 +2829,30 @@ void Tracker::ApplySubtune()
 
 void Tracker::NewFile()
 {
+	CurrentTune = 0;
 	filehandler.mod.subtune.clear();
+	filehandler.mod.subtune.resize(1);
+	filehandler.mod.samples.clear();
+	filehandler.mod.samples.resize(1);
+	filehandler.mod.inst.clear();
+	filehandler.mod.inst.resize(1);
+	filehandler.mod.patterns.clear();
+	filehandler.mod.patterns.resize(1);
+	for (int x = 0; x < 8; x++)
+	{
+		filehandler.mod.subtune[0].Orders[x].clear();
+		filehandler.mod.subtune[0].Orders[x].resize(1);
+	}
+	samples.clear();
+	samples.resize(1);
+	SelectedInst = 0;
+	SongLength = 1;
+	Maxindex = 8;
+	ShowSample = false;
+	ShowInstrument = false;
+	ShowEcho = false;
+	EchoVol = 0;
+	Delay = 0;
 	InitialiseNewSubtune();
 	ApplySubtune();
 	StoragePatterns.clear();
@@ -2799,17 +2867,10 @@ void Tracker::NewFile()
 	samples.push_back(DefaultSample);
 	inst.clear();
 	inst.push_back(DefaultInst);
-	ShowSample = false;
-	ShowInstrument = false;
-	ShowEcho = false;
-	EchoVol = 0;
-	Delay = 0;
 	for (int x = 0; x < 8; x++)
 	{
 		EchoFilter[x] = 0;
 	}
-	SongLength = 1;
-	Maxindex = 8;
 	ComList.clear();
 }
 

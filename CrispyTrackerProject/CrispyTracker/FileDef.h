@@ -27,7 +27,7 @@ typedef struct Subtune {
 	int8_t EchoVol = 64;
 	uint8_t Delay = 0;
 	uint8_t Feedback = 64;
-	int8_t EchoFilter[8] = { 127, 0, 0 , 0 , 0 , 0 , 0 , 0 };
+	int8_t EchoFilter[8] = { 32, 24, 16 , 8 , 4 , 2 , 1 , 0 };
 	uint8_t SFXFlag = 0;
 };
 

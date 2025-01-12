@@ -55,18 +55,6 @@ public:
 		"8","9","A","B",
 		"C","D","E","F",
 	};
-	/*
-	struct Row {
-		int note =			NULL_COMMAND;
-		int octave =		NULL_COMMAND;
-		int instrument =	NULL_COMMAND;
-		int volume =		NULL_COMMAND;
-		int effect =		NULL_COMMAND;
-		int effectvalue =	NULL_COMMAND;
-		int effect2 =		NULL_COMMAND;
-		int effectvalue2 =	NULL_COMMAND;
-	};
-	*/
 	//Visible rows
 	vector<Row> Rows;
 
@@ -90,6 +78,8 @@ public:
 	string InstrumentView(int index);
 	string EffectView(int index);
 	string Effectvalue(int index);
+	string EffectView2(int index);
+	string Effectvalue2(int index);
 	int EvaluateHexInput(int input, int index, int max, int valuetype);
 };
 

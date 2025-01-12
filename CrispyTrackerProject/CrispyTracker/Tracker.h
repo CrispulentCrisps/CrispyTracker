@@ -343,7 +343,7 @@ public:
 	char authbuf[256] = { 0 };
 	char descbuf[256] = { 0 };
 
-	string Credits = "Crispytracker: " + VERSION;//Is actually used for the title
+	const string Credits = "Crispytracker: " + VERSION;//Is actually used for the title
 	
 	//Visuals
 	ImColor WindowBG =				IM_COL32(11, 11, 22, 255);
