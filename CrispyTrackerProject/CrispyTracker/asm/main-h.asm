@@ -6,4 +6,5 @@ struct MZP $0200
 .SFXRec         skip 1
 .NMIDone        skip 1
 .MusicPlayed    skip 1
+.MusicSetup     skip 1
 endstruct

@@ -87,10 +87,10 @@ mov Apu3, #$00
 mov ZP.SFXRec, #$00
 
 %spc_write(DSP_FLG, $00)
-%spc_write(DSP_MVOL_L, $7F)
-%spc_write(DSP_MVOL_R, $7F)
-%spc_write(DSP_EVOL_L, $00)
-%spc_write(DSP_EVOL_R, $00)
+%spc_write(DSP_MVOL_L, $00)
+%spc_write(DSP_MVOL_R, $00)
+%spc_write(DSP_EVOL_L, $40)
+%spc_write(DSP_EVOL_R, $40)
 %spc_write(DSP_ESA, $C0)
 %spc_write(DSP_EDL, $00)
 %spc_write(DSP_EFB, $20)
@@ -138,12 +138,12 @@ DriverLoop:                         ;Main driver loop
     mov.b Y, SPC_Count1             ;Check counter
     beq .TickIncrement              ;If the timer is set to 0
     call ProcessEffects
-
+    call FinaliseOutput
+    call HandleProCom
     setp
     mov.b A, OP.StopFlag              ;Stop track from progressing
     clrp
     bne .CheckSFX
-
     inc.b X                           ;Increment our counter
     cmp.b X, ZP.TickThresh            ;Check if the counter has reached the 
     bmi .TickIncrement              ;Go back to the tick incrementer if the counter is not
@@ -325,33 +325,33 @@ ProcessEffects:
     mov.b A, ZP.TremolandoValue+X
     and.b A, #$F0
     xcn A
-    mov.b ZP.TempScratchMem, A        ;Hold speed in temporary memory
-    mov.b A, ZP.SineIndexTrem+X       ;Grab sine index
-    adc.b A, ZP.TempScratchMem        ;Increment sine index by speed value
+    mov.b ZP.TempScratchMem, A          ;Hold speed in temporary memory
+    mov.b A, ZP.SineIndexTrem+X         ;Grab sine index
+    adc.b A, ZP.TempScratchMem          ;Increment sine index by speed value
     mov.b ZP.SineIndexTrem+X, A
-    mov Y, A                        ;Grab sine index value
+    mov Y, A                            ;Grab sine index value
     mov.b A, ZP.TremolandoValue+X
-    and.b A, #$0F                     ;Grab depth
-    call GetSineValue               ;Call sine function
-    call SignedMul                  ;Multiply sine influence
-    mov.b ZP.R0, A                    ;Shove into temp memory
+    and.b A, #$0F                       ;Grab depth
+    call GetSineValue                   ;Call sine function
+    call SignedMul                      ;Multiply sine influence
+    mov.b ZP.R0, A                      ;Shove into temp memory
     mov.b ZP.R1, Y
-    lsr.b ZP.R1                       ;Div by 2
-    ror.b ZP.R0                       ;Rotate by 2
-    lsr.b ZP.R1                       ;Div by 2
-    ror.b ZP.R0                       ;Rotate by 2
-    lsr.b ZP.R1                       ;Div by 2
-    ror.b ZP.R0                       ;Rotate by 2
-    lsr.b ZP.R1                       ;Div by 2
-    ror.b ZP.R0                       ;Rotate by 2
-    mov.b A, ZP.TempVolumeProcess     ;Grab current volume process
+    lsr.b ZP.R1                         ;Div by 2
+    ror.b ZP.R0                         ;Rotate by 2
+    lsr.b ZP.R1                         ;Div by 2
+    ror.b ZP.R0                         ;Rotate by 2
+    lsr.b ZP.R1                         ;Div by 2
+    ror.b ZP.R0                         ;Rotate by 2
+    lsr.b ZP.R1                         ;Div by 2
+    ror.b ZP.R0                         ;Rotate by 2
+    mov.b A, ZP.TempVolumeProcess       ;Grab current volume process
     clrc
     adc.b A, ZP.R0
-    mov.b ZP.TempVolumeProcess, A     ;Apply
-    mov.b A, ZP.TempVolumeProcess+1   ;Grab current volume process
+    mov.b ZP.TempVolumeProcess, A       ;Apply
+    mov.b A, ZP.TempVolumeProcess+1     ;Grab current volume process
     clrc
     adc.b A, ZP.R0
-    mov.b ZP.TempVolumeProcess+1, A   ;Apply
+    mov.b ZP.TempVolumeProcess+1, A     ;Apply
 
     ;----------------;
     ;    Panbrello   ;
@@ -360,26 +360,26 @@ ProcessEffects:
     mov.b A, ZP.PanbrelloValue+X
     and.b A, #$F0
     xcn A
-    mov.b ZP.TempScratchMem, A        ;Hold speed in temporary memory
-    mov.b A, ZP.SineIndexPanbr+X      ;Grab sine index
-    adc.b A, ZP.TempScratchMem        ;Increment sine index by speed value
+    mov.b ZP.TempScratchMem, A          ;Hold speed in temporary memory
+    mov.b A, ZP.SineIndexPanbr+X        ;Grab sine index
+    adc.b A, ZP.TempScratchMem          ;Increment sine index by speed value
     mov.b ZP.SineIndexPanbr+X, A
-    mov Y, A                        ;Grab sine index value
+    mov Y, A                            ;Grab sine index value
     mov.b A, ZP.PanbrelloValue+X
-    and.b A, #$0F                     ;Grab depth
-    call GetSineValue               ;Call sine function
-    call SignedMul                  ;Multiply sine influence
-    mov.b ZP.R0, A                    ;Shove into temp memory
+    and.b A, #$0F                       ;Grab depth
+    call GetSineValue                   ;Call sine function
+    call SignedMul                      ;Multiply sine influence
+    mov.b ZP.R0, A                      ;Shove into temp memory
     mov.b ZP.R1, Y
-    lsr.b ZP.R1                       ;Div by 2
-    ror.b ZP.R0                       ;Rotate by 2
-    lsr.b ZP.R1                       ;Div by 2
-    ror.b ZP.R0                       ;Rotate by 2
-    lsr.b ZP.R1                       ;Div by 2
-    ror.b ZP.R0                       ;Rotate by 2
-    lsr.b ZP.R1                       ;Div by 2
-    ror.b ZP.R0                       ;Rotate by 2
-    mov.b A, ZP.TempVolumeProcess     ;Grab current volume process
+    lsr.b ZP.R1                         ;Div by 2
+    ror.b ZP.R0                         ;Rotate by 2
+    lsr.b ZP.R1                         ;Div by 2
+    ror.b ZP.R0                         ;Rotate by 2
+    lsr.b ZP.R1                         ;Div by 2
+    ror.b ZP.R0                         ;Rotate by 2
+    lsr.b ZP.R1                         ;Div by 2
+    ror.b ZP.R0                         ;Rotate by 2
+    mov.b A, ZP.TempVolumeProcess       ;Grab current volume process
     clrc
     adc.b A, ZP.R0
     mov.b ZP.TempVolumeProcess, A     ;Apply
@@ -443,8 +443,8 @@ ProcessEffects:
     dec Y
     bpl .InstWrite
 
-    ;PMON, EON, NON, Channel ON
-    mov.b X, ZP.InjectionChannel              ;Grab current channel
+    ;PMON, EON, NON
+    mov.b X, ZP.InjectionChannel            ;Grab current channel
     mov.w A, BitmaskTable+X                 ;Grab bitfield
     eor.b A, #$FF                           ;Invert current bit
     mov.b ZP.TempScratchMem, A              ;Shove into temp memory
@@ -543,27 +543,19 @@ ProcessEffects:
     adc.b A, ZP.TempPitchProcess+1                        ;Add hi byte to pitch offset
     mov.b ZP.ChannelPitchesOutput+1, A                    ;Put into output
 
-    mov.b A, ZP.ChannelPitchesOutput                      ;Grab lo pitch
-    mov.b SPC_RegData, A                                  ;Return
-    inc.b SPC_RegADDR                                     ;Increment address
-    mov.b A, ZP.ChannelPitchesOutput+1                    ;Grab hi pitch
-    mov.b SPC_RegData, A                                  ;Return
-
-    mov.b A, ZP.FadeFlag
-    beq .SkipFade
-    mov.b SPC_RegADDR, #DSP_MVOL_L
-    mov.b A, SPC_RegData
-    setc
-    adc.b A, ZP.FadeSpeed
-    bvc .SetL
-    bmi .ZeroL
-    mov.b A, #$7F
-    .ZeroL:
-    mov.b A, #$00
-    .SetL:
-    mov.b SPC_RegData, A
-    .SkipFade:
-
+    mov A, ZP.ChannelPitchesOutput
+    setp
+    mov.b OP.RegPitchWrite+X, A
+    clrp
+    mov A, ZP.ChannelPitchesOutput+1
+    setp
+    mov.b OP.RegPitchWrite+1+X, A
+    clrp
+    ;mov.b A, ZP.ChannelPitchesOutput                      ;Grab lo pitch
+    ;mov.b SPC_RegData, A                                  ;Return
+    ;inc.b SPC_RegADDR                                     ;Increment address
+    ;mov.b A, ZP.ChannelPitchesOutput+1                    ;Grab hi pitch
+    ;mov.b SPC_RegData, A                                  ;Return
     ;Jump over if working Virtual channels
     .SkipInst:
     
@@ -580,6 +572,64 @@ ProcessEffects:
     bmi .BreakLoop
     jmp .EffectsLoop
     .BreakLoop:
+    pop X
+    ret
+
+FinaliseOutput:
+    push X
+    mov A, ZP.UpdateSwitch
+    beq .SkipOutput
+    mov Y, #$0F
+    mov X, #$07
+    -
+    mov A, X
+    xcn
+    or.b A, #$03
+    mov.b SPC_RegADDR, A
+
+    mov A, ZP.VCOut+X
+    beq +
+    setp
+    mov.b A, OP.RegPitchWrite+$10+Y
+    clrp
+    mov.b SPC_RegData, A
+    dec Y
+    dec.b SPC_RegADDR
+    setp
+    mov.b A, OP.RegPitchWrite+$10+Y
+    clrp
+    mov.b SPC_RegData, A
+    bra .DecLoop
+    +
+    setp
+    mov.b A, OP.RegPitchWrite+Y
+    clrp
+    mov.b SPC_RegData, A
+    dec Y
+    dec.b SPC_RegADDR
+    setp
+    mov.b A, OP.RegPitchWrite+Y
+    clrp
+    mov.b SPC_RegData, A
+
+    .DecLoop:
+    dec Y
+    dec X
+    bpl -
+    clrp
+    mov.b A, ZP.KONState
+    beq +
+    mov.b SPC_RegADDR, #DSP_KON
+    mov.b SPC_RegData, ZP.KONState
+    mov.b ZP.KONState, #$00
+    +
+    .SkipOutput:
+    pop X
+    ret
+
+HandleProCom:
+    push X
+
     pop X
     ret
 
@@ -747,6 +797,7 @@ ReadRows:
     dw Row_SetPanbr
     dw Row_NoteRelease
     dw Row_Stop
+    dw Row_MasterVol
     
 Row_SetSpeed:
     clrp
@@ -823,10 +874,9 @@ Row_PlayPitch:
     mov.b A, ZP.CurrentChannel            ;Grab current channel
     and.b A, #$07
     mov X, A
-    mov.w A, BitmaskTable+X               ;Get bitmask index via X
-    mov.b ZP.TempScratchMem, A            ;Shove into scratch memory for ORing
-    mov.b SPC_RegADDR, #DSP_KON           ;Shove KON addr in
-    or.b SPC_RegData, ZP.TempScratchMem   ;OR into SPC_RegData
+    mov.b A, ZP.KONState
+    or.w A, BitmaskTable+X              ;Get bitmask index via X
+    mov.b ZP.KONState, A
 
     mov.b A, ZP.CurrentChannel        ;Check if handling SFX or Music
     and.b A, #$08
@@ -1013,6 +1063,15 @@ Row_Stop:
     mov.b ZP.VCOut+X, A
     +
     ret
+
+Row_MasterVol:
+    mov.b SPC_RegADDR, #DSP_MVOL_L
+    call GrabCommand
+    mov SPC_RegData, A
+    mov.b SPC_RegADDR, #DSP_MVOL_R
+    call GrabCommand
+    mov SPC_RegData, A
+    jmp ReadRows
 
         ;----------------------------;
         ;       Command Grabber      ;
@@ -1328,33 +1387,34 @@ RecieveSub:
     pop A
     ret
 
-CheckProgrammerControls:    
+CheckProgrammerControls:
+    push X
     mov.b A, Apu1                         ;Check SEND byte
     cmp.b A, ZP.SFXRec
-    bne .SkipPC                           ;if SFXRec != SFXRec before then new a new subtune will be selected
+    bne ReturnProCom_SkipPC               ;if SFXRec != SFXRec before then new a new subtune will be selected
     inc.b ZP.FlagVal
     cmp.b Apu2, #ProCom.PlayMusic
-    beq .SkipPC
+    beq ReturnProCom_SkipPC
     cmp.b Apu2, #ProCom.PlaySfx
-    beq .SkipPC
+    beq ReturnProCom_SkipPC
     mov.b A, Apu2
     setc
     sbc.b A, #ProCom.SetMasterVol
     asl A
     mov X, A
     jmp (ComTable+X)
-.ReturnProCom:
+ReturnProCom:
     ;Increment recieve flag
     inc.b ZP.SFXRec
     mov.b Apu1, ZP.SFXRec
     .SkipPC:
+    pop X
     ret
 
 ComTable:
     dw Com_MasterVol
     dw Com_Settings
     dw Com_Div
-    dw Com_Fade
     dw Com_Reset
 
 Com_MasterVol:
@@ -1362,19 +1422,15 @@ Com_MasterVol:
     mov.b SPC_RegData, Apu0
     mov.b SPC_RegADDR, #DSP_MVOL_R
     mov.b SPC_RegData, Apu0
-    bra CheckProgrammerControls_ReturnProCom
+    bra ReturnProCom
 Com_Settings:
     mov.b ZP.TrackSettings, Apu0
-    bra CheckProgrammerControls_ReturnProCom
+    bra ReturnProCom
 Com_Div:
     mov.b SPC_Timer1, Apu0
-    bra CheckProgrammerControls_ReturnProCom
-Com_Fade:
-    mov.b ZP.FadeFlag, #$01
-    mov.b ZP.FadeSpeed, Apu0
-    bra CheckProgrammerControls_ReturnProCom
+    bra ReturnProCom
 Com_Reset:
-    bra CheckProgrammerControls_ReturnProCom
+    bra ReturnProCom
 
 BitmaskTable:   ;General bitmask table
     db $01
@@ -1492,6 +1548,7 @@ PatternMemory:
     %Goto($0)
     .Pat3:
     %SetVib($00)
+    %SetMasterVolume($44, $CC)
     %SetChannelVolume($60, $60)
     %SetInstrument($01)
     %SetSpeed($08)
@@ -1594,7 +1651,7 @@ SFXList:
 
 InstrumentMemory:
     %WriteInstrument($00, $00, $00, $00, $00)
-    %WriteInstrument($01, $FF, $70, $7F, $04)
+    %WriteInstrument($01, $FF, $70, $7F, $00)
     %WriteInstrument($01, $FF, $80, $7F, $00)
     %WriteInstrument($01, $FF, $80, $7F, $00)
     %WriteInstrument($00, $FF, $70, $7F, $01)  ;Test SFX

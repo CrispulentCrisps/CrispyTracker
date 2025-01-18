@@ -118,13 +118,12 @@ LoadDriver:
     lda.b #$01
     sta.w MZP.SFXRec
     stz.w MZP.MusicPlayed
+    stz.w MZP.MusicSetup
     
+    jsr PlayMusic
+
 SendTune:
     stz.w MZP.NMIDone
-    lda.w MZP.MusicPlayed
-    bne +
-    jsr PlayMusic
-    +
 
 MainLoop:
     -
@@ -141,7 +140,7 @@ NMIDriverTest:
     bne .SkipTimer
     stz.w MZP.SFXTimer
     jsr PlaySFX
-    ;jsr ProComSetDivider
+    ;jsr ProComFadeTuneOut
     .SkipTimer:
     rts
 
@@ -179,10 +178,10 @@ ProComSetMasterVolume:
     lda.w HW_APUI01
     cmp.w MZP.SFXRec
     bne +
-    lda.b #$11
+    lda.b #$7F
     sta.w HW_APUI00     ;Audio Value
     lda.b #$02
-    sta.w HW_APUI02     ;Audio type [ProCom - Master volume]
+    sta.w HW_APUI02     ;Audio type [ProCom - Master volume]    NOTE: use of the master volume effect CAN and WILL interrupt any master volume settings and vice versa
     lda.w MZP.SFXRec
     sta.w HW_APUI01
     inc.w MZP.SFXRec

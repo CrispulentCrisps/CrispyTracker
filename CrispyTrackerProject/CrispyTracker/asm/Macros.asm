@@ -65,6 +65,8 @@ struct OP $0100
 .ChannelPitches:            skip 32                 ;Array of pitch values in each channel
 .ChannelVolume:             skip 32                 ;Holds the channel master volume [goes across 16 bytes]
 .StopFlag:                  skip 9                  ;Flag to stop track from progressing
+
+.RegPitchWrite              skip 32                 ;Pitches to write to pitch registers
 endstruct
 
 InstPtr =                   $01E0
@@ -97,7 +99,8 @@ struct RC $FF00
 .SetPanbrello               skip 1  ;Set Panbrello effect value     |   $18     
 .ReleaseNote                skip 1  ;Set KOFF for given channel     |   $19
 .Stop                       skip 1  ;Set STOP flag for tune         |   $1A
-.NanBuff                    skip 5  ;Buffer for future commands     |   $1B-1F
+.MasterVol                  skip 1  ;Set the master volume left     |   $1B
+.NanBuff                    skip 4  ;Buffer for future commands     |   $1C-1F
 .PlayNote                   skip 1  ;Play pitch from table          |   $20-FF
 endstruct
 
@@ -109,8 +112,9 @@ struct ProCom $FE00
 .SetMasterVol               skip 1  ;Set master volume of the SNES  |   $02
 .SetSettings                skip 1  ;Set settings byte              |   $03
 .SetDriverDiv               skip 1  ;Set timer divider              |   $04
-.FadeAudio                  skip 1  ;Fade audio based on input      |   $05
-.ResetAPU                   skip 1  ;Go to IPL rom and load SPC     |   $06
+.MuteChannel                skip 1  ;Mutes certain channels         |   $05
+.Pause                      skip 1  ;Flips OFF flag for tune        |   $06
+.ResetAPU                   skip 1  ;Go to IPL rom and load SPC     |   $07
 endstruct
 
 macro SetSpeed(S)       ;Sets tick threshold for track
@@ -204,6 +208,13 @@ db RC.ChannelVol
 db <L>
 db <R>
 endmacro
+
+macro SetMasterVolume(L, R)   ;Set Channel Volume
+db RC.MasterVol
+db <L>
+db <R>
+endmacro
+
 
     ;Effects commands
 macro SetArp(V)
