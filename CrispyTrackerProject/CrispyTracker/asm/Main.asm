@@ -120,12 +120,27 @@ LoadDriver:
     stz.w MZP.MusicPlayed
     stz.w MZP.MusicSetup
     
-    jsr PlayMusic
+    ldx.w #MusicComTable
+    stx.b AudPtr
+
+    ;Play music
+    lda.b #$00
+    sta.b MComIndex
+    sta.b MComVal
+    jsr AddMCom
+    ;Play SFX
+    lda.b #$01
+    sta.b MComIndex
+    sta.b MComVal
+    jsr AddMCom
+
+    ;jsr PlayMusic
 
 SendTune:
     stz.w MZP.NMIDone
 
 MainLoop:
+    jsr ExecuteMCom
     -
     lda.w MZP.NMIDone
     bne SendTune
@@ -139,81 +154,87 @@ NMIDriverTest:
     cmp.b #$C0
     bne .SkipTimer
     stz.w MZP.SFXTimer
-    jsr PlaySFX
-    ;jsr ProComFadeTuneOut
+    ;Play SFX
+    %WriteMCom($01, $01)            ;Play SFX 1
+    ;Set fade speed
+    %WriteMCom($09, $FF)
+    ;Set Master Volume
+    %WriteMCom($02, $00)
+    ;Fade
+    %WriteMCom($07, $00)
     .SkipTimer:
     rts
 
-PlayMusic:
-    lda.w HW_APUI01
-    cmp.w MZP.SFXRec
-    bne +
-    lda.b #$00
-    sta.w HW_APUI00     ;Subtune index
-    lda.b #$00
-    sta.w HW_APUI02     ;Audio type [Music]
-    lda.w MZP.SFXRec
-    sta.w HW_APUI01
-    inc.w MZP.SFXRec
-    lda.b #$01
-    sta.w MZP.MusicPlayed
-    +
+    ;Add value to Music Command table
+AddMCom:
+    pha
+    phx
+    phy
+    php
+    sep #$20
+    lda.b MComIndex
+    sta.b (AudPtr)
+    rep #$20
+    inc.b AudPtr
+    sep #$20
+    lda.b MComVal
+    sta.b (AudPtr)
+    rep #$20
+    inc.b AudPtr
+    sep #$20
+    lda.b #!MComEnd
+    sta.b (AudPtr)
+    plp
+    ply
+    plx
+    pla
     rts
 
-PlaySFX:
+    ;Loop and execute Music commands until $FF byte is reached
+ExecuteMCom:
+    pha
+    phx
+    phy
+    php
+    sep #$20
+    ldx.w #MusicComTable
+    stx.b AudPtr    
+    .ReadCom:
+    ;Check previous command was executed
     lda.w HW_APUI01
     cmp.w MZP.SFXRec
-    bne +
-    lda.b #$01
-    sta.w HW_APUI00     ;Subtune index
-    lda.b #$01
-    sta.w HW_APUI02     ;Audio type [SFX]
+    bne .ReadCom
+    lda.b (AudPtr)
+    cmp #!MComEnd
+    beq .Finished       ;Jump out if finish byte detected
+    sta.w HW_APUI02     ;Command index
+    ;Clear previous command
+    rep #$20
+    inc.b AudPtr
+    sep #$20
+    lda.b (AudPtr)
+    sta.w HW_APUI00     ;Command value
     lda.w MZP.SFXRec
     sta.w HW_APUI01
     inc.w MZP.SFXRec
-    +
-    rts
+    -
+    lda.w HW_APUI01     ;Wait to make sure commands are synced with SPC-700 update
+    cmp.w MZP.SFXRec
+    bne -
+    ;Increment pointer to next command
+    rep #$20
+    inc.b AudPtr
+    sep #$20
+    bra .ReadCom        ;Go back to check next command
 
-ProComSetMasterVolume:
-    lda.w HW_APUI01
-    cmp.w MZP.SFXRec
-    bne +
-    lda.b #$7F
-    sta.w HW_APUI00     ;Audio Value
-    lda.b #$02
-    sta.w HW_APUI02     ;Audio type [ProCom - Master volume]    NOTE: use of the master volume effect CAN and WILL interrupt any master volume settings and vice versa
-    lda.w MZP.SFXRec
-    sta.w HW_APUI01
-    inc.w MZP.SFXRec
-    +
-    rts
-
-ProComSettings:
-    lda.w HW_APUI01
-    cmp.w MZP.SFXRec
-    bne +
-    lda.b #$CC
-    sta.w HW_APUI00     ;Settings Value
-    lda.b #$03
-    sta.w HW_APUI02     ;Audio type [ProCom - Settings byte]
-    lda.w MZP.SFXRec
-    sta.w HW_APUI01
-    inc.w MZP.SFXRec
-    +
-    rts
-
-ProComSetDivider:
-    lda.w HW_APUI01
-    cmp.w MZP.SFXRec
-    bne +
-    lda.b #$80
-    sta.w HW_APUI00     ;Settings Value
-    lda.b #$04
-    sta.w HW_APUI02     ;Audio type [ProCom - Driver timer divider]
-    lda.w MZP.SFXRec
-    sta.w HW_APUI01
-    inc.w MZP.SFXRec
-    +
+    .Finished:
+    ;Overwrite first command with NULL command to prevent constant retrigger
+    lda.b #!MComEnd
+    sta.w MusicComTable
+    plp
+    ply
+    plx
+    pla
     rts
 
 NMIHandler:

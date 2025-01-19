@@ -68,8 +68,8 @@ setp
 mov A, #$01
 mov Y, #$08
 -
-mov OP.OrderChangeFlag+Y, A         ;Set change flag at start to load initial pattern data for both SFX and music
-mov OP.StopFlag+Y, A                ;Set change flag at start to load initial pattern data for both SFX and music
+mov.b OP.OrderChangeFlag+Y, A         ;Set change flag at start to load initial pattern data for both SFX and music
+mov.b OP.StopFlag+Y, A                ;Set change flag at start to load initial pattern data for both SFX and music
 dec.b Y
 bpl -
 clrp
@@ -80,17 +80,17 @@ mov ZP.VCOut+Y, A                   ;Reset the VCOut state to F to prevent chann
 dec.b Y
 bpl -
 
-mov Apu0, #$00
-mov Apu1, #$00
-mov Apu2, #$00
-mov Apu3, #$00
-mov ZP.SFXRec, #$00
+mov.b Apu0, #$00
+mov.b Apu1, #$00
+mov.b Apu2, #$00
+mov.b Apu3, #$00
+mov.b ZP.SFXRec, #$00
 
 %spc_write(DSP_FLG, $00)
 %spc_write(DSP_MVOL_L, $00)
 %spc_write(DSP_MVOL_R, $00)
-%spc_write(DSP_EVOL_L, $40)
-%spc_write(DSP_EVOL_R, $40)
+%spc_write(DSP_EVOL_L, $00)
+%spc_write(DSP_EVOL_R, $00)
 %spc_write(DSP_ESA, $C0)
 %spc_write(DSP_EDL, $00)
 %spc_write(DSP_EFB, $20)
@@ -99,6 +99,13 @@ mov ZP.SFXRec, #$00
 %spc_write(DSP_EON, $00)
 %spc_write(DSP_NON, $00)
 
+mov.b ZP.OutVol, #$7F               ;Set output volume to max
+setp
+mov.b OP.MaxVolTarget, #$7F         ;Set output target volume to max
+clrp
+
+mov.b ZP.MasterVol, #$00
+mov.b ZP.EchoVol, #$00
 mov A, #(PitchTable)&$FF
 mov PitchPtr, A
 mov A, #(PitchTable>>8)&$FF
@@ -139,7 +146,6 @@ DriverLoop:                         ;Main driver loop
     beq .TickIncrement              ;If the timer is set to 0
     call ProcessEffects
     call FinaliseOutput
-    call HandleProCom
     setp
     mov.b A, OP.StopFlag              ;Stop track from progressing
     clrp
@@ -578,7 +584,9 @@ ProcessEffects:
 FinaliseOutput:
     push X
     mov A, ZP.UpdateSwitch
-    beq .SkipOutput
+    bne +
+    jmp .SkipOutput
+    +
     mov Y, #$0F
     mov X, #$07
     -
@@ -611,7 +619,6 @@ FinaliseOutput:
     mov.b A, OP.RegPitchWrite+Y
     clrp
     mov.b SPC_RegData, A
-
     .DecLoop:
     dec Y
     dec X
@@ -623,13 +630,67 @@ FinaliseOutput:
     mov.b SPC_RegData, ZP.KONState
     mov.b ZP.KONState, #$00
     +
+
+    ;Handle fade code
+    mov.b A, ZP.FadeFlag
+    beq .SkipFade
+    mov.b A, ZP.OutVol
+    mov1 C, ZP.FadeSpeed.7
+    bcc +
+    setc
+    sbc.b A, ZP.FadeSpeed
+    bcs .ZVal
+    bra .CompareMax
+    +
+    setc
+    sbc.b A, ZP.FadeSpeed
+    bcc .ZVal
+    .CompareMax:
+    setp
+    cmp A, OP.MaxVolTarget
+    bmi .ApplyFade
+    ;Assume we've hit the max volume
+    mov A, OP.MaxVolTarget
+    bra .ApplyFade
+    .ZVal:
+    mov.b A, #$00
+    .ApplyFade:
+    clrp
+    mov.b ZP.OutVol, A
+    .SkipFade:
+    
+    ;Mix L/R audio output with new master volume
+    mov.b SPC_RegADDR, #DSP_MVOL_L
+    mov.b A, ZP.MasterVol
+    mov.b Y, ZP.OutVol
+    mov.b X, #$7F
+    mul YA
+    div YA, X
+    mov.b SPC_RegData, A
+    mov.b SPC_RegADDR, #DSP_MVOL_R
+    mov.b A, ZP.MasterVol
+    mov.b Y, ZP.OutVol
+    mov.b X, #$7F
+    mul YA
+    div YA, X
+    mov.b SPC_RegData, A
+
+    ;Mix L/R echo output with new master volume
+    mov.b SPC_RegADDR, #DSP_EVOL_L
+    mov.b A, ZP.EchoVol
+    mov.b Y, ZP.OutVol
+    mov.b X, #$7F
+    mul YA
+    div YA, X
+    mov.b SPC_RegData, A
+    mov.b SPC_RegADDR, #DSP_EVOL_R
+    mov.b A, ZP.EchoVol
+    mov.b Y, ZP.OutVol
+    mov.b X, #$7F
+    mul YA
+    div YA, X
+    mov.b SPC_RegData, A
     .SkipOutput:
-    pop X
-    ret
-
-HandleProCom:
-    push X
-
     pop X
     ret
 
@@ -968,11 +1029,7 @@ Row_SetDelay:
 
 Row_SetDelayVolume:
     call GrabCommand                ;Grab delay value
-    mov.b SPC_RegADDR, #DSP_EVOL_L
-    mov.b SPC_RegData, A
-    call GrabCommand                ;Grab delay value
-    mov.b SPC_RegADDR, #DSP_EVOL_R
-    mov.b SPC_RegData, A
+    mov.b ZP.EchoVol, A
     jmp ReadRows
 
 Row_SetDelayFeedback:
@@ -1065,12 +1122,8 @@ Row_Stop:
     ret
 
 Row_MasterVol:
-    mov.b SPC_RegADDR, #DSP_MVOL_L
     call GrabCommand
-    mov SPC_RegData, A
-    mov.b SPC_RegADDR, #DSP_MVOL_R
-    call GrabCommand
-    mov SPC_RegData, A
+    mov.b ZP.MasterVol, A
     jmp ReadRows
 
         ;----------------------------;
@@ -1415,19 +1468,40 @@ ComTable:
     dw Com_MasterVol
     dw Com_Settings
     dw Com_Div
+    dw Com_Mute
+    dw Com_Pause
+    dw Com_FadeAud
+    dw Com_FadeTarget
+    dw Com_FadeSpeed
     dw Com_Reset
 
 Com_MasterVol:
-    mov.b SPC_RegADDR, #DSP_MVOL_L
-    mov.b SPC_RegData, Apu0
-    mov.b SPC_RegADDR, #DSP_MVOL_R
-    mov.b SPC_RegData, Apu0
+    mov.b ZP.OutVol, Apu0
     bra ReturnProCom
 Com_Settings:
     mov.b ZP.TrackSettings, Apu0
     bra ReturnProCom
 Com_Div:
     mov.b SPC_Timer1, Apu0
+    bra ReturnProCom
+Com_Mute:
+    bra ReturnProCom
+Com_Pause:
+    setp
+    eor.b OP.StopFlag, #$01
+    clrp
+    bra ReturnProCom
+Com_FadeAud:
+    mov.b ZP.FadeFlag, #$01
+    bra ReturnProCom
+Com_FadeTarget:
+    mov.b A, Apu0
+    setp
+    mov.b OP.MaxVolTarget, A
+    clrp
+    bra ReturnProCom
+Com_FadeSpeed:
+    mov.b ZP.FadeSpeed, Apu0
     bra ReturnProCom
 Com_Reset:
     bra ReturnProCom
@@ -1441,16 +1515,6 @@ BitmaskTable:   ;General bitmask table
     db $20
     db $40
     db $80
-
-CoeffecientTable:   ;Writes the value for the coeffecient index
-    db DSP_C0
-    db DSP_C1
-    db DSP_C2
-    db DSP_C3
-    db DSP_C4
-    db DSP_C5
-    db DSP_C6
-    db DSP_C7
 
 ;Sine table, this includes the FIRST QUARTER of the sine wave, from 0 to 127
 ;It is intended that the sine gets flipped both horizontally and vertically
@@ -1539,7 +1603,7 @@ PatternMemory:
     %SetDelayCoefficient(6, $99/16)
     %SetDelayCoefficient(7, $88/16)
     %SetDelayTime($04)
-    %SetDelayVolume($60,$60)
+    %SetDelayVolume($60)
     %SetDelayFeedback($40)
     %Sleep($FF)
     .Pat2:
@@ -1548,7 +1612,7 @@ PatternMemory:
     %Goto($0)
     .Pat3:
     %SetVib($00)
-    %SetMasterVolume($44, $CC)
+    %SetMasterVolume($7F)
     %SetChannelVolume($60, $60)
     %SetInstrument($01)
     %SetSpeed($08)

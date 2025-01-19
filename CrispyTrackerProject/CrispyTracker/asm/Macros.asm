@@ -17,8 +17,8 @@ struct ZP $00
 .MulProductTemp:            skip 2                  ;Temporary memory for signed multiplication
 .TickThresh:                skip 1                  ;Equivelant to track speed
 .KONState:                  skip 1                  ;Holds the current bitfield state of KON
-.FlagVal:                   skip 1                  ;Holds the flag value
 .SFXRec                     skip 1                  ;Byte for APU1 value expected to play SFX
+.FlagVal                    skip 1                  ;Communication between SPC700 and 65C816
 .UpdateSwitch               skip 1                  ;Determine if we're updating the "virtual" or hardware channels     [0 for hardware, 1 for virtual]
 
 ;Sequencing
@@ -53,6 +53,9 @@ struct ZP $00
 .FadeFlag                   skip 1                  ;Fades out master volume
 .FadeSpeed                  skip 1                  ;Speed fade is applied
 .TrackSettings:             skip 1                  ;Holds the track settings [refer to DriverRequirements.txt]
+.MasterVol                  skip 1                  ;Master volume for track
+.EchoVol                    skip 1                  ;Master echo for track
+.OutVol                     skip 1                  ;Masters the MVOL and EVOL registers
 endstruct
 
 struct OP $0100
@@ -65,8 +68,10 @@ struct OP $0100
 .ChannelPitches:            skip 32                 ;Array of pitch values in each channel
 .ChannelVolume:             skip 32                 ;Holds the channel master volume [goes across 16 bytes]
 .StopFlag:                  skip 9                  ;Flag to stop track from progressing
+.MaxVolTarget               skip 1                  ;Maximum volume to aim for when fading in
 
 .RegPitchWrite              skip 32                 ;Pitches to write to pitch registers
+
 endstruct
 
 InstPtr =                   $01E0
@@ -109,12 +114,15 @@ endstruct
 struct ProCom $FE00
 .PlayMusic                  skip 1  ;Play music track               |   $00
 .PlaySfx                    skip 1  ;Play sound effect              |   $01
-.SetMasterVol               skip 1  ;Set master volume of the SNES  |   $02
+.SetMasterVol               skip 1  ;Set OutVol byte                |   $02
 .SetSettings                skip 1  ;Set settings byte              |   $03
 .SetDriverDiv               skip 1  ;Set timer divider              |   $04
 .MuteChannel                skip 1  ;Mutes certain channels         |   $05
 .Pause                      skip 1  ;Flips OFF flag for tune        |   $06
-.ResetAPU                   skip 1  ;Go to IPL rom and load SPC     |   $07
+.FadeAudio                  skip 1  ;Enables fade routine           |   $07
+.FadeMax                    skip 1  ;Set maximum volume to fade to  |   $08
+.FadeSpeed                  skip 1  ;Set maximum volume to fade to  |   $09
+.ResetAPU                   skip 1  ;Go to IPL rom and load SPC     |   $0A
 endstruct
 
 macro SetSpeed(S)       ;Sets tick threshold for track
@@ -186,10 +194,9 @@ db RC.EchoDelay
 db <V>
 endmacro
 
-macro SetDelayVolume(L, R)   ;Set Echo delay volume
+macro SetDelayVolume(V)   ;Set Echo delay volume
 db RC.EchoVolume
-db <L>
-db <R>
+db <V>
 endmacro
 
 macro SetDelayFeedback(V)   ;Set Echo feedback
@@ -209,10 +216,9 @@ db <L>
 db <R>
 endmacro
 
-macro SetMasterVolume(L, R)   ;Set Channel Volume
+macro SetMasterVolume(V)   ;Set Channel Volume
 db RC.MasterVol
-db <L>
-db <R>
+db <V>
 endmacro
 
 
