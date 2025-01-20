@@ -22,14 +22,23 @@ ROM_Engine_Start:
 base $0200              ;Set audio driver code to $0200 [closest to the start of memory we can get away with]
 
 DriverStart:            ;Start of the driver
+mov.b Apu3, #$00
+mov.b Apu2, #$00
+mov.b Apu1, #$00
+mov.b Apu0, #$00
 
 mov ZP.TempMemADDRL, #Engine_End&$FF
 mov ZP.TempMemADDRH, #Engine_End>>8
+mov.b ZP.R1, #$FF
+mov.b ZP.R0, #$C0
 mov.b X, #0
 mov A, #0
 .MemClearLoop:
+mov.b A, #$00
 db $C7, $00                     ;Equivelant to mov (ZP.TempMemADDRL+X), A; reason is the ASAR doesn't put this line in code, instead putting in C5 00 00
 incw.b ZP.TempMemADDRL
+movw YA, ZP.TempMemADDRL
+cmpw.b YA, ZP.R0
 bne .MemClearLoop
 
 mov.b X, #$FF
@@ -62,7 +71,7 @@ clrc                                ;Clear carry
 adc.b A, #$10                       ;Add 16
 bvc -
 
-mov SPC_Control, #$01               ;Set control bit to enable Timer 0
+mov SPC_Control, #$81               ;Set control bit to enable Timer 0 and keep IPL rom inside
 mov SPC_Timer1, #$20                ;Divide timer to run at ~250hz
 setp
 mov A, #$01
@@ -79,11 +88,6 @@ mov A, #$00
 mov ZP.VCOut+Y, A                   ;Reset the VCOut state to F to prevent channel injection
 dec.b Y
 bpl -
-
-mov.b Apu0, #$00
-mov.b Apu1, #$00
-mov.b Apu2, #$00
-mov.b Apu3, #$00
 mov.b ZP.SFXRec, #$00
 
 %spc_write(DSP_FLG, $00)
@@ -513,11 +517,31 @@ ProcessEffects:
     mov.b ZP.ChannelVolumeOutput+1, A
 
     ;Force output to mono
-    mov C, ZP.TrackSettings.0
+    mov.b C, ZP.TrackSettings.0
     bcc .SkipMono
     clr1.b ZP.ChannelVolumeOutput.7
     clr1.b ZP.ChannelVolumeOutput+1.7
     .SkipMono:
+
+    ;Disable echo flag
+    mov.b C, ZP.TrackSettings.1
+    bcc .SkipEchoDisable
+    mov.b SPC_RegADDR, #DSP_FLG
+    mov.b A, SPC_RegData
+    or.b A, #$20
+    mov.b SPC_RegData, A
+    .SkipEchoDisable:
+
+    ;Mask out channel volume if mask is on
+    mov.b X, ZP.InjectionChannel
+    setp
+    mov.b A, OP.ChannelMask
+    clrp
+    and.w A, BitmaskTable+X
+    beq +
+    mov.b ZP.ChannelVolumeOutput, #$00
+    mov.b ZP.ChannelVolumeOutput+1, #$00
+    +
 
     ;Apply Volume
     mov.b X, ZP.TempScratchMemH                           ;Grab Premult channel index
@@ -637,7 +661,6 @@ FinaliseOutput:
     mov.b A, ZP.OutVol
     mov1 C, ZP.FadeSpeed.7
     bcc +
-    setc
     sbc.b A, ZP.FadeSpeed
     bcs .ZVal
     bra .CompareMax
@@ -1485,6 +1508,10 @@ Com_Div:
     mov.b SPC_Timer1, Apu0
     bra ReturnProCom
 Com_Mute:
+    mov.b A, Apu0
+    setp
+    mov.b OP.ChannelMask, A
+    clrp
     bra ReturnProCom
 Com_Pause:
     setp
@@ -1504,7 +1531,8 @@ Com_FadeSpeed:
     mov.b ZP.FadeSpeed, Apu0
     bra ReturnProCom
 Com_Reset:
-    bra ReturnProCom
+    mov.b Apu3, #$01            ;Send reset flag to 65C816
+    jmp $FFC0                   ;Go to IPL ROM
 
 BitmaskTable:   ;General bitmask table
     db $01

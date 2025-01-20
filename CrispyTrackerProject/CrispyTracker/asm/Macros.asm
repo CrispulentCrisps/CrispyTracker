@@ -5,72 +5,71 @@
 !CodeBuffer = $0C00                                 ;Section of bytes to fill
 
 struct ZP $00
-.TempMemADDRL:              skip 1                  ;General purpose addr LO
-.TempMemADDRH:              skip 1                  ;General purpose addr HI
-.TempScratchMem:            skip 1                  ;Temporary memory to screw with
-.TempScratchMemH:           skip 1                  ;Temporary memory to screw with
-.R0                         skip 1                  ;Scratch memory
-.R1                         skip 1                  ;Scratch memory
-.R2                         skip 1                  ;Scratch memory
-.R3                         skip 1                  ;Scratch memory
-.R4                         skip 1                  ;Scratch memory
-.MulProductTemp:            skip 2                  ;Temporary memory for signed multiplication
-.TickThresh:                skip 1                  ;Equivelant to track speed
-.KONState:                  skip 1                  ;Holds the current bitfield state of KON
-.SFXRec                     skip 1                  ;Byte for APU1 value expected to play SFX
-.FlagVal                    skip 1                  ;Communication between SPC700 and 65C816
-.UpdateSwitch               skip 1                  ;Determine if we're updating the "virtual" or hardware channels     [0 for hardware, 1 for virtual]
+.TempMemADDRL:              skip 1  ;General purpose addr LO
+.TempMemADDRH:              skip 1  ;General purpose addr HI
+.TempScratchMem:            skip 1  ;Temporary memory to screw with
+.TempScratchMemH:           skip 1  ;Temporary memory to screw with
+.R0                         skip 1  ;Scratch memory
+.R1                         skip 1  ;Scratch memory
+.R2                         skip 1  ;Scratch memory
+.R3                         skip 1  ;Scratch memory
+.R4                         skip 1  ;Scratch memory
+.MulProductTemp:            skip 2  ;Temporary memory for signed multiplication
+.TickThresh:                skip 1  ;Equivelant to track speed
+.KONState:                  skip 1  ;Holds the current bitfield state of KON
+.SFXRec                     skip 1  ;Byte for APU1 value expected to play SFX
+.FlagVal                    skip 1  ;Communication between SPC700 and 65C816
+.UpdateSwitch               skip 1  ;Determine if we're updating the "virtual" or hardware channels     [0 for hardware, 1 for virtual]
 
 ;Sequencing
-.SequenceAddr:              skip 32                 ;Array of sequence address pointers
+.SequenceAddr:              skip 32 ;Array of sequence address pointers
 
 ;Special
-.TempVolumeProcess:         skip 2                  ;Used to manipulate a volume value without actually changing said volume
-.TempPitchProcess:          skip 2                  ;Holds the pitch
+.TempVolumeProcess:         skip 2  ;Used to manipulate a volume value without actually changing said volume
+.TempPitchProcess:          skip 2  ;Holds the pitch
+.CurrentChannel:            skip 1  ;Current channel we are working with
+.InjectionChannel:          skip 1  ;Current channel we're injecting into
 
-.CurrentChannel:            skip 1                  ;Current channel we are working with
-.InjectionChannel:          skip 1                  ;Current channel we're injecting into
 ;Effects
-.SineIndexVib:              skip 16                 ;Array of current indexes for sine tables
-.SineIndexTrem:             skip 16                 ;Array of current indexes for sine tables
-.SineIndexPanbr:            skip 16                 ;Array of current indexes for sine tables
-.ArpValue:                  skip 16                 ;Array of values for the Arpeggio
-.ArpTimer:                  skip 16                 ;Array of timers for the Arpeggio
-.VolSlideValue:             skip 16                 ;Array of values for the Volume slide
-.PortValue:                 skip 16                 ;Array of values for the Portamento
-.VibratoValue:              skip 16                 ;Array of values for the Vibrato
-.TremolandoValue:           skip 16                 ;Array of values for the Tremolando
-.PanbrelloValue:            skip 16                 ;Array of values for the Panbrello
-
-.ChannelPitchesOutput:      skip 2                  ;Pitch written to current channel
-.ChannelVolumeOutput:       skip 2                  ;Volume written to current channel
+.SineIndexVib:              skip 16 ;Array of current indexes for sine tables
+.SineIndexTrem:             skip 16 ;Array of current indexes for sine tables
+.SineIndexPanbr:            skip 16 ;Array of current indexes for sine tables
+.ArpValue:                  skip 16 ;Array of values for the Arpeggio
+.ArpTimer:                  skip 16 ;Array of timers for the Arpeggio
+.VolSlideValue:             skip 16 ;Array of values for the Volume slide
+.PortValue:                 skip 16 ;Array of values for the Portamento
+.VibratoValue:              skip 16 ;Array of values for the Vibrato
+.TremolandoValue:           skip 16 ;Array of values for the Tremolando
+.PanbrelloValue:            skip 16 ;Array of values for the Panbrello
+.ChannelPitchesOutput:      skip 2  ;Pitch written to current channel
+.ChannelVolumeOutput:       skip 2  ;Volume written to current channel
 
 ;SFX Specific
-.VCTickThresh:              skip 8                  ;Tick thresholders for SFX
-.VCOut:                     skip 8                  ;8 bytes that determine which SFX is going through which channel. [0 = OFF, 1 = ON]
+.VCTickThresh:              skip 8  ;Tick thresholders for SFX
+.VCOut:                     skip 8  ;8 bytes that determine which SFX is going through which channel. [0 = OFF, 1 = ON]
 
 ;General Tracker State
-.FadeFlag                   skip 1                  ;Fades out master volume
-.FadeSpeed                  skip 1                  ;Speed fade is applied
-.TrackSettings:             skip 1                  ;Holds the track settings [refer to DriverRequirements.txt]
-.MasterVol                  skip 1                  ;Master volume for track
-.EchoVol                    skip 1                  ;Master echo for track
-.OutVol                     skip 1                  ;Masters the MVOL and EVOL registers
+.FadeFlag                   skip 1  ;Fades out master volume
+.FadeSpeed                  skip 1  ;Speed fade is applied
+.TrackSettings:             skip 1  ;Holds the track settings [refer to DriverRequirements.txt]
+.MasterVol                  skip 1  ;Master volume for track
+.EchoVol                    skip 1  ;Master echo for track
+.OutVol                     skip 1  ;Masters the MVOL and EVOL registers
 endstruct
 
 struct OP $0100
 ;Sequencing
-.OrderPos:                  skip 9                  ;Position we are within the orders table
-.OrderPosGoto:              skip 9                  ;Aim position for reading in patterns
-.OrderChangeFlag:           skip 9                  ;Flag for when we need to load in the next order sequence
-.ChannelSleepCounter:       skip 16                 ;Array of sleep counters
-.ChannelInstrumentIndex:    skip 16                 ;Array of Instrument indexes
-.ChannelPitches:            skip 32                 ;Array of pitch values in each channel
-.ChannelVolume:             skip 32                 ;Holds the channel master volume [goes across 16 bytes]
-.StopFlag:                  skip 9                  ;Flag to stop track from progressing
-.MaxVolTarget               skip 1                  ;Maximum volume to aim for when fading in
-
-.RegPitchWrite              skip 32                 ;Pitches to write to pitch registers
+.OrderPos:                  skip 9  ;Position we are within the orders table
+.OrderPosGoto:              skip 9  ;Aim position for reading in patterns
+.OrderChangeFlag:           skip 9  ;Flag for when we need to load in the next order sequence
+.ChannelSleepCounter:       skip 16 ;Array of sleep counters
+.ChannelInstrumentIndex:    skip 16 ;Array of Instrument indexes
+.ChannelPitches:            skip 32 ;Array of pitch values in each channel
+.ChannelVolume:             skip 32 ;Holds the channel master volume [goes across 16 bytes]
+.StopFlag:                  skip 9  ;Flag to stop track from progressing
+.MaxVolTarget               skip 1  ;Maximum volume to aim for when fading in
+.ChannelMask                skip 1  ;Bitfield to mask off channels
+.RegPitchWrite              skip 32 ;Pitches to write to pitch registers
 
 endstruct
 
@@ -109,7 +108,6 @@ struct RC $FF00
 .PlayNote                   skip 1  ;Play pitch from table          |   $20-FF
 endstruct
 
-; [bm] means the Bitmask applies to given channels
 ;   Programmer Commands
 struct ProCom $FE00
 .PlayMusic                  skip 1  ;Play music track               |   $00
@@ -118,7 +116,7 @@ struct ProCom $FE00
 .SetSettings                skip 1  ;Set settings byte              |   $03
 .SetDriverDiv               skip 1  ;Set timer divider              |   $04
 .MuteChannel                skip 1  ;Mutes certain channels         |   $05
-.Pause                      skip 1  ;Flips OFF flag for tune        |   $06
+.Pause                      skip 1  ;Flips STOP flag for tune       |   $06
 .FadeAudio                  skip 1  ;Enables fade routine           |   $07
 .FadeMax                    skip 1  ;Set maximum volume to fade to  |   $08
 .FadeSpeed                  skip 1  ;Set maximum volume to fade to  |   $09

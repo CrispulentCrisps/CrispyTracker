@@ -40,72 +40,7 @@ Reset:
     lda.b #%10000000            ;Load 80 into A
     sta.w HW_INIDISP            ;Sends A value to HW_INIDISP
 
-                                ;This section of code is here to load the IPL rom into the SPC700 to have it start up
-LoadDriver:
-
-.CheckPorts:
-    lda.w HW_APUI00             ;Load in the value held in APU-0
-    cmp.b #$AA                  ;Compare if the current value in APU-0 is 0xAA
-    bne .CheckPorts             ;Go to .CheckPorts if the compare fails
-
-    lda.w HW_APUI01             ;Load in the value held in APU-1
-    cmp.b #$BB                  ;Compare if the current value in APU-1 is 0xBB
-    bne .CheckPorts             ;Go to .CheckPorts if the compare fails
-
-.WriteToPorts:
-    lda.b #DriverStart&$FF              ;Load last byte to the A register
-    sta.w HW_APUI02                     ;Sends A value into HW_APUI02
-    lda.b #(DriverStart>>8)&$FF         ;Load first byte to the A register
-    sta.w HW_APUI03                     ;Sends A value into HW_APUI03
-    lda.b #$01                          ;Load first byte to the A register
-    sta.w HW_APUI01                     ;Sends A value into HW_APUI01
-    lda.b #$CC                          ;Load first byte to the A register
-    sta.w HW_APUI00                     ;Sends A value into HW_APUI00
-
-.ReadPort0:
-    lda.w HW_APUI00                     ;Load in the value held in APU-0
-    cmp.b #$CC                          ;Compare if the current value in APU-0 is 0xCC
-    bne .ReadPort0                      ;Go to .ReadPort0 if the compare fails
-
-    lda.b #ROM_Engine_Start&$FF         ;Loads first byte of the address into A
-    sta.b $0                            ;Load 0 into zeropage
-    lda.b #(ROM_Engine_Start>>8)&$FF    ;Loads second byte of the address into A
-    sta.b $1                            ;Load 1 into zeropage
-    lda.b #(ROM_Engine_Start>>16)&$FF   ;Loads third byte of the address into A
-    sta.b $2                            ;Load 2 into zeropage
-
-    ldy.w #0                            ;Reset Y register
-    ldx.w #ROM_Engine_End               ;Sets the X register to the last byte
-
-.TransferLoop:
-    lda.b [0],Y                         ;Takes address from zeropage, adds Y and then loads from the generated addr
-    sta.w HW_APUI01                     ;Write address to APU-1
-    tya                                 ;Transfer Y data to A
-    sta.w HW_APUI00                     ;Store value into APU-0
-    iny                                 ;Increment Y
-
-.Port0Wait:
-    cmp.w HW_APUI00                     ;Check if we have got the right value into APU-0
-    bne .Port0Wait
-
-    cpy.w #ROM_Engine_End               ;Check if the Y register is the same as the ROM end point
-    bne .TransferLoop                   ;If it fails, go back to the transfer loop
-
-    lda.b #DriverStart&$FF              ;Load 00 into A
-    sta.w HW_APUI02                     ;Write A value into APU-2
-    lda.b #(DriverStart>>8)&$FF         ;Load 02 into A
-    sta.w HW_APUI03                     ;Write A value into APU-3
-    stz.w HW_APUI01                     ;Write zeropage value into APU-1
-
-.NonZeroCheck:
-    iny                                 ;Increment Y
-    tya                                 ;Transfer Y to A
-    beq .NonZeroCheck
-    sta.w HW_APUI00                     ;Write increment to APU-0
-
-.CheckIfTransferDone
-    cmp.w HW_APUI00                     ;Check if we have got the right value into APU-0
-    bne .CheckIfTransferDone
+    jsr LoadDriver              ;Load file into SPC
 
     sep #$20
     lda.b #$80
@@ -115,8 +50,6 @@ LoadDriver:
     stz.w HW_APUI01
     stz.w HW_APUI02
     stz.w HW_APUI03
-    lda.b #$01
-    sta.w MZP.SFXRec
     stz.w MZP.MusicPlayed
     stz.w MZP.MusicSetup
     
@@ -138,9 +71,11 @@ LoadDriver:
 
 SendTune:
     stz.w MZP.NMIDone
-
 MainLoop:
+    lda.b LoadingDriver
+    bne +
     jsr ExecuteMCom
+    +
     -
     lda.w MZP.NMIDone
     bne SendTune
@@ -154,14 +89,23 @@ NMIDriverTest:
     cmp.b #$C0
     bne .SkipTimer
     stz.w MZP.SFXTimer
+    ;;Reset APU
+    ;%WriteMCom($0A, $01)
     ;Play SFX
-    %WriteMCom($01, $01)            ;Play SFX 1
-    ;Set fade speed
-    %WriteMCom($09, $FF)
-    ;Set Master Volume
-    %WriteMCom($02, $00)
-    ;Fade
-    %WriteMCom($07, $00)
+    %WriteMCom($01, $01)
+    ;;Set settings byte
+    ;%WriteMCom($03, $03)
+    ;;Mute channel 0
+    ;%WriteMCom($05, $01)
+    
+    ;;Pause track
+    ;%WriteMCom($06, $01)
+    ;;Set fade speed
+    ;%WriteMCom($09, $FF)
+    ;;Set Master Volume
+    ;%WriteMCom($02, $00)
+    ;;Fade
+    ;%WriteMCom($07, $00)
     .SkipTimer:
     rts
 
@@ -198,7 +142,7 @@ ExecuteMCom:
     php
     sep #$20
     ldx.w #MusicComTable
-    stx.b AudPtr    
+    stx.b AudPtr
     .ReadCom:
     ;Check previous command was executed
     lda.w HW_APUI01
@@ -208,16 +152,21 @@ ExecuteMCom:
     cmp #!MComEnd
     beq .Finished       ;Jump out if finish byte detected
     sta.w HW_APUI02     ;Command index
-    ;Clear previous command
     rep #$20
     inc.b AudPtr
     sep #$20
+    ;Send command data to APU
     lda.b (AudPtr)
     sta.w HW_APUI00     ;Command value
     lda.w MZP.SFXRec
     sta.w HW_APUI01
     inc.w MZP.SFXRec
-    -
+    -    
+    lda.w HW_APUI03     ;Check RESET flag
+    beq +
+    jsr LoadDriver
+    bra .Finished
+    +
     lda.w HW_APUI01     ;Wait to make sure commands are synced with SPC-700 update
     cmp.w MZP.SFXRec
     bne -
@@ -246,6 +195,89 @@ NMIHandler:
     plx
     pla
     rti
+
+
+;This section of code is here to load the IPL rom into the SPC700 to have it start up
+LoadDriver:
+    pha
+    phx
+    phy
+    php
+    sep #$20
+    lda.b #$01
+    sta.b LoadingDriver
+    .CheckPorts:
+    lda.w HW_APUI00                     ;Load in the value held in APU-0
+    cmp.b #$AA                          ;Compare if the current value in APU-0 is 0xAA
+    bne .CheckPorts                     ;Go to .CheckPorts if the compare fails
+
+    lda.w HW_APUI01                     ;Load in the value held in APU-1
+    cmp.b #$BB                          ;Compare if the current value in APU-1 is 0xBB
+    bne .CheckPorts                     ;Go to .CheckPorts if the compare fails
+
+    .WriteToPorts:
+    lda.b #DriverStart&$FF              ;Load last byte to the A register
+    sta.w HW_APUI02                     ;Sends A value into HW_APUI02
+    lda.b #(DriverStart>>8)&$FF         ;Load first byte to the A register
+    sta.w HW_APUI03                     ;Sends A value into HW_APUI03
+    lda.b #$01                          ;Load first byte to the A register
+    sta.w HW_APUI01                     ;Sends A value into HW_APUI01
+    lda.b #$CC                          ;Load first byte to the A register
+    sta.w HW_APUI00                     ;Sends A value into HW_APUI00
+
+    .ReadPort0:
+    lda.w HW_APUI00                     ;Load in the value held in APU-0
+    cmp.b #$CC                          ;Compare if the current value in APU-0 is 0xCC
+    bne .ReadPort0                      ;Go to .ReadPort0 if the compare fails
+
+    lda.b #ROM_Engine_Start&$FF         ;Loads first byte of the address into A
+    sta.b $0                            ;Load 0 into zeropage
+    lda.b #(ROM_Engine_Start>>8)&$FF    ;Loads second byte of the address into A
+    sta.b $1                            ;Load 1 into zeropage
+    lda.b #(ROM_Engine_Start>>16)&$FF   ;Loads third byte of the address into A
+    sta.b $2                            ;Load 2 into zeropage
+
+    ldy.w #0                            ;Reset Y register
+    ldx.w #ROM_Engine_End               ;Sets the X register to the last byte
+
+    .TransferLoop:
+    lda.b [0],Y                         ;Takes address from zeropage, adds Y and then loads from the generated addr
+    sta.w HW_APUI01                     ;Write address to APU-1
+    tya                                 ;Transfer Y data to A
+    sta.w HW_APUI00                     ;Store value into APU-0
+    iny                                 ;Increment Y
+
+    .Port0Wait:
+    cmp.w HW_APUI00                     ;Check if we have got the right value into APU-0
+    bne .Port0Wait
+
+    cpy.w #ROM_Engine_End               ;Check if the Y register is the same as the ROM end point
+    bne .TransferLoop                   ;If it fails, go back to the transfer loop
+
+    lda.b #DriverStart&$FF              ;Load 00 into A
+    sta.w HW_APUI02                     ;Write A value into APU-2
+    lda.b #(DriverStart>>8)&$FF         ;Load 02 into A
+    sta.w HW_APUI03                     ;Write A value into APU-3
+    stz.w HW_APUI01                     ;Write zeropage value into APU-1
+
+    .NonZeroCheck:
+    iny                                 ;Increment Y
+    tya                                 ;Transfer Y to A
+    beq .NonZeroCheck
+    sta.w HW_APUI00                     ;Write increment to APU-0
+
+    .CheckIfTransferDone
+    cmp.w HW_APUI00                     ;Check if we have got the right value into APU-0
+    bne .CheckIfTransferDone
+    
+    lda.b #$01                          ;Reset SFXRec
+    sta.w MZP.SFXRec
+    stz.b LoadingDriver
+    plp
+    ply
+    plx
+    pla
+    rts
 
                                 ;First half of the header
 org $FFB0                       ;Goto FFB0

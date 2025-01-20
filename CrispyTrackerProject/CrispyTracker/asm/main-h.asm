@@ -1,9 +1,11 @@
 ;-----------------------;
 ;   65C816 variables    ;
 ;-----------------------;
-AudPtr =        $0000
+AudPtr =        $0000       ;Pointer to command table
 MComIndex =     $0002       ;What command to execute
 MComVal =       $0003       ;Value assosiated with command
+MComReset =     $0004       ;Flag to reset APU and load file in
+LoadingDriver = $0005       ;Flag to say driver is currently loading
 
 !MComEnd =      $FF
 
