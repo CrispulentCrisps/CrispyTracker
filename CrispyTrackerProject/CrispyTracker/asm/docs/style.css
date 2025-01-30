@@ -1,0 +1,25 @@
+html {
+  font-size: 14px;
+  background: #EEE;
+  color: #444;
+  text-align: left;
+  font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+}
+p1, li {
+  font-size: 14px;
+}
+h2 {
+  font-size: x-large;
+  background-color: #CCC;
+}
+
+table, th, td {
+  font-size: 14px;
+  padding: 5px;
+  border: 1px solid black;
+  background-color: #DDD;
+  border-collapse: collapse;
+  width: 95%;
+  table-layout: fixed;
+  text-align: left;
+}

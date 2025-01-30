@@ -850,7 +850,7 @@ ReadRows:
     +
     mov.b A, ZP.R0
     asl A                               ;Mult by 2 to prevent reading in the wrong address byte
-    mov.b X, A                            ;Shove into X for the jump table
+    mov.b X, A                          ;Shove into X for the jump table
     jmp (.RowJumpTable+X)               ;Goto jumptable + command index
 
 .RowJumpTable:
@@ -1165,13 +1165,13 @@ Row_MasterVol:
         ;       X: command indexing
         ;
 GrabCommand:
-    mov.b A, ZP.CurrentChannel            ;Grab current channel
-    asl A                               ;Mult by 2 to get the correct offset into the sequence pointers
+    mov.b A, ZP.CurrentChannel              ;Grab current channel
+    asl A                                   ;Mult by 2 to get the correct offset into the sequence pointers
     mov.b X, A
-    mov.b A, (ZP.SequenceAddr+X)          ;Grab command from the current channel's command stream
-    inc.b ZP.SequenceAddr+X               ;Increment the channel's lo sequence pointer
-    bne +                               ;Check for 0 if we've overflown
-    inc.b ZP.SequenceAddr+1+X             ;Increment hi byte
+    mov.b A, (ZP.SequenceAddr+X)            ;Grab command from the current channel's command stream
+    inc.b ZP.SequenceAddr+X                 ;Increment the channel's lo sequence pointer
+    bne +                                   ;Check for 0 if we've overflown
+    inc.b ZP.SequenceAddr+1+X               ;Increment hi byte
     +
     ret
 

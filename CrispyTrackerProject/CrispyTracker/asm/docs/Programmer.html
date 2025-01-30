@@ -1,0 +1,182 @@
+<html>
+    <link rel="stylesheet" href="style.css">
+    
+    <h1>Programmer's Manual</h1>
+    <p1><a href="Documentation.html">Go back to documentation</a></p1>
+    <h2>Index</h2>
+    <ol>
+        <li><a href="#pre">Documentation prerequisites</a></li>
+        <li><a href="#intro">Introduction to the driver</a></li>
+        <li><a href="#desc">Understanding the driver</a></li>
+        <ul>
+            <li><a href="#load">Loading the driver</a></li>
+            <li><a href="#com">Communicating with the driver</a></li>
+            <li><a href="#procom">programmer commands</a></li>
+            <li><a href="#procomlist">programmer command list</a></li>
+        </ul>
+    </ol>
+
+    <h2 id="pre">Documentation prerequisites</h2>
+    <p1>
+        This document assumes that you have a baseline knowledge on the SPC-700 and 65C816's methods of operation, alongside some basic assembly knowledge. <br>
+        If you do not have this baseline, or require further reading, then I suggest that you use some of the links below.
+        <ul>
+            <li><a href="https://problemkaputt.de/fullsnes.htm">Fullsnes</a></li>
+            <li><a href="https://snes.nesdev.org/wiki/SNESdev_Wiki">SNESDev wiki</a></li>
+            <li><a href="https://sneslab.net/wiki/Main_Page">Sneslab</a></li>
+        </ul>
+    </p1>
+    <h2 id="intro">Introduction to the driver</h2>
+    <p1>
+        This driver [nicknamed COBALT] was made specifically for homebrew SNES games, not for ROM hacks, and is suited as such for the job. <br>
+        The driver is capable of:
+        <ul>
+            <li>Loading SPC files</li>
+            <li>Playing Music</li>
+            <li>Playing Sound Effects</li>
+            <li>Pausing/Unpausing music tracks</li>
+            <li>Muting certain channels</li>
+            <li>handling mono and stereo system setups</li>
+        </ul>
+        The driver has a max limit of 256 seperate order positions for music and SFX, alongside 256 subtune/SFX entries at most.
+    </p1>
+    <h2 id="desc">Understanding the driver</h2>
+
+    <h3 id="load">Loading the driver</h3>
+    <p1>
+        In order to load the driver it runs through the standard <a href="https://snes.nesdev.org/wiki/S-SMP#IPL_Boot_ROM">IPL ROM loader</a> routine supplied by the SPC-700. 
+        The steps can be followed and the driver should be loaded properly.
+    </p1>
+    <br>
+    <br>
+    <h3 id="com">Communicating with the driver</h3>
+    <p1>
+        The driver itself has a communications routine between itself and the 65C816 which is done with what I call a "Handshake byte". 
+        This byte starts at 0 in the driver and should be set to 1 on the 65C816 side. <br>
+        This checks if the driver has recieved our next command, so we can sync the SPC-700 and 65C816 operations together. <br>
+        Once the values are equal on both sides of the communication, the handshake byte must be increment for the 65C816 side, thus completing the transfer.
+        The handshake occurs on APU-01, and should always be checked in the driver update code on the 65C816.
+    </p1>
+    <br>
+    <br>
+    <h3 id="procomlist">Programmer Commands</h3>
+    <p1>
+        Programmer commands are specific command and value inputs to manipulate the driver into executing certain functions. <br>
+        Functions themselves typically [but not always] have an input byte, these are structured as follows
+        <ul>
+            <li>APU-0: Command index</li>
+            <li>APU-1: Handshake byte</li>
+            <li>APU-2: Command value</li>
+            <li>APU-3: Reset flag [Read-Only, See <a href="#procom-reset"> Procom $0A]</a></li>
+        </ul>
+        Below is a table of the available commands for the programmer to use:
+    </p1>
+    
+    <h3 id="procomlist">Available programmer commands</h3>
+    <table>
+        <tr>
+            <th style="width: 15%;">Command [APU-0]</th>
+            <th>Description</th>
+            <th style="width: 25%;">Value [APU-2]</th>
+        </tr>
+        <tr>
+            <th>$00: Play Music</th>
+            <th>Play a music track</th>
+            <th>$00 to $FF</th>
+        </tr>
+        <tr>
+            <th>$01: Play SFX</th>
+            <th>Play a sound effect SFX can take any of the 8 channels and will overwrite on a note play command</th>
+            <th>$00 to $FF</th>
+        </tr>
+        <tr>
+            <th>$02: Set Master Volume</th>
+            <th>Sets the volume of the MVOL and EVOL registers, both are mixed with the track's base settings</th>
+            <th>$00 to $7F [$80-$FF may cause some issues]</th>
+        </tr>
+        <tr>
+            <th>$03: Set Settings byte</th>
+            <th>Sets the settings byte [see x page for info]</th>
+            <th>$00-$FF</th>
+        </tr>
+        <tr>
+            <th>$04: Set Driver divider</th>
+            <th>Changes driver timer divider to value specified, starts at $20 [Note, this is exprimental and COULD cause some issues with the sound]</th>
+            <th>$00-$FF</th>
+        </tr>
+        <tr>
+            <th>$05: Mute channel[s]</th>
+            <th>Mutes channels based off of a bitfield value sent in [so $01 would mute channel 1, $40 would mute channel 7]</th>
+            <th>$00-$FF</th>
+        </tr>
+        <tr>
+            <th>$06: Pause</th>
+            <th>Flips pause flag for music</th>
+            <th>NAN</th>
+        </tr>
+        <tr>
+            <th>$07: Fade audio</th>
+            <th>Sets the fade flag for Master volume [see $08 and $09 for more details]</th>
+            <th>NAN</th>
+        </tr>
+        <tr>
+            <th>$08: Fade max</th>
+            <th>Sets the maximum volume value to fade in to</th>
+            <th>$00-$7F [$80-$FF may cause errors]</th>
+        </tr>
+        <tr>
+            <th>$09: Fade speed</th>
+            <th>Sets how fast to fade in/out the volume</th>
+            <th>$00-$7F fade out, £80-$FF fade in</th>
+        </tr>
+        <tr id="procom-reset">
+            <th>$0A: Reset APU</th>
+            <th>Sends the driver to the IPL ROM in the SPC-700, APU-3 sends the reset flag for the 65C816 to start the IPL load routine. See <a href="#load">Load routine</a></th>
+            <th>NAN</th>
+        </tr>
+    </table>
+
+    <br>
+    <h3 id="settings">Settings byte</h3>
+    <p1>
+        The settings byte allows for partial customisation of DSP states within the driver. The settings byte works in a bitfield sense, so certain bits do certain things.
+    </p1>
+    <table>
+        <tr>
+            <th style="width: 25%;">Value/Bit position</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <th>$01, bit 0: Force Mono</th>
+            <th>Forces the output of the audio to be mono</th>
+        </tr>
+        <tr>
+            <th>$02, bit 1: Disable Echo</th>
+            <th>Disables the echo output from the DSP</th>
+        </tr>
+        <tr>
+            <th>$04, bit 2: Nothing for the moment</th>
+            <th>NAN</th>
+        </tr>
+        <tr>
+            <th>$08, bit 3: Nothing for the moment</th>
+            <th>NAN</th>
+        </tr>
+        <tr>
+            <th>$10, bit 4: Nothing for the moment</th>
+            <th>NAN</th>
+        </tr>
+        <tr>
+            <th>$20, bit 5: Nothing for the moment</th>
+            <th>NAN</th>
+        </tr>
+        <tr>
+            <th>$40, bit 6: Nothing for the moment</th>
+            <th>NAN</th>
+        </tr>
+        <tr>
+            <th>$80, bit 7: Nothing for the moment</th>
+            <th>NAN</th>
+        </tr>
+    </table>
+</html>

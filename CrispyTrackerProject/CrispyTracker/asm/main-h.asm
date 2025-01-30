@@ -6,6 +6,7 @@ MComIndex =     $0002       ;What command to execute
 MComVal =       $0003       ;Value assosiated with command
 MComReset =     $0004       ;Flag to reset APU and load file in
 LoadingDriver = $0005       ;Flag to say driver is currently loading
+SfxSelect =     $0006       ;Sfx selector for testing SFX
 
 !MComEnd =      $FF
 
@@ -17,7 +18,7 @@ struct MZP      $0200
 .MusicSetup     skip 1
 endstruct
 
-MusicComTable =     $0400
+MusicComTable = $0400
 
 macro WriteMCom(T, V)
 lda.b #<T>

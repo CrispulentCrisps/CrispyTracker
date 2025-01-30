@@ -119,7 +119,7 @@ struct ProCom $FE00
 .Pause                      skip 1  ;Flips STOP flag for tune       |   $06
 .FadeAudio                  skip 1  ;Enables fade routine           |   $07
 .FadeMax                    skip 1  ;Set maximum volume to fade to  |   $08
-.FadeSpeed                  skip 1  ;Set maximum volume to fade to  |   $09
+.FadeSpeed                  skip 1  ;Set fade speed                 |   $09
 .ResetAPU                   skip 1  ;Go to IPL rom and load SPC     |   $0A
 endstruct
 

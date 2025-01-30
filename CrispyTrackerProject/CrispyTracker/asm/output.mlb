@@ -253,6 +253,7 @@ SpcRam:000EC3:SfxPat_Sfx1_0
 SpcRam:000EDD:SfxPat_Sfx1_1
 SpcRam:000EEB:SfxPat_Sfx2_0
 SpcRam:000EFB:SfxPat_Sfx2_1
+SpcRam:000006:SfxSelect
 SpcRam:000E8B:SfxTable
 SpcRam:000E9B:SfxTable_SFX_1
 SpcRam:000EAB:SfxTable_SFX_2
