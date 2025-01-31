@@ -1,292 +1,403 @@
 <html>
-    <link rel="stylesheet" href="style.css">
-    <h1>Musician's manual</h1>
-    <p1><a href="Documentation.html">Go back to documentation</a></p1>
-    <h2>Index</h2>
-    <ol>
-        <li><a href="#pre">Prerequisites</a></li>
-        <li><a href="#sns">SNES Specifics</a></li>
-        <ul>
-            <li><a href="#req">Required Knowledge</a></li>
-        </ul>
-        <li><a href="#lay">Layout</a></li>
-        <ul>
-            <li><a href="#ord">Orders</a></li>
-            <li><a href="#pat">Patterns</a></li>
-            <li><a href="#chn">Channels</a></li>
-            <li><a href="#row">Rows</a></li>
-            <li><a href="#smp">Samples</a></li>
-            <li><a href="#ins">Instruments</a></li>
-        </ul>
-        <li><a href="#ctr">Controls</a></li>
-        <li><a href="#efx">Effects</a></li>
-    </ol>
-    
-    <h2 id="pre">Prerequisites</h2>
-    <p1>
-        This document works best if you have a baseline knowledge of the SNES operations, however is not strictly nessecary. <br>
-        If you want more information, then I suggest that you use some of the links below.
-        <ul>
-            <li><a href="https://problemkaputt.de/fullsnes.htm#snesaudioprocessingunitapu">Fullsnes</a></li>
-            <li><a href="https://snes.nesdev.org/wiki/SNESdev_Wiki#Sound">SNESDev wiki</a></li>
-            <li><a href="https://sneslab.net/wiki/S-SMP">Sneslab</a></li>
-        </ul>
-    </p1>
+<body>
+	<link rel="stylesheet" href="style.css">
+	<h1>Musician's manual</h1>
+	<p1><a href="Documentation.html">Go back to documentation</a></p1>
+	<h2>Index</h2>
+	<ol>
+		<li><a href="#pre">Prerequisites</a></li>
+		<li><a href="#sns">SNES Specifics</a></li>
+		<ul>
+			<li><a href="#req">Required Knowledge</a></li>
+			<li><a href="#req1">Audio Playback</a></li>
+			<li><a href="#req2">Space limits</a></li>
+			<li><a href="#req3">Sample loops</a></li>
+			<li><a href="#req4">Echo functions</a></li>
+			<li><a href="#req5">Special functions</a></li>
+			<ul>
+				<li><a href="#spec1">Pitch modulation</a></li>
+				<li><a href="#spec2">Noise generation</a></li>
+				<li><a href="#spec3">L/R inversion</a></li>
+			</ul>
+		</ul>
+		<li><a href="#lay">Layout</a></li>
+		<ul>
+			<li><a href="#ord">Orders</a></li>
+			<li><a href="#pat">Patterns</a></li>
+			<li><a href="#chn">Channels</a></li>
+			<li><a href="#row">Rows</a></li>
+			<li><a href="#smp">Samples</a></li>
+			<li><a href="#ins">Instruments</a></li>
+		</ul>
+		<li><a href="#ctr">Controls</a></li>
+		<li><a href="#efx">Effects</a></li>
+	</ol>
 
-    <h2 id="sns">   SNES Specifics</h2>
-    <h3 id="req">   Required Knowledge</h3>
+	<h2 id="pre">Prerequisites</h2>
+	<p1>
+		This document works best if you have a baseline knowledge of the SNES operations, however is not strictly nessecary. <br>
+		If you want more information, then I suggest that you use some of the links below.
+		<ul>
+			<li><a href="https://problemkaputt.de/fullsnes.htm#snesaudioprocessingunitapu">Fullsnes</a></li>
+			<li><a href="https://snes.nesdev.org/wiki/SNESdev_Wiki#Sound">SNESDev wiki</a></li>
+			<li><a href="https://sneslab.net/wiki/S-SMP">Sneslab</a></li>
+		</ul>
+	</p1>
+
+	<h2 id="sns">SNES Specifics</h2>
+	<h3 id="req">Required Knowledge</h3>
+	<p1>
+		Here, there is some information that you cannot avoid knowing if you want to effeciently write music for the SNES.
+		Without knowing these you may have a hard time working the SNES, so it's best to educate yourself on it. <br>
+		These are the main notes, however there is <a href="https://snes.nesdev.org/wiki/S-SMP">better resources linked here.</a>
+	</p1>
+	<h4 id="req1">Audio Playback</h4>
+	<p1>
+		The SNES uses small recordings of real world audio in order to produce sounds, these are called Samples.
+		These samples can be played at a rate of 128KHz at most, but samples run natively 32KHz. This effectively means
+		the maximum available pitch is dependant on the note and the samplerate of the given sample. Audio is filtered out using a
+		<a href="https://en.wikipedia.org/wiki/Gaussian_filter">gaussian filter</a>, so lower quality sounds can be filtered to make them sound smoother, but more muffled as a result.
+	</p1>
+	<h4 id="req2">Space limits</h4>
+	<p1>
+		The SNES is an old system, and as such it didn't have much memory to spare for audio. Overall, the audio part of the SNES can address at most <b>64 kilobytes of information.</b>
+		Unfortunately for you, this will become a balancing act of space and quality with regards to samples. it will also have to track music data, echo buffer [we will get to that] and instrument space.
+		Generally, you want your samples to be a low sample rate and short, thus keeping a fair amount of space for other samples and music data, 16KHz should do fine for a reasonably compressed sample.
+	</p1>
+	<h4 id="req3">Sample loops</h4>
+	<p1>
+		Good thing for space is the SNES has some compression built in, however it comes with the snag that <b>sample loops have to be multiples of 16</b><br>
+		There's not really much you can do about this other than try and format your samples to have loops at multiples of 16, but it's doable to get around that.
+	</p1>
+	<h4 id="req4">Echo functions</h4>
+	<p1>
+		The SNES has the ability to send a given channel's data to an echo buffer set to a given delay value. <b>This delay value takes up 2kb of space per value</b>, eating up 30k at most with a delay value of 15.<br>
+		Echo is not stricly needed in a track, but you must be willing to sacrifice 2k per delay value of data for the ability to use echo.
+	</p1>
+	<br />
+	<br />
+	<h3 id="req5">Special functions</h3>
+	<p1>
+		The SNES has some special functionality to further change the audio output, this section here will explain each in a simplified manner.
+	</p1>
+
+	<h4 id="spec1">Pitch Modulation</h4>
+	<p1>
+		Pitch modulation [Pitch mod from hereon] is a feature that allows for channels to influence the pitch of contiguous channels. This is achieved by taking the output volume of the previous channel and using that to change the pitch of the current channel. <br />
+		Pitch mod can be thought of as <a href="https://en.wikipedia.org/wiki/Frequency_modulation_synthesis">"FM"</a> for the SNES and can be utilised for unique sounds or modifying existing ones for a fraction of the space. Having prior knowledge of FM helps, but is not stricly nessecary to understand, the best practice is to mess around and find what sounds good. Do note that pitch mod does not affect the first channel ever.
+	</p1>
+	<h4 id="spec2">Noise Generation</h4>
+	<p1>
+		Noise generation allows for randomly generated noise to be output in a given channel. Noise generation can have 1 of 32 possible pitches, these pitches are universal and NOT per-channel. It is the only part of the SNES not affected by the gaussian filtering over the output, so it works well for sound effects and drums like hihats.
+	</p1>
+	<h4 id="spec3">L/R Inversion</h4>
+	<p1>
+		The SNES had a strange option for the volume, it was able to go into the negatives. This doesn't do much if both are inverted, but if only one of the panning output is inverted then you get a "boxed in" sound.
+		This did come with the complication that the inversions will cancel each other out if on a mono system, which is why many SNES games offered a mono/stereo option for music. The driver, however, has some functionality to prevent this from being an issue on mono systems.
+	</p1>
+
+	<h2 id="lay">   Layout</h2>
+
+	<h3 id="ord">   Orders</h3>
     <p1>
-        Here, there is some information that you cannot avoid knowing if you want to effeciently write music for the SNES.
-        There are 4 main things:
-        <ol>
-            <li>Audio Playback</li>
-            <li>Space limits</li>
-            <li>Sample loops</li>
-            <li>Echo functions</li>
-        </ol>
-        Without knowing these you may have a hard time working the SNES, so it's best to educate yourself on it. <br>
-        These are the main notes, however there is <a href="https://snes.nesdev.org/wiki/S-SMP">better resources outwith here.</a>
+        Orders are the main sequence the track will take. These can be one of 256 entries, each of which can hold 8 patterns at once for each channel.
+
     </p1>
-    <br>
-    <br>
-    <h3>Audio Playback</h3>
-    <p1>
-        The SNES uses small recordings of real world audio in order to produce sounds, these are called Samples. <br>
-        These samples can be played at a rate of 128KHz at most, but samples run natively 32KHz. This effectively means
-        the maximum available pitch is dependant on the note and the samplerate of the given sample.
-    </p1>
-    <br>
-    <br>
-    <h3>Space limits</h3>
-    <p1>
-        The SNES is an old system, and as such it didn't have much memory to spare for audio. Overall, the audio part of the SNES can address at most <b>64 kilobytes of information.</b><br>
-        Unfortunately for you, this will become a balancing act of space and quality with regards to samples. it will also have to track music data, echo buffer [we will get to that] and instrument space.<br>
-        Generally, you want your samples to be a low sample rate and short, thus keeping a fair amount of space for other samples and music data, 16KHz should do fine.
-    </p1>
-    <br>
-    <br>
-    <h3>Sample loops</h3>
-    <p1>
-        Good thing for space is the SNES has some compression built in, however it comes with the snag that <b>sample loops have to be multiples of 16</b><br>
-        There's not really much you can do about this other than try and format your samples to have loops at multiples of 16, but it's doable to get around that.
-    </p1>
-    <br>
-    <br>
-    <h3>Echo functions</h3>
-    <p1>
-        The SNES has the ability to send a given channel's data to an echo buffer set to a given delay value. <b>This delay value takes up 2kb of space per value</b>, eating up 30k at most with a delay value of 15.<br>
-        Echo is not stricly needed in a track, but you must be willing to sacrifice 2k per delay value of data for the ability to use echo.
-    </p1>
-    <h2 id="lay">   Layout</h2>
-    <h3 id="ord">   Orders</h3>
-    <h3 id="pat">   Patterns</h3>
-    <h3 id="chn">   Channels</h3>
-    <h3 id="row">   Rows</h3>
-    <h3 id="smp">   Samples</h3>
-    <h3 id="ins">   Instruments</h3>
-    <h2 id="ctr">   Controls</h2>
-    <h2 id="efx">   Effects</h2>
-    <p1>
-        Crispytracker allows for 2 effects to be sent at once for the track. These effects are listed below
-        <table>
-            <tr>
-                <th style="width: 15%;">Effect</th>
-                <th style="width: 5%;">Index</th>
-                <th style="width: 70%;">Description</th>
-                <th style="width: 25%;">Breakdown</th>
-            </tr>
-            <tr>
-                <th>Arpeggio</th>
-                <th>$00</th>
-                <th>Raises the note pitch relative to the 2 nibbles set in the effect value. [NOT SUPPORTED AS OF WRITING]</th>
-                <th>$XY, X - first pitch, Y - second pitch</th>
-            </tr>
-            <tr>
-                <th>Portamento Up</th>
-                <th>$01</th>
-                <th>Increases the pitch of the given note linearly.</th>
-                <th>$XX, value added to pitch every tick</th>
-            </tr>
-            <tr>
-                <th>Portamento Down</th>
-                <th>$02</th>
-                <th>Decreases the pitch of the given note linearly.</th>
-                <th>$XX, value subtracted to pitch every tick</th>
-            </tr>
-            <tr>
-                <th>Portamento Glide</th>
-                <th>$03</th>
-                <th>Glides note to desired pitch at the given row</th>
-                <th>$XX, Glide speed</th>
-            </tr>
-            <tr>
-                <th>Vibrato</th>
-                <th>$04</th>
-                <th>Oscillates the pitch of the current note</th>
-                <th>$XY, X - Depth, Y - Speed</th>
-            </tr>
-            <tr>
-                <th>-</th>
-                <th>-</th>
-                <th>-</th>
-                <th>-</th>
-            </tr>
-            <tr>
-                <th>Tremolando</th>
-                <th>$07</th>
-                <th>Oscillates the volume of the current channel</th>
-                <th>$XY, X - Depth, Y - Speed</th>
-            </tr>
-            <tr>
-                <th>Panning</th>
-                <th>$08</th>
-                <th>Sets the panning of a channel</th>
-                <th>$XY, X - L volume, Y - R volume</th>
-            </tr>
-            <tr>
-                <th>Speed</th>
-                <th>$09</th>
-                <th>Sets the speed of the track</th>
-                <th>$XX, speed to apply to the track</th>
-            </tr>
-            <tr>
-                <th>Volume Slide</th>
-                <th>$0A</th>
-                <th>Slides the volume of the track based on the input nibbles</th>
-                <th>$XY, X - volume up, Y - volume down</th>
-            </tr>
-            <tr>
-                <th>Goto</th>
-                <th>$0B</th>
-                <th>Sets order position to the specified index in the current subtune</th>
-                <th>$XX, order index</th>
-            </tr>
-            <tr>
-                <th>Retrigger</th>
-                <th>$0C</th>
-                <th>Plays note multiple times based off of input value [NOT SUPPORTED AS OF WRITING]</th>
-                <th>$XX, ticks to wait before triggering next note</th>
-            </tr>
-            <tr>
-                <th>Break</th>
-                <th>$0D</th>
-                <th>Forces order to go to next position</th>
-                <th>$XX, does nothing</th>
-            </tr>
-            <tr>
-                <th>Panbrello</th>
-                <th>$0E</th>
-                <th>Oscillates the panning of a given channel</th>
-                <th>$XY, X - volume up, Y - volume down</th>
-            </tr>
-            <tr>
-                <th>-</th>
-                <th>-</th>
-                <th>-</th>
-                <th>-</th>
-            </tr>
-            <tr>
-                <th>Echo delay</th>
-                <th>$30</th>
-                <th>Sets the delay value of the echo</th>
-                <th>$XX, Echo value</th>
-            </tr>
-            <tr>
-                <th>Echo feedback</th>
-                <th>$31</th>
-                <th>Sets the feedback value of the echo</th>
-                <th>$XX, Feedback value</th>
-            </tr>
-            <tr>
-                <th>Echo L</th>
-                <th>$32</th>
-                <th>Sets the volume of the left echo output</th>
-                <th>$XX, Feedback value</th>
-            </tr>
-            <tr>
-                <th>Echo R</th>
-                <th>$33</th>
-                <th>Sets the volume of the right echo output</th>
-                <th>$XX, Feedback value</th>
-            </tr>
-            <tr>
-                <th>Echo Filter 0-7</th>
-                <th>$34-$3B</th>
-                <th>Sets the volume of the Nth echo filter coeffecient</th>
-                <th>$XX, Feedback value</th>
-            </tr>
-            <tr>
-                <th>-</th>
-                <th>-</th>
-                <th>-</th>
-                <th>-</th>
-            </tr>
-            <tr>
-                <th>Flag Value 0-F</th>
-                <th>$C0-$CF</th>
-                <th>Sends a byte to the main CPU, typically used for timing code with audio hits [NOT SUPPORTED AS OF WRITING]</th>
-                <th>$XX, Value</th>
-            </tr>
-            <tr>
-                <th>-</th>
-                <th>-</th>
-                <th>-</th>
-                <th>-</th>
-            </tr>
-            <tr>
-                <th>Arp Speed</th>
-                <th>$E0</th>
-                <th>Sets the speed arp commands go [NOT SUPPORTED AS OF WRITING]</th>
-                <th>$XX, Speed</th>
-            </tr>
-            <tr>
-                <th>Portamento Up Controlled</th>
-                <th>$E1</th>
-                <th>Raises pitch by X semitones</th>
-                <th>$XY, X - Speed, Y - Target Pitch</th>
-            </tr>
-            <tr>
-                <th>Portamento Down Controlled</th>
-                <th>$E2</th>
-                <th>Lowers pitch by X semitones</th>
-                <th>$XY, X - Speed, Y - Target Pitch</th>
-            </tr>
-            <tr>
-                <th>-</th>
-                <th>-</th>
-                <th>-</th>
-                <th>-</th>
-            </tr>
-            <tr>
-                <th>Set Global Left</th>
-                <th>$E8</th>
-                <th>Sets the global volume of the left output</th>
-                <th>$XX, Left Volume</th>
-            </tr>
-            <tr>
-                <th>Set Global Right</th>
-                <th>$E9</th>
-                <th>Sets the global volume of the right output</th>
-                <th>$XX, Right Volume</th>
-            </tr>
-            <tr>
-                <th>Set Global Volume</th>
-                <th>$EA</th>
-                <th>Sets the global volume of the output</th>
-                <th>$XX, Global Volume</th>
-            </tr>
-            <tr>
-                <th>-</th>
-                <th>-</th>
-                <th>-</th>
-                <th>-</th>
-            </tr>
-            <tr>
-                <th>End</th>
-                <th>$FF</th>
-                <th>Stops track</th>
-                <th>$XX, does nothing</th>
-            </tr>
-        </table>
-    </p1>
+	<h3 id="pat">   Patterns</h3>
+	<h3 id="chn">   Channels</h3>
+	<h3 id="row">   Rows</h3>
+	<p1>
+		Rows are set sections of audio that allow the user to denote the:
+		<ol>
+			<li>Note</li>
+			<li>Instrument</li>
+			<li>Volume</li>
+			<li>Effect index</li>
+			<li>Effect value</li>
+			<li>Effect index 2</li>
+			<li>Effect value 2</li>
+		</ol>
+		in that order. Rows themselves will look like below as a blank state: <br />
+		<code>... .. .. .. .. .. ..
+		</code> <br />
+		A row will usually be filled with some information, so it is best to break it down into what it can and cannot do.
+	</p1>
+	<h4>Notes</h4>
+	<p1>
+		Notes are placed in the first column of the row and formatted in this specific way:
+		<ol>
+			<li>Semitone</li>
+			<li>Sharp/Natural</li>
+			<li>Octave</li>
+		</ol>
+		So a note could look like: <br /><br />
+		<code> <span style="background: #FCF;">C#5</span> .. .. .. .. .. ..
+		</code> <br /><br />
+		Where it indicates that is is a C# on octave 5. The tracker itself can handle an 8 octave range of notes, however due to <a href="#req1">hardware reasons</a> this may not be achievable with the current sound.
+		Notes with a - indicate it is a natural, so: <br /><br />
+		<code> <span style="background: #FCF;">F-3</span> .. .. .. .. .. ..
+		</code>
+		would indicate that it is an F natural on octave 3.
+	</p1>
+	<h4>Instrument</h4>
+	<p1>
+		The instrument index is set in the second column in the row. This is input as <a href="https://en.wikipedia.org/wiki/Hexadecimal#Written_representation">hexidecimal</a> for <a href="https://en.wikipedia.org/wiki/Music_tracker"> historical and convention reasons.</a> This also extends to the rest of the row columns, so some good practice will make things a lot easier.
+		The instrument column dictates what instrument to use for the channel, determining several aspects of the sound [See <a href="#ins">instruments</a> here]. index values can range from 0 [$00] to 256 [$FF]. Below is an example of an instrument command.
+		<br />
+		<code> A#1 <span style="background: #CFC;">4A</span> .. .. .. .. ..
+		</code> <br />
+	</p1>
+	<h4>Volume</h4>
+	<p1>
+		The channel volume is set in the third row column and can range from 0 [$00] to 256 [$FF]. The closer the volume is to 0 the quieter it becomes, however, if the volume goes larger than 127 [$7F] then due to <a href="#spec3">hardware reasons</a> comtinuing to increase the volume will make it quieter. This mixing can be affected by effects like <a href="#vls">volume slides</a> but outside of them the volume stays the same until changed in the track.
+		<br />
+		<code> E-7 .. <span style="background: #CFF;">7F</span> .. .. .. ..
+		</code> <br />
+	</p1>
+	<h4>Effect index and effect value</h4>
+	<p1>
+		The rest of the columns are occupied by the effect index and effect value respectively. There are two of them for the user to utilise, with importance being placed on the second index and value.
+		More in depth information on effects can be seen <a href="#efx">here</a>.
+
+		<code> ... .. .. <span style="background: #FCC;">01 3A </span> <span style="background: #FFC;">02 44 </span>
+		</code><br />
+		Both effects columns are used, with the rightmost yellow one being the effect to be executed.
+	</p1>
+	<h3 id="smp">   Samples</h3>
+	<h3 id="ins">   Instruments</h3>
+	<h2 id="ctr">   Controls</h2>
+	<h2 id="efx">   Effects</h2>
+	<p1>
+		Crispytracker allows for 2 effects to be sent at a given channel, effects are continuous unless turned off by a $00 value in the effect value column. <br />
+		For example, let's say we have a row set up as:<br /><br />
+		<code> C-4 .. 01 <span style="background: #FCC;">04 97 </span>.. ..
+		</code><br /><br />
+		<p1>
+			The highlighted section would be the Vibrato effect in the leftmost byte, with a depth of $9 and a speed of $7 specified in the rightmost byte. This effect would continue until we hit a row like this:
+		</p1><br /><br />
+		<code> ... .. .. .. .. <span style="background: #FFC;">04 00 </span>
+		</code><br /><br />
+		Since the vibrato index has been identified and a value of $00 is input, the effect will be stopped. <br />
+		Multiple effects can be stacked at once so you could write, for example:
+	</p1>
+	<br /><br />
+	<code> B-2 01 7F <span style="background: #FCC;">04 C4 </span> <span style="background: #FFC;">02 44 </span>
+	</code><br /><br />
+	<p1>
+		The first highlighted section would execute both a vibrato with a depth of $C and a speed of $4 and the second highlighted sectionm would execute a  portamento down at $44 per tick
+		<br /><br />
+		In terms of effects that can be stacked, these include:
+		<ul>
+			<li><a href="#arp">Arpeggio</a></li>
+			<li><a href="#pup">Portamento</a></li>
+			<li><a href="#vib">Vibrato</a></li>
+			<li><a href="#trm">Tremolando</a></li>
+			<li><a href="#vls">Volume Slide</a></li>
+			<li><a href="#pbr">Panbrello</a></li>
+		</ul>
+		Effect importance is placed on the last read one, which will be the second column, so doing a port up and port down on the first and second effects column respectively would execute a portamento down
+	</p1>
+	<h4> Effects list</h4>
+	<table>
+		<tr>
+			<th style="width: 15%;">Effect</th>
+			<th style="width: 5%;">Index</th>
+			<th style="width: 70%;">Description</th>
+			<th style="width: 25%;">Breakdown</th>
+		</tr>
+		<tr>
+			<th id="arp">Arpeggio</th>
+			<th>$00</th>
+			<th>Raises the note pitch relative to the 2 nibbles set in the effect value. [NOT SUPPORTED AS OF WRITING]</th>
+			<th>$XY, X - first pitch, Y - second pitch</th>
+		</tr>
+		<tr>
+			<th id="pup">Portamento Up</th>
+			<th>$01</th>
+			<th>Increases the pitch of the given note linearly. [Note: this does not account for pitch limits, so pitches may jump when too high]</th>
+			<th>$XX, value added to pitch every tick</th>
+		</tr>
+		<tr>
+			<th id="pdw">Portamento Down</th>
+			<th>$02</th>
+			<th>Decreases the pitch of the given note linearly. [Note: this does not account for pitch limits, so pitches may jump when too low]</th>
+			<th>$XX, value subtracted to pitch every tick</th>
+		</tr>
+		<tr>
+			<th>Portamento Glide</th>
+			<th>$03</th>
+			<th>Glides note to desired pitch at the given row</th>
+			<th>$XX, Glide speed</th>
+		</tr>
+		<tr>
+			<th id="vib">Vibrato</th>
+			<th>$04</th>
+			<th>Oscillates the pitch of the current note</th>
+			<th>$XY, X - Depth, Y - Speed</th>
+		</tr>
+		<tr>
+			<th>-</th>
+			<th>-</th>
+			<th>-</th>
+			<th>-</th>
+		</tr>
+		<tr>
+			<th id="trm">Tremolando</th>
+			<th>$07</th>
+			<th>Oscillates the volume of the current channel</th>
+			<th>$XY, X - Depth, Y - Speed</th>
+		</tr>
+		<tr>
+			<th>Panning</th>
+			<th>$08</th>
+			<th>Sets the panning of a channel</th>
+			<th>$XY, X - L volume, Y - R volume</th>
+		</tr>
+		<tr>
+			<th>Speed</th>
+			<th>$09</th>
+			<th>Sets the speed of the track</th>
+			<th>$XX, speed to apply to the track</th>
+		</tr>
+		<tr id="vls">
+			<th>Volume Slide</th>
+			<th>$0A</th>
+			<th>Slides the volume of the track based on the input nibbles</th>
+			<th>$XY, X - volume up, Y - volume down</th>
+		</tr>
+		<tr>
+			<th>Goto</th>
+			<th>$0B</th>
+			<th>Sets order position to the specified index in the current subtune</th>
+			<th>$XX, order index</th>
+		</tr>
+		<tr>
+			<th>Retrigger</th>
+			<th>$0C</th>
+			<th>Plays note multiple times based off of input value [NOT SUPPORTED AS OF WRITING]</th>
+			<th>$XX, ticks to wait before triggering next note</th>
+		</tr>
+		<tr>
+			<th>Break</th>
+			<th>$0D</th>
+			<th>Forces order to go to next position</th>
+			<th>$XX, does nothing</th>
+		</tr>
+		<tr>
+			<th id="pbr">Panbrello</th>
+			<th>$0E</th>
+			<th>Oscillates the panning of a given channel</th>
+			<th>$XY, X - volume up, Y - volume down</th>
+		</tr>
+		<tr>
+			<th>-</th>
+			<th>-</th>
+			<th>-</th>
+			<th>-</th>
+		</tr>
+		<tr>
+			<th>Echo delay</th>
+			<th>$30</th>
+			<th>Sets the delay value of the echo</th>
+			<th>$XX, Echo value</th>
+		</tr>
+		<tr>
+			<th>Echo feedback</th>
+			<th>$31</th>
+			<th>Sets the feedback value of the echo</th>
+			<th>$XX, Feedback value</th>
+		</tr>
+		<tr>
+			<th>Echo L</th>
+			<th>$32</th>
+			<th>Sets the volume of the left echo output</th>
+			<th>$XX, Feedback value</th>
+		</tr>
+		<tr>
+			<th>Echo R</th>
+			<th>$33</th>
+			<th>Sets the volume of the right echo output</th>
+			<th>$XX, Feedback value</th>
+		</tr>
+		<tr>
+			<th>Echo Filter 0-7</th>
+			<th>$34-$3B</th>
+			<th>Sets the volume of the Nth echo filter coeffecient</th>
+			<th>$XX, Feedback value</th>
+		</tr>
+		<tr>
+			<th>-</th>
+			<th>-</th>
+			<th>-</th>
+			<th>-</th>
+		</tr>
+		<tr>
+			<th>Flag Value 0-F</th>
+			<th>$C0-$CF</th>
+			<th>Sends a byte to the main CPU, typically used for timing code with audio hits [NOT SUPPORTED AS OF WRITING]</th>
+			<th>$XX, Value</th>
+		</tr>
+		<tr>
+			<th>-</th>
+			<th>-</th>
+			<th>-</th>
+			<th>-</th>
+		</tr>
+		<tr>
+			<th>Arp Speed</th>
+			<th>$E0</th>
+			<th>Sets the speed arp commands go [NOT SUPPORTED AS OF WRITING]</th>
+			<th>$XX, Speed</th>
+		</tr>
+		<tr>
+			<th id="pue">Portamento Up Controlled</th>
+			<th>$E1</th>
+			<th>Raises pitch by X semitones</th>
+			<th>$XY, X - Speed, Y - Target Pitch</th>
+		</tr>
+		<tr>
+			<th id="pde">Portamento Down Controlled</th>
+			<th>$E2</th>
+			<th>Lowers pitch by X semitones</th>
+			<th>$XY, X - Speed, Y - Target Pitch</th>
+		</tr>
+		<tr>
+			<th>-</th>
+			<th>-</th>
+			<th>-</th>
+			<th>-</th>
+		</tr>
+		<tr>
+			<th>Set Global Left</th>
+			<th>$E8</th>
+			<th>Sets the global volume of the left output</th>
+			<th>$XX, Left Volume</th>
+		</tr>
+		<tr>
+			<th>Set Global Right</th>
+			<th>$E9</th>
+			<th>Sets the global volume of the right output</th>
+			<th>$XX, Right Volume</th>
+		</tr>
+		<tr>
+			<th>Set Global Volume</th>
+			<th>$EA</th>
+			<th>Sets the global volume of the output</th>
+			<th>$XX, Global Volume</th>
+		</tr>
+		<tr>
+			<th>-</th>
+			<th>-</th>
+			<th>-</th>
+			<th>-</th>
+		</tr>
+		<tr>
+			<th>End</th>
+			<th>$FF</th>
+			<th>Stops track</th>
+			<th>$XX, does nothing</th>
+		</tr>
+	</table>
+	</p1>
+</body>
 </html>

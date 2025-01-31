@@ -53,7 +53,13 @@
     <p1>
         The driver itself has a communications routine between itself and the 65C816 which is done with what I call a "Handshake byte". 
         This byte starts at 0 in the driver and should be set to 1 on the 65C816 side. <br>
-        This checks if the driver has recieved our next command, so we can sync the SPC-700 and 65C816 operations together. <br>
+        The handshake byte ensures that:
+        <ol>
+            <li>driver and 65C816 must be in sync</li>
+            <li>we can signal to the SPC that a new command has been recieved</li>
+            <li>we can signal to the 65C816 that the sent command has been processed</li>
+        </ol>
+        <br>
         Once the values are equal on both sides of the communication, the handshake byte must be increment for the 65C816 side, thus completing the transfer.
         The handshake occurs on APU-01, and should always be checked in the driver update code on the 65C816.
     </p1>
@@ -64,9 +70,9 @@
         Programmer commands are specific command and value inputs to manipulate the driver into executing certain functions. <br>
         Functions themselves typically [but not always] have an input byte, these are structured as follows
         <ul>
-            <li>APU-0: Command index</li>
-            <li>APU-1: Handshake byte</li>
-            <li>APU-2: Command value</li>
+            <li>APU-0: Command index [Write-Only]</li>
+            <li>APU-1: Handshake byte [Read-Write]</li>
+            <li>APU-2: Command value [Write-Only]</li>
             <li>APU-3: Reset flag [Read-Only, See <a href="#procom-reset"> Procom $0A]</a></li>
         </ul>
         Below is a table of the available commands for the programmer to use:
@@ -112,12 +118,12 @@
         <tr>
             <th>$06: Pause</th>
             <th>Flips pause flag for music</th>
-            <th>NAN</th>
+            <th>N/A</th>
         </tr>
         <tr>
             <th>$07: Fade audio</th>
             <th>Sets the fade flag for Master volume [see $08 and $09 for more details]</th>
-            <th>NAN</th>
+            <th>N/A</th>
         </tr>
         <tr>
             <th>$08: Fade max</th>
@@ -132,10 +138,24 @@
         <tr id="procom-reset">
             <th>$0A: Reset APU</th>
             <th>Sends the driver to the IPL ROM in the SPC-700, APU-3 sends the reset flag for the 65C816 to start the IPL load routine. See <a href="#load">Load routine</a></th>
-            <th>NAN</th>
+            <th>N/A</th>
         </tr>
     </table>
 
+    <p1>
+        As for writing for this driver, it is best practice to program the values in a similar way to here:
+    </p1>
+    <pre>
+    <code>  SEP #$20    <span style="color: #484;">;Set A to 8bit</span>
+            LDA APU1    <span style="color: #484;">;Grab APU1</span>
+            CMP 
+            LDA #$01    ;Load Command index
+            STA APU0    ;Store into APU-0
+
+            STA APU0        ;Store into APU-0
+            SkipCommand:
+    </code>
+    </pre>
     <br>
     <h3 id="settings">Settings byte</h3>
     <p1>
@@ -156,27 +176,27 @@
         </tr>
         <tr>
             <th>$04, bit 2: Nothing for the moment</th>
-            <th>NAN</th>
+            <th>N/A</th>
         </tr>
         <tr>
             <th>$08, bit 3: Nothing for the moment</th>
-            <th>NAN</th>
+            <th>N/A</th>
         </tr>
         <tr>
             <th>$10, bit 4: Nothing for the moment</th>
-            <th>NAN</th>
+            <th>N/A</th>
         </tr>
         <tr>
             <th>$20, bit 5: Nothing for the moment</th>
-            <th>NAN</th>
+            <th>N/A</th>
         </tr>
         <tr>
             <th>$40, bit 6: Nothing for the moment</th>
-            <th>NAN</th>
+            <th>N/A</th>
         </tr>
         <tr>
             <th>$80, bit 7: Nothing for the moment</th>
-            <th>NAN</th>
+            <th>N/A</th>
         </tr>
     </table>
 </html>
