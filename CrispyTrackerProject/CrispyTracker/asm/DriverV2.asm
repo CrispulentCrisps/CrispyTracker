@@ -140,32 +140,32 @@ mov SubPtr, A
 mov A, #(SubtuneList>>8)&$FF
 mov SubPtr+1, A
 
-DriverLoop:                         ;Main driver loop
-    mov.b X, #0                     ;Reset counter
+DriverLoop:                             ;Main driver loop
+    mov.b X, #0                         ;Reset counter
     
     .TickIncrement:
     call RecieveSub
     call CheckProgrammerControls
-    mov.b Y, SPC_Count1             ;Check counter
-    beq .TickIncrement              ;If the timer is set to 0
-    call ProcessEffects
+    mov.b Y, SPC_Count1                 ;Check counter
+    beq .TickIncrement                  ;If the timer is set to 0
+    call ProcessEffects                 ;KEEP AROUND, for some reason the effects sound much more correct when this is called an odd number of times [don't ask why]
     call FinaliseOutput
     setp
-    mov.b A, OP.StopFlag              ;Stop track from progressing
+    mov.b A, OP.StopFlag                ;Stop track from progressing
     clrp
     bne .CheckSFX
-    inc.b X                           ;Increment our counter
-    cmp.b X, ZP.TickThresh            ;Check if the counter has reached the 
-    bmi .TickIncrement              ;Go back to the tick incrementer if the counter is not
-                                    ;Assuming we've hit the threshold
+    inc.b X                             ;Increment our counter
+    cmp.b X, ZP.TickThresh              ;Check if the counter has reached the 
+    bmi .TickIncrement                  ;Go back to the tick incrementer if the counter is not
+                                        ;Assuming we've hit the threshold
     setp
-    mov.b A, OP.OrderChangeFlag       ;Check the order flag with the 0th bit
-    beq +                           ;Skip if the carry flag isn't set
+    mov.b A, OP.OrderChangeFlag         ;Check the order flag with the 0th bit
+    beq +                               ;Skip if the carry flag isn't set
     mov.b X, #$07
     mov Y, #$00
     -                                   ;Sleep Clear Loop
     mov.b OP.ChannelSleepCounter+X, Y   ;Clear sleep counter
-    dec.b X                               ;Decrement counter
+    dec.b X                             ;Decrement counter
     bpl -
     clrp
     mov.w A, OrderPtr
@@ -182,8 +182,8 @@ DriverLoop:                         ;Main driver loop
     +
     clrp
     
-    mov.b ZP.CurrentChannel,#$07      ;Increment channel index
-    .ChannelLoop:                   ;Main channel loop
+    mov.b ZP.CurrentChannel,#$07        ;Increment channel index
+    .ChannelLoop:                       ;Main channel loop
     mov.b X, ZP.CurrentChannel
     setp
     mov.b Y, OP.ChannelSleepCounter+X
@@ -194,8 +194,9 @@ DriverLoop:                         ;Main driver loop
     .SkipRow:                       ;Sleep counter routine
     setp
     dec.b OP.ChannelSleepCounter+X
-    clrp
     .SkipDec:
+    clrp
+    call ProcessEffects
     dec.b ZP.CurrentChannel
     bpl .ChannelLoop
     setp
@@ -211,16 +212,12 @@ DriverLoop:                         ;Main driver loop
 
 ProcessEffects:
     push X
-    mov.b A, ZP.UpdateSwitch
-    inc.b A
-    and.b A, #$01
-    mov.b ZP.UpdateSwitch, A
-
-    mov.b ZP.CurrentChannel, #$07
-    mov.b A, ZP.UpdateSwitch
-    bne +
-    mov.b ZP.CurrentChannel, #$0F
-    +
+    clrp    
+    ;mov.b ZP.CurrentChannel, #$07
+    ;mov.b A, ZP.UpdateSwitch
+    ;bne +
+    ;mov.b ZP.CurrentChannel, #$0F
+    ;+
     .EffectsLoop:
     mov.b ZP.TempPitchProcess,    #$00
     mov.b ZP.TempPitchProcess+1,  #$00
@@ -402,8 +399,9 @@ ProcessEffects:
     and.b A, #$07
     mov.b ZP.InjectionChannel, A
     ;Prevent doing channel mixing if working Virtual channels
-    mov.b A, ZP.UpdateSwitch
-    beq .CheckSFXInjection
+    mov.b A, ZP.CurrentChannel
+    and.b A, #$08
+    bne .CheckSFXInjection
 
     ;Music
     ;Check if the current VC-Out is ON
@@ -589,28 +587,29 @@ ProcessEffects:
     ;Jump over if working Virtual channels
     .SkipInst:
     
-    mov.b A, ZP.UpdateSwitch
-    bne .MusicFX
-    ;SFX loop
-    dec.b ZP.CurrentChannel
-    cmp.b ZP.CurrentChannel, #$07
-    beq .BreakLoop
-    jmp .EffectsLoop
-    ;Music loop
-    .MusicFX:
-    dec.b ZP.CurrentChannel
-    bmi .BreakLoop
-    jmp .EffectsLoop
-    .BreakLoop:
+    ;mov.b A, ZP.UpdateSwitch
+    ;bne .MusicFX
+    ;;SFX loop
+    ;dec.b ZP.CurrentChannel
+    ;cmp.b ZP.CurrentChannel, #$07
+    ;beq .BreakLoop
+    ;jmp .EffectsLoop
+    ;;Music loop
+    ;.MusicFX:
+    ;dec.b ZP.CurrentChannel
+    ;bmi .BreakLoop
+    ;jmp .EffectsLoop
+    ;.BreakLoop:
     pop X
     ret
 
 FinaliseOutput:
     push X
-    mov A, ZP.UpdateSwitch
-    bne +
-    jmp .SkipOutput
-    +
+    ;eor.b ZP.UpdateSwitch, #$01
+    ;mov A, ZP.UpdateSwitch
+    ;bne +
+    ;jmp .SkipOutput
+    ;+
     mov Y, #$0F
     mov X, #$07
     -
@@ -833,6 +832,7 @@ HandleSFX:
     .DecTick:
     dec.b OP.ChannelSleepCounter+X
     clrp
+    call ProcessEffects
     dec.b ZP.CurrentChannel
     mov.b X, ZP.CurrentChannel
     cmp.b X, #$07
@@ -1267,6 +1267,7 @@ GetSineValue:
     ;        [Provided by AArt1256]
     ;
 SignedMul:
+    push X
     ;Save L and H temp memory as we use it outside of this function
     mov.b X, ZP.TempMemADDRL
     push X
@@ -1307,6 +1308,7 @@ SignedMul:
     mov.b ZP.TempMemADDRH, X
     pop X
     mov.b ZP.TempMemADDRL, X
+    pop X
     ret
 
     ;------------------------------;
@@ -1635,7 +1637,7 @@ PatternMemory:
     %SetDelayFeedback($40)
     %Sleep($FF)
     .Pat2:
-    %SetVib($F1)
+    %SetVib($62)
     %Sleep($04)
     %Goto($0)
     .Pat3:
