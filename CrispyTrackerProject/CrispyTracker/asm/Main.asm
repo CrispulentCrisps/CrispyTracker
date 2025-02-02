@@ -93,6 +93,7 @@ NMIDriverTest:
     ;%WriteMCom($0A, $01)
     ;Play SFX
     %WriteMCom($01, $01)
+    %WriteMCom($01, $00)
     ;;Set settings byte
     ;%WriteMCom($03, $03)
     ;;Mute channel 0

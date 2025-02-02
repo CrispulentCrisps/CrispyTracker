@@ -2,7 +2,7 @@
 ;   Macro's file for Cobalt Driver  ;
 ;-----------------------------------;
 
-!CodeBuffer = $0C00                                 ;Section of bytes to fill
+!CodeBuffer = $0C00                 ;Section of bytes to fill
 
 struct ZP $00
 .TempMemADDRL:              skip 1  ;General purpose addr LO
@@ -19,7 +19,7 @@ struct ZP $00
 .KONState:                  skip 1  ;Holds the current bitfield state of KON
 .SFXRec                     skip 1  ;Byte for APU1 value expected to play SFX
 .FlagVal                    skip 1  ;Communication between SPC700 and 65C816
-.UpdateSwitch               skip 1  ;Determine if we're updating the "virtual" or hardware channels     [0 for hardware, 1 for virtual]
+.ChannelMask                skip 1  ;Bitfield to mask off channels
 
 ;Sequencing
 .SequenceAddr:              skip 32 ;Array of sequence address pointers
@@ -68,9 +68,7 @@ struct OP $0100
 .ChannelVolume:             skip 32 ;Holds the channel master volume [goes across 16 bytes]
 .StopFlag:                  skip 9  ;Flag to stop track from progressing
 .MaxVolTarget               skip 1  ;Maximum volume to aim for when fading in
-.ChannelMask                skip 1  ;Bitfield to mask off channels
 .RegPitchWrite              skip 32 ;Pitches to write to pitch registers
-
 endstruct
 
 InstPtr =                   $01E0
