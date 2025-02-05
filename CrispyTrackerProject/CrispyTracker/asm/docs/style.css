@@ -9,7 +9,6 @@ body {
     width: 80%;
     align-self: auto;
     margin-left: 10%;
-    background: #EEE;
 }
 p1, li {
   font-size: 14px;
@@ -31,11 +30,11 @@ h4 {
 code {
     border: 2px solid #BBB;
     border-collapse: collapse;
-    font-family:'MS Gothic';
+    font-family: 'MS Gothic', 'monospace';
     background: #DDD;
     margin: 2px;
     white-space: pre-line;
-    display:block;
+    display: block;
     width: 100%;
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <string>
 
 #define ARPEGGIO		0x00
 #define PORT_UP			0x01
@@ -60,62 +61,6 @@
 
 #define END				0xFF//Ends the track
 
-//Descriptions
-#define ARPEGGIO_DESC		"00xy Arpeggio [x: offset 1, y: offset 2] Semitone offset from base note"	
-#define PORT_UP_DESC		"01xx Portamento up [xx: speed up] Slides the pitch upwards"	
-#define PORT_DOWN_DESC		"02xx Portamento up [xx: speed down] Slides the pitch downwards"
-#define PORT_TO_DESC		"03xx Portamento to [xx: speed toward] Slides the pitch to the desired note"	
-#define VIBRATO_DESC		"04xy Vibrato [x: speed, y: depth] Oscillates the pitch of the note"
-#define TREMOLANDO_DESC		"05xy Tremolando [x: speed, y: depth] Oscillates the volume of the note"
-
-#define PANNING_DESC		"08xy Panning [x: left, y: right] Sets the panning of the channel"	
-#define SPEED_DESC			"09xx Speed [xx: speed] Sets the speed of the track"
-#define VOLSLIDE_DESC		"0Axy Volume Slide [x: up, y: down] Changes the instrument volume"
-#define GOTO_DESC			"0Bxx Goto [xx: set order position] Sets position within orders"
-#define RETRIGGER_DESC		"0Cxx Retrigger [xx: frames between triggers] Plays the note the amount of frames specified"
-#define BREAK_DESC			"0Dxx Break. Goes to next order"
-						
-#define PANBRLLO_DESC		"20xy Panbrello [x: speed, y: depth] Oscillates the panning of the note"
-
-#define ECHO_DEL_DESC		"30xx Echo Delay [xx: echo value] sets the delay value of the echo [Note! Every echo value consumes 2048 bytes of Audio Ram, this may cause issues within the ROM export and may not be able to fit within the SPC Export!]"
-#define ECHO_FDB_DESC		"31xx Echo Feedback [xx: feedback] Sets the Feedback of the echo. A value of 80 is equivelant to a feedback of 0"
-#define ECHO_L_DESC			"32xx Echo L Volume [xx: left value] Sets the volume of the Echo Left channel. A value of 80 is equivelant to a feedback of 0"
-#define ECHO_R_DESC			"33xx Echo R Volume [xx: right value] Sets the volume of the Echo Right channel. A value of 80 is equivelant to a feedback of 0"
-#define ECHO_FIL1_DESC		"34xx Echo Filter Value 1 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]"
-#define ECHO_FIL2_DESC		"35xx Echo Filter Value 2 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]"
-#define ECHO_FIL3_DESC		"36xx Echo Filter Value 3 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]"
-#define ECHO_FIL4_DESC		"37xx Echo Filter Value 4 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]"
-#define ECHO_FIL5_DESC		"38xx Echo Filter Value 5 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]"
-#define ECHO_FIL6_DESC		"39xx Echo Filter Value 6 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]"
-#define ECHO_FIL7_DESC		"3Axx Echo Filter Value 7 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]"
-#define ECHO_FIL8_DESC		"3Bxx Echo Filter Value 8 [xx: value] Sets the value for the Echo Filter [Note! the whole filter buffer can only be from -128 to 127 TOTAL]"
-
-#define FLAG_0_DESC 		"0xC0 Flag Effect 0 [On or Off] Used for interfacing with the SNES"
-#define FLAG_1_DESC 		"0xC1 Flag Effect 1 [On or Off] Used for interfacing with the SNES"
-#define FLAG_2_DESC 		"0xC2 Flag Effect 2 [On or Off] Used for interfacing with the SNES"
-#define FLAG_3_DESC 		"0xC3 Flag Effect 3 [On or Off] Used for interfacing with the SNES"
-#define FLAG_4_DESC 		"0xC4 Flag Effect 4 [On or Off] Used for interfacing with the SNES"
-#define FLAG_5_DESC 		"0xC5 Flag Effect 5 [On or Off] Used for interfacing with the SNES"
-#define FLAG_6_DESC 		"0xC6 Flag Effect 6 [On or Off] Used for interfacing with the SNES"
-#define FLAG_7_DESC 		"0xC7 Flag Effect 7 [On or Off] Used for interfacing with the SNES"
-#define FLAG_8_DESC 		"0xC8 Flag Effect 8 [On or Off] Used for interfacing with the SNES"
-#define FLAG_9_DESC 		"0xC9 Flag Effect 9 [On or Off] Used for interfacing with the SNES"
-#define FLAG_A_DESC 		"0xCA Flag Effect A [On or Off] Used for interfacing with the SNES"
-#define FLAG_B_DESC 		"0xCB Flag Effect B [On or Off] Used for interfacing with the SNES"
-#define FLAG_C_DESC 		"0xCC Flag Effect C [On or Off] Used for interfacing with the SNES"
-#define FLAG_D_DESC 		"0xCD Flag Effect D [On or Off] Used for interfacing with the SNES"
-#define FLAG_E_DESC 		"0xCE Flag Effect E [On or Off] Used for interfacing with the SNES"
-#define FLAG_F_DESC 		"0xCF Flag Effect F [On or Off] Used for interfacing with the SNES"
-
-#define ARP_SPEED_DESC		"E0xy Arpeggio speed [x: semitone, y: speed] Slides the note pitch up by X semitones at Y speed"
-#define PORT_UP_CTRL_DESC	"E1xy Portamento up [x: semitone, y: speed] Slides the note pitch up by X semitones at Y speed"
-#define PORT_DOWN_CTRL_DESC	"E2xy Portamento down [x: semitone, y: speed] Slides the note pitch down by X semitones at Y speed"
-#define GLOBAL_PAN_L_DESC	"E8xx Set Global Left Panning Volume [xx: l value] Sets the Global Left panning of the tune"
-#define GLOBAL_PAN_R_DESC	"E9xx Set Global Right Panning Volume [xx: r value] Sets the Global Right panning of the tune"
-#define GLOBAL_VOL_DESC		"EAxx Set Global Volume [xx: volume] Set's the Global Volume of the track"
-
-#define END_DESC			"FFxx End Tune [xx: end tune] Will end the tune no matter the value"
-
 const int8_t SineTable[256] = {
 0x00,0x03,0x06,0x09,0x0C,0x10,0x13,0x16,0x19,0x1C,
 0x1F,0x22,0x25,0x28,0x2B,0x2E,0x31,0x33,0x36,0x39,
@@ -145,6 +90,47 @@ const int8_t SineTable[256] = {
 0xED,0xF0,0xF4,0xF7,0xFA,0xFD
 };
 
+const extern std::string EffectDesc[48];
+
+enum EffectList {
+	Arp =			0x00,
+	PortUp,
+	PortDown,
+	PortTo,
+	Vib,
+	Trem,
+
+	Pan =			0x08,
+	Speed,
+	VolSlide,
+	Goto,
+	Break,
+
+	Panbr =			0x20,
+
+	EDel =			0x30,
+	EFeed,
+	EVolL,
+	EVolR,
+	EFilt1,
+	EFilt2,
+	EFilt3,
+	EFilt4,
+	EFilt5,
+	EFilt6,
+	EFilt7,
+	EFilt8,
+
+	Flag =			0xC0,
+
+	ArpSpeed =		0xE0,
+	PortUpCtrl,
+	PortDownCtrl,
+
+	TrackVol =		0xE8,
+
+	EndTune =		0xFF
+};
 
 enum EffectFlags {
 	arp_flag = 1,				//Flag for arpeggio

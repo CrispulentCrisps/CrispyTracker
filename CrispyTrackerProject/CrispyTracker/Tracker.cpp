@@ -1383,7 +1383,7 @@ void Tracker::Misc_View()
 		InputInt("Octave", &Octave, 1, 8);
 		InputInt("Step", &Step, 1, 8);
 		Octave > 8 ? Octave = 8 : Octave < 0 ? Octave = 0 : Octave;
-		if (SliderInt("Master Volume", &VolumeScale, -128, 127)) {
+		if (SliderInt("Master Volume", &VolumeScale, 0, 127)) {
 			assert(SG.Emu_APU.APU_Set_Master_Vol(VolumeScale));
 		}
 	}
@@ -1563,7 +1563,7 @@ void Tracker::Info_View()
 				if (GetIO().MousePos.y > ypos && GetIO().MousePos.y < ypos + BoxHeight)
 				{
 					BeginTooltip();
-					Text("Reserved Space");
+					Text("Driver code");
 					string byteamount = to_string(ReservedSpace);
 					byteamount += " bytes";
 					Text(byteamount.c_str());
@@ -1806,33 +1806,36 @@ void Tracker::EffectsText(int effect)
 
 string Tracker::ColumnText(int column)
 {
+	string temp = "";
 	switch (column)
 	{
 	case 0:
-		return "	|	Note column";
+		temp += "	|	Note column				|	";
 		break;
 	case 1:
-		return "	|	Instrument column";
+		temp += "	|	Instrument column		|	";
 		break;
 	case 2:
-		return "	|	Volume column";
+		temp += "	|	Volume column			|	";
 		break;
 	case 3:
-		return "	|	Effects column 1";
+		temp += "	|	Effects column 1		|	";
 		break;
 	case 4:
-		return "	|	Effects Value column 1";
+		temp += "	|	Effects Value column 1	|	";
 		break;
 	case 5:
-		return "	|	Effects column 2";
+		temp += "	|	Effects column 2		|	";
 		break;
 	case 6:
-		return "	|	Effects Value column 2";
+		temp += "	|	Effects Value column 2	|	";
 		break;
 	default:
-		return "";
+		temp += "";
 		break;
 	}
+
+	return temp;
 }
 
 //Core updates to the tracker state

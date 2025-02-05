@@ -5,7 +5,11 @@
 ;|          Written by          |
 ;|            Crisps            |
 ;|                              |
+;|           Started            |
 ;|          08/06/2024          |
+;|                              |
+;|         Version 1.0b         |
+;|          02/01/2025          |
 ;|                              |
 ;|==============================|
 
@@ -71,7 +75,7 @@ clrc                                ;Clear carry
 adc.b A, #$10                       ;Add 16
 bvc -
 
-mov SPC_Control, #$81               ;Set control bit to enable Timer 0 and keep IPL rom inside
+mov SPC_Control, #$01               ;Set control bit to enable Timer 0 and keep IPL rom inside
 mov SPC_Timer1, #$20                ;Divide timer to run at ~250hz
 setp
 mov A, #$01
@@ -108,6 +112,8 @@ setp
 mov.b OP.MaxVolTarget, #$7F         ;Set output target volume to max
 clrp
 
+mov A, LoadFlag
+bne .SkipAddr
 mov.b ZP.MasterVol, #$00
 mov.b ZP.EchoVol, #$00
 mov A, #(PitchTable)&$FF
@@ -139,7 +145,7 @@ mov A, #SubtuneList&$FF
 mov SubPtr, A
 mov A, #(SubtuneList>>8)&$FF
 mov SubPtr+1, A
-
+.SkipAddr:
 DriverLoop:                             ;Main driver loop
     mov.b X, #0                         ;Reset counter
     
@@ -1551,6 +1557,7 @@ Com_FadeSpeed:
     mov.b ZP.FadeSpeed, Apu0
     bra ReturnProCom
 Com_Reset:
+    mov.b SPC_Control, #$81     ;Get IPL rom back
     mov.b Apu3, #$01            ;Send reset flag to 65C816
     jmp $FFC0                   ;Go to IPL ROM
 
@@ -1766,7 +1773,7 @@ InstrumentMemory:
     %WriteInstrument($01, $FF, $70, $7F, $00)
     %WriteInstrument($01, $FF, $80, $7F, $00)
     %WriteInstrument($01, $FF, $80, $7F, $00)
-    %WriteInstrument($00, $FF, $70, $7F, $01)  ;Test SFX
+    %WriteInstrument($00, $FF, $70, $7F, $00)  ;Test SFX
 
 Engine_End:
 

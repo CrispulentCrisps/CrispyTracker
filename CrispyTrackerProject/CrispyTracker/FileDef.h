@@ -8,7 +8,6 @@ enum InstEntryEffectFlags {
 	Noise = 8,
 	Echo = 16,
 };
-
 typedef struct Subtune {
 	char aubuf[256];
 	char trbuf[256];
@@ -73,6 +72,5 @@ typedef struct PatternEntry {
 
 //This is for a single tune that can be used in the SPC file
 typedef struct SubtuneEntry {
-	uint16_t SongADDR;		//Where in memory the start of the song is. This is defined as the first pattern in memory
-	uint8_t SongResetADDR;	//Where the song restarts
+	uint8_t OrderPosition;		//Where the start of a subtune is, defined by order position
 };

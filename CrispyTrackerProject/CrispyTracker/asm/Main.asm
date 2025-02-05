@@ -30,7 +30,7 @@ Reset:
     pld                             ;Take value from stack and shove to D
     lda.b #1                        ;Load 1 into A
     sta.w HW_MEMSEL                 ;Write A value to HW_MEMSEL, mainly to speed up the CPU code
-    jml $800000+(.ResetOffset&$FFFF);Jump to $80 in terms of memory X axis
+    jml .ResetOffset                ;Jump to start of program code
 
 .ResetOffset
     phk                         ;Push to stack
@@ -89,11 +89,11 @@ NMIDriverTest:
     cmp.b #$C0
     bne .SkipTimer
     stz.w MZP.SFXTimer
-    ;;Reset APU
+    ;Reset APU
     ;%WriteMCom($0A, $01)
     ;Play SFX
     %WriteMCom($01, $01)
-    %WriteMCom($01, $00)
+    ;%WriteMCom($01, $00)
     ;;Set settings byte
     ;%WriteMCom($03, $03)
     ;;Mute channel 0
@@ -231,12 +231,11 @@ LoadDriver:
     cmp.b #$CC                          ;Compare if the current value in APU-0 is 0xCC
     bne .ReadPort0                      ;Go to .ReadPort0 if the compare fails
 
-    lda.b #ROM_Engine_Start&$FF         ;Loads first byte of the address into A
-    sta.b $0                            ;Load 0 into zeropage
-    lda.b #(ROM_Engine_Start>>8)&$FF    ;Loads second byte of the address into A
-    sta.b $1                            ;Load 1 into zeropage
-    lda.b #(ROM_Engine_Start>>16)&$FF   ;Loads third byte of the address into A
-    sta.b $2                            ;Load 2 into zeropage
+    ;Load driver
+    ldx.w #(ROM_Engine_Start)&$FFFF
+    stx.b $00
+    lda.b #(ROM_Engine_Start>>16)&$FF
+    sta.b $02
 
     ldy.w #0                            ;Reset Y register
     ldx.w #ROM_Engine_End               ;Sets the X register to the last byte

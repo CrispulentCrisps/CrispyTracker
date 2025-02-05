@@ -1,4 +1,5 @@
 #pragma once
+#define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include <vector>
 #include <array>
@@ -6,7 +7,6 @@
 #include "FileDef.h"
 #include "emu/dsp.h"
 #include "emu/spc.h"
-
 // References
 // 
 // https://snes.nesdev.org/wiki/S-SMP#P
@@ -54,7 +54,7 @@
 #define SPC_c1              0xFE
 #define SPC_c2              0xFF
 
-#define Sample_Mem_Page     0x0200
+#define Sample_Mem_Page     0x0C00
 #define Echo_Buffer_Addr    0xEE00
 #define Sample_Dir_Page     0xFF00
 
@@ -63,14 +63,14 @@
 //  0000 - 00EF     |   Zeropage
 //  00F0 - 00FF     |   CPU registers
 //  0100 - 01FF     |   Stackpage
-//  0200 - FFBF     |   RAM
-// 
-//  0200 - 0280     | Sine table page
-//  0280 - XXXX     | Sample page
-//  XXXX - YYYY     | Instrument page
-//  YYYY - ZZZZ     | Sequence Entry page
-//  ZZZZ - WWWW     | Patterns page
-//  WWWW - SSSS     | Subtune page
+//  0200 - 0C00     |   Driver
+//  0C00 - XXXX     |   Sample page
+//  XXXX - YYYY     |   Instrument page
+//  YYYY - ZZZZ     |   Sequence Entry page
+//  ZZZZ - WWWW     |   Patterns page
+//  WWWW - SSSS     |   Subtune page
+//  SSSS - EFFF     |   Echo page
+//  FF00 - FFFF     |   DIR page
 //
 
 enum Region {
@@ -105,10 +105,10 @@ public:
     u16 SequenceAddr   = 0x0200;  //Sequence entry address
     u16 PatternAddr    = 0x0200;  //Pattern address
     u16 SubtuneAddr    = 0x0200;  //Subtune address
-    std::vector<InstEntry> InstMem;
-    std::vector<SequenceEntry> SeqMem;
-    std::vector<PatternEntry> PatMem;
-    std::vector<SubtuneEntry> SubMem;
+    std::vector<InstEntry>      InstMem;
+    std::vector<SequenceEntry>  SeqMem;
+    std::vector<PatternEntry>   PatMem;
+    std::vector<SubtuneEntry>   SubMem;
 
     std::vector<Row> uniquerows;
 
@@ -136,8 +136,8 @@ public:
     int8_t ChannelVolume_L[8];
     int8_t ChannelVolume_R[8];
 
-    uint8_t KONState;
-    uint8_t KOFState;
+    u8 KONState;
+    u8 KOFState;
 
     u16 SPCPtr = DATA_START;
     
@@ -151,13 +151,14 @@ public:
     void APU_Process_Effects(Channel* ch, Instrument* inst, int ypos, int& speed, int& patindex, int currenttick);
 
     void APU_Kill();
-    void SPCWrite(size_t bytes);
+    void SPCWrite(u8 byte);
     void WriteCommand(Command com);
+    void EvaluateSequenceData(vector<Patterns>& pat, int rowsize);               //Expects StoragePatterns [aka all unique patterns] as input
+    void EvaluatePitchTable();
     void APU_Set_Sample_Memory(std::vector<Sample>& samp);
     void APU_Set_Sample_Directory(std::vector<Sample>& samp);
     void APU_Evaluate_BRR_Loop(Sample* sample, int LoopPoint);
     void APU_Evaluate_BRR_Loop_Start(Sample* sample);
-    void APU_Write_Flag_Mem(u16* flags);
     void APU_Update_Instrument_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);
     void APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);
     void APU_Update_Pattern_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);

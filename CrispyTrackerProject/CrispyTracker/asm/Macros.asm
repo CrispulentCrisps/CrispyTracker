@@ -77,6 +77,9 @@ SfxListPtr =                $01E4
 SfxPatPtr =                 $01E6
 SubPtr =                    $01E8
 PitchPtr =                  $01EA
+DirOff =                    $01EC
+EchoSrc =                   $01ED
+LoadFlag =                  $01EF   ;Flag to load addresses into stack pointers [0 for driver testing, 1 for final export]
 
 ;Commands
     ;Row commands
@@ -87,7 +90,7 @@ struct RC $FF00
 .Break                      skip 1  ;Goto next order                |   $03     
 .PlayPitch                  skip 1  ;Plays absolute pitch value     |   $04     
 .SetInstrument              skip 1  ;Set instrument index           |   $05     
-.SetFlagValue               skip 1  ;Set FLG register               |   $06     
+.SetFlagValue               skip 1  ;Set FLG register               |   $06
 .EchoDelay                  skip 1  ;Set echo delay value           |   $07     
 .EchoVolume                 skip 1  ;Set echo L/R volume            |   $08     
 .EchoFeedback               skip 1  ;Set echo feedback value        |   $09     
@@ -101,7 +104,7 @@ struct RC $FF00
 .SetPanbrello               skip 1  ;Set Panbrello effect value     |   $18     
 .ReleaseNote                skip 1  ;Set KOFF for given channel     |   $19
 .Stop                       skip 1  ;Set STOP flag for tune         |   $1A
-.MasterVol                  skip 1  ;Set the master volume left     |   $1B
+.MasterVol                  skip 1  ;Set the master volume          |   $1B
 .NanBuff                    skip 4  ;Buffer for future commands     |   $1C-1F
 .PlayNote                   skip 1  ;Play pitch from table          |   $20-FF
 endstruct

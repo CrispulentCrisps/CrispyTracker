@@ -10,6 +10,13 @@ void SnesAPUHandler::WriteSPC(size_t data)
 //Boots up the emulation core
 void SnesAPUHandler::APU_Startup()
 {
+	//Write IPL rom and base
+	FILE* driver = fopen(DRIVER_PATH, "rb");
+	fseek(driver, DRIVER_ROM_ADDR, SEEK_SET);
+	if (fread(DSP_MEMORY, 1, DATA_START, driver) == 0) {
+		cout << "ERROR, COULD NOT WRITE TO FILE";
+	}
+	fclose(driver);
 	//Starting up the DSP and SPC that the emu will use
 	spc_init_rom(Spc, IPL_ROM);
 	spc_reset(Spc);
@@ -20,6 +27,29 @@ void SnesAPUHandler::APU_Startup()
 
 	spc_dsp_init(Dsp, DSP_MEMORY);
 	spc_dsp_reset(Dsp);
+	//IPL loader routine
+	spc_time_t timer = 0;
+	while (spc_read_port(Spc, timer, 0) != 0xAA) { timer++; }
+	while (spc_read_port(Spc, timer, 1) != 0xBB) { timer++; }
+	spc_write_port(Spc, timer, 2, (DATA_START)&0xFF);
+	spc_write_port(Spc, timer, 3, (DATA_START>>8)&0xFF);
+	spc_write_port(Spc, timer, 1, 0x01);
+	spc_write_port(Spc, timer, 0, 0xCC);
+	while (spc_read_port(Spc, timer, 0) != 0xCC) { timer++;	}
+	spc_write_port(Spc, timer, 0, 0x00);
+	while (spc_read_port(Spc, timer, 0) != 0x00) { timer++; }
+	//Start SPC-700
+	spc_write_port(Spc, timer, 2, (DATA_START) & 0xFF);
+	spc_write_port(Spc, timer, 3, (DATA_START >> 8) & 0xFF);
+	spc_write_port(Spc, timer, 1, 0x00);
+	char p0 = spc_read_port(Spc, timer, 0);
+	p0 += 2;
+	while (spc_read_port(Spc, timer, 0) != p0)
+	{
+		timer++;
+		spc_write_port(Spc, timer, 0, p0);
+		cout << "\nAPU-00: " << spc_read_port(Spc, timer, 0);
+	}
 
 	//Setting up the per channel registers for the SPC
 	for (int i = 0; i < 8; i++)
@@ -51,43 +81,20 @@ void SnesAPUHandler::APU_Startup()
 
 	spc_dsp_write(Dsp, GLOBAL_esa, 0x00);
 	spc_dsp_write(Dsp, GLOBAL_edl, 0x00);
-	spc_dsp_write(Dsp, GLOBAL_flg, 0b00000000);
+	spc_dsp_write(Dsp, GLOBAL_flg, 0x00);
 
-	spc_dsp_write(Dsp, GLOBAL_pmon, 0b00000000);
-	spc_dsp_write(Dsp, GLOBAL_non, 0b00000000);
-	spc_dsp_write(Dsp, GLOBAL_eon, 0b00000000);
+	spc_dsp_write(Dsp, GLOBAL_pmon, 0x00);
+	spc_dsp_write(Dsp, GLOBAL_non, 0x00);
+	spc_dsp_write(Dsp, GLOBAL_eon, 0x00);
 	spc_dsp_write(Dsp, GLOBAL_endx, 0x00);
 	spc_dsp_write(Dsp, GLOBAL_efb, 0x00);
 
-	//Calculate pitch table
-	//Current issue is the tuning seems to be off C and closer to G (b/2)
-	int addroff = 0;
-	int index = 0;
-	for (int x = 0; x < 9; x++)
-	{
-		std::cout << "\n Octave: " << x << " ";
-		for (int y = 0; y < 12; y++)
-		{
-			float exactpitch = StartValues[y] * (1 << x);
-			PitchTable.push_back((uint16_t)(exactpitch));
-			float pit = pow(2.0, (index-48) / 12.0);
-			std::cout << "\ndb " << (int)((pit * 16000 * 16.0) / 125.0);
-			//Write pitch table to memory as reference
-			//DSP_MEMORY[Pitch_Table_Page + addroff] = PitchTable[y + (12 * x)] & 0xFF;
-			//DSP_MEMORY[Pitch_Table_Page + addroff + 1] = (PitchTable[y + (12 * x)] >> 8) & 0xFF;
-			//addroff += 2;
-			index++;
-		}
-		std::cout << "\n";
-	}
 
 	InstMem.push_back(InstEntry());
 }
 //Update loop for the DSP
 void SnesAPUHandler::APU_Update(spc_sample_t* Output, int BufferSize)
 {
-	//spc_set_output(Spc, Output, BufferSize);
-
 	//This is to match the 32KHz the SNES outputs compared to the 44.1KHz the tracker outputs
 	int ClockCycleRound = (BufferSize / 44100.0) * MAX_CLOCK_DSP;
 	int InterbufSize = (ClockCycleRound / 16);
@@ -540,20 +547,53 @@ void SnesAPUHandler::APU_Kill()
 	spc_dsp_delete(Dsp);
 }
 
-void SnesAPUHandler::SPCWrite(size_t bytes)
+void SnesAPUHandler::SPCWrite(u8 byte)
 {
-	for (int x = 0; x < sizeof(bytes); x++)
-	{
-		DSP_MEMORY[SPCPtr++] = (bytes>>(x*8))&0xFF;
-	}
+	DSP_MEMORY[SPCPtr++] = byte;
+	cout << "\nDPS ADDR: " << SPCPtr;
 }
 
 void SnesAPUHandler::WriteCommand(Command com)
 {
-	SPCWrite(com.type);
-	if (com.type < com_PlayNote)
+	if (com.type >= com_PlayNote || com.type >= com_ReleaseNote)
 	{
-		SPCWrite(com.val);
+		SPCWrite((com.type) & 0xFF);
+	}
+	else
+	{
+		SPCWrite(com.type);
+		if (com.type != com_PlayPitch && com.type != com_ChannelVol)
+		{
+			SPCWrite((com.val) & 0xFF);
+		}
+		else
+		{
+			SPCWrite((com.val) & 0xFF);
+			SPCWrite((com.val >> 8) & 0xFF);
+		}
+	}
+}
+
+void SnesAPUHandler::EvaluateSequenceData(vector<Patterns>& pat, int rowsize)
+{
+	for (int x = 0; x < pat.size(); x++)
+	{
+		for (int y = 0; y < rowsize; y++)
+		{
+			u16 lastvolume = 0x0000;	//Deduplication for volume commands
+			u8 lastinst = 0x00;			//Deduplication for instrument commands
+			//Write pitches
+			if (pat[x].SavedRows[y].note != NULL_COMMAND)
+			{
+				short noteval = pat[x].SavedRows[y].note & 0xFF;
+				WriteCommand(Command{ com_PlayNote, noteval });
+			}
+
+			//Write volume
+			if (lastvolume != pat[x].SavedRows[y].volume)
+			{
+			}
+		}
 	}
 }
 
