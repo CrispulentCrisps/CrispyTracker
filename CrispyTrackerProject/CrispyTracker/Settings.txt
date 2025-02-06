@@ -1,1 +1,8 @@
-Congrats! the write has been sucessful :D
+FontSize:12
+Notation:1
+FPS:60
+Resolution:2
+Buffer:1
+DefaultTrackSize:64
+CursorMovesAtStepCount:0
+DeleteMovesAtStepCount:0

@@ -76,8 +76,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>$(ProjectDir)\Libraries\SDL2\lib\x86;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(ProjectDir)\Libraries\SDL2\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)Libraries\SDL2\lib\x64;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\libsndfile\lib;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\lib-vc2022;$(ProjectDir)Libraries\mp3;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)Libraries\SDL2\include;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\include;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\include;$(ProjectDir)Libraries;$(ProjectDir)Libraries\opengl;$(ProjectDir)Libraries\emu;$(ProjectDir)Libraries\mp3</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -86,8 +86,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>$(ProjectDir)Libraries\SDL2\lib\x64;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\libsndfile\lib;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\lib-vc2022;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(ProjectDir)Libraries\SDL2\include;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\include;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\include;$(ProjectDir)Libraries;$(ProjectDir)Libraries\opengl;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)Libraries\SDL2\lib\x64;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\libsndfile\lib;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\lib-vc2022;$(ProjectDir)Libraries\mp3;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)Libraries\SDL2\include;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\include;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\include;$(ProjectDir)Libraries;$(ProjectDir)Libraries\opengl;$(ProjectDir)Libraries\emu;$(ProjectDir)Libraries\mp3</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -116,7 +116,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Libraries\SDL2\lib\x86;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Libraries\SDL2\include;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\include;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\include;$(ProjectDir)Libraries\opengl;$(ProjectDir)Libraries;$(ProjectDir)Libraries\emu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -124,7 +124,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;sndfile.lib;glfw3_mt.lib;glfw3dll.lib;libmp3lame.lib;libogg_static.lib;opus.lib;vorbis.lib;vorbisenc.lib;vorbisfile.lib;FLAC.lib;mpg123.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)\Libraries\SDL2\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
@@ -145,7 +145,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>SDL2.lib;SDL2main.lib;sndfile.lib;glfw3_mt.lib;glfw3dll.lib;libmp3lame.lib;libogg_static.lib;opus.lib;vorbis.lib;vorbisenc.lib;vorbisfile.lib;FLAC.lib;mpg123.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)Libraries\SDL2\lib\x64;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\imgui\backends;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\lib;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\lib-vc2022;$(ProjectDir)Libraries\opengl;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)Libraries\SDL2\lib\x64;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\imgui\backends;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\lib\debug;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\lib-vc2022;$(ProjectDir)Libraries\opengl;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
@@ -157,7 +157,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)Libraries\SDL2\include;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\include;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\include;$(ProjectDir)Libraries\opengl;$(ProjectDir)Libraries;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Libraries\SDL2\include;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\include;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\include;$(ProjectDir)Libraries\opengl;$(ProjectDir)Libraries;$(ProjectDir)Libraries\emu;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -165,8 +165,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;sndfile.lib;glfw3_mt.lib;glfw3dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)Libraries\SDL2\lib\x64;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\imgui\backends;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\lib;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\lib-vc2022;$(ProjectDir)Libraries\opengl;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;sndfile.lib;glfw3_mt.lib;glfw3dll.lib;libmp3lame.lib;libogg_static.lib;opus.lib;vorbis.lib;vorbisenc.lib;vorbisfile.lib;FLAC.lib;mpg123.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)Libraries\SDL2\lib\x64;$(ProjectDir)Libraries\imgui;$(ProjectDir)Libraries\imgui\backends;$(ProjectDir)Libraries\ImGuiFileDialog-0.6.5;$(ProjectDir)Libraries\libsndfile\lib\release;$(ProjectDir)Libraries\glfw-3.3.8\glfw-3.3.8\lib-vc2022;$(ProjectDir)Libraries\opengl;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>

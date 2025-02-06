@@ -1,5 +1,4 @@
 #pragma once
-
 //Macros here define the reserved positions in the tracker commands
 #define NULL_COMMAND		256		//Empty =section in rows, denoted with .. or ...
 #define RELEASE_COMMAND		257		//Puts the instrument in the release state
@@ -31,7 +30,7 @@
 #define DRIVER_SUBPTR		(uint16_t)	0x01E8			//Pointer to [Music Subtunes] data
 #define DRIVER_PITCHPTR		(uint16_t)	0x01EA			//Pointer to [PitchTable	] data
 #define DRIVER_CODE			(uint16_t)	0x0200			//Start of the driver data
-#define DATA_START			(uint16_t)	0x0C00			//Where dynamic data starts for the driver to interpret
+#define DATA_START			(uint16_t)	0x0D00			//Where dynamic data starts for the driver to interpret
 
 #define DRIVER_ROM_ADDR		(uint32_t)	0x010000		//Where driver starts in CPU memory
 
@@ -79,7 +78,7 @@ enum ProComType {
 typedef struct Command 
 {
 	ComType type;
-	short val;
+	unsigned short val;
 };
 
 typedef struct Row {

@@ -55,8 +55,8 @@
 #define SPC_c2              0xFF
 
 #define Sample_Mem_Page     0x0C00
+#define Sample_Dir_Page     0x0D00
 #define Echo_Buffer_Addr    0xEE00
-#define Sample_Dir_Page     0xFF00
 
 //
 //  Memory layout
@@ -64,13 +64,13 @@
 //  00F0 - 00FF     |   CPU registers
 //  0100 - 01FF     |   Stackpage
 //  0200 - 0C00     |   Driver
+//  0C00 - 0D00     |   DIR page
 //  0C00 - XXXX     |   Sample page
 //  XXXX - YYYY     |   Instrument page
-//  YYYY - ZZZZ     |   Sequence Entry page
-//  ZZZZ - WWWW     |   Patterns page
+//  YYYY - ZZZZ     |   Patterns page
+//  ZZZZ - WWWW     |   Orders page
 //  WWWW - SSSS     |   Subtune page
-//  SSSS - EFFF     |   Echo page
-//  FF00 - FFFF     |   DIR page
+//  SSSS - FFFF     |   Echo page
 //
 
 enum Region {
@@ -153,8 +153,8 @@ public:
     void APU_Kill();
     void SPCWrite(u8 byte);
     void WriteCommand(Command com);
-    void EvaluateSequenceData(vector<Patterns>& pat, int rowsize);               //Expects StoragePatterns [aka all unique patterns] as input
-    void EvaluatePitchTable();
+    void APU_UpdateTuneMemory(vector<Instrument>& inst, vector<Sample>& sample, vector<Subtune>& sub, vector<Patterns>& pat, int subind);
+    void APU_EvaluateSequenceData(vector<Patterns>& pat, int rowsize);               //Expects StoragePatterns [aka all unique patterns] as input
     void APU_Set_Sample_Memory(std::vector<Sample>& samp);
     void APU_Set_Sample_Directory(std::vector<Sample>& samp);
     void APU_Evaluate_BRR_Loop(Sample* sample, int LoopPoint);

@@ -2,80 +2,52 @@
 
 bool SettingsManager::CheckSettingsFolder()
 {
+	cout << "\n" << GetLastError();
 	for (int x = 0; x < sizeof(FileLabels)/sizeof(FileLabels[0]); x++)
 	{
 		SettingsDict.insert(make_pair(FileLabels[x], x));
 	}
 
 #if _WIN32
-	char pBuf[4096];
+	char pBuf[8192];
 	int len = sizeof(pBuf);
 	GetCurrentDirectoryA(len, pBuf);
 	//int bytes = GetModuleFileNameA(0, pBuf, len);
 	FilePath = pBuf;
 	//FilePath.resize(FilePath.length() - 17);
-	FilePath.append("\\Settings");
 	printf(FilePath.c_str());
 	FileDest = FilePath.append("\\Settings.txt");
 	printf("\n");
 	printf(FileDest.c_str());
-	if (_mkdir(FilePath.c_str()))
-	{
-		//Checks if the folder exists
-		if (ERROR_ALREADY_EXISTS != GetLastError())
-		{
-			CreateSettings();
-			printf("\nFOLDER ALREADY EXISTS: (SettingsManager::CheckSettingsFolder())");
-			return true;
-		}
-		else
-		{
-			//CreateSettings();
-			printf("\nFOLDER CREATED:");
-			return true;
-		}
-	}
-	else
-	{
-		printf("\ERROR, DIR UNABLE TO BE MADE:");
-		return false;
-	}
-
+	return true;
 #endif // _WIN32
 }
 
 bool SettingsManager::CreateSettings()
 {
-	ifstream FileCheck(FileDest);
-	if (FileCheck.good())
+	ifstream FileCheck;
+	SettingsDatastream.open(FileDest, ios_base::out | ios_base::trunc);
+	if (SettingsDatastream.is_open())
 	{
-		SettingsDatastream.open(FileDest, ios_base::out | ios_base::trunc);
-		if (SettingsDatastream.is_open())
-		{
-			//Settings should be placed in order within the file
-			printf("\n FILE IS OPEN");
-			SettingsDatastream << FileLabels[0] << DefaultData.FontSize << "\n";
-			SettingsDatastream << FileLabels[1] << DefaultData.NStyle << "\n";
-			SettingsDatastream << FileLabels[2] << DefaultData.FPS << "\n";
-			SettingsDatastream << FileLabels[3] << DefaultData.Res << "\n";
-			SettingsDatastream << FileLabels[4] << DefaultData.Buf << "\n";
-			SettingsDatastream << FileLabels[5] << DefaultData.DefaultTrackSize << "\n";
-			SettingsDatastream << FileLabels[6] << DefaultData.CursorMovesAtStepCount << "\n";
-			SettingsDatastream << FileLabels[7] << DefaultData.DeleteMovesAtStepCount << "\n";
+		//Settings should be placed in order within the file
+		printf("\n FILE IS OPEN");
+		SettingsDatastream << FileLabels[0] << DefaultData.FontSize << "\n";
+		SettingsDatastream << FileLabels[1] << DefaultData.NStyle << "\n";
+		SettingsDatastream << FileLabels[2] << DefaultData.FPS << "\n";
+		SettingsDatastream << FileLabels[3] << DefaultData.Res << "\n";
+		SettingsDatastream << FileLabels[4] << DefaultData.Buf << "\n";
+		SettingsDatastream << FileLabels[5] << DefaultData.DefaultTrackSize << "\n";
+		SettingsDatastream << FileLabels[6] << DefaultData.CursorMovesAtStepCount << "\n";
+		SettingsDatastream << FileLabels[7] << DefaultData.DeleteMovesAtStepCount << "\n";
 
-			SettingsDatastream.close();
-			return true;
-		}
-		else
-		{
-			SettingsDatastream.close();
-			printf("\nERROR: FILE COULD NOT BE CREATED");
-			return false;
-		}
+		SettingsDatastream.close();
+		return true;
 	}
 	else
 	{
-		printf("\FILE ALREADY EXISTS (SettingsManager::CreateSettings())");
+		SettingsDatastream.close();
+		printf("\nERROR: FILE COULD NOT BE CREATED");
+		return false;
 	}
 }
 

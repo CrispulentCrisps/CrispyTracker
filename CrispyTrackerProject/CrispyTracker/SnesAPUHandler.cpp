@@ -555,26 +555,25 @@ void SnesAPUHandler::SPCWrite(u8 byte)
 
 void SnesAPUHandler::WriteCommand(Command com)
 {
-	if (com.type >= com_PlayNote || com.type >= com_ReleaseNote)
+	SPCWrite((com.type) & 0xFF);
+	if (com.type < com_PlayNote && com.type != com_ReleaseNote)
 	{
-		SPCWrite((com.type) & 0xFF);
-	}
-	else
-	{
-		SPCWrite(com.type);
-		if (com.type != com_PlayPitch && com.type != com_ChannelVol)
+		SPCWrite((com.val) & 0xFF);
+		if (com.type == com_PlayPitch || com.type == com_ChannelVol)
 		{
-			SPCWrite((com.val) & 0xFF);
-		}
-		else
-		{
-			SPCWrite((com.val) & 0xFF);
 			SPCWrite((com.val >> 8) & 0xFF);
 		}
 	}
 }
 
-void SnesAPUHandler::EvaluateSequenceData(vector<Patterns>& pat, int rowsize)
+void SnesAPUHandler::APU_UpdateTuneMemory(vector<Instrument>& inst, vector<Sample>& sample, vector<Subtune>& sub, vector<Patterns>& pat, int subind)
+{
+	SPCPtr = DATA_START;
+	APU_Rebuild_Sample_Memory(sample);
+	APU_EvaluateSequenceData(pat, sub[subind].TrackLength);
+}
+
+void SnesAPUHandler::APU_EvaluateSequenceData(vector<Patterns>& pat, int rowsize)
 {
 	for (int x = 0; x < pat.size(); x++)
 	{
@@ -582,17 +581,29 @@ void SnesAPUHandler::EvaluateSequenceData(vector<Patterns>& pat, int rowsize)
 		{
 			u16 lastvolume = 0x0000;	//Deduplication for volume commands
 			u8 lastinst = 0x00;			//Deduplication for instrument commands
+
 			//Write pitches
 			if (pat[x].SavedRows[y].note != NULL_COMMAND)
 			{
-				short noteval = pat[x].SavedRows[y].note & 0xFF;
+				unsigned short noteval = pat[x].SavedRows[y].note & 0xFF;
 				WriteCommand(Command{ com_PlayNote, noteval });
 			}
 
 			//Write volume
 			if (lastvolume != pat[x].SavedRows[y].volume)
 			{
+				WriteCommand(Command{ com_PlayNote, pat[x].SavedRows[y].volume });
+				lastvolume = pat[x].SavedRows[y].volume;
 			}
+
+			//Write instrument
+			if (lastinst != pat[x].SavedRows[y].instrument)
+			{
+				WriteCommand(Command{ com_SetInstrument, pat[x].SavedRows[y].instrument });
+				lastvolume = pat[x].SavedRows[y].instrument;
+			}
+
+
 		}
 	}
 }
@@ -600,37 +611,36 @@ void SnesAPUHandler::EvaluateSequenceData(vector<Patterns>& pat, int rowsize)
 //Writes all sample data into memory from [Sample_Mem_Page]
 void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 {
-	int AddrOff = 0;
 	for (int i = 1; i < samp.size(); i++)//Total samples
 	{
 		samp[i].SampleIndex = i;
-		samp[i].brr.SampleDir = Sample_Mem_Page + AddrOff;
+		samp[i].brr.SampleDir = SPCPtr;
 		for (int j = 0; j < samp[i].brr.DBlocks.size(); j++)//BRR Block Index
 		{
-			if (AddrOff < Sample_Dir_Page)
+			if (SPCPtr < Sample_Dir_Page)
 			{
 				if (samp[i].LoopStart / 16 == j)
 				{
-					samp[i].LoopStartAddr = Sample_Mem_Page + AddrOff;
+					samp[i].LoopStartAddr = SPCPtr;
 				}
 
-				DSP_MEMORY[Sample_Mem_Page + AddrOff] = samp[i].brr.DBlocks[j].HeaderByte;
-				AddrOff++;
+				DSP_MEMORY[SPCPtr] = samp[i].brr.DBlocks[j].HeaderByte;
+				SPCPtr++;
 
 				for (int k = 0; k < 8; k++)//BRR Data blocks
 				{
-					DSP_MEMORY[Sample_Mem_Page + AddrOff] = samp[i].brr.DBlocks[j].DataByte[k];
-					AddrOff++;
+					DSP_MEMORY[SPCPtr] = samp[i].brr.DBlocks[j].DataByte[k];
+					SPCPtr++;
 				}
 			}
 			else
 			{
-				std::cout << "\nERROR: SAMPLE TOO LARGE\nADDR-OFF: " << AddrOff << "\nBRR BLOCK: " << j;
+				std::cout << "\nERROR: SAMPLE TOO LARGE\nADDR-OFF: " << SPCPtr << "\nBRR BLOCK: " << j;
 				break;
 			}
 		}
 	}
-	LastSamplePoint = Sample_Mem_Page + AddrOff;
+	LastSamplePoint = SPCPtr;
 	for (int x = LastSamplePoint; x < 0xFFFF; x++)
 	{
 		DSP_MEMORY[x] = 0;

@@ -72,5 +72,5 @@ typedef struct PatternEntry {
 
 //This is for a single tune that can be used in the SPC file
 typedef struct SubtuneEntry {
-	uint8_t OrderPosition;		//Where the start of a subtune is, defined by order position
+	uint16_t OrderPosition;		//Where the start of a subtune is, defined by order address
 };

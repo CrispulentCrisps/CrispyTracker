@@ -2378,7 +2378,7 @@ void Tracker::LoadSample()
 						//Memory shit
 						SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
 						SG.Emu_APU.APU_Evaluate_BRR_Loop_Start(&samples[SelectedSample]);
-						SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
+						SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 					}
 					sf_close(file);
 				}
