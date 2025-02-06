@@ -202,10 +202,17 @@ DriverLoop:                             ;Main driver loop
     dec.b ZP.CurrentChannel
     bpl .ChannelLoop
     setp
-    cmp.b OP.OrderChangeFlag, #1      ;Order change
-    bne +
-    mov.b A, OP.OrderPosGoto
-    mov.b OP.OrderPos, A
+    mov.b A, OP.OrderChangeFlag      ;Order change
+    beq +
+    mov.b Y, #$0E
+    .SetSeq:
+    setp
+    mov.b A, OP.SequenceTarget+Y
+    clrp
+    mov.b ZP.SequenceAddr+Y, A
+    dec Y
+    bpl .SetSeq
+    clrp
     +
     clrp
     .CheckSFX:
@@ -702,23 +709,18 @@ ReadPatterns:
     mov.b ZP.R3, #$01
     mov.b A, ZP.CurrentChannel
     and.b A, #$07
+    asl A
     mov X, A
     setp
-    mov.b A, OP.OrderPos+1+X                   ;Grab the current order position [sfx]
+    mov.b A, OP.OrderPos+2+X                   ;Grab the current order ptr [sfx]
+    mov.b Y, OP.OrderPos+3+X
     bra .OrderRead
     +
     setp
-    mov.b A, OP.OrderPos                       ;Grab the current order position [music]
+    mov.b A, OP.OrderPos                       ;Grab the current order ptr [music]
+    mov.b Y, OP.OrderPos+1
     .OrderRead:
     clrp
-    xcn A                                      ;Mult by 16
-    mov.b ZP.TempMemADDRH, A                   ;Shove into hi zp
-    mov.b ZP.TempMemADDRL, A                   ;Shove into lo zp
-    and.b ZP.TempMemADDRH, #$0F                ;Get lo nibble
-    and.b ZP.TempMemADDRL, #$F0                ;Get hi nibble
-    mov.b A, ZP.R0                             ;Shove lo table addr into A
-    mov.b Y, ZP.R1                             ;Shove hi table addr into Y
-    addw YA, ZP.TempMemADDRL                   ;Add offset to YA
     movw ZP.TempMemADDRL, YA                   ;Return address to memory
     ;Fill address pointers for music and SFX
     mov.b A, ZP.R3
@@ -875,21 +877,64 @@ Row_Sleep:
     ret                             ;ret is exiting out of the read rows subroutine
 
 Row_Goto:
-    call GrabCommand
     call GetGotoInd
+    mov A, X
+    asl A
+    mov X, A
+    call GrabCommand
     setp
-    mov.b OP.OrderPosGoto, A          ;Return pos
+    mov.b OP.OrderPos+X, A            ;Return pos
+    clrp
+    call GrabCommand
+    setp
+    mov.b OP.OrderPos+1+X, A          ;Return pos
     mov A, #$01
-    mov.b OP.OrderChangeFlag+X, A     ;Set the order change flag
+    mov.b OP.OrderChangeFlag+X, A           ;Set the order change flag
     clrp
     ret
 
 Row_Break:
-    setp
-    mov.b OP.OrderPosGoto, OP.OrderPos
-    inc.b OP.OrderPosGoto
-    mov A, #$01
     call GetGotoInd
+    mov A, X
+    asl A
+    mov X, A
+    setp
+    mov.b A, OP.OrderPos+X
+    clrc
+    adc.b A, #$10
+    mov.b OP.OrderPos+X, A
+    bcc +
+    mov.b A, OP.OrderPos+1+X
+    inc A
+    mov.b OP.OrderPos+1+X, A   
+    +
+    mov A, X
+    bne .DoSfx
+    mov.b X, #$00
+    mov.b Y, #$0F
+    -
+    mov.b A, (OP.OrderPos)+Y
+    mov.b OP.SequenceTarget+Y, A
+    dec Y
+    mov.b A, (OP.OrderPos)+Y
+    mov.b OP.SequenceTarget+Y, A
+    dec Y
+    bpl -
+    mov.b OP.OrderChangeFlag, #$01         ;Set the order change flag
+    clrp
+    ret
+    .DoSfx:
+    mov.b A, (OP.OrderPos+X)
+    mov.b OP.SequenceTarget+X, A
+
+    inc.b OP.OrderPos+X
+    bcc +
+    inc.b OP.OrderPos+1+X
+    +
+
+    mov.b A, (OP.OrderPos+X)
+    mov.b OP.SequenceTarget+1+X, A
+    mov A, #$01
     mov.b OP.OrderChangeFlag+X, A         ;Set the order change flag
     clrp
     ret                                 ;Break out of ReadRows
@@ -1299,7 +1344,8 @@ SignedMul:
     ;       ZP.R3           /
     ;
     ;   Notes
-    ;       ZP.R4 holds the current tune/sfx index that we are recieving
+    ;       ZP.R4 \ Address to subtune
+    ;       ZP.R5 /
     ;
 RecieveSub:
     push A
@@ -1307,12 +1353,17 @@ RecieveSub:
     push Y
     mov.b A, Apu1                         ;Check SEND byte
     cmp.b A, ZP.SFXRec
-    beq +                   ;if SFXRec != SFXRec before then new a new subtune will be selected
+    beq +                                 ;if SFXRec != SFXRec before then new a new subtune will be selected
     jmp .SkipSFXCheck
     +
     inc.b ZP.FlagVal
     mov.b ZP.TempScratchMem, Apu2
+    mov.b ZP.R4+1, #$00
     mov.b A, Apu0
+    asl A
+    bcc +
+    mov.b ZP.R4+1, #$01
+    +
     mov.b ZP.R4, A
     mov.b X, #$00                         ;Setup music ptr
     mov.w A, SubPtr
@@ -1323,7 +1374,7 @@ RecieveSub:
     mov.b ZP.R1, Y                        ;Pointer constructed
     mov.b A, ZP.TempScratchMem            ;Check if APU2 is playing music, if not then we assume it's SFX
     cmp.b A, #ProCom.PlayMusic
-    beq +
+    beq .DoMusic
     cmp.b A, #ProCom.PlaySfx               ;Check if APU2 is playing sfx, if not then we assume it's SFX
     beq .DoSFX
     jmp .SkipSFXCheck
@@ -1373,8 +1424,8 @@ RecieveSub:
     mov.b A, ZP.R3
     mov.b Y, ZP.R2
     setp
-    mov.b OP.OrderPosGoto+1+Y, A
-    mov.b OP.OrderPos+1+Y, A
+    mov.b OP.SequenceTarget+2+X, A
+    mov.b OP.OrderPos+2+X, A
     push A
     mov A, #$01
     mov.b OP.OrderChangeFlag+1+Y, A
@@ -1388,11 +1439,19 @@ RecieveSub:
     bpl .OrderSetLoopSFX
     clrp
     bra .ClearSleep
-    +
+    .DoMusic:
     ;Music
-    mov A, (ZP.R0+X)                    ;Grab order index
+    clrp
+    mov A, (ZP.R0+X)                            ;Grab order lo byte
     setp
-    mov.b OP.OrderPosGoto, A              ;Set music to order index
+    mov.b OP.SequenceTarget, A                  ;Store to GOTO lo byte
+    mov.b OP.OrderPos, A
+    clrp
+    incw.b ZP.R0
+    mov A, (ZP.R0+X)                            ;Grab order hi byte
+    setp
+    mov.b OP.SequenceTarget+1, A                ;Store to GOTO hi byte
+    mov.b OP.OrderPos+1, A
     mov.b OP.OrderChangeFlag, #$01
     mov.b OP.StopFlag, #$00
     clrp
@@ -1408,18 +1467,11 @@ RecieveSub:
     -
     push Y
     push X
-    mov.b A, OP.OrderPosGoto+1+Y
+    setp
+    mov.b A, OP.SequenceTarget+2+X
+    mov.b Y, OP.SequenceTarget+3+X
     clrp
-    mov.b ZP.R0, #$00                           ;treat ZP.R0 as a skip reset flag
-    xcn A                                       ;Mult by 16
-    mov.b ZP.TempMemADDRH, A                    ;Shove into hi zp
-    mov.b ZP.TempMemADDRL, A                    ;Shove into lo zp
-    and.b ZP.TempMemADDRH, #$0F                 ;Get lo nibble
-    and.b ZP.TempMemADDRL, #$F0                 ;Get hi nibble
-    mov A, SfxPatPtr                            ;Shove lo table addr into A
-    mov Y, SfxPatPtr+1                          ;Shove hi table addr into Y
-    addw YA, ZP.TempMemADDRL                    ;Add offset to YA
-    movw ZP.TempMemADDRL, YA                    ;Return address to memory
+    movw.b ZP.TempMemADDRL, YA                  ;Return address to memory
     pop Y                                       ;Grab X from stack early for original index into Y
     inc Y
     mov.b A, (ZP.TempMemADDRL)+Y                ;Grab hi byte of the address, if 0 then it must be blank
@@ -1457,7 +1509,7 @@ RecieveSub:
     mov A, #$00
     mov.b OP.OrderChangeFlag, #$01
     mov.b OP.StopFlag, #$00
-    mov.b X, #$0F
+    mov.b X, #$0E
     -
     mov.b OP.ChannelVolume+X, A
     mov.b OP.ChannelVolume+1+X, A
@@ -1586,6 +1638,8 @@ db $7E,$7F,$7F,$7F
 fill !CodeBuffer-pc()
 assert pc() == !CodeBuffer
 
+;Start of dynamic data
+
 DirTable:                          ;These are just for debugging purposes
 ;Test sine+saw sample + dir page
 db $08,$0C,$08,$0C,$23,$0C,$23,$0C
@@ -1664,7 +1718,7 @@ PatternMemory:
     .Pat2:
     %SetVib($62)
     %Sleep($04)
-    %Goto($0)
+    %Goto(OrderTable_Tune0)
     .Pat3:
     %SetVib($00)
     %SetMasterVolume($7F)
@@ -1681,7 +1735,8 @@ PatternMemory:
     %Sleep($06)
     %PlayNote($20)
     %Sleep($06)
-    %Goto($01)
+    %Break()
+    ;%Goto(OrderTable_Tune0)
 
 SfxTable:
     .SFX_Null:
@@ -1759,14 +1814,14 @@ SfxPat:
     %PlayNote($21)
     %Sleep($12)
 
-    ;List of available music tracks, holds the order position within each respective table
+    ;List of available music tracks, holds the tune's starting order address
 SubtuneList:
-    db (OrderTable_Tune0-OrderTable)/16
+    dw OrderTable_Tune0
 
-    ;List of available sound effects, holds the order position within each respective table
+    ;List of available sound effects, holds the tune's starting order address
 SFXList:
-    db (SfxTable_SFX_1-SfxTable)/16
-    db (SfxTable_SFX_2-SfxTable)/16
+    dw SfxTable_SFX_1
+    dw SfxTable_SFX_2
 
 InstrumentMemory:
     %WriteInstrument($00, $00, $00, $00, $00)

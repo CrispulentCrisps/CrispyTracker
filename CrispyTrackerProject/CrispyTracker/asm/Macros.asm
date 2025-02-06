@@ -59,8 +59,8 @@ endstruct
 
 struct OP $0100
 ;Sequencing
-.OrderPos:                  skip 9  ;Position we are within the orders table
-.OrderPosGoto:              skip 9  ;Aim position for reading in patterns
+.OrderPos:                  skip 18 ;Pointer to current channel's position in order/SFX list
+.SequenceTarget:            skip 32 ;Aim pointer for sequence addresses
 .OrderChangeFlag:           skip 9  ;Flag for when we need to load in the next order sequence
 .ChannelSleepCounter:       skip 16 ;Array of sleep counters
 .ChannelInstrumentIndex:    skip 16 ;Array of Instrument indexes
@@ -136,7 +136,7 @@ endmacro
 
 macro Goto(P)          ;Break to new order
 db RC.Goto
-db <P>
+dw <P>
 endmacro
 
 macro Break()          ;Goto order P
