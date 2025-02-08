@@ -86,14 +86,14 @@ NMIDriverTest:
     inc.w MZP.NMIDone
     inc.w MZP.SFXTimer
     lda.w MZP.SFXTimer
-    cmp.b #$C0
+    cmp.b #$F0
     bne .SkipTimer
     stz.w MZP.SFXTimer
     ;Reset APU
     ;%WriteMCom($0A, $01)
     ;Play SFX
-    ;%WriteMCom($01, $01)
-    ;%WriteMCom($01, $00)
+    %WriteMCom($01, $01)
+    %WriteMCom($01, $00)
     ;;Set settings byte
     ;%WriteMCom($03, $03)
     ;;Mute channel 0

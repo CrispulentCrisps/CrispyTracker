@@ -174,10 +174,6 @@ DriverLoop:                             ;Main driver loop
     dec.b X                             ;Decrement counter
     bpl -
     clrp
-    mov.w A, OrderPtr
-    mov.b ZP.R0, A
-    mov.w A, OrderPtr+1
-    mov.b ZP.R1, A
     call ReadPatterns
     setp
     mov.b OP.OrderChangeFlag, #$00
@@ -204,7 +200,7 @@ DriverLoop:                             ;Main driver loop
     setp
     mov.b A, OP.OrderChangeFlag      ;Order change
     beq +
-    mov.b Y, #$0E
+    mov.b Y, #$0F
     .SetSeq:
     setp
     mov.b A, OP.SequenceTarget+Y
@@ -695,27 +691,26 @@ FinaliseOutput:
     ret
 
     ;
+    ;   Writes addresses pointed by OP.OrderPos to ZP.SequenceAddr
+    ;
     ;   Clobberlist:
-    ;       ZP.R0       Aim table lo
-    ;       ZP.R1       Aim table hi
     ;       ZP.R3       Hardware/Virtual channel flag
     ;
 ReadPatterns:
     mov.b ZP.R3, #$00
     mov.b X, ZP.CurrentChannel
-    mov A, X
-    and.b A, #$08
-    beq +
+    mov1.b C, ZP.CurrentChannel.3
+    bcc .MusicPos
     mov.b ZP.R3, #$01
     mov.b A, ZP.CurrentChannel
     and.b A, #$07
     asl A
     mov X, A
     setp
-    mov.b A, OP.OrderPos+2+X                   ;Grab the current order ptr [sfx]
-    mov.b Y, OP.OrderPos+3+X
+    mov.b A, OP.OrderPos+$02+X                 ;Grab the current order ptr [sfx]
+    mov.b Y, OP.OrderPos+$03+X
     bra .OrderRead
-    +
+    .MusicPos:
     setp
     mov.b A, OP.OrderPos                       ;Grab the current order ptr [music]
     mov.b Y, OP.OrderPos+1
@@ -733,16 +728,17 @@ ReadPatterns:
     dec Y                                       ;Decrement loop counter
     bpl -                                       ;Loop
     ret
+
     .SFXAddr:
     mov.b A, ZP.CurrentChannel
     and.b A, #$07
     asl.b A
-    mov Y, A
-    mov.b A, (ZP.TempMemADDRL)+Y               ;Indirectly shove addr value into A
-    mov.b ZP.SequenceAddr+$10+Y, A             ;Copy value to sequence addr
-    inc.b Y                                    ;Decrement loop counter
-    mov.b A, (ZP.TempMemADDRL)+Y               ;Indirectly shove addr value into A
-    mov.b ZP.SequenceAddr+$10+Y, A             ;Copy value to sequence addr
+    mov.b Y, A
+    mov.b A, (ZP.TempMemADDRL)+Y                ;Indirectly shove addr value into A
+    mov.b ZP.SequenceAddr+$10+Y, A                  ;Copy value to sequence addr
+    inc.b Y                                     ;Increment index
+    mov.b A, (ZP.TempMemADDRL)+Y                ;Indirectly shove addr value into A
+    mov.b ZP.SequenceAddr+$10+Y, A                  ;Copy value to sequence addr
     ret
 
 HandleSFX:
@@ -767,24 +763,23 @@ HandleSFX:
     ;Erase flag
     mov.b A, #$00
     mov.b OP.OrderChangeFlag+1+X, A
-    ;Setup pattern read
     clrp
-    mov.b A, ZP.CurrentChannel
-    and A, #$07
-    mov.b X, A
-    mov.w A, SfxPatPtr
-    mov.w Y, SfxPatPtr+1
-    mov.b ZP.R0, A
-    mov.b ZP.R1, Y
-    ;Note, don't do -7 on the OrderPos, you'll end up reading at $01F9
     call ReadPatterns
+    setp
+    ;Copy over target sequence to address
+    mov.b A, OP.SequenceTarget+$10+X
+    mov.b Y, OP.SequenceTarget+$11+X
     clrp
-    mov.B X, ZP.CurrentChannel
+    mov.b ZP.SequenceAddr+$10+X, A
+    mov.b ZP.SequenceAddr+$11+X, Y
+    clrp
+    mov.b X, ZP.CurrentChannel
     mov.b A, ZP.VCTickThresh+X
     setp
     mov.b OP.ChannelSleepCounter+X, A
     clrp
     .SkipPatternRead:
+    clrp
     ;If tick timer == 0 then we decrement our sleep counter
     mov.b X, ZP.CurrentChannel
     setp
@@ -805,9 +800,13 @@ HandleSFX:
     mov.b X, ZP.CurrentChannel
     cmp.b X, #$07
     bne .SfxLoop
+    
     mov.b ZP.CurrentChannel, #$00
     ret
 
+    ;
+    ;   Grab command in command list and execute corresponding code
+    ;
 ReadRows:
     call GrabCommand
     mov.b ZP.R0, A
@@ -925,15 +924,13 @@ Row_Break:
     ret
     .DoSfx:
     mov.b A, (OP.OrderPos+X)
-    mov.b OP.SequenceTarget+X, A
-
+    mov.b OP.SequenceTarget+$10+X, A
     inc.b OP.OrderPos+X
     bcc +
     inc.b OP.OrderPos+1+X
     +
-
     mov.b A, (OP.OrderPos+X)
-    mov.b OP.SequenceTarget+1+X, A
+    mov.b OP.SequenceTarget+$11+X, A
     mov A, #$01
     mov.b OP.OrderChangeFlag+X, A         ;Set the order change flag
     clrp
@@ -1370,8 +1367,7 @@ RecieveSub:
     mov.w Y, SubPtr+1
     clrc
     addw YA, ZP.R4
-    mov.b ZP.R0, A
-    mov.b ZP.R1, Y                        ;Pointer constructed
+    movw.b ZP.R0, YA
     mov.b A, ZP.TempScratchMem            ;Check if APU2 is playing music, if not then we assume it's SFX
     cmp.b A, #ProCom.PlayMusic
     beq .DoMusic
@@ -1384,21 +1380,19 @@ RecieveSub:
     mov Y, SfxListPtr+1
     clrc
     addw YA, ZP.R4
-    mov.b ZP.R0, A
-    mov.b ZP.R1, Y
+    movw.b ZP.R0, YA
     mov.b X, #$00                               ;Set X to 0 for some pointer shenanigans
-    mov.b A, (ZP.R0+X)                          ;Grab order index
+    mov.b A, (ZP.R0+X)                          ;Grab pattern lo byte
+    mov.b ZP.R2, A
+    incw.b ZP.R0
+    mov.b A, (ZP.R0+X)                          ;Grab pattern hi byte
     mov.b ZP.R3, A
-                                                ;Grab current Address table for SFX
-    xcn A                                       ;Mult by 16
-    mov.b ZP.TempMemADDRH, A                    ;Shove into hi zp
-    mov.b ZP.TempMemADDRL, A                    ;Shove into lo zp
-    and.b ZP.TempMemADDRH, #$0F                 ;Get lo nibble
-    and.b ZP.TempMemADDRL, #$F0                 ;Get hi nibble  
-    mov A, SfxPatPtr                            ;Shove lo table addr into A
-    mov Y, SfxPatPtr+1                          ;Shove hi table addr into Y
-    addw YA, ZP.TempMemADDRL                    ;Add offset to YA
-    movw ZP.TempMemADDRL, YA                    ;Return address to memory
+
+    movw.b YA, ZP.R2
+
+    movw.b ZP.TempMemADDRL, YA                  ;Shove patterns into pointer
+
+    ;ZP.R2+R3 now hold the pointer to the current pattern list
 
     mov.b X, #$0E
     mov.b Y, #$07                               ;Set loop index
@@ -1406,32 +1400,42 @@ RecieveSub:
     .OrderSetLoopSFX:
     ;Check to make sure the current address pattern is not NULL
     clrp
-    mov.b ZP.R2, Y
+    mov.b ZP.R2, Y                              ;Save index into memory
     mov.b A, ZP.R2
     asl A
     inc A
     mov.b Y, A
     mov.b A, (ZP.TempMemADDRL)+Y                ;Grab hi byte of the address, if 0 then it must be blank
-    bne .SetOrder
+    bne .SetSfxOrder
     mov.b Y, ZP.R2
     bra .DecLoop
-    .SetOrder:
+    .SetSfxOrder:
+    ;Write sequence addresses in
     mov.b A, (ZP.TempMemADDRL)+Y                ;Write address in
     mov.b ZP.SequenceAddr+$11+X, A
+    setp
+    mov.b OP.SequenceTarget+$11+X, A
+    clrp
     dec Y
     mov.b A, (ZP.TempMemADDRL)+Y                ;Write address in
     mov.b ZP.SequenceAddr+$10+X, A
-    mov.b A, ZP.R3
-    mov.b Y, ZP.R2
     setp
-    mov.b OP.SequenceTarget+2+X, A
-    mov.b OP.OrderPos+2+X, A
-    push A
+    mov.b OP.SequenceTarget+$10+X, A
+    clrp
+
+    ;Next set the order position and set the order change flag to true
+    mov.b Y, ZP.R2                              ;Restore previous Y index
+    mov.b A, ZP.TempMemADDRL
+    setp
+    mov.b OP.OrderPos+$02+X, A
+    clrp
+    mov.b A, ZP.TempMemADDRH
+    setp
+    mov.b OP.OrderPos+$03+X, A
     mov A, #$01
     mov.b OP.OrderChangeFlag+1+Y, A
     mov A, #$00
     mov.b OP.StopFlag+1+Y, A
-    pop A
     .DecLoop:
     dec.b X
     dec.b X
@@ -1468,8 +1472,8 @@ RecieveSub:
     push Y
     push X
     setp
-    mov.b A, OP.SequenceTarget+2+X
-    mov.b Y, OP.SequenceTarget+3+X
+    mov.b A, OP.SequenceTarget+$10+X
+    mov.b Y, OP.SequenceTarget+$11+X
     clrp
     movw.b ZP.TempMemADDRL, YA                  ;Return address to memory
     pop Y                                       ;Grab X from stack early for original index into Y
@@ -1800,19 +1804,10 @@ SfxPat:
     %SetSpeed($08)
     %PlayNote($20)
     %Sleep($0E)
-    %PlayNote($21)
-    %SetPort($80)
+    %PlayNote($20)
+    %SetPort($81)
     %Sleep($12)
     %Stop()
-    .Sfx2_1:
-    %SetChannelVolume($7F, $7F)
-    %SetInstrument($04)
-    %SetPort($7F)
-    %SetSpeed($08)
-    %PlayNote($1F)
-    %Sleep($0E)
-    %PlayNote($21)
-    %Sleep($12)
 
     ;List of available music tracks, holds the tune's starting order address
 SubtuneList:

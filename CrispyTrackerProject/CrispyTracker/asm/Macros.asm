@@ -59,7 +59,7 @@ endstruct
 
 struct OP $0100
 ;Sequencing
-.OrderPos:                  skip 18 ;Pointer to current channel's position in order/SFX list
+.OrderPos:                  skip 18 ;Pointer to current channel's position in order/SFX list [first word is for music, rest are for SFX]
 .SequenceTarget:            skip 32 ;Aim pointer for sequence addresses
 .OrderChangeFlag:           skip 9  ;Flag for when we need to load in the next order sequence
 .ChannelSleepCounter:       skip 16 ;Array of sleep counters
