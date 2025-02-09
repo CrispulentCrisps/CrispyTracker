@@ -100,7 +100,7 @@
 
 	<h3 id="ord">   Orders</h3>
 	<p1>
-		Orders are the main sequence the track will take. These can be one of 256 entries, each of which can hold 8 patterns at once, one for each channel. This is responsible for the sequencing of patterns to make the full music track.
+		Orders are the main sequence the track will take, each of which can hold 8 patterns for the 8 channels. This is responsible for the sequencing of patterns to make the full music track.
 		Different subtunes have different orders, but are shared with the 256 order limit. Sound effects can have their own 256 order entries. Below is what an order entry may look like.
 		<code> <span style="background: #CCF;">00 </span><span style="background: #CFC;">01 02 03 04 05 06 07 08</span>
 		<span style="background: #CCF;">01 </span><span style="background: #CFC;">04 02 03 03 11 03 09 11</span></code>
@@ -125,8 +125,7 @@
 			<li>Effect value 2</li>
 		</ol>
 		in that order. Rows themselves will look like below as a blank state: <br />
-		<code>
-			... .. .. .. .. .. ..
+		<code>--- .. .. .. .. .. ..
 		</code> <br />
 		A row will usually be filled with some information, so it is best to break it down into what it can and cannot do.
 	</p1>
@@ -139,13 +138,11 @@
 			<li>Octave</li>
 		</ol>
 		So a note could look like: <br /><br />
-		<code>
-			<span style="background: #FCF;">C#5</span> .. .. .. .. .. ..
+		<code><span style="background: #FCF;">C#5</span> .. .. .. .. .. ..
 		</code> <br /><br />
 		Where it indicates that is is a C# on octave 5. The tracker itself can handle an 8 octave range of notes, however due to <a href="#req1">hardware reasons</a> this may not be achievable with the current sound.
 		Notes with a - indicate it is a natural, so: <br /><br />
-		<code>
-			<span style="background: #FCF;">F-3</span> .. .. .. .. .. ..
+		<code><span style="background: #FCF;">F-3</span> .. .. .. .. .. ..
 		</code>
 		would indicate that it is an F natural on octave 3.
 	</p1>
@@ -154,25 +151,21 @@
 		The instrument index is set in the second column in the row. This is input as <a href="https://en.wikipedia.org/wiki/Hexadecimal#Written_representation">hexidecimal</a> for <a href="https://en.wikipedia.org/wiki/Music_tracker"> historical and convention reasons.</a> This also extends to the rest of the row columns, so some good practice will make things a lot easier.
 		The instrument column dictates what instrument to use for the channel, determining several aspects of the sound [See <a href="#ins">instruments</a> here]. index values can range from 0 [$00] to 256 [$FF]. Below is an example of an instrument command.
 		<br />
-		<code>
-			A#1 <span style="background: #CFC;">4A</span> .. .. .. .. ..
+		<code>A#1 <span style="background: #CFC;">4A</span> .. .. .. .. ..
 		</code> <br />
 	</p1>
 	<h4>Volume</h4>
 	<p1>
 		The channel volume is set in the third row column and can range from 0 [$00] to 256 [$FF]. The closer the volume is to 0 the quieter it becomes, however, if the volume goes larger than 127 [$7F] then due to <a href="#spec3">hardware reasons</a> comtinuing to increase the volume will make it quieter. This mixing can be affected by effects like <a href="#vls">volume slides</a> but outside of them the volume stays the same until changed in the track.
 		<br />
-		<code>
-			E-7 .. <span style="background: #CFF;">7F</span> .. .. .. ..
+		<code>E-7 .. <span style="background: #CFF;">7F</span> .. .. .. ..
 		</code> <br />
 	</p1>
 	<h4>Effect index and effect value</h4>
 	<p1>
 		The rest of the columns are occupied by the effect index and effect value respectively. There are two of them for the user to utilise, with importance being placed on the second index and value.
 		More in depth information on effects can be seen <a href="#efx">here</a>.
-
-		<code>
-			... .. .. <span style="background: #FCC;">01 3A </span> <span style="background: #FFC;">02 44 </span>
+		<code>--- .. .. <span style="background: #FCC;">01 3A </span> <span style="background: #FFC;">02 44 </span>
 		</code><br />
 		Both effects columns are used, with the rightmost yellow one being the effect to be executed.
 	</p1>
@@ -190,7 +183,7 @@
 			The highlighted section would be the Vibrato effect in the leftmost byte, with a depth of $9 and a speed of $7 specified in the rightmost byte. This effect would continue until we hit a row like this:
 		</p1><br /><br />
 		<code>
-			... .. .. .. .. <span style="background: #FFC;">04 00 </span>
+			--- .. .. .. .. <span style="background: #FFC;">04 00 </span>
 		</code><br /><br />
 		Since the vibrato index has been identified and a value of $00 is input, the effect will be stopped. <br />
 		Multiple effects can be stacked at once so you could write, for example:

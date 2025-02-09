@@ -65,12 +65,12 @@ typedef struct SequenceEntry {
 
 //This is for storing repeated sequences
 typedef struct PatternEntry {
-	uint8_t PatternIndex;			//Index that the pattern uses
+	uint16_t PatternIndex;			//Address to pattern
 	uint8_t SequenceAmount;			//Amount of sequence entries used in said pattern
 	std::vector<uint16_t> SequenceList;	//Sequence entries index in pattern
 };
 
 //This is for a single tune that can be used in the SPC file
 typedef struct SubtuneEntry {
-	uint16_t OrderPosition;		//Where the start of a subtune is, defined by order address
+	uint16_t SubStart;		//Where the start of a subtune is, defined by order address
 };

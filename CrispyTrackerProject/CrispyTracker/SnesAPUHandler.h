@@ -54,8 +54,8 @@
 #define SPC_c1              0xFE
 #define SPC_c2              0xFF
 
-#define Sample_Mem_Page     0x0C00
-#define Sample_Dir_Page     0x0D00
+#define Sample_Mem_Page     0x0D00
+#define Sample_Dir_Page     0x0C00
 #define Echo_Buffer_Addr    0xEE00
 
 //
@@ -140,7 +140,9 @@ public:
     u8 KOFState;
 
     u16 SPCPtr = DATA_START;
-    
+
+    ComType ExCom[EXCOM_SIZE] = {com_Sleep, com_Stop, com_Break, com_Goto};  //Exclusive commands that must be at the end of a given sequence chunk
+
     void WriteSPC(size_t data);
 
     void APU_Startup();

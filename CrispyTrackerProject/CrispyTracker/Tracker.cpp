@@ -1038,7 +1038,7 @@ void Tracker::Samples()
 			newsamp.SampleName += to_string(index);
 			samples.push_back(newsamp);
 			std::cout << samples.size();
-			SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
+			SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 		}
 		SameLine();
 		if (Button("Delete", ImVec2(GetWindowWidth() * ButtonSizeMult, 24)) && samples.size() > 1)
@@ -1053,7 +1053,7 @@ void Tracker::Samples()
 			{
 				samples.erase((samples.begin()) + SelectedSample);
 			}
-			SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
+			SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 		}
 		SameLine();
 		if (Button("Up", ImVec2(GetWindowWidth() * ButtonSizeMult, 24)) && samples.size() > 1)
@@ -1120,15 +1120,15 @@ void Tracker::Sample_View()
 
 			if (Checkbox("Loop Sample", &samples[SelectedSample].Loop)) {
 				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-				SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
+				SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 			}
 			if (InputInt("Loop Start", (int*)&samples[SelectedSample].LoopStart, 16, 0)) {
 				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-				SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
+				SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 			}
 			if(InputInt("Loop End", (int*)&samples[SelectedSample].LoopEnd, 16, 0)){
 				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-				SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
+				SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 			}
 			if (samples.size() > 1)
 			{
@@ -1168,19 +1168,19 @@ void Tracker::Sample_View()
 					{
 						samples[SelectedSample].LoopEnd = samples[SelectedSample].SampleData.size();
 						SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-						SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
+						SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 					}
 					else if (samples[SelectedSample].LoopEnd < 16)
 					{
 						samples[SelectedSample].LoopEnd = 16;
 						SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-						SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
+						SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 					}
 					else if (samples[SelectedSample].LoopStart < 0)
 					{
 						samples[SelectedSample].LoopStart = 0;
 						SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-						SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
+						SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 					}
 
 					if (samples[SelectedSample].LoopEnd % 16 != 0)//Assumes the sample is too large to hold
@@ -2114,6 +2114,8 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 							//Channels[x].Rows[y].S_Note = Channels[x].NoteNames[Channels[x].Rows[y].note % 12] + to_string(Channels[x].Rows[y].octave);
 							CursorY += Step;
 							ChangePatternData(x, y);
+
+							SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 							break;
 						}
 						else if (CurrentKey == GLFW_KEY_DELETE)
@@ -2725,7 +2727,7 @@ void Tracker::ApplyLoad()
 		SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[samp.SampleIndex], samples[samp.SampleIndex].LoopEnd);
 		SG.Emu_APU.APU_Evaluate_BRR_Loop_Start(&samples[samp.SampleIndex]);
 	}
-	SG.Emu_APU.APU_Rebuild_Sample_Memory(samples);
+	SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 
 	for (int x = 0; x < filehandler.mod.inst.size(); x++)
 	{

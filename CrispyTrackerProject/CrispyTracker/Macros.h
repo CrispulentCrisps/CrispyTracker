@@ -30,9 +30,12 @@
 #define DRIVER_SUBPTR		(uint16_t)	0x01E8			//Pointer to [Music Subtunes] data
 #define DRIVER_PITCHPTR		(uint16_t)	0x01EA			//Pointer to [PitchTable	] data
 #define DRIVER_CODE			(uint16_t)	0x0200			//Start of the driver data
+#define DRIVER_END			(uint16_t)	0x0A00			//Start of the driver data
 #define DATA_START			(uint16_t)	0x0D00			//Where dynamic data starts for the driver to interpret
 
 #define DRIVER_ROM_ADDR		(uint32_t)	0x010000		//Where driver starts in CPU memory
+
+#define EXCOM_SIZE			0x04
 
 //Tracker command bytes for SPC export
 enum ComType
@@ -82,14 +85,28 @@ typedef struct Command
 };
 
 typedef struct Row {
-	unsigned short note = NULL_COMMAND;
-	unsigned short octave = NULL_COMMAND;
-	unsigned short instrument = NULL_COMMAND;
-	unsigned short volume = NULL_COMMAND;
-	unsigned short effect = NULL_COMMAND;
-	unsigned short effectvalue = NULL_COMMAND;
-	unsigned short effect2 = NULL_COMMAND;
-	unsigned short effectvalue2 = NULL_COMMAND;
+	unsigned short note =			NULL_COMMAND;
+	unsigned short octave =			NULL_COMMAND;
+	unsigned short instrument =		NULL_COMMAND;
+	unsigned short volume =			NULL_COMMAND;
+	unsigned short effect =			NULL_COMMAND;
+	unsigned short effectvalue =	NULL_COMMAND;
+	unsigned short effect2 =		NULL_COMMAND;
+	unsigned short effectvalue2 =	NULL_COMMAND;
+};
+
+//Used for tracking row values when writing sequence data
+typedef struct RowState {
+	bool IsPan;					//If the current row has a panning command
+	short PanVal;				//Panning value
+};
+
+typedef struct PatternState {
+	char SleepCount;			//Count how many rows a given channel has slept
+	bool IsEmpty;				//Check if line has to be sleep command for channel	//Counter for how many lines to sleep
+	bool LastEmpty;				//Check for if the state of last empty changed
+	short lastvolume;			//Deduplication for volume commands
+	char lastinst;				//Deduplication for instrument commands
 };
 
 enum ExportTypes {

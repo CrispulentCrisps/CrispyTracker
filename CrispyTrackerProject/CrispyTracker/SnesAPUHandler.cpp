@@ -13,8 +13,9 @@ void SnesAPUHandler::APU_Startup()
 	//Write IPL rom and base
 	FILE* driver = fopen(DRIVER_PATH, "rb");
 	fseek(driver, DRIVER_ROM_ADDR, SEEK_SET);
-	if (fread(DSP_MEMORY, 1, DATA_START, driver) == 0) {
-		cout << "ERROR, COULD NOT WRITE TO FILE";
+	for (int x = 0; x < DRIVER_END; x++)
+	{
+		DSP_MEMORY[x + 0x0200] = fgetc(driver);
 	}
 	fclose(driver);
 	//Starting up the DSP and SPC that the emu will use
@@ -550,7 +551,7 @@ void SnesAPUHandler::APU_Kill()
 void SnesAPUHandler::SPCWrite(u8 byte)
 {
 	DSP_MEMORY[SPCPtr++] = byte;
-	cout << "\nDPS ADDR: " << SPCPtr;
+	cout << "\nDSP ADDR: " << SPCPtr << " | Written data: " << (int)byte;
 }
 
 void SnesAPUHandler::WriteCommand(Command com)
@@ -572,38 +573,98 @@ void SnesAPUHandler::APU_UpdateTuneMemory(vector<Instrument>& inst, vector<Sampl
 	APU_Rebuild_Sample_Memory(sample);
 	APU_EvaluateSequenceData(pat, sub[subind].TrackLength);
 }
-
+//
+// 
+//	NOTES:
+// 
+//		Commands that must be placed at the end of the given sequence chunk:
+//			Sleep
+//			Stop
+//			Break
+//			Goto
+//
 void SnesAPUHandler::APU_EvaluateSequenceData(vector<Patterns>& pat, int rowsize)
 {
 	for (int x = 0; x < pat.size(); x++)
 	{
+		cout << "\nPAT: " << x << " AT: " << std::hex << SPCPtr;
+		pat[x].Addr = SPCPtr;
+
+		PatternState PState = PatternState();
+		PState.IsEmpty = true;
+		PState.LastEmpty = PState.IsEmpty;
+
 		for (int y = 0; y < rowsize; y++)
 		{
-			u16 lastvolume = 0x0000;	//Deduplication for volume commands
-			u8 lastinst = 0x00;			//Deduplication for instrument commands
+			RowState currow = RowState();
+			PState.IsEmpty = true;
 
-			//Write pitches
+			//Write Effects
+			if (pat[x].SavedRows[y].effect != NULL_COMMAND)
+			{
+				//Check for exlcusive commands
+				bool isex = false;
+				for (int x = 0; x < EXCOM_SIZE; x++)
+				{
+					if (pat[x].SavedRows[y].effect == ExCom[x])
+					{
+						isex = true;
+						break;
+					}
+				}
+
+				if (!isex)
+				{
+					PState.IsEmpty = false;
+					if (pat[x].SavedRows[y].effect != Pan)
+					{
+						WriteCommand(Command{ com_ChannelVol, pat[x].SavedRows[y].effect });
+					}
+					//Check for panning commands
+					currow.PanVal = pat[x].SavedRows[y].effectvalue;
+				}
+			}
+
+			//Write volume
+			if (PState.lastvolume != pat[x].SavedRows[y].volume && pat[x].SavedRows[y].volume != NULL_COMMAND)
+			{
+				PState.IsEmpty = false;
+				WriteCommand(Command{ com_ChannelVol, pat[x].SavedRows[y].volume });
+				PState.lastvolume = pat[x].SavedRows[y].volume;
+			}
+
+			//Write sleep if no other effect found on 
+			if (PState.lastinst != pat[x].SavedRows[y].instrument && pat[x].SavedRows[y].instrument != NULL_COMMAND)
+			{
+				PState.IsEmpty = false;
+				WriteCommand(Command{ com_SetInstrument, pat[x].SavedRows[y].instrument });
+				PState.lastinst = pat[x].SavedRows[y].instrument;
+			}
+
+			//Write pitches 
 			if (pat[x].SavedRows[y].note != NULL_COMMAND)
 			{
+				PState.IsEmpty = false;
 				unsigned short noteval = pat[x].SavedRows[y].note & 0xFF;
 				WriteCommand(Command{ com_PlayNote, noteval });
 			}
 
-			//Write volume
-			if (lastvolume != pat[x].SavedRows[y].volume)
+			if (PState.LastEmpty != PState.IsEmpty && PState.SleepCount != 0)
 			{
-				WriteCommand(Command{ com_PlayNote, pat[x].SavedRows[y].volume });
-				lastvolume = pat[x].SavedRows[y].volume;
+				WriteCommand(Command{ com_Sleep, (unsigned short)(PState.SleepCount) });
+				PState.SleepCount = 0;
 			}
+			PState.LastEmpty = PState.IsEmpty;
 
-			//Write instrument
-			if (lastinst != pat[x].SavedRows[y].instrument)
+			if (PState.IsEmpty)
 			{
-				WriteCommand(Command{ com_SetInstrument, pat[x].SavedRows[y].instrument });
-				lastvolume = pat[x].SavedRows[y].instrument;
+				PState.SleepCount++;
 			}
+		}
 
-
+		if (PState.IsEmpty)
+		{
+			WriteCommand(Command{ com_Sleep, (unsigned short)(PState.SleepCount) });
 		}
 	}
 }
@@ -615,22 +676,20 @@ void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 	{
 		samp[i].SampleIndex = i;
 		samp[i].brr.SampleDir = SPCPtr;
-		for (int j = 0; j < samp[i].brr.DBlocks.size(); j++)//BRR Block Index
+		for (int j = 1; j < samp[i].brr.DBlocks.size(); j++)//BRR Block Index
 		{
-			if (SPCPtr < Sample_Dir_Page)
+			if (SPCPtr < Echo_Buffer_Addr)
 			{
 				if (samp[i].LoopStart / 16 == j)
 				{
 					samp[i].LoopStartAddr = SPCPtr;
 				}
 
-				DSP_MEMORY[SPCPtr] = samp[i].brr.DBlocks[j].HeaderByte;
-				SPCPtr++;
+				SPCWrite(samp[i].brr.DBlocks[j].HeaderByte);
 
 				for (int k = 0; k < 8; k++)//BRR Data blocks
 				{
-					DSP_MEMORY[SPCPtr] = samp[i].brr.DBlocks[j].DataByte[k];
-					SPCPtr++;
+					SPCWrite(samp[i].brr.DBlocks[j].DataByte[k]);
 				}
 			}
 			else
@@ -651,13 +710,12 @@ void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 void SnesAPUHandler::APU_Set_Sample_Directory(std::vector<Sample>& samp)
 {
 	int CurrentDir = 0;
+	int DirSize = 4;
 	for (int i = 1; i < samp.size(); i++)
 	{
-		int DirSize = 4;
 
 		DSP_MEMORY[Sample_Dir_Page + CurrentDir] = samp[i].brr.SampleDir & 0xFF;//Low byte of directory
 		DSP_MEMORY[Sample_Dir_Page + CurrentDir + 1] = (samp[i].brr.SampleDir >> 8) & 0xFF;//High byte of the directory
-
 		DSP_MEMORY[Sample_Dir_Page + CurrentDir + 2] = samp[i].LoopStartAddr & 0xFF;//High byte of the start
 		DSP_MEMORY[Sample_Dir_Page + CurrentDir + 3] = (samp[i].LoopStartAddr >> 8) & 0xFF;//High byte of the start
 

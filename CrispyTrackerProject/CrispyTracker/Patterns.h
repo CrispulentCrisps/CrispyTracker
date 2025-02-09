@@ -8,6 +8,7 @@ class Patterns
 {
 public:
 	uint8_t Index;
+	uint16_t Addr;
 
 	Row SavedRows[256];
 	void SetUp(int Length);
