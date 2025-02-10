@@ -46,6 +46,12 @@ bool FileHandler::LoadModule(string path)
 	if (AlignData<uint32_t>(compbuf, addroff) == FILE_HEAD)
 	{
 		addroff += 4;
+		if (AlignData<uint16_t>(compbuf, addroff) != VERSION_100)
+		{
+			cout << "\n\nWARNING: FILE VERSIONS MISMATCH, VERSION LOADED WAS: " << AlignData<uint16_t>(compbuf, addroff);
+			return false;
+		}
+		addroff += 2;
 		uint8_t SubtuneCount = AlignData<uint8_t>(compbuf, addroff++);
 		mod.subtune.resize(SubtuneCount);
 		for (uint8_t z = 0; z < SubtuneCount; z++)
@@ -184,6 +190,8 @@ bool FileHandler::SaveModule(string path)
 		//Tracker specific
 		uint32_t head = FILE_HEAD;
 		fwrite(&head, 4, 1, file);
+		uint16_t vers = VERSION_100;
+		fwrite(&vers, 2, 1, file);
 		uint8_t SubtuneCount = mod.subtune.size();
 		fwrite(&SubtuneCount, 1, 1, file);
 		for (int x = 0; x < mod.subtune.size(); x++)

@@ -43,14 +43,11 @@ typedef struct Module {
 
 //This is for each instrument used in every track, this is to save memory from having to write the same values in the sequence data again and again
 typedef struct InstEntry {
-	int8_t Vol_L;			//Left channel volume
-	int8_t Vol_R;			//Right channel volume
+	uint8_t SampleIndex;	//Index of the sample, to be used by SCRN registers while they look in the DIR page
 	uint8_t ADSR1;			//EDDD AAAA	ADSR enable (E), decay rate (D), attack rate (A).
 	uint8_t ADSR2;			//SSSR RRRR	Sustain level (S), sustain rate (R).
 	uint8_t Gain;			//0VVV VVVV 1MMV VVVV	Mode(M), value(V).
 	uint8_t EffectState;	//Holds the state of the effects in the instrument to reference in DSP memory
-	uint8_t SampleIndex;	//Index of the sample, to be used by SCRN registers while they look in the DIR page
-	uint8_t Priority;		//Priority of instrument based off of SFX priority
 };
 
 //Sequence entry reffers to a single row in the tracker for a single file

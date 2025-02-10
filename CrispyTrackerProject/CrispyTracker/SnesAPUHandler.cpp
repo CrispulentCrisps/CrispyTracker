@@ -571,7 +571,9 @@ void SnesAPUHandler::APU_UpdateTuneMemory(vector<Instrument>& inst, vector<Sampl
 {
 	SPCPtr = DATA_START;
 	APU_Rebuild_Sample_Memory(sample);
+	APU_Update_Instrument_Memory(pat, inst, sub[subind].TrackLength);
 	APU_EvaluateSequenceData(pat, sub[subind].TrackLength);
+	APU_Write_Music_Orders(pat, sub);
 }
 //
 // 
@@ -676,7 +678,7 @@ void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 	{
 		samp[i].SampleIndex = i;
 		samp[i].brr.SampleDir = SPCPtr;
-		for (int j = 1; j < samp[i].brr.DBlocks.size(); j++)//BRR Block Index
+		for (int j = 0; j < samp[i].brr.DBlocks.size(); j++)//BRR Block Index
 		{
 			if (SPCPtr < Echo_Buffer_Addr)
 			{
@@ -700,29 +702,6 @@ void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 		}
 	}
 	LastSamplePoint = SPCPtr;
-	for (int x = LastSamplePoint; x < 0xFFFF; x++)
-	{
-		DSP_MEMORY[x] = 0;
-	}
-}
-
-//Sets up the DIR page for interfacing with samples
-void SnesAPUHandler::APU_Set_Sample_Directory(std::vector<Sample>& samp)
-{
-	int CurrentDir = 0;
-	int DirSize = 4;
-	for (int i = 1; i < samp.size(); i++)
-	{
-
-		DSP_MEMORY[Sample_Dir_Page + CurrentDir] = samp[i].brr.SampleDir & 0xFF;//Low byte of directory
-		DSP_MEMORY[Sample_Dir_Page + CurrentDir + 1] = (samp[i].brr.SampleDir >> 8) & 0xFF;//High byte of the directory
-		DSP_MEMORY[Sample_Dir_Page + CurrentDir + 2] = samp[i].LoopStartAddr & 0xFF;//High byte of the start
-		DSP_MEMORY[Sample_Dir_Page + CurrentDir + 3] = (samp[i].LoopStartAddr >> 8) & 0xFF;//High byte of the start
-
-		samp[i].SampleADDR = i-1;
-
-		CurrentDir += DirSize;
-	}
 }
 
 //Formatting the BRR END and LOOP flags
@@ -752,14 +731,69 @@ void SnesAPUHandler::APU_Evaluate_BRR_Loop(Sample* sample, int LoopPoint)
 void SnesAPUHandler::APU_Evaluate_BRR_Loop_Start(Sample* sample)
 {
 	sample->LoopStartAddr = (sample->brr.SampleDir + (sample->LoopStart/16) * 9);
-	DSP_MEMORY[Sample_Dir_Page + (sample->SampleIndex * 4) + 2] = sample->LoopStartAddr & 0xFF;
-	DSP_MEMORY[Sample_Dir_Page + (sample->SampleIndex * 4) + 3] = (sample->LoopStartAddr >> 8) & 0xFF;
+}
+
+void SnesAPUHandler::APU_Write_Music_Orders(vector<Patterns>& pat, vector<Subtune>& sub)
+{
+	MusicOrderAddr = SPCPtr;
+	for (int x = 0; x < sub.size(); x++)
+	{
+		if (!sub[x].SFXFlag)
+		{
+			for (int y = 0; y < sub[x].Orders[0].size(); y++)
+			{
+				for (int z = 0; z < 8; z++)
+				{
+					int currentpat = sub[x].Orders[z][y];
+
+					u16 pataddr = pat[currentpat].Addr;
+					SPCWrite((pataddr) & 0xFF);
+					SPCWrite((pataddr>>8) & 0xFF);
+				}
+			}
+		}
+	}
+
+	SfxOrderAddr = SPCPtr;
+	for (int x = 0; x < sub.size(); x++)
+	{
+		if (sub[x].SFXFlag)
+		{
+			for (int y = 0; y < sub[x].Orders[0].size(); y++)
+			{
+				for (int z = 0; z < 8; z++)
+				{
+					int currentpat = sub[x].Orders[z][y];
+
+					u16 pataddr = pat[currentpat].Addr;
+					SPCWrite((pataddr) & 0xFF);
+					SPCWrite((pataddr >> 8) & 0xFF);
+				}
+			}
+		}
+	}
+}
+
+//Sets up the DIR page for interfacing with samples
+void SnesAPUHandler::APU_Set_Sample_Directory(std::vector<Sample>& samp)
+{
+	int CurrentDir = 0;
+	int DirSize = 4;
+	for (int i = 1; i < samp.size(); i++)
+	{
+		DSP_MEMORY[Sample_Dir_Page + CurrentDir] = samp[i].brr.SampleDir & 0xFF;			//Lo byte of directory
+		DSP_MEMORY[Sample_Dir_Page + CurrentDir + 1] = (samp[i].brr.SampleDir >> 8) & 0xFF;	//Hi byte of directory
+		DSP_MEMORY[Sample_Dir_Page + CurrentDir + 2] = samp[i].LoopStartAddr & 0xFF;		//Lo byte of the start
+		DSP_MEMORY[Sample_Dir_Page + CurrentDir + 3] = (samp[i].LoopStartAddr >> 8) & 0xFF;	//Hi byte of the start
+		samp[i].SampleADDR = i - 1;
+		CurrentDir += DirSize;
+	}
 }
 
 //Writes page for instruments
 void SnesAPUHandler::APU_Update_Instrument_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize)
 {
-	int addroff = 0;
+	InstAddr = SPCPtr;
 	//Write instrument table
 	InstMem.clear();
 	InstMem.push_back(InstEntry());//This one isn't counted, reason it's here is to mirror the instrument list having the first entry as a "Default" one
@@ -774,40 +808,27 @@ void SnesAPUHandler::APU_Update_Instrument_Memory(std::vector<Patterns>& pat, st
 		
 		uint8_t ADSR1 = 0;
 		uint8_t ADSR2 = 0;
-		ADSR1 += ((int)inst[x].EnvelopeUsed << 7);
-		ADSR1 += (inst[x].Decay << 4);
-		ADSR1 += (inst[x].Attack);
-		ADSR2 += (inst[x].Sustain << 5);
-		ADSR2 += (inst[x].Release);
+		ADSR1 |= ((int)inst[x].EnvelopeUsed << 7);
+		ADSR1 |= (inst[x].Decay << 4);
+		ADSR1 |= (inst[x].Attack);
+		ADSR2 |= (inst[x].Sustain << 5);
+		ADSR2 |= (inst[x].Release);
 		
 		i_ent.ADSR1 = ADSR1;
 		i_ent.ADSR2 = ADSR2;
 		i_ent.Gain = inst[x].Gain;
-		i_ent.Vol_L = 127 * inst[x].SetVolume(1);
-		i_ent.Vol_R = 127 * inst[x].SetVolume(-1);
 		i_ent.SampleIndex = inst[x].CurrentSample.SampleIndex;
 
-		i_ent.EffectState |= ((int)inst[x].InvL << 0);
-		i_ent.EffectState |= ((int)inst[x].InvR << 1);
-		i_ent.EffectState |= ((int)inst[x].PitchMod << 2);
-		i_ent.EffectState |= ((int)inst[x].Noise << 3);
-		i_ent.EffectState |= ((int)inst[x].Echo << 4);
+		i_ent.EffectState |= ((int)inst[x].PitchMod << 0) | ((int)inst[x].Noise << 1) | ((int)inst[x].Echo << 2);
 
 		InstMem.push_back(i_ent);
 
-		DSP_MEMORY[InstAddr + addroff] = InstMem[x].Vol_L;
-		DSP_MEMORY[InstAddr + addroff + 1] = InstMem[x].Vol_R;
-		DSP_MEMORY[InstAddr + addroff + 2] = InstMem[x].ADSR1;
-		DSP_MEMORY[InstAddr + addroff + 3] = InstMem[x].ADSR2;
-		DSP_MEMORY[InstAddr + addroff + 4] = InstMem[x].Gain;
-		DSP_MEMORY[InstAddr + addroff + 5] = InstMem[x].EffectState;
-		DSP_MEMORY[InstAddr + addroff + 6] = InstMem[x].SampleIndex;
-		addroff += 7;
+		SPCWrite(InstMem[x].SampleIndex);
+		SPCWrite(InstMem[x].ADSR1);
+		SPCWrite(InstMem[x].ADSR2);
+		SPCWrite(InstMem[x].Gain);
+		SPCWrite(InstMem[x].EffectState);
 	}
-	SequenceAddr = InstAddr + addroff;
-	sprintf_s(buf, "%04X", SequenceAddr);
-	std::cout << "\nSequenceADDR: " << buf;
-	//APU_Update_Sequence_Memory(pat, inst, TrackSize);
 }
 
 //Writes page for sequence entries
@@ -1017,6 +1038,10 @@ int SnesAPUHandler::APU_Return_Cycle_Since_Last_Frame()
 void SnesAPUHandler::APU_Rebuild_Sample_Memory(std::vector<Sample>& samp)
 {
 	APU_Set_Sample_Memory(samp);
+	for (int x = 1; x < samp.size(); x++)
+	{
+		APU_Evaluate_BRR_Loop(&samp[x], samp[x].LoopEnd);
+	}
 	APU_Set_Sample_Directory(samp);
 }
 
