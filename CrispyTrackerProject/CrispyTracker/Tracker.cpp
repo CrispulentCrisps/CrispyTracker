@@ -1408,6 +1408,7 @@ void Tracker::Author_View()
 					SameLine();
 					if (Selectable(filehandler.mod.subtune[x].trbuf, selected))
 					{
+						SelectedPattern = 0;
 						CurrentTune = x;
 						ApplySubtune();
 					}
@@ -1425,6 +1426,7 @@ void Tracker::Author_View()
 		{
 			MaxTune++;
 			CurrentTune = MaxTune;
+			SelectedPattern = 0;
 			InitialiseNewSubtune();
 			ApplySubtune();
 		}

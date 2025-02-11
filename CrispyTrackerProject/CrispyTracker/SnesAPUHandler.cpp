@@ -570,10 +570,13 @@ void SnesAPUHandler::WriteCommand(Command com)
 void SnesAPUHandler::APU_UpdateTuneMemory(vector<Instrument>& inst, vector<Sample>& sample, vector<Subtune>& sub, vector<Patterns>& pat, int subind)
 {
 	SPCPtr = DATA_START;
+	MusicOrders.clear();
+	SfxOrders.clear();
 	APU_Rebuild_Sample_Memory(sample);
 	APU_Update_Instrument_Memory(pat, inst, sub[subind].TrackLength);
 	APU_EvaluateSequenceData(pat, sub[subind].TrackLength);
 	APU_Write_Music_Orders(pat, sub);
+	APU_Write_Subtunes();
 }
 //
 // 
@@ -740,12 +743,12 @@ void SnesAPUHandler::APU_Write_Music_Orders(vector<Patterns>& pat, vector<Subtun
 	{
 		if (!sub[x].SFXFlag)
 		{
+			MusicOrders.push_back(SPCPtr);
 			for (int y = 0; y < sub[x].Orders[0].size(); y++)
 			{
 				for (int z = 0; z < 8; z++)
 				{
 					int currentpat = sub[x].Orders[z][y];
-
 					u16 pataddr = pat[currentpat].Addr;
 					SPCWrite((pataddr) & 0xFF);
 					SPCWrite((pataddr>>8) & 0xFF);
@@ -759,18 +762,35 @@ void SnesAPUHandler::APU_Write_Music_Orders(vector<Patterns>& pat, vector<Subtun
 	{
 		if (sub[x].SFXFlag)
 		{
+			SfxOrders.push_back(SPCPtr);
 			for (int y = 0; y < sub[x].Orders[0].size(); y++)
 			{
 				for (int z = 0; z < 8; z++)
 				{
 					int currentpat = sub[x].Orders[z][y];
-
 					u16 pataddr = pat[currentpat].Addr;
 					SPCWrite((pataddr) & 0xFF);
 					SPCWrite((pataddr >> 8) & 0xFF);
 				}
 			}
 		}
+	}
+}
+
+void SnesAPUHandler::APU_Write_Subtunes()
+{
+	for (int x = 0; x < MusicOrders.size(); x++)
+	{
+		cout << "\nMusic Order: " << x << " | " << std::hex << MusicOrders[x];
+		SPCWrite((MusicOrders[x]) & 0xFF);
+		SPCWrite((MusicOrders[x] >> 8) & 0xFF);
+	}
+
+	for (int x = 0; x < SfxOrders.size(); x++)
+	{
+		cout << "\nSfx Order: " << x << " | " << std::hex << SfxOrders[x];
+		SPCWrite((SfxOrders[x]) & 0xFF);
+		SPCWrite((SfxOrders[x] >> 8) & 0xFF);
 	}
 }
 

@@ -166,6 +166,7 @@ public:
 	void APU_Evaluate_BRR_Loop(Sample* sample, int LoopPoint);
 	void APU_Evaluate_BRR_Loop_Start(Sample* sample);
 	void APU_Write_Music_Orders(vector<Patterns>& pat, vector<Subtune>& sub);
+	void APU_Write_Subtunes();
 	void APU_Update_Instrument_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);
 	void APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);
 	void APU_Update_Pattern_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);
