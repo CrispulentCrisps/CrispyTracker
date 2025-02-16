@@ -109,6 +109,7 @@ public:
 	u16 SfxOrderAddr   = 0x0200;	//Sfx pattern addresses
 	u16 MusicSubAddr   = 0x0200;	//Music subtune address
 	u16 SFXSubAddr     = 0x0200;	//SFX subtune address
+
 	std::vector<InstEntry>      InstMem;
 	std::vector<SequenceEntry>  SeqMem;
 	std::vector<PatternEntry>   PatMem;
@@ -160,7 +161,7 @@ public:
 	void SPCWrite(u8 byte);
 	void WriteCommand(Command com);
 	void APU_UpdateTuneMemory(vector<Instrument>& inst, vector<Sample>& sample, vector<Subtune>& sub, vector<Patterns>& pat, int subind);
-	void APU_EvaluateSequenceData(vector<Patterns>& pat, int rowsize);               //Expects StoragePatterns [aka all unique patterns] as input
+	void APU_EvaluateSequenceData(vector<Patterns>& pat, vector<Instrument>& inst, int rowsize);               //Expects StoragePatterns [aka all unique patterns] as input
 	void APU_Set_Sample_Memory(std::vector<Sample>& samp);
 	void APU_Set_Sample_Directory(std::vector<Sample>& samp);
 	void APU_Evaluate_BRR_Loop(Sample* sample, int LoopPoint);

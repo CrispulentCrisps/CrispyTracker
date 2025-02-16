@@ -2729,8 +2729,7 @@ void Tracker::ApplyLoad()
 		SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[samp.SampleIndex], samples[samp.SampleIndex].LoopEnd);
 		SG.Emu_APU.APU_Evaluate_BRR_Loop_Start(&samples[samp.SampleIndex]);
 	}
-	SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
-
+	
 	for (int x = 0; x < filehandler.mod.inst.size(); x++)
 	{
 		Instrument currentinst = filehandler.mod.inst[x];
@@ -2809,6 +2808,7 @@ void Tracker::ApplyLoad()
 	{
 		Channels[x].CurrentInstrument = 0;
 	}
+	SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 }
 
 void Tracker::ApplySubtune()

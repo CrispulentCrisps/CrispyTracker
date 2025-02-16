@@ -574,7 +574,7 @@ void SnesAPUHandler::APU_UpdateTuneMemory(vector<Instrument>& inst, vector<Sampl
 	SfxOrders.clear();
 	APU_Rebuild_Sample_Memory(sample);
 	APU_Update_Instrument_Memory(pat, inst, sub[subind].TrackLength);
-	APU_EvaluateSequenceData(pat, sub[subind].TrackLength);
+	APU_EvaluateSequenceData(pat, inst, sub[subind].TrackLength);
 	APU_Write_Music_Orders(pat, sub);
 	APU_Write_Subtunes();
 }
@@ -588,7 +588,7 @@ void SnesAPUHandler::APU_UpdateTuneMemory(vector<Instrument>& inst, vector<Sampl
 //			Break
 //			Goto
 //
-void SnesAPUHandler::APU_EvaluateSequenceData(vector<Patterns>& pat, int rowsize)
+void SnesAPUHandler::APU_EvaluateSequenceData(vector<Patterns>& pat, vector<Instrument>& inst, int rowsize)
 {
 	for (int x = 0; x < pat.size(); x++)
 	{
@@ -598,6 +598,7 @@ void SnesAPUHandler::APU_EvaluateSequenceData(vector<Patterns>& pat, int rowsize
 		PatternState PState = PatternState();
 		PState.IsEmpty = true;
 		PState.LastEmpty = PState.IsEmpty;
+		PState.lastvolume = 0x7F;
 
 		for (int y = 0; y < rowsize; y++)
 		{
@@ -617,28 +618,9 @@ void SnesAPUHandler::APU_EvaluateSequenceData(vector<Patterns>& pat, int rowsize
 						break;
 					}
 				}
-
-				if (!isex)
-				{
-					PState.IsEmpty = false;
-					if (pat[x].SavedRows[y].effect != Pan)
-					{
-						WriteCommand(Command{ com_ChannelVol, pat[x].SavedRows[y].effect });
-					}
-					//Check for panning commands
-					currow.PanVal = pat[x].SavedRows[y].effectvalue;
-				}
 			}
 
-			//Write volume
-			if (PState.lastvolume != pat[x].SavedRows[y].volume && pat[x].SavedRows[y].volume != NULL_COMMAND)
-			{
-				PState.IsEmpty = false;
-				WriteCommand(Command{ com_ChannelVol, pat[x].SavedRows[y].volume });
-				PState.lastvolume = pat[x].SavedRows[y].volume;
-			}
-
-			//Write sleep if no other effect found on 
+			//Write Instrument
 			if (PState.lastinst != pat[x].SavedRows[y].instrument && pat[x].SavedRows[y].instrument != NULL_COMMAND)
 			{
 				PState.IsEmpty = false;
@@ -646,12 +628,29 @@ void SnesAPUHandler::APU_EvaluateSequenceData(vector<Patterns>& pat, int rowsize
 				PState.lastinst = pat[x].SavedRows[y].instrument;
 			}
 
+			//Write volume
+			if (PState.lastvolume != pat[x].SavedRows[y].volume && pat[x].SavedRows[y].volume != NULL_COMMAND)
+			{
+				PState.IsEmpty = false;
+				int16_t Lvol;
+				int8_t LPan;
+				int16_t Rvol;
+				int8_t RPan;
+				LPan = (inst[PState.lastinst].Volume * inst[PState.lastinst].LPan) / (u8)127;
+				RPan = (inst[PState.lastinst].Volume * inst[PState.lastinst].RPan) / (u8)127;
+				Lvol = (pat[x].SavedRows[y].volume * LPan) / 127;
+				Rvol = (pat[x].SavedRows[y].volume * RPan) / 127;
+				uint16_t outvol = (Lvol << 8) | Rvol;
+				WriteCommand(Command{ com_ChannelVol, outvol });
+				PState.lastvolume = pat[x].SavedRows[y].volume;
+			}
+
 			//Write pitches 
 			if (pat[x].SavedRows[y].note != NULL_COMMAND)
 			{
 				PState.IsEmpty = false;
-				unsigned short noteval = pat[x].SavedRows[y].note & 0xFF;
-				WriteCommand(Command{ com_PlayNote, noteval });
+				uint16_t noteval = inst[PState.lastinst].BRR_Pitch(pow(2.0, (pat[x].SavedRows[y].note - 48 + inst[PState.lastinst].NoteOff) / 12.0));
+				WriteCommand(Command{ com_PlayPitch, noteval });
 			}
 
 			if (PState.LastEmpty != PState.IsEmpty && PState.SleepCount != 0)

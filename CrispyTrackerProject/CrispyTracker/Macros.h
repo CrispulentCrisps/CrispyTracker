@@ -105,7 +105,7 @@ typedef struct PatternState {
 	char SleepCount;			//Count how many rows a given channel has slept
 	bool IsEmpty;				//Check if line has to be sleep command for channel	//Counter for how many lines to sleep
 	bool LastEmpty;				//Check for if the state of last empty changed
-	short lastvolume;			//Deduplication for volume commands
+	char lastvolume;			//Deduplication for volume commands
 	char lastinst;				//Deduplication for instrument commands
 };
 
