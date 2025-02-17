@@ -26,7 +26,7 @@ bool SoundGenerator::Update(float ElapsedTime, Channel* ch, vector<Sample>& Samp
 	{
 		for (int i = 0; i < 8; i++)
 		{
-			Emu_APU.APU_Grab_Channel_Status(&ch[i], &inst[ch[i].CurrentInstrument], YPos);
+			//Emu_APU.APU_Grab_Channel_Status(&ch[i], &inst[ch[i].CurrentInstrument], YPos);
 			ch[i].Tickcheck = false;
 		}
 		YPos++;

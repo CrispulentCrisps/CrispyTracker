@@ -7,6 +7,7 @@
 #include "FileDef.h"
 #include "emu/dsp.h"
 #include "emu/spc.h"
+#include "emu/SNES_SPC.h"
 // References
 // 
 // https://snes.nesdev.org/wiki/S-SMP#P
@@ -14,45 +15,6 @@
 //
 
 #define MAX_CLOCK_DSP       1024000
-
-#define GLOBAL_mvol_l       0x0C
-#define GLOBAL_mvol_r       0x1C
-#define GLOBAL_evol_l       0x2C
-#define GLOBAL_evol_r       0x3C
-#define GLOBAL_kon          0x4C
-#define GLOBAL_kof          0x5C
-#define GLOBAL_flg          0x6C
-#define GLOBAL_endx         0x7C
-#define GLOBAL_efb          0x0D
-#define GLOBAL_pmon         0x2D
-#define GLOBAL_non          0x3D
-#define GLOBAL_eon          0x4D
-#define GLOBAL_dir          0x5D
-#define GLOBAL_esa          0x6D
-#define GLOBAL_edl          0x7D
-#define GLOBAL_c0           0x0F
-#define GLOBAL_c1           0x1F
-#define GLOBAL_c2           0x2F
-#define GLOBAL_c3           0x3F
-#define GLOBAL_c4           0x4F
-#define GLOBAL_c5           0x5F
-#define GLOBAL_c6           0x6F
-#define GLOBAL_c7           0x7F
-
-#define SPC_test            0xF0
-#define SPC_ctrl            0xF1
-#define SPC_regaddr         0xF2
-#define SPC_regdat          0xF3
-#define SPC_p0              0xF4
-#define SPC_p1              0xF5
-#define SPC_p2              0xF6
-#define SPC_p3              0xF7
-#define SPC_t0              0xFA
-#define SPC_t1              0xFB
-#define SPC_t2              0xFC
-#define SPC_c0              0xFD
-#define SPC_c1              0xFE
-#define SPC_c2              0xFF
 
 #define Sample_Dir_Page     0x0C00
 #define Sample_Mem_Page     0x0D00
@@ -84,7 +46,6 @@ class SnesAPUHandler
 
 public:
 	SNES_SPC* Spc = spc_new();
-	spc_dsp_t* Dsp = spc_dsp_new();
 	SPC_Filter* Filter = spc_filter_new();
 
 	struct DSP_Ch_Reg {
@@ -128,9 +89,9 @@ public:
 	0x00, 0x00, 0xc0, 0xff
 	};
 	
-	unsigned char DSP_MEMORY[65536];
+	unsigned char DSP_MEMORY[1024*64];
 
-	spc_time_t ClockBase = MAX_CLOCK_DSP;
+	spc_time_t timer;				//Running timer for SPC-700
 
 	u16 LastSamplePoint;
 
@@ -144,18 +105,18 @@ public:
 	u8 KONState;
 	u8 KOFState;
 
+	u8 Handshake = 1;
+
 	u16 SPCPtr = DATA_START;
 
 	ComType ExCom[EXCOM_SIZE] = {com_Sleep, com_Stop, com_Break, com_Goto};  //Exclusive commands that must be at the end of a given sequence chunk
 
-	void WriteSPC(size_t data);
-
 	void APU_Startup();
 	void APU_Update(spc_sample_t* Output, int BufferSize);
-	void APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int ypos);
+	//void APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int ypos);
 	void APU_Play_Note_Editor(Channel* ch, Instrument* inst, int note, bool IsOn);
 
-	void APU_Process_Effects(Channel* ch, Instrument* inst, int ypos, int& speed, int& patindex, int currenttick);
+	//void APU_Process_Effects(Channel* ch, Instrument* inst, int ypos, int& speed, int& patindex, int currenttick);
 
 	void APU_Kill();
 	void SPCWrite(u8 byte);
@@ -174,6 +135,8 @@ public:
 	bool APU_Set_Master_Vol(signed char vol);
 	void APU_Set_Echo(unsigned int dtime, int* coef, signed int dfb, signed int dvol);
 	void APU_Init_Echo();
+
+	void APU_Start_Tune(int subind);
 
 	void APU_Audio_Stop();
 	void APU_Audio_Start();

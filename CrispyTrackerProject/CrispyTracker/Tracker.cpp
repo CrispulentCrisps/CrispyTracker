@@ -1898,10 +1898,6 @@ void Tracker::UpdateRows()
 
 void Tracker::UpdateTicks()
 {
-	for (int x = 0; x < 8; x++)
-	{
-		SG.Emu_APU.APU_Process_Effects(&Channels[x], &inst[Channels[x].CurrentInstrument], CursorY, Speed1, PatternIndex, TickCounter);
-	}
 }
 
 //Update audio buffer, also runs SPC and DSP emulation
@@ -2046,6 +2042,10 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 			if (!PlayingMode) {
 				SG.Emu_APU.APU_Audio_Stop();
 				SG.Emu_APU.APU_Audio_Start();
+			}
+			else 
+			{
+				SG.Emu_APU.APU_Start_Tune(CurrentTune);
 			}
 			EditingMode = false;
 			break;
