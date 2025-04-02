@@ -264,7 +264,7 @@ public:
 
 	bool SubtuneWarning = false;
 
-	bool ShowDSPDebugger = false;
+	bool ShowDSPDebugger = true;			//Set to false when done fixing the CPU
 	bool ShowTrackerDebugger = false;
 
 	string EffectText = "";
@@ -272,7 +272,7 @@ public:
 	double ScrollValue();//Returns the position scrolled down the tracker
 
 	//Functions
-	void Initialise(int StartLength);
+	void Initialise();
 	void Run();
 	void CheckUpdatables();//for updating things outside of "new frames"
 	void CheckInput();
@@ -294,7 +294,6 @@ public:
 	void Info_View();
 	void EchoSettings();
 	void SetupInstr();
-	void UpdateFont();
 	void Export_View();
 	void EffectsText(int effect);
 	string ColumnText(int column);
@@ -335,6 +334,8 @@ public:
 	void DSPDebugWindow();
 	void TrackerDebug();
 
+	string ToHex(int value, int size);
+
 	string FilePath = "";
 	string FileName = "";
 	string PrevFiles[10] = {""};
@@ -347,14 +348,16 @@ public:
 	
 	//Visuals
 	ImColor WindowBG =				IM_COL32(11, 11, 22, 255);
+	ImColor BorderCol =				IM_COL32(88, 88, 110, 255);
+	ImColor MenuBarCol =			IM_COL32(66, 66, 99, 255);
 	ImColor Default =				IM_COL32(22, 22, 44, 255);
-	ImColor H2Col =					IM_COL32(66, 66, 88, 255);
+	ImColor H2Col =					IM_COL32(55, 55, 77, 255);
 	ImColor H1Col =					IM_COL32(44, 44, 66, 255);
 	ImColor CursorCol =				IM_COL32(122, 122, 188, 255);
 
 	ImColor Dark_Default =			IM_COL32(22, 22, 33, 255);
 	ImColor Dark_H2Col =			IM_COL32(66, 66, 88, 255);
-	ImColor Dark_H1Col =			IM_COL32(33, 33, 66, 255);
+	ImColor Dark_H1Col =			IM_COL32(33, 33, 55, 255);
 	ImColor Dark_CursorCol =		IM_COL32(122, 122, 188, 255);
 
 	ImColor Editing_H2Col =			IM_COL32(66, 88, 110, 255);

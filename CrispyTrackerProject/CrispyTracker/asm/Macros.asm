@@ -71,14 +71,12 @@ struct OP $0100
 .RegPitchWrite              skip 32 ;Pitches to write to pitch registers
 endstruct
 
-InstPtr =                   $01E0
-OrderPtr =                  $01E2
-SfxListPtr =                $01E4
-SfxPatPtr =                 $01E6
-SubPtr =                    $01E8
-PitchPtr =                  $01EA
-DirOff =                    $01EC
-EchoSrc =                   $01ED
+InstPtr =                   $01E0   ;Pointer to instrument table
+OrderPtr =                  $01E2   ;Pointer to music orders
+SfxListPtr =                $01E4   ;Pointer to SFX subtunes
+SfxPatPtr =                 $01E6   ;Pointer to SFX orders
+SubPtr =                    $01E8   ;Pointer to music subtunes
+PitchPtr =                  $01EA   ;Pointer to pitch table
 LoadFlag =                  $01EF   ;Flag to load addresses into stack pointers [0 for driver testing, 1 for final export]
 
 ;Commands
@@ -159,13 +157,12 @@ endmacro
 
     ;Instrument
     ;
-    ;   Written to the CPU in order:
+    ;   Written in order:
     ;       SCRN
     ;       ADSR1
     ;       ADSR2
     ;       GAIN
     ;       EFX state [PMON, NON, EON]
-    ;       KON
     ;
 macro WriteInstrument(AD1, AD2, G, ES, SI)
 db <AD1>    ;ADSR1

@@ -1,4 +1,6 @@
 #pragma once
+#include <stdio.h>
+#include <string>
 //Macros here define the reserved positions in the tracker commands
 #define NULL_COMMAND		256		//Empty =section in rows, denoted with .. or ...
 #define RELEASE_COMMAND		257		//Puts the instrument in the release state
@@ -11,17 +13,17 @@
 #define MAX_EFFECT_VALUE	255
 
 //File handling
-#define FILE_EXT ".ctf"
-#define FILE_HEAD 0xDEADBEEF
-#define DRIVER_PATH	"asm/Cobalt.bin"
-#define VERSION_100	0x0100
+#define FILE_EXT			".ctf"
+#define FILE_HEAD			0xDEADBEEF
+#define DRIVER_PATH			"asm/Cobalt.bin"
+#define VERSION_100			0x0100
 
 //File errors
-#define FILE_ERORR_01 "FILE CORRUPTED"
-#define FILE_ERORR_02 "FILE NOT FOUND"
+#define FILE_ERORR_01		"FILE CORRUPTED"
+#define FILE_ERORR_02		"FILE NOT FOUND"
 
-#define FILE_ERORR_03 "AUDIO FILE LESS THAN 16 SAMPLES LARGE"
-#define FILE_ERORR_04 "SAMPLE TOO LARGE TO FIT INTO DSP MEMORY"
+#define FILE_ERORR_03		"AUDIO FILE LESS THAN 16 SAMPLES LARGE"
+#define FILE_ERORR_04		"SAMPLE TOO LARGE TO FIT INTO DSP MEMORY"
 
 #define DRIVER_INSTPTR		(uint16_t)	0x01E0			//Pointer to [Instrument	] data
 #define DRIVER_ORDERPTR		(uint16_t)	0x01E2			//Pointer to [Order			] data
@@ -29,13 +31,16 @@
 #define DRIVER_SFXPATPTR	(uint16_t)	0x01E6			//Pointer to [SFX Patterns	] data
 #define DRIVER_SUBPTR		(uint16_t)	0x01E8			//Pointer to [Music Subtunes] data
 #define DRIVER_PITCHPTR		(uint16_t)	0x01EA			//Pointer to [PitchTable	] data
+#define DRIVER_LOAD_FLAG	(uint16_t)	0x01EF			//Flag to load addresses into stack pointers [0 for driver testing, 1 for final export]
 #define DRIVER_CODE			(uint16_t)	0x0200			//Start of the driver data
-#define DRIVER_END			(uint16_t)	0x0A00			//Start of the driver data
+#define DRIVER_END			(uint16_t)	0x0C00			//End of the driver data
 #define DATA_START			(uint16_t)	0x0D00			//Where dynamic data starts for the driver to interpret
 
-#define DRIVER_ROM_ADDR		(uint32_t)	0x010000		//Where driver starts in CPU memory
+#define DRIVER_ROM_ADDR		(uint32_t)	0x00010000		//Where driver starts in CPU memory
 
 #define EXCOM_SIZE			0x04
+
+#define DEFAULT_EMU_SPEED	1024000.f
 
 //Tracker command bytes for SPC export
 enum ComType
@@ -144,4 +149,24 @@ enum ExportQuality {
 	KHZ_32,
 	KHZ_44,
 	KHZ_48,
+};
+
+const std::string OpcodeNames[256] = {
+//	0x00				0x01				0x02				0x03				0x04				0x05				0x06				0x07				0x08				0x09				0x0A				0x0B				0x0C				0x0D				0x0E				0x0F
+	"NOP			",	"TCALL 0		",	"SET1 aa.0		",	"BBS aa.0, rr	",	"OR A,aa		",	"OR A,aaaa		",	"OR A,(X)		",	"OR A,(aa+X)	",	"OR A,#nn		",	"OR aa,aa		",	"OR1 C,aaa.b	",	"ASL aa			",	"ASL aaaa		",	"PUSH PSW		",	"TSET1 aaaa		",	"BRK			",	//0x00
+	"BPL rr			",	"TCALL 1		",	"CLR1 aa.0		",	"BBC aa.0, rr	",	"OR A,aa+X		",	"OR A,aaaa+X	",	"OR A,aaaa+Y	",	"OR A,(aa)+Y	",	"OR aa,#nn		",	"OR (X),(Y)		",	"DECW aa		",	"ASL aa+X		",	"ASL A			",	"DEC X			",	"CMP X,aaaa		",	"JMP (aaaa+X)	",	//0x10
+	"CLRP			",	"TCALL 2		",	"SET1 aa.1		",	"BBS aa.1, rr	",	"AND A,aa		",	"AND A,aaaa		",	"AND A,(X)		",	"AND A,(aa+X)	",	"AND A,#nn		",	"AND aa,aa		",	"OR1 C,!aaa.b	",	"ROL aa			",	"ROL aaaa		",	"PUSH A			",	"CBNE aa,rr		",	"BRA rr			",	//0x20
+	"BMI rr			",	"TCALL 3		",	"CLR1 aa.1		",	"BBC aa.1, rr	",	"AND A,aa+X		",	"AND A,aaaa+X	",	"AND A,aaaa+Y	",	"AND A,(aa)+Y	",	"AND aa,#nn		",	"AND (X),(Y)	",	"INCW aa		",	"ROL aa+X		",	"ROL A			",	"INC X			",	"CMP X,aa		",	"CALL aaaa		",	//0x30
+	"SETP			",	"TCALL 4		",	"SET1 aa.2		",	"BBS aa.2, rr	",	"XOR A,aa		",	"XOR A,aaaa		",	"XOR A,(X)		",	"XOR A,(aa+X)	",	"XOR A,#nn		",	"XOR aa,aa		",	"AND1 C,aaa.b	",	"LSR aa			",	"LSR aaaa		",	"PUSH X			",	"TCLR1 aaaa		",	"PCALL aa		",	//0x40
+	"BVC rr			",	"TCALL 5		",	"CLR1 aa.2		",	"BBC aa.2, rr	",	"XOR A,aa+X		",	"XOR A,aaaa+X	",	"XOR A,aaaa+Y	",	"XOR A,(aa)+Y	",	"XOR aa,#nn		",	"XOR (X),(Y)	",	"CMPW YA,aa		",	"LSR aa+X		",	"LSR A			",	"MOV X,A		",	"CMP Y,aaaa		",	"JMP aaaa		",	//0x50
+	"CLRC			",	"TCALL 6		",	"SET1 aa.3		",	"BBS aa.3, rr	",	"CMP A,aa		",	"CMP A,aaaa		",	"CMP A,(X)		",	"CMP A,(aa+X)	",	"CMP A,#nn		",	"CMP aa,aa		",	"AND1 C,!aaa.b	",	"ROR aa			",	"ROR aaaa		",	"PUSH Y			",	"DBNZ aa,rr		",	"RET			",	//0x60
+	"BVS rr			",	"TCALL 7		",	"CLR1 aa.3		",	"BBC aa.3, rr	",	"CMP A,aa+X		",	"CMP A,aaaa+X	",	"CMP A,aaaa+Y	",	"CMP A,(aa)+Y	",	"CMP aa,#nn		",	"CMP (X),(Y)	",	"ADDW YA,aa		",	"ROR aa+X		",	"ROR A			",	"MOV A,X		",	"CMP Y,aa		",	"RETI			",	//0x70
+	"SETC			",	"TCALL 8		",	"SET1 aa.4		",	"BBS aa.4, rr	",	"ADC A,aa		",	"ADC A,aaaa		",	"ADC A,(X)		",	"ADC A,(aa+X)	",	"ADC A,#nn		",	"ADC aa,aa		",	"XOR1 C,aaa.b	",	"DEC aa			",	"DEC aaaa		",	"MOV Y,#nn		",	"POP PSW		",	"MOV aa,#nn		",	//0x80
+	"BCC rr			",	"TCALL 9		",	"CLR1 aa.4		",	"BBC aa.4, rr	",	"ADC A,aa+X		",	"ADC A,aaaa+X	",	"ADC A,aaaa+Y	",	"ADC A,(aa)+Y	",	"ADC aa,#nn		",	"ADC (X),(Y)	",	"SUBW YA,aa		",	"DEC aa+X		",	"DEC A			",	"MOV X,SP		",	"DIV YA,X		",	"XCN A			",	//0x90
+	"EI				",	"TCALL A		",	"SET1 aa.5		",	"BBS aa.5, rr	",	"SBC A,aa		",	"SBC A,aaaa		",	"SBC A,(X)		",	"SBC A,(aa+X)	",	"SBC A,#nn		",	"SBC aa,aa		",	"MOV1 C,aaa.b	",	"INC aa			",	"INC aaaa		",	"CMP Y,#nn		",	"POP A			",	"MOV (X)+,A		",	//0xA0
+	"BCS rr			",	"TCALL B		",	"CLR1 aa.5		",	"BBC aa.5, rr	",	"SBC A,aa+X		",	"SBC A,aaaa+X	",	"SBC A,aaaa+Y	",	"SBC A,(aa)+Y	",	"SBC aa,#nn		",	"SBC (X),(Y)	",	"MOVW YA,aa		",	"INC aa+X		",	"INC A			",	"MOV SP,X		",	"DAS A			",	"MOV A,(X)+		",	//0xB0
+	"DI				",	"TCALL C		",	"SET1 aa.6		",	"BBS aa.6, rr	",	"MOV aa,A		",	"MOV aaaa,A		",	"MOV (X),A		",	"MOV (aa+X),A	",	"CMP X,#nn		",	"MOV aaaa,X		",	"MOV1 aaaa.b,C	",	"MOV aa,Y		",	"MOV aaaa,Y		",	"MOV X,#nn		",	"POP X			",	"MUL YA			",	//0xC0
+	"BNE rr			",	"TCALL D		",	"CLR1 aa.6		",	"BBC aa.6, rr	",	"MOV aa+X,A		",	"MOV aaaa+X,A	",	"MOV aaaa+Y,A	",	"MOV (aa)+Y,A	",	"MOV aa,X		",	"MOV aa+Y,X		",	"MOVW aa,YA		",	"MOV aa+X,Y		",	"DEC Y			",	"MOV A,Y		",	"CBNE aa+X,rr	",	"DAA A			",	//0xD0
+	"CLRV			",	"TCALL E		",	"SET1 aa.7		",	"BBS aa.7, rr	",	"MOV A,aa		",	"MOV A,aaaa		",	"MOV A,(X)		",	"MOV A,(aa+X)	",	"MOV A,#nn		",	"MOV X,aaaa		",	"NOT1 aaa.b		",	"MOV Y,aa		",	"MOV Y,aaaa		",	"NOTC			",	"POP Y			",	"SLEEP			",	//0xE0
+	"BEQ rr			",	"TCALL F		",	"CLR1 aa.7		",	"BBC aa.7, rr	",	"MOV A,aa+X		",	"MOV A,aaaa+X	",	"MOV A,aaaa+Y	",	"MOV A,(aa)+Y	",	"MOV X,aa		",	"MOV X,aa+Y		",	"MOV aa,bb		",	"MOV Y,aa+X		",	"INC Y			",	"MOV Y,A		",	"DBNZ Y,rr		",	"STOP			",	//0xF0
 };

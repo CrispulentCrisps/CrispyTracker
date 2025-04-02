@@ -10,7 +10,7 @@ SDL_AudioSpec want, have;
 SDL_AudioDeviceID dev;
 
 Tracker::Tracker()
-{
+{	
 }
 
 Tracker::~Tracker()
@@ -29,7 +29,7 @@ double Tracker::ScrollValue()
 	return (((double)CursorY / (double)TrackLength)) * ((TextSize + ImGui::GetStyle().CellPadding.y * 2) * TrackLength) - (GetWindowHeight() / 3.0);;
 }
 
-void Tracker::Initialise(int StartLength)
+void Tracker::Initialise()
 {
 	//initialise all the channels
 	for (int i = 0; i < 8; i++)
@@ -72,7 +72,7 @@ void Tracker::Run()
 	glfwInit();
 	FilePath.reserve(2048);
 	//Initialise the tracker
-	Initialise(TrackLength);
+	Initialise();
 	SG.SetBufferSize(SG.TRACKER_AUDIO_BUFFER);
 	SG.Emu_APU.APU_Startup();
 	SG.Emu_APU.APU_Init_Echo();
@@ -110,11 +110,13 @@ void Tracker::Run()
 	GetIO().AddKeyEvent(ImGuiKey_Home, false);
 	GetIO().AddKeyEvent(ImGuiKey_End, false);
 	StyleColorsClassic();
-	ImGuiStyle* style = &ImGui::GetStyle();
-	style->Colors[ImGuiCol_WindowBg] = WindowBG;
-	style->FrameBorderSize = 0.1f;
-	style->WindowRounding = .1f;
-	style->FrameRounding = .1f;
+	ImGuiStyle& style = ImGui::GetStyle();
+	style.Colors[ImGuiCol_WindowBg] = WindowBG;
+	style.Colors[ImGuiCol_Border] = BorderCol;
+	style.Colors[ImGuiCol_MenuBarBg] = MenuBarCol;
+	style.FrameBorderSize =		0.1f;
+	style.WindowRounding =		0.1f;
+	style.FrameRounding =		0.1f;
 
 	io = GetIO();
 	io.DisplaySize.x = SCREEN_WIDTH;
@@ -174,6 +176,8 @@ void Tracker::Run()
 	}
 	ChannelEditState cstate = NOTE;
 	SG.DEBUG_Open_File();
+	CheckUpdatables();
+	//SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 	while (running) {
 		if (WindowIsGood) {
 			Render();
@@ -196,10 +200,6 @@ void Tracker::Run()
 void Tracker::CheckUpdatables()//for things we cannot update in the rendering loop
 {
 	UpdateModule();
-	if (FontUpdate)
-	{
-		UpdateFont();
-	}
 }
 
 void Tracker::CheckInput()
@@ -524,13 +524,13 @@ void Tracker::Patterns_View()
 			{
 				if (SongLength > 1)
 				{
-					SelectedPattern >= SongLength ? SelectedPattern-- : SelectedPattern = SelectedPattern;
 					for (int i = 0; i < 8; i++)
 					{
 						orders[i].erase(orders[i].begin() + SelectedPattern);
 					}
 					SongLength--;
 				}
+				SelectedPattern = min(SelectedPattern, SongLength - 1);
 			}
 			if (IsItemHovered())
 			{
@@ -576,7 +576,7 @@ void Tracker::Instruments()//Showing the instruments window at the side
 			newinst.Name += to_string(index);
 			newinst.Index = index;
 			inst.push_back(newinst);
-			SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
+			//SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
 		}
 		SameLine();
 		if (Button("Delete", ImVec2(GetWindowWidth() * .3, 24)) && inst.size() > 1)
@@ -590,7 +590,7 @@ void Tracker::Instruments()//Showing the instruments window at the side
 			{
 				inst.erase(inst.begin() + SelectedInst);
 			}
-			SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
+			//SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
 		}		
 		SameLine();
 		if (Button("Copy", ImVec2(GetWindowWidth() * .3, 24)) && inst.size() > 1)
@@ -601,7 +601,7 @@ void Tracker::Instruments()//Showing the instruments window at the side
 			newinst.Index = index;
 			inst.push_back(newinst);
 			std::cout << inst.size();
-			SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
+			//SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
 		}
 		//Instrument side bar
 		if (inst.size() > 0)
@@ -782,7 +782,6 @@ void Tracker::Instrument_View()//Instrument editor
 
 void Tracker::Channel_View()
 {
-	int celpady = GetStyle().CellPadding.y;
 	if (Begin("Channels"), 0, UNIVERSAL_WINDOW_FLAGS)
 	{
 		if (PlayingMode)
@@ -1018,7 +1017,6 @@ void Tracker::Channel_View()
 		}
 	}
 	End();
-	GetStyle().CellPadding.y = celpady;
 }
 
 void Tracker::Samples()
@@ -1038,7 +1036,7 @@ void Tracker::Samples()
 			newsamp.SampleName += to_string(index);
 			samples.push_back(newsamp);
 			std::cout << samples.size();
-			SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
+			//SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 		}
 		SameLine();
 		if (Button("Delete", ImVec2(GetWindowWidth() * ButtonSizeMult, 24)) && samples.size() > 1)
@@ -1053,7 +1051,7 @@ void Tracker::Samples()
 			{
 				samples.erase((samples.begin()) + SelectedSample);
 			}
-			SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
+			//SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 		}
 		SameLine();
 		if (Button("Up", ImVec2(GetWindowWidth() * ButtonSizeMult, 24)) && samples.size() > 1)
@@ -1120,15 +1118,15 @@ void Tracker::Sample_View()
 
 			if (Checkbox("Loop Sample", &samples[SelectedSample].Loop)) {
 				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-				SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
+				//SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 			}
 			if (InputInt("Loop Start", (int*)&samples[SelectedSample].LoopStart, 16, 0)) {
 				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-				SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
+				//SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 			}
 			if(InputInt("Loop End", (int*)&samples[SelectedSample].LoopEnd, 16, 0)){
 				SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-				SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
+				//SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 			}
 			if (samples.size() > 1)
 			{
@@ -1168,19 +1166,19 @@ void Tracker::Sample_View()
 					{
 						samples[SelectedSample].LoopEnd = samples[SelectedSample].SampleData.size();
 						SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-						SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
+						//SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 					}
 					else if (samples[SelectedSample].LoopEnd < 16)
 					{
 						samples[SelectedSample].LoopEnd = 16;
 						SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-						SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
+						//SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 					}
 					else if (samples[SelectedSample].LoopStart < 0)
 					{
 						samples[SelectedSample].LoopStart = 0;
 						SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
-						SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
+						//SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 					}
 
 					if (samples[SelectedSample].LoopEnd % 16 != 0)//Assumes the sample is too large to hold
@@ -1692,17 +1690,6 @@ void Tracker::SetupInstr()
 	DefaultPattern.SetUp(TrackLength);
 }
 
-void Tracker::UpdateFont()
-{
-	if ((TextSize - 12.0f) != 0)
-	{
-	}
-	else
-	{
-	}
-	FontUpdate = false;
-}
-
 void Tracker::Export_View()
 {
 	string TypeNames[5] = { "WAV","MP3","OGG OPUS","OGG VORBIS","FLAC" };
@@ -1905,6 +1892,7 @@ void Tracker::UpdateAudioBuffer()
 {
 	if (SDL_GetQueuedAudioSize(dev) < SG.TRACKER_AUDIO_BUFFER * 8)
 	{
+		SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 		SG.Update(DeltaTimeHolder, Channels, samples, CursorY, inst);
 		SG.Emu_APU.APU_Update(SG.Totalbuffer[0].data(), 2 * SG.TRACKER_AUDIO_BUFFER);
 		SDL_QueueAudio(dev, SG.Totalbuffer[0].data(), sizeof(Sint16) * 2 * SG.TRACKER_AUDIO_BUFFER);
@@ -2117,7 +2105,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 							CursorY += Step;
 							ChangePatternData(x, y);
 
-							SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
+							//SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 							break;
 						}
 						else if (CurrentKey == GLFW_KEY_DELETE)
@@ -2382,7 +2370,7 @@ void Tracker::LoadSample()
 						//Memory shit
 						SG.Emu_APU.APU_Evaluate_BRR_Loop(&samples[SelectedSample], samples[SelectedSample].LoopEnd);
 						SG.Emu_APU.APU_Evaluate_BRR_Loop_Start(&samples[SelectedSample]);
-						SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
+						//SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 					}
 					sf_close(file);
 				}
@@ -2667,6 +2655,7 @@ void Tracker::LoadModuleAs()
 				LoadingFile = false;
 				std::cout << "File load Successful :D";
 				ApplyLoad();
+				//SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 				ImGuiFileDialog::Instance()->Close();
 			}
 			else
@@ -2808,11 +2797,11 @@ void Tracker::ApplyLoad()
 	{
 		Channels[x].CurrentInstrument = 0;
 	}
-	SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
+	//SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 }
 
 void Tracker::ApplySubtune()
-{	
+{
 	memcpy(authbuf, filehandler.mod.subtune[CurrentTune].aubuf, sizeof(authbuf));
 	memcpy(songbuf, filehandler.mod.subtune[CurrentTune].trbuf, sizeof(songbuf));
 	memcpy(descbuf, filehandler.mod.subtune[CurrentTune].dcbuf, sizeof(descbuf));
@@ -2832,6 +2821,7 @@ void Tracker::ApplySubtune()
 		}
 	}
 	CurrentSFX = filehandler.mod.subtune[CurrentTune].SFXFlag;
+	//SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
 }
 
 void Tracker::NewFile()
@@ -3131,48 +3121,132 @@ void Tracker::ErrorWindow()
 
 void Tracker::DSPDebugWindow()
 {
-	if(Begin("DSP Debug Window", 0)) 
+	if (Begin("DSP Debug Window", 0))
 	{
-		Text("DSP regs");
-		Text("KON: ");
+		//Known issue, CPU clears memory so loaded pointers get erased alongside driver data
+		if (Button("Reset CPU")) 
+		{
+			SG.Emu_APU.APU_Startup();
+			//SG.Emu_APU.APU_UpdateTuneMemory(inst, samples, filehandler.mod.subtune, StoragePatterns, CurrentTune);
+		}
 		SameLine();
-		Text(to_string(SG.Emu_APU.APU_Debug_KON_State()).data());
-		Text("KOF: ");
+
+		if (Button("Un/Pause CPU"))	{ SG.Emu_APU.RunCPU = !SG.Emu_APU.RunCPU; }
+		//Text("Emulation speed [DEFAULT_EMU_SPEED for base speed]");
+
+		SliderInt("CPU speed", &SG.Emu_APU.EmuSpeed, 1, DEFAULT_EMU_SPEED);
+
+		if (Button("/2", ImVec2(GetWindowWidth() / 6.f, 15.f))) { SG.Emu_APU.EmuSpeed >>= 1; }
 		SameLine();
-		Text(to_string(SG.Emu_APU.APU_Debug_KOF_State()).data());
+		if (Button("*2", ImVec2(GetWindowWidth() / 6.f, 15.f))) { SG.Emu_APU.EmuSpeed <<= 1; }
+		SG.Emu_APU.EmuSpeed = min(SG.Emu_APU.EmuSpeed, DEFAULT_EMU_SPEED);
+		SG.Emu_APU.EmuSpeed = max(SG.Emu_APU.EmuSpeed, 1);
+
+		u16 instmem = SG.Emu_APU.Spc->m.ram.ram[DRIVER_INSTPTR] | (SG.Emu_APU.Spc->m.ram.ram[DRIVER_INSTPTR + 1] << 8);
+		Text("Inst ptr:			");
+		SameLine();
+		Text(ToHex(instmem, 1).data());
+
+		u16 ordmem = SG.Emu_APU.Spc->m.ram.ram[DRIVER_ORDERPTR] | (SG.Emu_APU.Spc->m.ram.ram[DRIVER_ORDERPTR + 1] << 8);
+		Text("Music Orders:		");
+		SameLine();
+		Text(ToHex(ordmem, 1).data());
+
+		u16 spatptr = SG.Emu_APU.Spc->m.ram.ram[DRIVER_SUBPTR] | (SG.Emu_APU.Spc->m.ram.ram[DRIVER_SUBPTR + 1] << 8);
+		Text("Music subtunes:	  ");
+		SameLine();
+		Text(ToHex(spatptr, 1).data());
+
+		u16 sfxord = SG.Emu_APU.Spc->m.ram.ram[DRIVER_SFXPATPTR] | (SG.Emu_APU.Spc->m.ram.ram[DRIVER_SFXPATPTR + 1] << 8);
+		Text("SFX Orders:		  ");
+		SameLine();
+		Text(ToHex(sfxord, 1).data());
+
+		u16 sfxptr = SG.Emu_APU.Spc->m.ram.ram[DRIVER_SFXLISTPTR] | (SG.Emu_APU.Spc->m.ram.ram[DRIVER_SFXLISTPTR + 1] << 8);
+		Text("SFX Subtunes:		");
+		SameLine();
+		Text(ToHex(sfxptr, 1).data());
+
 		NewLine();
-		if (BeginTable("Pitch Table", 2, TABLE_FLAGS)) {
-			for (int x = 0; x < 8; x++)
-			{
-				ImGui::TableNextColumn();
-				string channeltext = "Channel ";
-				channeltext += to_string(x) + " PIT_L: " + to_string(SG.Emu_APU.APU_Debug_PIT_State(x, 0));
-				Text(channeltext.data());
-				ImGui::TableNextColumn();
-				string channeltext2 = "Channel ";
-				channeltext2 += to_string(x) + " PIT_H: " + to_string(SG.Emu_APU.APU_Debug_PIT_State(x, 1));
-				Text(channeltext2.data());
-				ImGui::TableNextColumn();
+		Text("DSP regs");
+		Text("Program Counter:");
+		SameLine();
+		Text(ToHex(SG.Emu_APU.Spc->m.cpu_regs.pc, 1).data());
+		Text("A:");
+		SameLine();
+		Text(ToHex(SG.Emu_APU.Spc->m.cpu_regs.a, 0).data());
+		Text("X:");
+		SameLine();
+		Text(ToHex(SG.Emu_APU.Spc->m.cpu_regs.x, 0).data());
+		Text("Y:");
+		SameLine();
+		Text(ToHex(SG.Emu_APU.Spc->m.cpu_regs.y, 0).data());
+		Text("Stack Pointer:");
+		SameLine();
+		Text(ToHex(SG.Emu_APU.Spc->m.cpu_regs.sp, 1).data());
+		Text("Program Status:");
+		SameLine();
+		Text(ToHex(SG.Emu_APU.Spc->m.cpu_regs.psw, 0).data());
+		Text("Current Instruction: ");
+		SameLine();
+		Text(OpcodeNames[SG.Emu_APU.Spc->m.ram.ram[SG.Emu_APU.Spc->m.cpu_regs.pc]].data());
+		NewLine();
+		/*
+		if (BeginTable("Zeropage", 0x10))
+		{
+			for (int x = 0; x < 0x10; x++)
+			{	
+				for (int y = 0; y < 0x10; y++)
+				{
+					Text(ToHex(SG.Emu_APU.Spc->m.ram.ram[y + (x * 0x10)], 0).data());
+					TableNextColumn();
+				}
 				TableNextRow();
 			}
-			ImGui::EndTable();
+			EndTable();
 		}
-		if (BeginTable("Volume Table", 2, TABLE_FLAGS)) {
-			for (int x = 0; x < 8; x++)
+
+		*/
+
+		if (BeginTable("Stack", 0x10))
+		{
+			for (int x = 0; x < 0x10; x++)
 			{
-				ImGui::TableNextColumn();
-				string channeltext = "Channel ";
-				channeltext += to_string(x) + " VOL_L: " + to_string(SG.Emu_APU.APU_Debug_VOL_State(x, 0));
-				Text(channeltext.data());
-				ImGui::TableNextColumn();
-				string channeltext2 = "Channel ";
-				channeltext2 += to_string(x) + " VOL_R: " + to_string(SG.Emu_APU.APU_Debug_VOL_State(x, 1));
-				Text(channeltext2.data());
-				ImGui::TableNextColumn();
+				for (int y = 0; y < 0x10; y++)
+				{
+					if (x < 0x0E) { ImGui::PushStyleColor(ImGuiCol_Text, AttackColour); }
+					else if (x < 0x0F) { ImGui::PushStyleColor(ImGuiCol_Text, SustainColour); }
+					else { ImGui::PushStyleColor(ImGuiCol_Text, DecayColour); }
+
+					if (y + (x * 0x10) == SG.Emu_APU.Spc->m.cpu_regs.sp) {
+						ImGui::PopStyleColor();
+						ImGui::PushStyleColor(ImGuiCol_Text, ReleaseColour);
+					}
+					Text(ToHex(SG.Emu_APU.Spc->m.ram.ram[0x0100 + y + (x * 0x10)], 0).data());
+					TableNextColumn();
+					ImGui::PopStyleColor();
+				}
 				TableNextRow();
 			}
-			ImGui::EndTable();
+			EndTable();
 		}
+
+		/*
+		Text("KON:");
+		SameLine();
+		Text(ToHex(SG.Emu_APU.APU_Debug_KON_State(), 0).data());
+		Text("KOF:");
+		SameLine();
+		Text(ToHex(SG.Emu_APU.APU_Debug_KOF_State(), 0).data());
+		NewLine();
+
+		for (int x = 0; x < 8; x++)
+		{
+			string channeltext = "Channel ";
+			channeltext += to_string(x) + " PIT: " + ToHex(SG.Emu_APU.APU_Debug_PIT_State(x, 0), 1);
+			Text(channeltext.data());
+		}
+		*/
 	}
 	End();
 }
@@ -3184,4 +3258,13 @@ void Tracker::TrackerDebug()
 		Checkbox("Compress files", &filehandler.Compress);
 	}
 	End();
+}
+
+string Tracker::ToHex(int value, int size)
+{
+
+	char buf[0xFF];
+	if (size != 0) sprintf_s(buf, "%04X", value);
+	else sprintf_s(buf, "%02X", value);
+	return buf;
 }

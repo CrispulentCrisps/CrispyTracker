@@ -31,6 +31,7 @@ mov.b Apu2, #$00
 mov.b Apu1, #$00
 mov.b Apu0, #$00
 
+;Memory clear, uncomment for driver testing
 mov ZP.TempMemADDRL, #Engine_End&$FF
 mov ZP.TempMemADDRH, #Engine_End>>8
 mov.b ZP.R1, #$FF
@@ -39,20 +40,21 @@ mov.b X, #0
 mov A, #0
 .MemClearLoop:
 mov.b A, #$00
-db $C7, $00                     ;Equivelant to mov (ZP.TempMemADDRL+X), A; reason is the ASAR doesn't put this line in code, instead putting in C5 00 00
+db $C7, $00                     ;Equivelant to mov (ZP.TempMemADDRL+X), A. Asar is just having a fit >:[
 incw.b ZP.TempMemADDRL
 movw YA, ZP.TempMemADDRL
 cmpw.b YA, ZP.R0
 bne .MemClearLoop
 
 mov.b X, #$FF
-mov SP, X
+mov.b SP, X
 setp
-mov SP, X
+mov.b SP, X
 clrp
 mov.b X, #$00
 mov.b Y, #$00
 mov.b A, #$00
+;Stack clear loop, uncomment for driver testing
 -
 mov $0100+Y, A
 dec.b Y
@@ -64,12 +66,12 @@ mov ZP.TrackSettings, #$00     ;Set the track settings
 mov A, #0
 -
 mov Y, #$00                         ;Shove into reset value
-mov.b X, #$0F
+mov.b X, #$0B
 mov SPC_RegADDR, A                  ;Shove address in
 Inner:
 mov SPC_RegData, Y                  ;Reset volume left
-inc.b SPC_RegADDR                     ;Increment address value
-dec.b X                               ;Decrement the loop counter
+inc.b SPC_RegADDR                   ;Increment address value
+dec.b X                             ;Decrement the loop counter
 bpl Inner
 clrc                                ;Clear carry
 adc.b A, #$10                       ;Add 16
@@ -94,7 +96,6 @@ dec.b Y
 bpl -
 mov.b ZP.SFXRec, #$00
 
-%spc_write(DSP_FLG, $00)
 %spc_write(DSP_MVOL_L, $00)
 %spc_write(DSP_MVOL_R, $00)
 %spc_write(DSP_EVOL_L, $00)
@@ -106,16 +107,17 @@ mov.b ZP.SFXRec, #$00
 %spc_write(DSP_PMON, $00)
 %spc_write(DSP_EON, $00)
 %spc_write(DSP_NON, $00)
+%spc_write(DSP_FLG, $00)
 
 mov.b ZP.OutVol, #$7F               ;Set output volume to max
 setp
 mov.b OP.MaxVolTarget, #$7F         ;Set output target volume to max
 clrp
 
-mov A, LoadFlag
-bne .SkipAddr
 mov.b ZP.MasterVol, #$00
 mov.b ZP.EchoVol, #$00
+mov A, LoadFlag
+bne .SkipAddr
 mov A, #(PitchTable)&$FF
 mov PitchPtr, A
 mov A, #(PitchTable>>8)&$FF
@@ -1792,7 +1794,7 @@ SfxPat:
     .Sfx1_1:
     %SetSpeed($02)
     %SetChannelVolume($99, $99)
-    %SetInstrument($02)
+    %SetInstrument($01)
     %PlayNote($05)
     %Sleep($10)
     %PlayNote($05)
@@ -1800,7 +1802,7 @@ SfxPat:
     %Stop()
     .Sfx2_0:
     %SetChannelVolume($5F, $5F)
-    %SetInstrument($04)
+    %SetInstrument($02)
     %SetSpeed($08)
     %PlayNote($20)
     %Sleep($0E)
@@ -1819,11 +1821,9 @@ SFXList:
     dw SfxTable_SFX_2
 
 InstrumentMemory:
-    %WriteInstrument($00, $00, $00, $00, $00)
-    %WriteInstrument($01, $FF, $70, $7F, $00)
-    %WriteInstrument($01, $FF, $80, $7F, $00)
-    %WriteInstrument($01, $FF, $80, $7F, $00)
-    %WriteInstrument($00, $FF, $70, $7F, $00)  ;Test SFX
+    %WriteInstrument($00, $00, $00, $00, $00)   ;MUST HAVE EMPTY INSTRUMENT AT START TO PREVENT WRONG EFFECTS STATE
+    %WriteInstrument($00, $FF, $70, $7F, $01)
+    %WriteInstrument($01, $FF, $70, $7F, $00)   ;Test SFX
 
 Engine_End:
 

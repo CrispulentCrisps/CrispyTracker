@@ -1,5 +1,12 @@
 #include "SnesAPUHandler.h"
 
+SnesAPUHandler* apu;				//Used to interface with SPC_CPU.h for debugging purposes
+
+SnesAPUHandler::SnesAPUHandler()
+{
+	apu = this;
+}
+
 //Boots up the emulation core
 void SnesAPUHandler::APU_Startup()
 {
@@ -11,30 +18,38 @@ void SnesAPUHandler::APU_Startup()
 	spc_filter_clear(Filter);
 
 	//Write IPL rom and base
+
 	FILE* driver = fopen(DRIVER_PATH, "rb");
-	fseek(driver, DRIVER_ROM_ADDR, SEEK_SET);
-	for (int x = 0; x < DRIVER_END; x++)
+	for (int x = 0; x < DRIVER_CODE; x++)		//Clear out zeropage and stack
 	{
-		Spc->m.ram.ram[x + 0x0200] = fgetc(driver);
+		Spc->m.ram.ram[x] = 0;
 	}
-
+	fseek(driver, DRIVER_ROM_ADDR, SEEK_SET);
+	for (int x = DRIVER_CODE; x < DRIVER_END; x++) //Load driver data into RAM
+	{
+		Spc->m.ram.ram[x] = fgetc(driver);
+	}
+	for (int x = DRIVER_END; x < DATA_START; x++)	//Clear out DIR page
+	{
+		Spc->m.ram.ram[x] = 0;
+	}
 	fclose(driver);
-
-	Spc->m.cpu_regs.pc = DRIVER_CODE;
+	Spc->m.ram.ram[DRIVER_LOAD_FLAG] = 1;
+	Spc->m.cpu_regs.pc = DRIVER_CODE+0x28;//Remove 0x28 after debugging
 
 	//Setting up the per channel registers for the SPC
 	for (int i = 0; i < 8; i++)
 	{
-		ChannelRegs[i].vol_l = (i * 16);
-		ChannelRegs[i].vol_r = (i * 16) + 1;
-		ChannelRegs[i].pit_l = (i * 16) + 2;
-		ChannelRegs[i].pit_h = (i * 16) + 3;
-		ChannelRegs[i].scrn = (i * 16) + 4;
+		ChannelRegs[i].vol_l =	(i * 16) + 0;
+		ChannelRegs[i].vol_r =	(i * 16) + 1;
+		ChannelRegs[i].pit_l =	(i * 16) + 2;
+		ChannelRegs[i].pit_h =	(i * 16) + 3;
+		ChannelRegs[i].scrn =	(i * 16) + 4;
 		ChannelRegs[i].adsr_1 = (i * 16) + 5;
 		ChannelRegs[i].adsr_2 = (i * 16) + 6;
-		ChannelRegs[i].gain = (i * 16) + 7;
-		ChannelRegs[i].envx = (i * 16) + 8;
-		ChannelRegs[i].outx = (i * 16) + 9;
+		ChannelRegs[i].gain =	(i * 16) + 7;
+		ChannelRegs[i].envx =	(i * 16) + 8;
+		ChannelRegs[i].outx =	(i * 16) + 9;
 
 		//Set the channel volume to max
 		ChannelVolume_L[i] = 127;
@@ -53,7 +68,7 @@ void SnesAPUHandler::APU_Update(spc_sample_t* Output, int BufferSize)
 
 	spc_set_output(Spc, (spc_sample_t*)InterBuf.data(), InterBuf.size());
 
-	spc_end_frame(Spc, ClockCycleRound);
+	if (RunCPU) { spc_end_frame(Spc, ClockCycleRound * (EmuSpeed / DEFAULT_EMU_SPEED)); }
 	//spc_dsp_run(Dsp, ClockCycleRound);
 	//spc_end_frame(Spc, ClockCycleRound);
 
@@ -69,6 +84,8 @@ void SnesAPUHandler::APU_Update(spc_sample_t* Output, int BufferSize)
 	}
 
 	spc_filter_run(Filter, Output, BufferSize);
+
+	APU_Handle_Emergencies();
 }
 
 void SnesAPUHandler::APU_Play_Note_Editor(Channel* ch, Instrument* inst, int note, bool IsOn)
@@ -111,17 +128,23 @@ void SnesAPUHandler::APU_UpdateTuneMemory(vector<Instrument>& inst, vector<Sampl
 	APU_Write_Music_Orders(pat, sub);
 	APU_Write_Subtunes();
 
+	u16 cursubaddr = SubPtr + (subind * 2);
+	u16 cursfxsubaddr = SfxPatPtr + (subind * 2);
 
-	//DSP_MEMORY[DRIVER_INSTPTR] =		(DRIVER_INSTPTR) & 0xFF;
-	//DSP_MEMORY[DRIVER_INSTPTR + 1] =	(DRIVER_INSTPTR >> 8) & 0xFF;
-	//DSP_MEMORY[DRIVER_ORDERPTR] =		(DRIVER_ORDERPTR) & 0xFF;
-	//DSP_MEMORY[DRIVER_ORDERPTR + 1] =	(DRIVER_ORDERPTR >> 8) & 0xFF;
-	//DSP_MEMORY[DRIVER_SFXPATPTR] =		(DRIVER_SFXPATPTR) & 0xFF;
-	//DSP_MEMORY[DRIVER_SFXPATPTR + 1] =	(DRIVER_SFXPATPTR >> 8) & 0xFF;
-	//DSP_MEMORY[DRIVER_SUBPTR] =			(DRIVER_SUBPTR) & 0xFF;
-	//DSP_MEMORY[DRIVER_SUBPTR + 1] =		(DRIVER_SUBPTR >> 8) & 0xFF;
-	//DSP_MEMORY[DRIVER_PITCHPTR] =		(DRIVER_PITCHPTR) & 0xFF;
-	//DSP_MEMORY[DRIVER_PITCHPTR + 1] =	(DRIVER_PITCHPTR >> 8) & 0xFF;
+	SPCPtr = DRIVER_INSTPTR;
+	SPCWrite((InstPtr)				& 0xFF);
+	SPCWrite((InstPtr >> 8)			& 0xFF);
+	SPCWrite((OrderPtr)				& 0xFF);
+	SPCWrite((OrderPtr >> 8)		& 0xFF);
+	SPCWrite((SfxListPtr)			& 0xFF);
+	SPCWrite((SfxListPtr >> 8)		& 0xFF);
+	SPCWrite((SfxPatPtr)			& 0xFF);
+	SPCWrite((SfxPatPtr >> 8)		& 0xFF);
+	SPCWrite((SubPtr)				& 0xFF);
+	SPCWrite((SubPtr >> 8)			& 0xFF);
+	SPCWrite((SubPtr >> 8)			& 0xFF);
+	SPCWrite((PitchPtr)				& 0xFF);
+	SPCWrite((PitchPtr >> 8)		& 0xFF);
 }
 //
 // 
@@ -215,6 +238,11 @@ void SnesAPUHandler::APU_EvaluateSequenceData(vector<Patterns>& pat, vector<Inst
 		{
 			WriteCommand(Command{ com_Sleep, (unsigned short)(PState.SleepCount) });
 		}
+
+		if (x == pat.size() - 1)
+		{
+			WriteCommand(Command{ com_Stop, 0x0000 });
+		}
 	}
 }
 
@@ -243,7 +271,7 @@ void SnesAPUHandler::APU_Set_Sample_Memory(std::vector<Sample>& samp)
 			}
 			else
 			{
-				std::cout << "\nERROR: SAMPLE TOO LARGE\nADDR-OFF: " << SPCPtr << "\nBRR BLOCK: " << j;
+				//std::cout << "\nERROR: SAMPLE TOO LARGE\nADDR-OFF: " << SPCPtr << "\nBRR BLOCK: " << j;
 				break;
 			}
 		}
@@ -282,7 +310,7 @@ void SnesAPUHandler::APU_Evaluate_BRR_Loop_Start(Sample* sample)
 
 void SnesAPUHandler::APU_Write_Music_Orders(vector<Patterns>& pat, vector<Subtune>& sub)
 {
-	MusicOrderAddr = SPCPtr;
+	OrderPtr = SPCPtr;
 	for (int x = 0; x < sub.size(); x++)
 	{
 		if (!sub[x].SFXFlag)
@@ -301,7 +329,7 @@ void SnesAPUHandler::APU_Write_Music_Orders(vector<Patterns>& pat, vector<Subtun
 		}
 	}
 
-	SfxOrderAddr = SPCPtr;
+	SfxPatPtr = SPCPtr;
 	for (int x = 0; x < sub.size(); x++)
 	{
 		if (sub[x].SFXFlag)
@@ -323,6 +351,7 @@ void SnesAPUHandler::APU_Write_Music_Orders(vector<Patterns>& pat, vector<Subtun
 
 void SnesAPUHandler::APU_Write_Subtunes()
 {
+	SubPtr = SPCPtr;
 	for (int x = 0; x < MusicOrders.size(); x++)
 	{
 		cout << "\nMusic Order: " << x << " | " << std::hex << MusicOrders[x];
@@ -330,6 +359,7 @@ void SnesAPUHandler::APU_Write_Subtunes()
 		SPCWrite((MusicOrders[x] >> 8) & 0xFF);
 	}
 
+	SfxListPtr = SPCPtr;
 	for (int x = 0; x < SfxOrders.size(); x++)
 	{
 		cout << "\nSfx Order: " << x << " | " << std::hex << SfxOrders[x];
@@ -345,10 +375,10 @@ void SnesAPUHandler::APU_Set_Sample_Directory(std::vector<Sample>& samp)
 	int DirSize = 4;
 	for (int i = 1; i < samp.size(); i++)
 	{
-		Spc->m.ram.ram[Sample_Dir_Page + CurrentDir] = samp[i].brr.SampleDir & 0xFF;			//Lo byte of directory
-		Spc->m.ram.ram[Sample_Dir_Page + CurrentDir + 1] = (samp[i].brr.SampleDir >> 8) & 0xFF;	//Hi byte of directory
-		Spc->m.ram.ram[Sample_Dir_Page + CurrentDir + 2] = samp[i].LoopStartAddr & 0xFF;		//Lo byte of the start
-		Spc->m.ram.ram[Sample_Dir_Page + CurrentDir + 3] = (samp[i].LoopStartAddr >> 8) & 0xFF;	//Hi byte of the start
+		Spc->m.ram.ram[Sample_Dir_Page + CurrentDir] =		samp[i].brr.SampleDir & 0xFF;			//Lo byte of directory
+		Spc->m.ram.ram[Sample_Dir_Page + CurrentDir + 1] =	(samp[i].brr.SampleDir >> 8) & 0xFF;	//Hi byte of directory
+		Spc->m.ram.ram[Sample_Dir_Page + CurrentDir + 2] =	samp[i].LoopStartAddr & 0xFF;			//Lo byte of the start
+		Spc->m.ram.ram[Sample_Dir_Page + CurrentDir + 3] =	(samp[i].LoopStartAddr >> 8) & 0xFF;	//Hi byte of the start
 		samp[i].SampleADDR = i - 1;
 		CurrentDir += DirSize;
 	}
@@ -357,16 +387,16 @@ void SnesAPUHandler::APU_Set_Sample_Directory(std::vector<Sample>& samp)
 //Writes page for instruments
 void SnesAPUHandler::APU_Update_Instrument_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize)
 {
-	InstAddr = SPCPtr;
+	InstPtr = SPCPtr;
 	//Write instrument table
 	InstMem.clear();
 	InstMem.push_back(InstEntry());//This one isn't counted, reason it's here is to mirror the instrument list having the first entry as a "Default" one
-	if (LastSamplePoint != 0) InstAddr = LastSamplePoint;//Assuming we have no samples in memory
-	else InstAddr = Sample_Mem_Page;
+	if (LastSamplePoint != 0) InstPtr = LastSamplePoint;//Assuming we have no samples in memory
+	else InstPtr = Sample_Mem_Page;
 	char buf[10];
-	sprintf_s(buf, "%04X", InstAddr);
+	sprintf_s(buf, "%04X", InstPtr);
 	std::cout << "\nInstADDR: " << buf;
-	for (int x = 1; x < inst.size(); x++)
+	for (int x = 0; x < inst.size(); x++)
 	{
 		InstEntry i_ent = InstEntry();
 		
@@ -394,7 +424,7 @@ void SnesAPUHandler::APU_Update_Instrument_Memory(std::vector<Patterns>& pat, st
 		SPCWrite(InstMem[x].EffectState);
 	}
 }
-
+/*
 //Writes page for sequence entries
 void SnesAPUHandler::APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize)
 {
@@ -446,29 +476,29 @@ void SnesAPUHandler::APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std:
 			entry.Pitch = currentinst.BRR_Pitch(pow(2.0, (uniquerows[x].note - 48 + currentinst.NoteOff) / 12.0));
 			entry.Volume_L = uniquerows[x].volume;
 			entry.Volume_R = uniquerows[x].volume;
-			entry.instADDR = InstAddr + ((uniquerows[x].instrument-1) * 7);
+			entry.instADDR = InstPtr + ((uniquerows[x].instrument-1) * 7);
 			entry.EffectsState = uniquerows[x].effect;
 			entry.EffectsValue = uniquerows[x].effectvalue;
 			
-			std::cout << "\nIndex: " << x << "\nentry pitch " << entry.Pitch << "\nentry vol l " << (int)entry.Volume_L << "\nentry vol r " << (int)entry.Volume_R << "\nentry inst addr " << (int)entry.instADDR << "\nentry effect state " << (int)entry.EffectsState << "\nentry effect value " << (int)entry.EffectsValue;
+			//std::cout << "\nIndex: " << x << "\nentry pitch " << entry.Pitch << "\nentry vol l " << (int)entry.Volume_L << "\nentry vol r " << (int)entry.Volume_R << "\nentry inst addr " << (int)entry.instADDR << "\nentry effect state " << (int)entry.EffectsState << "\nentry effect value " << (int)entry.EffectsValue;
 
 			SeqMem.push_back(entry);
 			
-			Spc->m.ram.ram[SequenceAddr + addroff] = (entry.Pitch) & 0xFF;
-			Spc->m.ram.ram[SequenceAddr + addroff + 1] = (entry.Pitch >> 8) & 0xFF;
-			Spc->m.ram.ram[SequenceAddr + addroff + 2] = entry.Volume_L;
-			Spc->m.ram.ram[SequenceAddr + addroff + 3] = entry.Volume_R;
-			Spc->m.ram.ram[SequenceAddr + addroff + 4] = (entry.instADDR) & 0xFF;
-			Spc->m.ram.ram[SequenceAddr + addroff + 5] = (entry.instADDR >> 8) & 0xFF;
-			Spc->m.ram.ram[SequenceAddr + addroff + 6] = entry.EffectsState;
-			Spc->m.ram.ram[SequenceAddr + addroff + 7] = entry.EffectsValue;
+			Spc->m.ram.ram[OrderPtr + addroff] = (entry.Pitch) & 0xFF;
+			Spc->m.ram.ram[OrderPtr + addroff + 1] = (entry.Pitch >> 8) & 0xFF;
+			Spc->m.ram.ram[OrderPtr + addroff + 2] = entry.Volume_L;
+			Spc->m.ram.ram[OrderPtr + addroff + 3] = entry.Volume_R;
+			Spc->m.ram.ram[OrderPtr + addroff + 4] = (entry.instADDR) & 0xFF;
+			Spc->m.ram.ram[OrderPtr + addroff + 5] = (entry.instADDR >> 8) & 0xFF;
+			Spc->m.ram.ram[OrderPtr + addroff + 6] = entry.EffectsState;
+			Spc->m.ram.ram[OrderPtr + addroff + 7] = entry.EffectsValue;
 			addroff += 8;
 		}
 	}
-	PatternAddr = SequenceAddr + addroff;
+	PatternAddr = OrderPtr + addroff;
 	char buf[10];
 	sprintf_s(buf, "%04X", PatternAddr);
-	std::cout << "\nPatternADDR: " << buf;
+	//std::cout << "\nPatternADDR: " << buf;
 	APU_Update_Pattern_Memory(pat, inst, TrackSize);
 }
 
@@ -488,7 +518,7 @@ void SnesAPUHandler::APU_Update_Pattern_Memory(std::vector<Patterns>& pat, std::
 				Row currentrow = pat[x].SavedRows[y];
 				if (currentrow.note == uniquerows[z].note && currentrow.octave == uniquerows[z].octave && currentrow.volume == uniquerows[z].volume && currentrow.effect == uniquerows[z].effect && currentrow.effectvalue == uniquerows[z].effectvalue)
 				{
-					entry.SequenceList.push_back(SequenceAddr + (z*8));
+					entry.SequenceList.push_back(OrderPtr + (z*8));
 					break;
 				}
 			}
@@ -506,17 +536,14 @@ void SnesAPUHandler::APU_Update_Pattern_Memory(std::vector<Patterns>& pat, std::
 		}
 	}
 }
-
+*/
 //Sets master volume of the track
 bool SnesAPUHandler::APU_Set_Master_Vol(signed char vol)
 {
-	if (vol >= -128 && vol <= 127)
-	{
-		return true;
-	}
+	if (vol >= -128 && vol <= 127) return true;
 	else
 	{
-		std::cout << "\nEMU ERROR: VOL NOT WITHIN -128 & 127: VOL --> " << vol;
+		//std::cout << "\nEMU ERROR: VOL NOT WITHIN -128 & 127: VOL --> " << vol;
 		return false;
 	}
 }
@@ -549,14 +576,15 @@ void SnesAPUHandler::APU_Start_Tune(int subind)
 	{
 		timer = Spc->m.spc_time + 32;
 		//spc_end_frame(Spc, timer);
-		cout << std::hex << "\nPortVal: " << spc_read_port(Spc, timer, 0x01);
-		cout << std::hex << "\nPC: " << Spc->m.cpu_regs.pc;
-		cout << std::hex << "\nTime: " << Spc->m.spc_time;
+		//cout << std::hex << "\nPortVal: " << spc_read_port(Spc, timer, 0x01);
+		//cout << std::hex << "\nPC: " << Spc->m.cpu_regs.pc;
+		//cout << std::hex << "\nTime: " << Spc->m.spc_time;
 	}
 }
 
 void SnesAPUHandler::APU_Audio_Stop()
 {
+
 }
 
 void SnesAPUHandler::APU_Audio_Start()
@@ -582,6 +610,15 @@ void SnesAPUHandler::APU_Rebuild_Sample_Memory(std::vector<Sample>& samp)
 		APU_Evaluate_BRR_Loop(&samp[x], samp[x].LoopEnd);
 	}
 	APU_Set_Sample_Directory(samp);
+}
+
+void SnesAPUHandler::APU_Handle_Emergencies()
+{
+	if (Spc->m.cpu_regs.pc < 0x1FF)
+	{
+		cout << "\nERROR: PC < $01FF, POTENTIAL OVERFLOW OR BAD POINTER TO MEMORY!";
+		RunCPU = false;
+	}
 }
 
 void SnesAPUHandler::APU_Debug_Dump_BRR()
@@ -610,7 +647,7 @@ void SnesAPUHandler::APU_Debug_Dump_SPC()
 {
 	string filename = "SPC_Dump.bin";
 	ofstream BRRFile(filename, ios::binary);
-	for (int x = 0; x < 65536; x++)
+	for (int x = 0; x < 0xFFFF; x++)
 	{
 		BRRFile << Spc->m.ram.ram[x];
 	}
@@ -634,7 +671,7 @@ void SnesAPUHandler::APU_Debug_Dump_INST()
 {
 	string filename = "INST_Dump.bin";
 	ofstream BRRFile(filename, ios::binary);
-	for (int x = InstAddr; x < SequenceAddr; x++)
+	for (int x = InstPtr; x < OrderPtr; x++)
 	{
 		BRRFile << Spc->m.ram.ram[x];
 	}

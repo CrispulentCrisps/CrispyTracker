@@ -63,13 +63,12 @@ public:
 
 	DSP_Ch_Reg ChannelRegs[8];
 
-	u16 InstAddr       = 0x0200;	//Instrument adress
-	u16 SequenceAddr   = 0x0200;	//Sequence entry address
-	u16 PatternAddr    = 0x0200;	//Pattern address
-	u16 MusicOrderAddr = 0x0200;	//Music pattern addresses
-	u16 SfxOrderAddr   = 0x0200;	//Sfx pattern addresses
-	u16 MusicSubAddr   = 0x0200;	//Music subtune address
-	u16 SFXSubAddr     = 0x0200;	//SFX subtune address
+	u16 InstPtr =		DATA_START;		//Pointer to instrument table
+	u16 OrderPtr =		DATA_START;		//Pointer to music orders
+	u16 SfxListPtr =	DATA_START;		//Pointer to SFX subtunes
+	u16 SfxPatPtr =		DATA_START;		//Pointer to SFX orders
+	u16 SubPtr =		DATA_START;		//Pointer to music subtunes
+	u16 PitchPtr =		DATA_START;		//Pointer to pitch table
 
 	std::vector<InstEntry>      InstMem;
 	std::vector<SequenceEntry>  SeqMem;
@@ -89,8 +88,6 @@ public:
 	0x00, 0x00, 0xc0, 0xff
 	};
 	
-	unsigned char DSP_MEMORY[1024*64];
-
 	spc_time_t timer;				//Running timer for SPC-700
 
 	u16 LastSamplePoint;
@@ -111,6 +108,11 @@ public:
 
 	ComType ExCom[EXCOM_SIZE] = {com_Sleep, com_Stop, com_Break, com_Goto};  //Exclusive commands that must be at the end of a given sequence chunk
 
+	int EmuSpeed = DEFAULT_EMU_SPEED;
+	bool RunCPU = true;
+
+	SnesAPUHandler();
+
 	void APU_Startup();
 	void APU_Update(spc_sample_t* Output, int BufferSize);
 	//void APU_Grab_Channel_Status(Channel* ch, Instrument* inst, int ypos);
@@ -130,8 +132,8 @@ public:
 	void APU_Write_Music_Orders(vector<Patterns>& pat, vector<Subtune>& sub);
 	void APU_Write_Subtunes();
 	void APU_Update_Instrument_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);
-	void APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);
-	void APU_Update_Pattern_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);
+	//void APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);
+	//void APU_Update_Pattern_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);
 	bool APU_Set_Master_Vol(signed char vol);
 	void APU_Set_Echo(unsigned int dtime, int* coef, signed int dfb, signed int dvol);
 	void APU_Init_Echo();
@@ -145,6 +147,8 @@ public:
 	int APU_Return_Cycle_Since_Last_Frame();
 
 	void APU_Rebuild_Sample_Memory(std::vector<Sample>& samp);
+
+	void APU_Handle_Emergencies();
 
 	void APU_Debug_Dump_BRR();
 	void APU_Debug_Dump_DIR();

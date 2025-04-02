@@ -12,9 +12,9 @@ typedef struct Subtune {
 	char aubuf[256];
 	char trbuf[256];
 	char dcbuf[256];
-	std::string AuthorName = " ";
-	std::string TrackName = " ";
-	std::string TrackDesc = " ";
+	std::string AuthorName = "";
+	std::string TrackName = "";
+	std::string TrackDesc = "";
 	uint8_t TrackLength = 64;
 	uint8_t SongLength = 1;
 	uint8_t Speed1 = 6;

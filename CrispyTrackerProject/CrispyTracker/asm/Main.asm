@@ -42,30 +42,40 @@ Reset:
 
     jsr LoadDriver              ;Load file into SPC
 
+    lda.b #$01
+    stz.w HW_APUI00
+    sta.w HW_APUI01
+    stz.w HW_APUI02
+    stz.w HW_APUI03
+
     sep #$20
+    lda.b #!MComEnd
+    ldx.w #$001F
+    -
+    sta.w AudPtr, X
+    stz.w MusicComTable, X
+    dex 
+    bpl -
+
     lda.b #$80
     sta.w HW_NMITIMEN
     sep #$20                    ;Set A to 8bit
-    stz.w HW_APUI00
-    stz.w HW_APUI01
-    stz.w HW_APUI02
-    stz.w HW_APUI03
     stz.w MZP.MusicPlayed
     stz.w MZP.MusicSetup
     
     ldx.w #MusicComTable
     stx.b AudPtr
 
-    ;Play music
-    lda.b #$00
-    sta.b MComIndex
-    sta.b MComVal
-    jsr AddMCom
-    ;Play SFX
-    lda.b #$01
-    sta.b MComIndex
-    sta.b MComVal
-    jsr AddMCom
+    ;;Play music
+    ;lda.b #$00
+    ;sta.b MComIndex
+    ;sta.b MComVal
+    ;jsr AddMCom
+    ;;Play SFX
+    ;lda.b #$01
+    ;sta.b MComIndex
+    ;sta.b MComVal
+    ;jsr AddMCom
 
     ;jsr PlayMusic
 
@@ -93,7 +103,7 @@ NMIDriverTest:
     ;%WriteMCom($0A, $01)
     ;Play SFX
     %WriteMCom($01, $01)
-    %WriteMCom($01, $00)
+    ;%WriteMCom($01, $00)
     ;;Set settings byte
     ;%WriteMCom($03, $03)
     ;;Mute channel 0
@@ -162,7 +172,7 @@ ExecuteMCom:
     lda.w MZP.SFXRec
     sta.w HW_APUI01
     inc.w MZP.SFXRec
-    -    
+    -
     lda.w HW_APUI03     ;Check RESET flag
     beq +
     jsr LoadDriver
