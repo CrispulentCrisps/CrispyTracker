@@ -46,6 +46,19 @@ movw YA, ZP.TempMemADDRL
 cmpw.b YA, ZP.R0
 bne .MemClearLoop
 
+%spc_write(DSP_MVOL_L, $00)
+%spc_write(DSP_MVOL_R, $00)
+%spc_write(DSP_EVOL_L, $00)
+%spc_write(DSP_EVOL_R, $00)
+%spc_write(DSP_EFB, $20)
+%spc_write(DSP_EDL, $00)
+%spc_write(DSP_ESA, $C0)
+%spc_write(DSP_DIR, $0C)
+%spc_write(DSP_PMON, $00)
+%spc_write(DSP_EON, $00)
+%spc_write(DSP_NON, $00)
+%spc_write(DSP_FLG, $20)
+
 mov.b X, #$FF
 mov.b SP, X
 setp
@@ -63,7 +76,7 @@ bne -
 mov ZP.TrackSettings, #$00     ;Set the track settings
 
 ;Audio register reset routine
-mov A, #0
+mov A, #$00
 -
 mov Y, #$00                         ;Shove into reset value
 mov.b X, #$0B
@@ -95,19 +108,6 @@ mov ZP.VCOut+Y, A                   ;Reset the VCOut state to F to prevent chann
 dec.b Y
 bpl -
 mov.b ZP.SFXRec, #$00
-
-%spc_write(DSP_MVOL_L, $00)
-%spc_write(DSP_MVOL_R, $00)
-%spc_write(DSP_EVOL_L, $00)
-%spc_write(DSP_EVOL_R, $00)
-%spc_write(DSP_ESA, $C0)
-%spc_write(DSP_EDL, $00)
-%spc_write(DSP_EFB, $20)
-%spc_write(DSP_DIR, $0C)
-%spc_write(DSP_PMON, $00)
-%spc_write(DSP_EON, $00)
-%spc_write(DSP_NON, $00)
-%spc_write(DSP_FLG, $00)
 
 mov.b ZP.OutVol, #$7F               ;Set output volume to max
 setp
@@ -1709,17 +1709,17 @@ PatternMemory:
     %Sleep($02)
     %Break()
     .Pat1:
-    %SetDelayCoefficient(0, $FF/16)
-    %SetDelayCoefficient(1, $EE/16)
-    %SetDelayCoefficient(2, $DD/16)
-    %SetDelayCoefficient(3, $CC/16)
-    %SetDelayCoefficient(4, $BB/16)
-    %SetDelayCoefficient(5, $AA/16)
-    %SetDelayCoefficient(6, $99/16)
-    %SetDelayCoefficient(7, $88/16)
-    %SetDelayTime($04)
-    %SetDelayVolume($60)
-    %SetDelayFeedback($40)
+    ;%SetDelayCoefficient(0, $FF/16)
+    ;%SetDelayCoefficient(1, $EE/16)
+    ;%SetDelayCoefficient(2, $DD/16)
+    ;%SetDelayCoefficient(3, $CC/16)
+    ;%SetDelayCoefficient(4, $BB/16)
+    ;%SetDelayCoefficient(5, $AA/16)
+    ;%SetDelayCoefficient(6, $99/16)
+    ;%SetDelayCoefficient(7, $88/16)
+    ;%SetDelayTime($04)
+    ;%SetDelayVolume($60)
+    ;%SetDelayFeedback($40)
     %Sleep($FF)
     .Pat2:
     %SetVib($62)

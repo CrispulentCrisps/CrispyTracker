@@ -44,7 +44,7 @@ Reset:
 
     lda.b #$01
     stz.w HW_APUI00
-    sta.w HW_APUI01
+    stz.w HW_APUI01
     stz.w HW_APUI02
     stz.w HW_APUI03
 
