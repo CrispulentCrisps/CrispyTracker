@@ -143,7 +143,7 @@ public:
 	
 	enum { signature_size = 35 };
 	
-private:
+//private:
 	SPC_DSP dsp;
 	
 	#if SPC_LESS_ACCURATE

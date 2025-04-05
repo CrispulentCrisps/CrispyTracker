@@ -11,6 +11,12 @@ details. You should have received a copy of the GNU Lesser General Public
 License along with this module; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
+//CUSTOM CODE, USED FOR DEBUGGING
+#include "../Macros.h"
+
+#include "../SnesAPUHandler.h"
+extern SnesAPUHandler* apu;
+
 //// Memory access
 uint8_t m[0x10000];
 
@@ -193,6 +199,40 @@ loop:
 	PROFILE_TIMER_LOOP( 0xE4, pc [1], 2 );
 	*/
 	
+	
+	//Custom code for debugging purposes
+
+	
+	//Dump PC, instruction and register state
+		/*
+		if (apu->RunCPU)
+		{
+			fprintf(stderr, "\n%04X	| %s %02X %02X | A: %02X, X: %02X, Y: %02X, SP: %02X	|	 Echo Src: %04X", pc, OpcodeNames[ram[pc]].c_str(), ram[pc + 1], ram[pc + 2], a, x, y, sp, dsp.m.t_echo_ptr);
+
+			if (pc < 0x01F0 || !(dsp.m.regs[dsp.r_flg] & 0x20))
+			{
+				apu->RunCPU = false;
+				fprintf(stderr, "\nERROR: PC OUT OF BOUNDS:\n\nZEROPAGE:");
+				for (int x = 0; x < 16; x++)
+				{
+					fprintf(stderr, "\n");
+					for (int y = 0; y < 16; y++)
+					{
+						fprintf(stderr, "%02X ", ram[y + (x * 16)]);
+					}
+				}
+				fprintf(stderr, "\nSTACK:");
+				for (int x = 0; x < 16; x++)
+				{
+					fprintf(stderr, "\n");
+					for (int y = 0; y < 16; y++)
+					{
+						fprintf(stderr, "%02X ", ram[0x0100 + y + (x * 16)]);
+					}
+				}
+			}
+		}*/
+		
 	// TODO: if PC is at end of memory, this will get wrong operand (very obscure)
 	pc++;
 	data = ram [pc];
