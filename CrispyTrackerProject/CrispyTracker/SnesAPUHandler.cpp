@@ -36,7 +36,10 @@ void SnesAPUHandler::APU_Startup()
 	fclose(driver);
 	Spc->m.ram.ram[DRIVER_LOAD_FLAG] = 1;
 	Spc->m.cpu_regs.pc = DRIVER_CODE+0x28;//Remove 0x28 after debugging
-
+	spc_write_port(Spc, Spc->m.spc_time, 0x00, 0x00);
+	spc_write_port(Spc, Spc->m.spc_time, 0x01, 0x01);
+	spc_write_port(Spc, Spc->m.spc_time, 0x02, 0x00);
+	spc_write_port(Spc, Spc->m.spc_time, 0x03, 0x00);
 	//Setting up the per channel registers for the SPC
 	for (int i = 0; i < 8; i++)
 	{
@@ -142,7 +145,6 @@ void SnesAPUHandler::APU_UpdateTuneMemory(vector<Instrument>& inst, vector<Sampl
 	SPCWrite((SfxPatPtr >> 8)		& 0xFF);
 	SPCWrite((SubPtr)				& 0xFF);
 	SPCWrite((SubPtr >> 8)			& 0xFF);
-	SPCWrite((SubPtr >> 8)			& 0xFF);
 	SPCWrite((PitchPtr)				& 0xFF);
 	SPCWrite((PitchPtr >> 8)		& 0xFF);
 }
@@ -160,7 +162,7 @@ void SnesAPUHandler::APU_EvaluateSequenceData(vector<Patterns>& pat, vector<Inst
 {
 	for (int x = 0; x < pat.size(); x++)
 	{
-		cout << "\nPAT: " << x << " AT: " << std::hex << SPCPtr;
+		//cout << "\nPAT: " << x << " AT: " << std::hex << SPCPtr;
 		pat[x].Addr = SPCPtr;
 
 		PatternState PState = PatternState();
@@ -354,7 +356,7 @@ void SnesAPUHandler::APU_Write_Subtunes()
 	SubPtr = SPCPtr;
 	for (int x = 0; x < MusicOrders.size(); x++)
 	{
-		cout << "\nMusic Order: " << x << " | " << std::hex << MusicOrders[x];
+		//cout << "\nMusic Order: " << x << " | " << std::hex << MusicOrders[x];
 		SPCWrite((MusicOrders[x]) & 0xFF);
 		SPCWrite((MusicOrders[x] >> 8) & 0xFF);
 	}
@@ -362,7 +364,7 @@ void SnesAPUHandler::APU_Write_Subtunes()
 	SfxListPtr = SPCPtr;
 	for (int x = 0; x < SfxOrders.size(); x++)
 	{
-		cout << "\nSfx Order: " << x << " | " << std::hex << SfxOrders[x];
+		//cout << "\nSfx Order: " << x << " | " << std::hex << SfxOrders[x];
 		SPCWrite((SfxOrders[x]) & 0xFF);
 		SPCWrite((SfxOrders[x] >> 8) & 0xFF);
 	}
@@ -551,13 +553,9 @@ bool SnesAPUHandler::APU_Set_Master_Vol(signed char vol)
 //Update the echo registers
 void SnesAPUHandler::APU_Set_Echo(unsigned int dtime, int* coef, signed int dfb, signed int dvol)
 {
-	//int EchoAddr = (0xFFFF - (dtime * 0x0800)) >> 8;
-	
-	int EchoAddr = (0xFF00 - (dtime * 0x0800)) >> 8;
-	if (dtime == 0)
-	{
-		EchoAddr = 0x1;
-	}
+	//int EchoAddr = (0xFFFF - (dtime * 0x0800)) >> 8;	
+	uint8_t EchoAddr = (0xFF00 - (dtime * 0x0800)) >> 8;
+	Spc->dsp.write(Spc->dsp.r_esa, EchoAddr);
 }
 
 //Initialises the echo values
@@ -571,15 +569,6 @@ void SnesAPUHandler::APU_Start_Tune(int subind)
 	spc_write_port(Spc, Spc->m.spc_time, 0x02, subind);
 	spc_write_port(Spc, Spc->m.spc_time, 0x01, Handshake);
 	Handshake++;
-	spc_time_t timer = Spc->m.spc_time;
-	while (Handshake != spc_read_port(Spc, timer, 0x01))
-	{
-		timer = Spc->m.spc_time + 32;
-		//spc_end_frame(Spc, timer);
-		//cout << std::hex << "\nPortVal: " << spc_read_port(Spc, timer, 0x01);
-		//cout << std::hex << "\nPC: " << Spc->m.cpu_regs.pc;
-		//cout << std::hex << "\nTime: " << Spc->m.spc_time;
-	}
 }
 
 void SnesAPUHandler::APU_Audio_Stop()

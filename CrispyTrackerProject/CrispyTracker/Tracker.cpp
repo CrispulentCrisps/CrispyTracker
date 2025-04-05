@@ -2031,9 +2031,10 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 				SG.Emu_APU.APU_Audio_Stop();
 				SG.Emu_APU.APU_Audio_Start();
 			}
-			else 
+			else
 			{
 				SG.Emu_APU.APU_Start_Tune(CurrentTune);
+				//cout << "\n	Playing tune :]";
 			}
 			EditingMode = false;
 			break;
@@ -3191,6 +3192,42 @@ void Tracker::DSPDebugWindow()
 		SameLine();
 		Text(OpcodeNames[SG.Emu_APU.Spc->m.ram.ram[SG.Emu_APU.Spc->m.cpu_regs.pc]].data());
 		NewLine();
+		Text("APU Ports");
+		Text("APU 0: ");
+		SameLine();
+		Text(ToHex(SG.Emu_APU.Spc->m.ram.ram[0x00F4], 0).data());
+		Text("APU 1: ");
+		SameLine();
+		Text(ToHex(SG.Emu_APU.Spc->m.ram.ram[0x00F5], 0).data());
+		Text("APU 2: ");
+		SameLine();
+		Text(ToHex(SG.Emu_APU.Spc->m.ram.ram[0x00F6], 0).data());
+		Text("APU 3: ");
+		SameLine();
+		Text(ToHex(SG.Emu_APU.Spc->m.ram.ram[0x00F7], 0).data());
+		NewLine();
+		Text("Flag register");
+		Text("Noise Frequency: ");
+		SameLine();
+		Text(ToHex(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_flg) & 0x1F, 0).data());
+		Text("Echo State: ");
+		SameLine();
+		Text(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_flg) & 0x20 ? "Disabled" : "Enabled");
+		Text("Mute All: ");
+		SameLine();
+		Text(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_flg) & 0x40 ? "Enabled" : "Disabled");
+
+		NewLine();
+		Text("Echo registers");
+		Text("ESA: ");
+		SameLine();
+		Text(ToHex(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_esa), 0).data());
+		Text("EDL: ");
+		SameLine();
+		Text(ToHex(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_edl), 0).data());
+		Text("EFB: ");
+		SameLine();
+		Text(ToHex(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_efb), 0).data());
 		/*
 		if (BeginTable("Zeropage", 0x10))
 		{

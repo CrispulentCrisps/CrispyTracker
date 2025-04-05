@@ -28,12 +28,12 @@
 //  0200 - 0C00     |   Driver           |
 //  0C00 - 0D00     |   DIR page        /
 // 
-//  0D00 - XXXX     |   Sample page    \
-//  XXXX - YYYY     |   Instrument page |
-//  YYYY - ZZZZ     |   Patterns page   |       Dynamic data
-//  ZZZZ - WWWW     |   Orders page     |
-//  WWWW - SSSS     |   Subtune page    |
-//  SSSS - FFFF     |   Echo page      /
+//  0D00 - XXXX     |   Sample page		\
+//  XXXX - YYYY     |   Instrument page  |
+//  YYYY - ZZZZ     |   Patterns page    |       Dynamic data
+//  ZZZZ - WWWW     |   Orders page      |
+//  WWWW - SSSS     |   Subtune page     |
+//  SSSS - FFFF     |   Echo page		/
 //
 
 enum Region {
@@ -102,7 +102,7 @@ public:
 	u8 KONState;
 	u8 KOFState;
 
-	u8 Handshake = 1;
+	u8 Handshake = 2;
 
 	u16 SPCPtr = DATA_START;
 
