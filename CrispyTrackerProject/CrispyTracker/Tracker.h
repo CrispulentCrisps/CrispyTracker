@@ -265,6 +265,11 @@ public:
 	bool SubtuneWarning = false;
 
 	bool ShowDSPDebugger = true;			//Set to false when done fixing the CPU
+	bool DebugShowPtrs = false;
+	bool DebugShowCPU = false;
+	bool DebugShowDSPState = false;
+	bool DebugShowStack = false;
+	bool DebugShowZP = false;
 	bool ShowTrackerDebugger = false;
 
 	string EffectText = "";

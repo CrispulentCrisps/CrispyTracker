@@ -36,7 +36,16 @@
 #define DRIVER_END			(uint16_t)	0x0C00			//End of the driver data
 #define DATA_START			(uint16_t)	0x0D00			//Where dynamic data starts for the driver to interpret
 
+#define DRIVER_FLAG_VAL		(uint16_t)	0x000E			//Handshake byte for communication in driver RAM
+
 #define DRIVER_ROM_ADDR		(uint32_t)	0x00010000		//Where driver starts in CPU memory
+
+#define DRIVER_PORT0		(uint8_t)	0xF4			//APU-0 register
+#define DRIVER_PORT1		(uint8_t)	0xF5			//APU-1 register
+#define DRIVER_PORT2		(uint8_t)	0xF6			//APU-2 register
+#define DRIVER_PORT3		(uint8_t)	0xF7			//APU-3 register
+
+#define DRIVER_STOP_FLAGS	(uint16_t)	0x019B			//Stop flags for each channel
 
 #define EXCOM_SIZE			0x04
 
@@ -121,7 +130,6 @@ enum ExportTypes {
 	VORBIS,
 	FLAC,
 	SPC,
-	ASM,
 };
 
 enum ExportSign

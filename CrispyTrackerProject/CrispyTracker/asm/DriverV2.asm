@@ -1274,7 +1274,7 @@ GetSineValue:
     ;       X
     ;       MulProductTemp
     ;
-    ;        [Provided by AArt1256]
+    ;       [Provided by AArt1256]
     ;
 SignedMul:
     push X
@@ -1336,8 +1336,8 @@ SignedMul:
     ;       APU01
     ;       ZP.R0            \
     ;       ZP.R1             |
-    ;       ZP.TempMemADDRL   |
-    ;       ZP.TempMemADDRH  /  Addr pointers
+    ;       ZP.TempMemADDRL   | Addr pointers
+    ;       ZP.TempMemADDRH  /
     ;    
     ;       ZP.R2           \   General memory storage
     ;       ZP.R3           /
@@ -1352,7 +1352,7 @@ RecieveSub:
     push Y
     mov.b A, Apu1                         ;Check SEND byte
     cmp.b A, ZP.SFXRec
-    beq +                                 ;if SFXRec != SFXRec before then new a new subtune will be selected
+    beq +                                 ;if APU-1 != SFXRec before then new a new subtune will be selected
     jmp .SkipSFXCheck
     +
     inc.b ZP.FlagVal

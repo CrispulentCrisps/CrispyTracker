@@ -10,6 +10,7 @@ SnesAPUHandler::SnesAPUHandler()
 //Boots up the emulation core
 void SnesAPUHandler::APU_Startup()
 {
+	Handshake = 1;
 	//Starting up the DSP and SPC that the emu will use
 	spc_init_rom(Spc, IPL_ROM);
 	spc_reset(Spc);
@@ -36,10 +37,10 @@ void SnesAPUHandler::APU_Startup()
 	fclose(driver);
 	Spc->m.ram.ram[DRIVER_LOAD_FLAG] = 1;
 	Spc->m.cpu_regs.pc = DRIVER_CODE+0x28;//Remove 0x28 after debugging
-	spc_write_port(Spc, Spc->m.spc_time, 0x00, 0x00);
-	spc_write_port(Spc, Spc->m.spc_time, 0x01, 0x01);
-	spc_write_port(Spc, Spc->m.spc_time, 0x02, 0x00);
-	spc_write_port(Spc, Spc->m.spc_time, 0x03, 0x00);
+	Spc->write_port(Spc->m.spc_time, 0, 0x00);
+	Spc->write_port(Spc->m.spc_time, 1, 0x01);
+	Spc->write_port(Spc->m.spc_time, 2, 0x00);
+	Spc->write_port(Spc->m.spc_time, 3, 0x00);
 	//Setting up the per channel registers for the SPC
 	for (int i = 0; i < 8; i++)
 	{
@@ -393,11 +394,11 @@ void SnesAPUHandler::APU_Update_Instrument_Memory(std::vector<Patterns>& pat, st
 	//Write instrument table
 	InstMem.clear();
 	InstMem.push_back(InstEntry());//This one isn't counted, reason it's here is to mirror the instrument list having the first entry as a "Default" one
-	if (LastSamplePoint != 0) InstPtr = LastSamplePoint;//Assuming we have no samples in memory
-	else InstPtr = Sample_Mem_Page;
-	char buf[10];
-	sprintf_s(buf, "%04X", InstPtr);
-	std::cout << "\nInstADDR: " << buf;
+	//if (LastSamplePoint != 0) InstPtr = LastSamplePoint;//Assuming we have no samples in memory
+	//else InstPtr = Sample_Mem_Page;
+	//char buf[10];
+	//sprintf_s(buf, "%04X", InstPtr);
+	//std::cout << "\nInstADDR: " << buf;
 	for (int x = 0; x < inst.size(); x++)
 	{
 		InstEntry i_ent = InstEntry();
@@ -565,9 +566,9 @@ void SnesAPUHandler::APU_Init_Echo()
 
 void SnesAPUHandler::APU_Start_Tune(int subind)
 {
-	spc_write_port(Spc, Spc->m.spc_time, 0x00, 0);
-	spc_write_port(Spc, Spc->m.spc_time, 0x02, subind);
-	spc_write_port(Spc, Spc->m.spc_time, 0x01, Handshake);
+	Spc->write_port(Spc->m.spc_time, 0x00, PC_PlayMusic);
+	Spc->write_port(Spc->m.spc_time, 0x01, Handshake);
+	Spc->write_port(Spc->m.spc_time, 0x02, subind);
 	Handshake++;
 }
 
@@ -686,3 +687,5 @@ int SnesAPUHandler::APU_Debug_VOL_State(int index, int byte)
 {
 	return 0xFFFF;
 }
+
+int SnesAPUHandler::APU_Debug_Read_Port(int index) { return Spc->read_port(Spc->m.spc_time, index); }

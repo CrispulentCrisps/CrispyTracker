@@ -206,15 +206,9 @@ void Tracker::CheckInput()
 {
 	int TuninOff = 48;
 	glfwPostEmptyEvent();
-	if (glfwWindowShouldClose(window))
-	{
-		running = false;
-	}
+	if (glfwWindowShouldClose(window)) { running = false; }
 
-	if (PlayingMode)
-	{
-		RunTracker();
-	}
+	if (PlayingMode) { RunTracker(); }
 
 	UpdateAudioBuffer();
 }
@@ -402,6 +396,15 @@ void Tracker::CreditsWindow()
 		Text("Driver Code:");
 		PopFont();
 		BulletText("Crisps");
+		BulletText("AArt1256");
+
+		NewLine();
+		NewLine();
+		PushFont(Largefont);
+		Text("Built in samples:");
+		PopFont();
+		BulletText("Crisps");
+		BulletText("Bread Bread");
 
 		NewLine();
 		NewLine();
@@ -1693,7 +1696,7 @@ void Tracker::SetupInstr()
 void Tracker::Export_View()
 {
 	string TypeNames[5] = { "WAV","MP3","OGG OPUS","OGG VORBIS","FLAC" };
-	string TechnicalTypeNames[3] = {"SPC","ASM-Cobalt","ASM"};
+	string TechnicalTypeNames[1] = {"SPC"};
 	string Qualitynames[8] = { "8KHz","11KHz","16KHz","22KHz","24KHz","32KHz","44KHz","48KHz" };
 	string DepthName[4] = { "8 bit", "16 bit", "24 bit", "32 bit" };
 	ImVec2 center = GetMainViewport()->GetCenter();
@@ -1750,7 +1753,7 @@ void Tracker::Export_View()
 			{
 				Text("Export Type");
 				if (BeginCombo("##Export Type", TechnicalTypeNames[SelectedTechnicalType].c_str())) {
-					for (int x = 0; x < 2; x++)
+					for (int x = 0; x < 1; x++)
 					{
 						bool Selected = (SelectedTechnicalType == x);
 						if (Selectable(TechnicalTypeNames[x].c_str(), Selected))
@@ -2961,9 +2964,6 @@ void Tracker::ExportTune()
 	case SPC:
 		ftype = ".spc";
 		break;
-	case ASM:
-		ftype = ".s";
-		break;
 	}
 	ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose Path", ftype.c_str(), ".");
 	if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
@@ -3004,9 +3004,6 @@ void Tracker::GenerateAudioFile(string path, string name)
 		info.format = SF_FORMAT_FLAC;
 		break;
 	case SPC:
-		return;	//temporary return until proper export
-		break;
-	case ASM:
 		return;	//temporary return until proper export
 		break;
 	}
@@ -3142,92 +3139,109 @@ void Tracker::DSPDebugWindow()
 		if (Button("*2", ImVec2(GetWindowWidth() / 6.f, 15.f))) { SG.Emu_APU.EmuSpeed <<= 1; }
 		SG.Emu_APU.EmuSpeed = min(SG.Emu_APU.EmuSpeed, DEFAULT_EMU_SPEED);
 		SG.Emu_APU.EmuSpeed = max(SG.Emu_APU.EmuSpeed, 1);
+		if (CollapsingHeader("Pointers", DebugShowPtrs))
+		{
+			u16 instmem = SG.Emu_APU.Spc->m.ram.ram[DRIVER_INSTPTR] | (SG.Emu_APU.Spc->m.ram.ram[DRIVER_INSTPTR + 1] << 8);
+			Text("Inst ptr:			");
+			SameLine();
+			Text(ToHex(instmem, 1).data());
 
-		u16 instmem = SG.Emu_APU.Spc->m.ram.ram[DRIVER_INSTPTR] | (SG.Emu_APU.Spc->m.ram.ram[DRIVER_INSTPTR + 1] << 8);
-		Text("Inst ptr:			");
-		SameLine();
-		Text(ToHex(instmem, 1).data());
+			u16 ordmem = SG.Emu_APU.Spc->m.ram.ram[DRIVER_ORDERPTR] | (SG.Emu_APU.Spc->m.ram.ram[DRIVER_ORDERPTR + 1] << 8);
+			Text("Music Orders:		");
+			SameLine();
+			Text(ToHex(ordmem, 1).data());
 
-		u16 ordmem = SG.Emu_APU.Spc->m.ram.ram[DRIVER_ORDERPTR] | (SG.Emu_APU.Spc->m.ram.ram[DRIVER_ORDERPTR + 1] << 8);
-		Text("Music Orders:		");
-		SameLine();
-		Text(ToHex(ordmem, 1).data());
+			u16 spatptr = SG.Emu_APU.Spc->m.ram.ram[DRIVER_SUBPTR] | (SG.Emu_APU.Spc->m.ram.ram[DRIVER_SUBPTR + 1] << 8);
+			Text("Music subtunes:	  ");
+			SameLine();
+			Text(ToHex(spatptr, 1).data());
 
-		u16 spatptr = SG.Emu_APU.Spc->m.ram.ram[DRIVER_SUBPTR] | (SG.Emu_APU.Spc->m.ram.ram[DRIVER_SUBPTR + 1] << 8);
-		Text("Music subtunes:	  ");
-		SameLine();
-		Text(ToHex(spatptr, 1).data());
+			u16 sfxord = SG.Emu_APU.Spc->m.ram.ram[DRIVER_SFXPATPTR] | (SG.Emu_APU.Spc->m.ram.ram[DRIVER_SFXPATPTR + 1] << 8);
+			Text("SFX Orders:		  ");
+			SameLine();
+			Text(ToHex(sfxord, 1).data());
 
-		u16 sfxord = SG.Emu_APU.Spc->m.ram.ram[DRIVER_SFXPATPTR] | (SG.Emu_APU.Spc->m.ram.ram[DRIVER_SFXPATPTR + 1] << 8);
-		Text("SFX Orders:		  ");
-		SameLine();
-		Text(ToHex(sfxord, 1).data());
+			u16 sfxptr = SG.Emu_APU.Spc->m.ram.ram[DRIVER_SFXLISTPTR] | (SG.Emu_APU.Spc->m.ram.ram[DRIVER_SFXLISTPTR + 1] << 8);
+			Text("SFX Subtunes:		");
+			SameLine();
+			Text(ToHex(sfxptr, 1).data());
+			NewLine();
+		}
+		if (CollapsingHeader("CPU State", DebugShowCPU))
+		{
+			Text("DSP regs");
+			Text("Program Counter:");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.Spc->m.cpu_regs.pc, 1).data());
+			Text("A:");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.Spc->m.cpu_regs.a, 0).data());
+			Text("X:");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.Spc->m.cpu_regs.x, 0).data());
+			Text("Y:");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.Spc->m.cpu_regs.y, 0).data());
+			Text("Stack Pointer:");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.Spc->m.cpu_regs.sp, 1).data());
+			Text("Program Status:");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.Spc->m.cpu_regs.psw, 0).data());
+			Text("Current Instruction: ");
+			SameLine();
+			Text(OpcodeNames[SG.Emu_APU.Spc->m.ram.ram[SG.Emu_APU.Spc->m.cpu_regs.pc]].data());
+			Text("APU Ports");
+			Text("APU 0: ");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.APU_Debug_Read_Port(0), 0).data());
+			Text("APU 1: ");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.APU_Debug_Read_Port(1), 0).data());
+			Text("APU 2: ");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.APU_Debug_Read_Port(2), 0).data());
+			Text("APU 3: ");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.APU_Debug_Read_Port(3), 0).data());
+			NewLine();
+		}
 
-		u16 sfxptr = SG.Emu_APU.Spc->m.ram.ram[DRIVER_SFXLISTPTR] | (SG.Emu_APU.Spc->m.ram.ram[DRIVER_SFXLISTPTR + 1] << 8);
-		Text("SFX Subtunes:		");
-		SameLine();
-		Text(ToHex(sfxptr, 1).data());
+		if (CollapsingHeader("DSP State", DebugShowDSPState))
+		{
+			Text("Flag register");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_flg), 0).data());
+			Text("Noise Frequency: ");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_flg) & 0x1F, 0).data());
+			Text("Echo State: ");
+			SameLine();
+			Text(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_flg) & 0x20 ? "Disabled" : "Enabled");
+			Text("Mute All: ");
+			SameLine();
+			Text(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_flg) & 0x40 ? "Enabled" : "Disabled");
 
-		NewLine();
-		Text("DSP regs");
-		Text("Program Counter:");
-		SameLine();
-		Text(ToHex(SG.Emu_APU.Spc->m.cpu_regs.pc, 1).data());
-		Text("A:");
-		SameLine();
-		Text(ToHex(SG.Emu_APU.Spc->m.cpu_regs.a, 0).data());
-		Text("X:");
-		SameLine();
-		Text(ToHex(SG.Emu_APU.Spc->m.cpu_regs.x, 0).data());
-		Text("Y:");
-		SameLine();
-		Text(ToHex(SG.Emu_APU.Spc->m.cpu_regs.y, 0).data());
-		Text("Stack Pointer:");
-		SameLine();
-		Text(ToHex(SG.Emu_APU.Spc->m.cpu_regs.sp, 1).data());
-		Text("Program Status:");
-		SameLine();
-		Text(ToHex(SG.Emu_APU.Spc->m.cpu_regs.psw, 0).data());
-		Text("Current Instruction: ");
-		SameLine();
-		Text(OpcodeNames[SG.Emu_APU.Spc->m.ram.ram[SG.Emu_APU.Spc->m.cpu_regs.pc]].data());
-		NewLine();
-		Text("APU Ports");
-		Text("APU 0: ");
-		SameLine();
-		Text(ToHex(SG.Emu_APU.Spc->m.ram.ram[0x00F4], 0).data());
-		Text("APU 1: ");
-		SameLine();
-		Text(ToHex(SG.Emu_APU.Spc->m.ram.ram[0x00F5], 0).data());
-		Text("APU 2: ");
-		SameLine();
-		Text(ToHex(SG.Emu_APU.Spc->m.ram.ram[0x00F6], 0).data());
-		Text("APU 3: ");
-		SameLine();
-		Text(ToHex(SG.Emu_APU.Spc->m.ram.ram[0x00F7], 0).data());
-		NewLine();
-		Text("Flag register");
-		Text("Noise Frequency: ");
-		SameLine();
-		Text(ToHex(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_flg) & 0x1F, 0).data());
-		Text("Echo State: ");
-		SameLine();
-		Text(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_flg) & 0x20 ? "Disabled" : "Enabled");
-		Text("Mute All: ");
-		SameLine();
-		Text(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_flg) & 0x40 ? "Enabled" : "Disabled");
-
-		NewLine();
-		Text("Echo registers");
-		Text("ESA: ");
-		SameLine();
-		Text(ToHex(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_esa), 0).data());
-		Text("EDL: ");
-		SameLine();
-		Text(ToHex(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_edl), 0).data());
-		Text("EFB: ");
-		SameLine();
-		Text(ToHex(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_efb), 0).data());
+			NewLine();
+			Text("Echo registers");
+			Text("ESA: ");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_esa), 0).data());
+			Text("EDL: ");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_edl), 0).data());
+			Text("EFB: ");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_efb), 0).data());
+			NewLine();
+			Text("Handshake communication");
+			Text("SPC Side:");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.APU_Debug_Read_Port(0), 0).data());
+			Text("GUI Side:");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.Handshake, 0).data());
+		}
 		/*
 		if (BeginTable("Zeropage", 0x10))
 		{
@@ -3244,28 +3258,46 @@ void Tracker::DSPDebugWindow()
 		}
 
 		*/
-
-		if (BeginTable("Stack", 0x10))
+		if (CollapsingHeader("Zeropage", DebugShowZP))
 		{
-			for (int x = 0; x < 0x10; x++)
+			if (BeginTable("ZP", 0x10))
 			{
-				for (int y = 0; y < 0x10; y++)
+				for (int x = 0; x < 0x10; x++)
 				{
-					if (x < 0x0E) { ImGui::PushStyleColor(ImGuiCol_Text, AttackColour); }
-					else if (x < 0x0F) { ImGui::PushStyleColor(ImGuiCol_Text, SustainColour); }
-					else { ImGui::PushStyleColor(ImGuiCol_Text, DecayColour); }
-
-					if (y + (x * 0x10) == SG.Emu_APU.Spc->m.cpu_regs.sp) {
-						ImGui::PopStyleColor();
-						ImGui::PushStyleColor(ImGuiCol_Text, ReleaseColour);
+					for (int y = 0; y < 0x10; y++)
+					{
+						Text(ToHex(SG.Emu_APU.Spc->m.ram.ram[y + (x * 0x10)], 0).data());
+						TableNextColumn();
 					}
-					Text(ToHex(SG.Emu_APU.Spc->m.ram.ram[0x0100 + y + (x * 0x10)], 0).data());
-					TableNextColumn();
-					ImGui::PopStyleColor();
+					TableNextRow();
 				}
-				TableNextRow();
+				EndTable();
 			}
-			EndTable();
+		}
+		if (CollapsingHeader("Stack", DebugShowStack))
+		{
+			if (BeginTable("Stack", 0x10))
+			{
+				for (int x = 0; x < 0x10; x++)
+				{
+					for (int y = 0; y < 0x10; y++)
+					{
+						if (x < 0x0E) { ImGui::PushStyleColor(ImGuiCol_Text, AttackColour); }
+						else if (x < 0x0F) { ImGui::PushStyleColor(ImGuiCol_Text, SustainColour); }
+						else { ImGui::PushStyleColor(ImGuiCol_Text, DecayColour); }
+
+						if (y + (x * 0x10) == SG.Emu_APU.Spc->m.cpu_regs.sp) {
+							ImGui::PopStyleColor();
+							ImGui::PushStyleColor(ImGuiCol_Text, ReleaseColour);
+						}
+						Text(ToHex(SG.Emu_APU.Spc->m.ram.ram[0x0100 + y + (x * 0x10)], 0).data());
+						TableNextColumn();
+						ImGui::PopStyleColor();
+					}
+					TableNextRow();
+				}
+				EndTable();
+			}
 		}
 
 		/*

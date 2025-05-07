@@ -102,7 +102,7 @@ public:
 	u8 KONState;
 	u8 KOFState;
 
-	u8 Handshake = 2;
+	u8 Handshake = 1;
 
 	u16 SPCPtr = DATA_START;
 
@@ -159,4 +159,5 @@ public:
 	int APU_Debug_KOF_State();
 	int APU_Debug_PIT_State(int index, int byte);
 	int APU_Debug_VOL_State(int index, int byte);
+	int APU_Debug_Read_Port(int index);
 };

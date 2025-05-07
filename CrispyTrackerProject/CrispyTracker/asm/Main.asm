@@ -42,12 +42,6 @@ Reset:
 
     jsr LoadDriver              ;Load file into SPC
 
-    lda.b #$01
-    stz.w HW_APUI00
-    stz.w HW_APUI01
-    stz.w HW_APUI02
-    stz.w HW_APUI03
-
     sep #$20
     lda.b #!MComEnd
     ldx.w #$001F
@@ -56,6 +50,12 @@ Reset:
     stz.w MusicComTable, X
     dex 
     bpl -
+
+    lda.b #$01
+    stz.w HW_APUI00
+    stz.w HW_APUI01
+    stz.w HW_APUI02
+    stz.w HW_APUI03
 
     lda.b #$80
     sta.w HW_NMITIMEN
@@ -81,6 +81,8 @@ Reset:
 
 SendTune:
     stz.w MZP.NMIDone
+    ldx.w #MusicComTable
+    stx.b AudPtr
 MainLoop:
     lda.b LoadingDriver
     bne +
@@ -101,8 +103,10 @@ NMIDriverTest:
     stz.w MZP.SFXTimer
     ;Reset APU
     ;%WriteMCom($0A, $01)
+    ;Play Music
+    %WriteMCom($00, $00)
     ;Play SFX
-    %WriteMCom($01, $01)
+    ;%WriteMCom($01, $01)
     ;%WriteMCom($01, $00)
     ;;Set settings byte
     ;%WriteMCom($03, $03)
@@ -170,7 +174,7 @@ ExecuteMCom:
     lda.b (AudPtr)
     sta.w HW_APUI00     ;Command value
     lda.w MZP.SFXRec
-    sta.w HW_APUI01
+    sta.w HW_APUI01     ;Handshake
     inc.w MZP.SFXRec
     -
     lda.w HW_APUI03     ;Check RESET flag
