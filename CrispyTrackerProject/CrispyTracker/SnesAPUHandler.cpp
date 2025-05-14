@@ -75,7 +75,6 @@ void SnesAPUHandler::APU_Update(spc_sample_t* Output, int BufferSize)
 	if (RunCPU) { spc_end_frame(Spc, ClockCycleRound * (EmuSpeed / DEFAULT_EMU_SPEED)); }
 	//spc_dsp_run(Dsp, ClockCycleRound);
 	//spc_end_frame(Spc, ClockCycleRound);
-
 	float StepCount = 0;
 	float MaxBufNeeded = spc_sample_count(Spc);
 	for (int x = 0; x < BufferSize; x += 2)
@@ -121,11 +120,33 @@ void SnesAPUHandler::WriteCommand(Command com)
 	}
 }
 
+u16 SnesAPUHandler::GetPitch(int index) {
+	index = min((float)index, (float)MAX_PITCH_IND);
+	index = max((float)index, 0.f);
+	uint16_t out = Spc->m.ram.ram[PitchPtr + (index * 2)] | (Spc->m.ram.ram[PitchPtr + 1 + (index * 2)] << 8);
+	return out;
+}
+
+//Writes to channel address for various , true width for 2 byte operations
+void SnesAPUHandler::WriteChannelReg(int chan, short val, uint16_t addr, bool sfx, bool width)
+{
+	u16 address = addr + (8 * sfx);
+	address += chan;
+	if (width)
+	{
+		address += chan;
+		Spc->m.ram.ram[address] = (val) & 0xFF;
+		Spc->m.ram.ram[address + 1] = (val >> 8) & 0xFF;
+	}
+	else { Spc->m.ram.ram[address] = val; }
+}
+
 void SnesAPUHandler::APU_UpdateTuneMemory(vector<Instrument>& inst, vector<Sample>& sample, vector<Subtune>& sub, vector<Patterns>& pat, int subind)
 {
 	SPCPtr = DATA_START;
 	MusicOrders.clear();
 	SfxOrders.clear();
+	APU_Generate_Pitch_Table();
 	APU_Rebuild_Sample_Memory(sample);
 	APU_Update_Instrument_Memory(pat, inst, sub[subind].TrackLength);
 	APU_EvaluateSequenceData(pat, inst, sub[subind].TrackLength);
@@ -427,119 +448,20 @@ void SnesAPUHandler::APU_Update_Instrument_Memory(std::vector<Patterns>& pat, st
 		SPCWrite(InstMem[x].EffectState);
 	}
 }
-/*
-//Writes page for sequence entries
-void SnesAPUHandler::APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize)
+void SnesAPUHandler::APU_Generate_Pitch_Table()
 {
-	SeqMem.clear();
-	//Find every unique row entry
-	uniquerows.clear();
-	Row BlankRow = Row();
-	BlankRow.note = NULL_COMMAND;
-	BlankRow.volume = NULL_COMMAND;
-	BlankRow.octave = 0;
-	BlankRow.effect = NULL_COMMAND;
-	BlankRow.effectvalue = NULL_COMMAND;
-	BlankRow.instrument = NULL_COMMAND;
-	uniquerows.push_back(BlankRow);
-
-	//Find all unique row entries
-	for (int x = 0; x < pat.size(); x++)
+	PitchPtr = SPCPtr;
+	for (float x = 0; x < MAX_PITCH_IND; x++)
 	{
-		int waitcount = 0;
-		for (int y = 0; y < TrackSize; y++)
-		{
-			bool isunique = true;
-			for (int z = 0; z < uniquerows.size(); z++)//Checks if we can find a unique tro
-			{
-				Row currentrow = pat[x].SavedRows[y];
-				if (currentrow.note == uniquerows[z].note && currentrow.octave == uniquerows[z].octave && currentrow.volume == uniquerows[z].volume && currentrow.effect == uniquerows[z].effect && currentrow.effectvalue == uniquerows[z].effectvalue)
-				{
-					isunique = false;
-					break;
-				}
-			}
-
-			if (isunique)
-			{
-				uniquerows.push_back(pat[x].SavedRows[y]);
-			}
-		}
-	}
-
-	int addroff = 0;
-	//Write rows to memory
-	for (int x = 0; x < uniquerows.size(); x++)
-	{
-		SequenceEntry entry = SequenceEntry();
-		if (uniquerows[x].instrument != NULL_COMMAND && uniquerows[x].instrument <= inst.size())
-		{
-			Instrument currentinst = inst[uniquerows[x].instrument];
-
-			entry.Pitch = currentinst.BRR_Pitch(pow(2.0, (uniquerows[x].note - 48 + currentinst.NoteOff) / 12.0));
-			entry.Volume_L = uniquerows[x].volume;
-			entry.Volume_R = uniquerows[x].volume;
-			entry.instADDR = InstPtr + ((uniquerows[x].instrument-1) * 7);
-			entry.EffectsState = uniquerows[x].effect;
-			entry.EffectsValue = uniquerows[x].effectvalue;
-			
-			//std::cout << "\nIndex: " << x << "\nentry pitch " << entry.Pitch << "\nentry vol l " << (int)entry.Volume_L << "\nentry vol r " << (int)entry.Volume_R << "\nentry inst addr " << (int)entry.instADDR << "\nentry effect state " << (int)entry.EffectsState << "\nentry effect value " << (int)entry.EffectsValue;
-
-			SeqMem.push_back(entry);
-			
-			Spc->m.ram.ram[OrderPtr + addroff] = (entry.Pitch) & 0xFF;
-			Spc->m.ram.ram[OrderPtr + addroff + 1] = (entry.Pitch >> 8) & 0xFF;
-			Spc->m.ram.ram[OrderPtr + addroff + 2] = entry.Volume_L;
-			Spc->m.ram.ram[OrderPtr + addroff + 3] = entry.Volume_R;
-			Spc->m.ram.ram[OrderPtr + addroff + 4] = (entry.instADDR) & 0xFF;
-			Spc->m.ram.ram[OrderPtr + addroff + 5] = (entry.instADDR >> 8) & 0xFF;
-			Spc->m.ram.ram[OrderPtr + addroff + 6] = entry.EffectsState;
-			Spc->m.ram.ram[OrderPtr + addroff + 7] = entry.EffectsValue;
-			addroff += 8;
-		}
-	}
-	PatternAddr = OrderPtr + addroff;
-	char buf[10];
-	sprintf_s(buf, "%04X", PatternAddr);
-	//std::cout << "\nPatternADDR: " << buf;
-	APU_Update_Pattern_Memory(pat, inst, TrackSize);
-}
-
-//Writes page for patterns
-void SnesAPUHandler::APU_Update_Pattern_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize)
-{
-	int addroff = 0;
-	for (int x = 0; x < pat.size(); x++)
-	{
-		PatternEntry entry = PatternEntry();
-		entry.PatternIndex = x;
-		int SeqAmount = 0;
-		for (int y = 0; y < TrackSize; y++)
-		{
-			for (int z = 0; z < SeqMem.size(); z++)//Check over any sequences to find a match
-			{
-				Row currentrow = pat[x].SavedRows[y];
-				if (currentrow.note == uniquerows[z].note && currentrow.octave == uniquerows[z].octave && currentrow.volume == uniquerows[z].volume && currentrow.effect == uniquerows[z].effect && currentrow.effectvalue == uniquerows[z].effectvalue)
-				{
-					entry.SequenceList.push_back(OrderPtr + (z*8));
-					break;
-				}
-			}
-		}
-		entry.SequenceAmount = entry.SequenceList.size();
-
-		Spc->m.ram.ram[PatternAddr + addroff] = entry.PatternIndex;
-		Spc->m.ram.ram[PatternAddr + addroff + 1] = entry.SequenceAmount;
-		addroff += 2;
-		for (int w = 0; w < entry.SequenceAmount; w++)
-		{
-			Spc->m.ram.ram[PatternAddr + addroff] = (entry.SequenceList[w]) & 0xFF;
-			Spc->m.ram.ram[PatternAddr + addroff + 1] = (entry.SequenceList[w] >> 8) & 0xFF;
-			addroff += 2;
-		}
+		float basepit = ((pow(2.0, ((x - (MAX_PITCH_IND/2)) / 12.0)) * BASE_PITCH_RATE * 16.0) / 125.0);
+		basepit = max(basepit, (float)0);
+		basepit = min(basepit, (float)0x3FFF);
+		u16 pitval = (u16)basepit;
+		SPCWrite((pitval) & 0xFF);
+		SPCWrite((pitval >> 8) & 0xFF);
+		//cout << "\nPitch: " << x << " | " << std::hex << (u16)basepit;
 	}
 }
-*/
 //Sets master volume of the track
 bool SnesAPUHandler::APU_Set_Master_Vol(signed char vol)
 {
@@ -562,25 +484,89 @@ void SnesAPUHandler::APU_Set_Echo(unsigned int dtime, int* coef, signed int dfb,
 //Initialises the echo values
 void SnesAPUHandler::APU_Init_Echo()
 {
+
+}
+
+//Read row values in for tracker and jam into specific registers based on channel index
+void SnesAPUHandler::APU_ReadRows(Row* rows, ChannelState* cs)
+{
+	uint8_t konstate = Spc->dsp.read(KON_REG);
+	uint8_t koffstate = Spc->dsp.read(KOFF_REG);
+	for (int x = 0; x < 8; x++)
+	{
+		u16 pit = cs[x].pit;
+		u16 vol = cs[x].vol;
+		u8 inst = cs[x].inst;
+
+		//Instruments
+		if (rows[x].instrument < NULL_COMMAND)
+		{
+			inst = rows[x].instrument;
+			cs[x].inst = inst;
+		}
+
+		//Notes
+		else if (rows[x].note < NULL_COMMAND)
+		{
+			pit = GetPitch(rows[x].note);
+			cs[x].pit = pit;
+			konstate |= (1 << x);
+			koffstate &= (1 << x) ^ 0xFF;
+		}
+		else if (RELEASE_COMMAND)
+		{
+			konstate &= (1 << x) ^ 0xFF;
+			koffstate |= (1 << x);
+		}
+		else { konstate &= (1 << x)^0xFF; }
+
+		//Volume
+		if (rows[x].volume < NULL_COMMAND)
+		{
+			vol = rows[x].volume | (rows[x].volume << 8);
+			cs[x].vol = vol;
+		}
+		
+		//Effects
+		if (rows[x].effect < NULL_COMMAND) 
+		{
+
+		}
+
+		if (rows[x].effect2 < NULL_COMMAND) 
+		{
+
+		}
+
+		WriteChannelReg(x, pit, DRIVER_PITCHES, false, true);
+		WriteChannelReg(x, vol, DRIVER_VOLUME, false, true);
+		WriteChannelReg(x, inst, DRIVER_INST, false, false);
+	}
+
+	Spc->dsp.write(KON_REG, konstate);
+	Spc->dsp.write(KOFF_REG, koffstate);
 }
 
 void SnesAPUHandler::APU_Start_Tune(int subind)
 {
-	Spc->write_port(Spc->m.spc_time, 0x00, PC_PlayMusic);
-	Spc->write_port(Spc->m.spc_time, 0x01, Handshake);
-	Spc->write_port(Spc->m.spc_time, 0x02, subind);
-	Handshake++;
+	Spc->m.ram.ram[DRIVER_MASTER_VOL] = 0x7F;
+	Spc->dsp.write(KON_REG,		0x00);
+	Spc->dsp.write(KOFF_REG,	0x00);
+	Spc->dsp.write(PMON_REG,	0x00);
+	Spc->dsp.write(EON_REG,		0x00);
+	Spc->dsp.write(NON_REG,		0x00);
+	Spc->dsp.write(MASTERVOL_L,	0x7F);
+	Spc->dsp.write(MASTERVOL_R,	0x7F);
 }
 
 void SnesAPUHandler::APU_Audio_Stop()
 {
-
+	Spc->dsp.write(KON_REG, 0x00);
+	Spc->dsp.write(KOFF_REG, 0xFF);
 }
 
 void SnesAPUHandler::APU_Audio_Start()
 {
-	KONState = 0;
-	KOFState = 0;
 }
 
 void SnesAPUHandler::APU_SoftReset()

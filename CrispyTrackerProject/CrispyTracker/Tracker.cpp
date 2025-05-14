@@ -685,7 +685,7 @@ void Tracker::Instrument_View()//Instrument editor
 				if (SliderInt("Right", &inst[SelectedInst].RPan, 0, 127)) SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
 				if (SliderInt("Gain", &inst[SelectedInst].Gain, 0, 255)) SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
 
-				if (SliderInt("Note offset", &inst[SelectedInst].NoteOff, -12, 12)) SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
+				if (SliderInt("Note offset", &inst[SelectedInst].NoteOff, -48, 48)) SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
 
 				if (Checkbox("Envelope used", &inst[SelectedInst].EnvelopeUsed))SG.Emu_APU.APU_Update_Instrument_Memory(StoragePatterns, inst, TrackLength);
 				ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.33);
@@ -1381,9 +1381,9 @@ void Tracker::Misc_View()
 {
 	if (Begin("MiscView"), true, UNIVERSAL_WINDOW_FLAGS)
 	{
-		InputInt("Octave", &Octave, 1, 8);
+		InputInt("Octave", &Octave, 1, MAX_OCTAVE);
 		InputInt("Step", &Step, 1, 8);
-		Octave > 8 ? Octave = 8 : Octave < 0 ? Octave = 0 : Octave;
+		Octave > MAX_OCTAVE ? Octave = MAX_OCTAVE : Octave < 0 ? Octave = 0 : Octave;
 		if (SliderInt("Master Volume", &VolumeScale, 0, 127)) {
 			assert(SG.Emu_APU.APU_Set_Master_Vol(VolumeScale));
 		}
@@ -1878,10 +1878,13 @@ void Tracker::RunTracker()
 
 void Tracker::UpdateRows()
 {
+	Row rows[8];
 	for (int i = 0; i < 8; i++)
 	{
 		Channels[i].TickCheck(CursorY % TrackLength, inst, samples);
+		rows[i] = Channels[i].Rows[CursorY % TrackLength];
 	}
+	SG.Emu_APU.APU_ReadRows(rows, CState);
 	//CursorY++;
 	//cout << "\nCurrent Value: " << ((double)CursorY - 1.0/(24.0 / (double)TrackLength) / (double)TrackLength) * ((TextSize + GetStyle().CellPadding.y * 2) * TrackLength);
 }
@@ -3191,20 +3194,6 @@ void Tracker::DSPDebugWindow()
 			Text("Current Instruction: ");
 			SameLine();
 			Text(OpcodeNames[SG.Emu_APU.Spc->m.ram.ram[SG.Emu_APU.Spc->m.cpu_regs.pc]].data());
-			Text("APU Ports");
-			Text("APU 0: ");
-			SameLine();
-			Text(ToHex(SG.Emu_APU.APU_Debug_Read_Port(0), 0).data());
-			Text("APU 1: ");
-			SameLine();
-			Text(ToHex(SG.Emu_APU.APU_Debug_Read_Port(1), 0).data());
-			Text("APU 2: ");
-			SameLine();
-			Text(ToHex(SG.Emu_APU.APU_Debug_Read_Port(2), 0).data());
-			Text("APU 3: ");
-			SameLine();
-			Text(ToHex(SG.Emu_APU.APU_Debug_Read_Port(3), 0).data());
-			NewLine();
 		}
 
 		if (CollapsingHeader("DSP State", DebugShowDSPState))
@@ -3234,13 +3223,30 @@ void Tracker::DSPDebugWindow()
 			SameLine();
 			Text(ToHex(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_efb), 0).data());
 			NewLine();
-			Text("Handshake communication");
-			Text("SPC Side:");
+			Text("DIR: ");
 			SameLine();
-			Text(ToHex(SG.Emu_APU.APU_Debug_Read_Port(0), 0).data());
-			Text("GUI Side:");
+			Text(ToHex(SG.Emu_APU.Spc->dsp.read(SG.Emu_APU.Spc->dsp.r_dir), 0).data());
+			Text("KON: ");
 			SameLine();
-			Text(ToHex(SG.Emu_APU.Handshake, 0).data());
+			Text(ToHex(SG.Emu_APU.Spc->dsp.read(KON_REG), 0).data());
+			Text("KOFF: ");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.Spc->dsp.read(KOFF_REG), 0).data());
+			Text("PMON: ");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.Spc->dsp.read(PMON_REG), 0).data());
+			Text("EON: ");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.Spc->dsp.read(EON_REG), 0).data());
+			Text("NON: ");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.Spc->dsp.read(NON_REG), 0).data());
+			Text("MVOL_L: ");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.Spc->dsp.read(MASTERVOL_L), 0).data());
+			Text("MVOL_R: ");
+			SameLine();
+			Text(ToHex(SG.Emu_APU.Spc->dsp.read(MASTERVOL_R), 0).data());
 		}
 		/*
 		if (BeginTable("Zeropage", 0x10))
@@ -3264,7 +3270,7 @@ void Tracker::DSPDebugWindow()
 			{
 				for (int x = 0; x < 0x10; x++)
 				{
-					for (int y = 0; y < 0x10; y++)
+					for (int y = 0; y < 0x11; y++)
 					{
 						Text(ToHex(SG.Emu_APU.Spc->m.ram.ram[y + (x * 0x10)], 0).data());
 						TableNextColumn();
@@ -3280,7 +3286,7 @@ void Tracker::DSPDebugWindow()
 			{
 				for (int x = 0; x < 0x10; x++)
 				{
-					for (int y = 0; y < 0x10; y++)
+					for (int y = 0; y < 0x11; y++)
 					{
 						if (x < 0x0E) { ImGui::PushStyleColor(ImGuiCol_Text, AttackColour); }
 						else if (x < 0x0F) { ImGui::PushStyleColor(ImGuiCol_Text, SustainColour); }

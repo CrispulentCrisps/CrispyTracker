@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <string>
+#include "Macros.h"
 
 #define ARPEGGIO		0x00
 #define PORT_UP			0x01
@@ -91,46 +92,6 @@ const int8_t SineTable[256] = {
 };
 
 const extern std::string EffectDesc[48];
-
-enum EffectList {
-	Arp =			0x00,
-	PortUp,
-	PortDown,
-	PortTo,
-	Vib,
-	Trem,
-
-	Pan =			0x08,
-	Speed,
-	VolSlide,
-	Goto,
-	Break,
-
-	Panbr =			0x20,
-
-	EDel =			0x30,
-	EFeed,
-	EVolL,
-	EVolR,
-	EFilt1,
-	EFilt2,
-	EFilt3,
-	EFilt4,
-	EFilt5,
-	EFilt6,
-	EFilt7,
-	EFilt8,
-
-	Flag =			0xC0,
-
-	ArpSpeed =		0xE0,
-	PortUpCtrl,
-	PortDownCtrl,
-
-	TrackVol =		0xE8,
-
-	EndTune =		0xFF
-};
 
 enum EffectFlags {
 	arp_flag = 1,				//Flag for arpeggio

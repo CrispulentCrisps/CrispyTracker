@@ -61,7 +61,7 @@ public:
 	bool AudioStopped = false;
 	float TickTimer = 0;//For when the tracker is running
 	int IDOffset = 0;
-	int FPS = 144;
+	int FPS = 60;
 	int MAX_FPS = 360;
 	float TimeHolder = 0;
 	float DeltaTimeHolder = 0;
@@ -219,6 +219,8 @@ public:
 	int VolumeScale = 127;	//(0-127)
 
 	vector<Command> ComList;
+
+	ChannelState CState[8];
 
 	//Echo settings
 	int Delay = 0;		//(0-15)

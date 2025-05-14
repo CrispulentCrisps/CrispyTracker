@@ -11,6 +11,10 @@
 #define MAX_VOLUME			127
 #define MAX_EFFECT			255
 #define MAX_EFFECT_VALUE	255
+#define MAX_PITCH_IND		96
+#define MAX_OCTAVE			7
+
+#define BASE_PITCH_RATE		16000
 
 //File handling
 #define FILE_EXT			".ctf"
@@ -36,7 +40,30 @@
 #define DRIVER_END			(uint16_t)	0x0C00			//End of the driver data
 #define DATA_START			(uint16_t)	0x0D00			//Where dynamic data starts for the driver to interpret
 
+#define DRIVER_TICK_VAL		(uint16_t)	0x000B			//Tick timer for tracker
+
 #define DRIVER_FLAG_VAL		(uint16_t)	0x000E			//Handshake byte for communication in driver RAM
+
+#define DRIVER_SINE_IND_VIB	(uint16_t)	0x0036			//Sine wave Vibrato index
+#define DRIVER_SINE_IND_TRM	(uint16_t)	0x0046			//Sine wave Tremolando index
+#define DRIVER_SINE_IND_PBR	(uint16_t)	0x0056			//Sine wave Panbrello indexx
+
+#define DRIVER_ARP_VAL		(uint16_t)	0x0066			//Value for arpeggios
+#define DRIVER_ARP_TIMER	(uint16_t)	0x0076			//Timer for arpeggios
+
+#define DRIVER_VSLIDE_VAL	(uint16_t)	0x0086			//Volume Slide value
+#define DRIVER_PORT_VAL		(uint16_t)	0x0096			//Portamento value
+#define DRIVER_VIBR_VAL		(uint16_t)	0x00A6			//Vibrato value
+#define DRIVER_TREM_VAL		(uint16_t)	0x00B6			//Tremolando value
+
+#define DRIVER_TICK_THRESH	(uint16_t)	0x00DA			//Tick threshold
+#define DRIVER_MASTER_VOL	(uint16_t)	0x00ED			//Master volume for track
+#define DRIVER_ECHO_VOL		(uint16_t)	0x00EE			//Echo volume for track
+
+#define DRIVER_INST			(uint16_t)	0x014B			//Instruments for music & SFX
+#define DRIVER_PITCHES		(uint16_t)	0x015B			//Pitches for music & SFX
+#define DRIVER_VOLUME		(uint16_t)	0x017B			//Volumes for music & SFX
+#define DRIVER_STOP_FLAGS	(uint16_t)	0x019B			//Stop flags for each channel
 
 #define DRIVER_ROM_ADDR		(uint32_t)	0x00010000		//Where driver starts in CPU memory
 
@@ -45,11 +72,18 @@
 #define DRIVER_PORT2		(uint8_t)	0xF6			//APU-2 register
 #define DRIVER_PORT3		(uint8_t)	0xF7			//APU-3 register
 
-#define DRIVER_STOP_FLAGS	(uint16_t)	0x019B			//Stop flags for each channel
-
 #define EXCOM_SIZE			0x04
 
 #define DEFAULT_EMU_SPEED	1024000.f
+
+#define MASTERVOL_L			(uint8_t)	0x0C
+#define MASTERVOL_R			(uint8_t)	0x1C
+
+#define PMON_REG			(uint8_t)	0x2D
+#define EON_REG				(uint8_t)	0x3D
+#define NON_REG				(uint8_t)	0x4D
+#define KON_REG				(uint8_t)	0x4C
+#define KOFF_REG			(uint8_t)	0x5C
 
 //Tracker command bytes for SPC export
 enum ComType
@@ -92,6 +126,46 @@ enum ProComType {
 	PC_ResetAPU,			//Go to IPL rom and load SPC	| $0A
 };
 
+enum EffectList {
+	Arp = 0x00,
+	PortUp,
+	PortDown,
+	PortTo,
+	Vib,
+	Trem,
+
+	Pan = 0x08,
+	Speed,
+	VolSlide,
+	Goto,
+	Break,
+
+	Panbr = 0x20,
+
+	EDel = 0x30,
+	EFeed,
+	EVolL,
+	EVolR,
+	EFilt1,
+	EFilt2,
+	EFilt3,
+	EFilt4,
+	EFilt5,
+	EFilt6,
+	EFilt7,
+	EFilt8,
+
+	Flag = 0xC0,
+
+	ArpSpeed = 0xE0,
+	PortUpCtrl,
+	PortDownCtrl,
+
+	TrackVol = 0xE8,
+
+	EndTune = 0xFF
+};
+
 typedef struct Command 
 {
 	ComType type;
@@ -115,12 +189,37 @@ typedef struct RowState {
 	short PanVal;				//Panning value
 };
 
+//Pattern specific entries for data writes
 typedef struct PatternState {
 	char SleepCount;			//Count how many rows a given channel has slept
 	bool IsEmpty;				//Check if line has to be sleep command for channel	//Counter for how many lines to sleep
 	bool LastEmpty;				//Check for if the state of last empty changed
 	char lastvolume;			//Deduplication for volume commands
 	char lastinst;				//Deduplication for instrument commands
+};
+
+typedef struct Effect {
+	EffectList type;			//Type of effect on hand
+	char val;					//Effect value
+	char timerval;				//Effect sine timer [when applicable: $00, $04, $20, 
+};
+
+//Channel writes
+typedef struct ChannelState {
+	short vol;					//Current volume of a given channel, includes panning
+	short pit;					//Current pitch of a channel
+	char inst;					//Current instrument of a channel 
+	//Available effects are
+	//	$00	|	Arpeggio
+	//	$01	|	Portamento up
+	//	$02	|	Portamento down	
+	//	$03	|	Portamento to
+	//	$04	|	Vibrato
+	//	$05	|	Tremolando
+	//	$0A	|	Volume slide
+	//	$20	|	Panbrello
+	//	Each of these has to be tracked for the tune to make sense mid play
+	Effect fx[8];				//Current effects state
 };
 
 enum ExportTypes {

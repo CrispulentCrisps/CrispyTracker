@@ -132,11 +132,15 @@ public:
 	void APU_Write_Music_Orders(vector<Patterns>& pat, vector<Subtune>& sub);
 	void APU_Write_Subtunes();
 	void APU_Update_Instrument_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);
+	void APU_Generate_Pitch_Table();
 	//void APU_Update_Sequence_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);
 	//void APU_Update_Pattern_Memory(std::vector<Patterns>& pat, std::vector<Instrument>& inst, int TrackSize);
 	bool APU_Set_Master_Vol(signed char vol);
 	void APU_Set_Echo(unsigned int dtime, int* coef, signed int dfb, signed int dvol);
 	void APU_Init_Echo();
+
+	//Read row values in for tracker and force into specific registers based on channel index
+	void APU_ReadRows(Row* rows, ChannelState* cs);
 
 	void APU_Start_Tune(int subind);
 
@@ -149,6 +153,10 @@ public:
 	void APU_Rebuild_Sample_Memory(std::vector<Sample>& samp);
 
 	void APU_Handle_Emergencies();
+
+	//Helper functions
+	u16 GetPitch(int index);
+	void WriteChannelReg(int chan, short val, uint16_t addr, bool sfx, bool width);
 
 	void APU_Debug_Dump_BRR();
 	void APU_Debug_Dump_DIR();
