@@ -10,13 +10,13 @@ SnesAPUHandler::SnesAPUHandler()
 //Boots up the emulation core
 void SnesAPUHandler::APU_Startup()
 {
-	Handshake = 1;
 	//Starting up the DSP and SPC that the emu will use
 	spc_init_rom(Spc, IPL_ROM);
 	spc_reset(Spc);
-	spc_mute_voices(Spc, 0b00000000);
 	spc_clear_echo(Spc);
 	spc_filter_clear(Filter);
+
+	Spc->mute_voices(0x00);
 
 	//Write IPL rom and base
 
@@ -41,24 +41,6 @@ void SnesAPUHandler::APU_Startup()
 	Spc->write_port(Spc->m.spc_time, 1, 0x01);
 	Spc->write_port(Spc->m.spc_time, 2, 0x00);
 	Spc->write_port(Spc->m.spc_time, 3, 0x00);
-	//Setting up the per channel registers for the SPC
-	for (int i = 0; i < 8; i++)
-	{
-		ChannelRegs[i].vol_l =	(i * 16) + 0;
-		ChannelRegs[i].vol_r =	(i * 16) + 1;
-		ChannelRegs[i].pit_l =	(i * 16) + 2;
-		ChannelRegs[i].pit_h =	(i * 16) + 3;
-		ChannelRegs[i].scrn =	(i * 16) + 4;
-		ChannelRegs[i].adsr_1 = (i * 16) + 5;
-		ChannelRegs[i].adsr_2 = (i * 16) + 6;
-		ChannelRegs[i].gain =	(i * 16) + 7;
-		ChannelRegs[i].envx =	(i * 16) + 8;
-		ChannelRegs[i].outx =	(i * 16) + 9;
-
-		//Set the channel volume to max
-		ChannelVolume_L[i] = 127;
-		ChannelVolume_R[i] = 127;
-	}
 	InstMem.push_back(InstEntry());
 }
 //Update loop for the DSP
@@ -435,12 +417,15 @@ void SnesAPUHandler::APU_Update_Instrument_Memory(std::vector<Patterns>& pat, st
 		i_ent.ADSR1 = ADSR1;
 		i_ent.ADSR2 = ADSR2;
 		i_ent.Gain = inst[x].Gain;
-		i_ent.SampleIndex = inst[x].CurrentSample.SampleIndex;
+		i_ent.SampleIndex = inst[x].CurrentSample.SampleIndex-1;
 
 		i_ent.EffectState |= ((int)inst[x].PitchMod << 0) | ((int)inst[x].Noise << 1) | ((int)inst[x].Echo << 2);
 
 		InstMem.push_back(i_ent);
+	}
 
+	for (int x = 1; x < InstMem.size(); x++)
+	{
 		SPCWrite(InstMem[x].SampleIndex);
 		SPCWrite(InstMem[x].ADSR1);
 		SPCWrite(InstMem[x].ADSR2);
@@ -506,19 +491,26 @@ void SnesAPUHandler::APU_ReadRows(Row* rows, ChannelState* cs)
 		}
 
 		//Notes
-		else if (rows[x].note < NULL_COMMAND)
+		if (rows[x].note < NULL_COMMAND)
 		{
+			if (Spc->dsp.read(NON_REG) & (1 << x))
+			{
+				u8 flag = Spc->dsp.read(FLG_REG);
+				flag &= 0xE0;
+				flag |= (rows[x].note & 0x1F);
+				Spc->dsp.write(FLG_REG, flag);
+			}
 			pit = GetPitch(rows[x].note);
 			cs[x].pit = pit;
 			konstate |= (1 << x);
 			koffstate &= (1 << x) ^ 0xFF;
 		}
-		else if (RELEASE_COMMAND)
+		else if (rows[x].note == RELEASE_COMMAND)
 		{
 			konstate &= (1 << x) ^ 0xFF;
 			koffstate |= (1 << x);
 		}
-		else { konstate &= (1 << x)^0xFF; }
+		else { konstate &= (1 << x) ^ 0xFF; }
 
 		//Volume
 		if (rows[x].volume < NULL_COMMAND)
@@ -538,16 +530,16 @@ void SnesAPUHandler::APU_ReadRows(Row* rows, ChannelState* cs)
 
 		}
 
-		WriteChannelReg(x, pit, DRIVER_PITCHES, false, true);
-		WriteChannelReg(x, vol, DRIVER_VOLUME, false, true);
-		WriteChannelReg(x, inst, DRIVER_INST, false, false);
+		WriteChannelReg(x,	pit,	DRIVER_PITCHES, false,	true);
+		WriteChannelReg(x,	vol,	DRIVER_VOLUME,	false,	true);
+		WriteChannelReg(x,	inst,	DRIVER_INST,	false,	false);
 	}
 
-	Spc->dsp.write(KON_REG, konstate);
+	Spc->m.ram.ram[DRIVER_KON_STATE] = konstate;
 	Spc->dsp.write(KOFF_REG, koffstate);
 }
 
-void SnesAPUHandler::APU_Start_Tune(int subind)
+void SnesAPUHandler::APU_Start_Tune(int subind, ChannelState* cs)
 {
 	Spc->m.ram.ram[DRIVER_MASTER_VOL] = 0x7F;
 	Spc->dsp.write(KON_REG,		0x00);
@@ -557,6 +549,12 @@ void SnesAPUHandler::APU_Start_Tune(int subind)
 	Spc->dsp.write(NON_REG,		0x00);
 	Spc->dsp.write(MASTERVOL_L,	0x7F);
 	Spc->dsp.write(MASTERVOL_R,	0x7F);
+	for (int x = 0; x < 8; x++)
+	{
+		cs[x].vol =		0x7F7F;
+		cs[x].pit =		0x0000;
+		cs[x].inst =	0x0000;
+	}
 }
 
 void SnesAPUHandler::APU_Audio_Stop()

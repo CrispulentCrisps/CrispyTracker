@@ -270,9 +270,12 @@ public:
 	bool DebugShowPtrs = false;
 	bool DebugShowCPU = false;
 	bool DebugShowDSPState = false;
+	bool DebugShowChannelState = false;
 	bool DebugShowStack = false;
 	bool DebugShowZP = false;
 	bool ShowTrackerDebugger = false;
+
+	int DebugChannelIndex = 0;
 
 	string EffectText = "";
 

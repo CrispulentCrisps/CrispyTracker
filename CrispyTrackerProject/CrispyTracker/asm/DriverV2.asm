@@ -13,6 +13,12 @@
 ;|                              |
 ;|==============================|
 
+;
+;   Known bugs
+;       Goto command breaks on channels not 0
+;       
+;
+
 incsrc "Macros.asm"
 incsrc "spc700.asm"
 incsrc "dsp.asm"
@@ -104,7 +110,7 @@ clrp
 mov Y, #$07
 mov A, #$00
 -
-mov ZP.VCOut+Y, A                   ;Reset the VCOut state to F to prevent channel injection
+mov ZP.VCOut+Y, A                   ;Reset the VCOut state to 0 to prevent channel injection
 dec.b Y
 bpl -
 mov.b ZP.SFXRec, #$00
@@ -156,12 +162,12 @@ DriverLoop:                             ;Main driver loop
     call CheckProgrammerControls
     mov.b Y, SPC_Count1                 ;Check counter
     beq .TickIncrement                  ;If the timer is set to 0
-    call ProcessEffects                 ;KEEP AROUND, for some reason the effects sound much more correct when this is called an odd number of times [don't ask why]
+    ;Efects routine
     call FinaliseOutput
     setp
     mov.b A, OP.StopFlag                ;Stop track from progressing
     clrp
-    bne .CheckSFX
+    bne .StopFlagOn
     inc.b X                             ;Increment our counter
     cmp.b X, ZP.TickThresh              ;Check if the counter has reached the 
     bmi .TickIncrement                  ;Go back to the tick incrementer if the counter is not
@@ -181,16 +187,18 @@ DriverLoop:                             ;Main driver loop
     mov.b OP.OrderChangeFlag, #$00
     +
     clrp
-    
+    .StopFlagOn:
     mov.b ZP.CurrentChannel,#$07        ;Increment channel index
     .ChannelLoop:                       ;Main channel loop
     mov.b X, ZP.CurrentChannel
     setp
+    mov.b A, OP.StopFlag
+    bne .SkipDec
     mov.b Y, OP.ChannelSleepCounter+X
     clrp
     bne .SkipRow                    ;Check if the sleep counter != 0
-    call ReadRows
-    bra .SkipDec
+    call ReadRows                   ;If so then read the row
+    bra .SkipDec                    ;Then skip the sleep timer decrement
     .SkipRow:                       ;Sleep counter routine
     setp
     dec.b OP.ChannelSleepCounter+X
@@ -409,7 +417,7 @@ ProcessEffects:
     ;Check if the current VC-Out is ON
     mov.b Y, ZP.InjectionChannel
     mov.b A, ZP.VCOut+Y
-    beq .OutputAudio
+    beq .OutputAudio                    ;If off, output music channel
     jmp .SkipInst
 
     .CheckSFXInjection
@@ -417,7 +425,7 @@ ProcessEffects:
     ;Check if the current VC-Out is OFF
     mov.b Y, ZP.InjectionChannel
     mov.b A, ZP.VCOut+Y
-    bne .OutputAudio
+    bne .OutputAudio                    ;If on, output virtual channel
     jmp .SkipInst
 
     ;---------------------------;
@@ -445,7 +453,9 @@ ProcessEffects:
     mov.b X, #$00
     mov Y, #$03
 
+    ;Write in current instrument parameters
     .InstWrite:
+    ;SCRN, ADSR2, ADSR1, GAIN
     mov.b A, (ZP.TempMemADDRL+X)
     mov.b SPC_RegData, A
     inc.b SPC_RegADDR
@@ -543,14 +553,12 @@ ProcessEffects:
 
     ;Apply Volume
     mov.b X, ZP.TempScratchMemH                           ;Grab Premult channel index
-    mov.b Y, ZP.ChannelVolumeOutput                       ;Grab L output volume
     mov.b A, ZP.InjectionChannel                          ;Grab current channel
     xcn A                                                 ;Swap nibbles to get correct channel addr
     mov.b SPC_RegADDR, A                                  ;Shove channel addr
-    mov.b SPC_RegData, Y                                  ;Shove data in
+    mov.b SPC_RegData, ZP.ChannelVolumeOutput             ;Shove L vol in
     inc.b SPC_RegADDR                                     ;Inc address to get R volume
-    mov.b Y, ZP.ChannelVolumeOutput+1                     ;Grab R output volume
-    mov.b SPC_RegData, Y                                  ;Shove data in
+    mov.b SPC_RegData, ZP.ChannelVolumeOutput+1           ;Shove R vol in
     
     ;Channel pitch application
     mov.b A, ZP.InjectionChannel                          ;Grab current channel
@@ -588,14 +596,16 @@ FinaliseOutput:
     push X
     mov Y, #$0F
     mov X, #$07
-    -
+    .ChannelLoop:
+    ;Pitch writes
     mov A, X
     xcn
     or.b A, #$03
     mov.b SPC_RegADDR, A
 
     mov A, ZP.VCOut+X
-    beq +
+    beq .DoMusicWrites
+    ;SFX writes
     setp
     mov.b A, OP.RegPitchWrite+$10+Y
     clrp
@@ -607,7 +617,8 @@ FinaliseOutput:
     clrp
     mov.b SPC_RegData, A
     bra .DecLoop
-    +
+    .DoMusicWrites:
+    ;Music writes
     setp
     mov.b A, OP.RegPitchWrite+Y
     clrp
@@ -621,7 +632,7 @@ FinaliseOutput:
     .DecLoop:
     dec Y
     dec X
-    bpl -
+    bpl .ChannelLoop
     clrp
     mov.b A, ZP.KONState
     beq +
@@ -802,8 +813,6 @@ HandleSFX:
     mov.b X, ZP.CurrentChannel
     cmp.b X, #$07
     bne .SfxLoop
-    
-    mov.b ZP.CurrentChannel, #$00
     ret
 
     ;
@@ -911,6 +920,7 @@ Row_Break:
     +
     mov A, X
     bne .DoSfx
+    ;Set Music orders
     mov.b X, #$00
     mov.b Y, #$0F
     -
@@ -1204,8 +1214,8 @@ GrabCommand:
         ;
 GetGotoInd:
     push P
-    clrp
     push A                          ;Store away A value if need be
+    clrp
     mov.b X, #$00                     ;Assume music track flag index
     mov.b A, ZP.CurrentChannel
     and.b A, #$08
@@ -1720,6 +1730,9 @@ PatternMemory:
     ;%SetDelayTime($04)
     ;%SetDelayVolume($60)
     ;%SetDelayFeedback($40)
+    %Sleep($FF)
+    %Sleep($FF)
+    %Sleep($FF)
     %Sleep($FF)
     .Pat2:
     %SetVib($62)

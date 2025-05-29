@@ -48,21 +48,6 @@ public:
 	SNES_SPC* Spc = spc_new();
 	SPC_Filter* Filter = spc_filter_new();
 
-	struct DSP_Ch_Reg {
-		unsigned char vol_l;
-		unsigned char vol_r;
-		unsigned char pit_l;
-		unsigned char pit_h;
-		unsigned char scrn;
-		unsigned char adsr_1;
-		unsigned char adsr_2;
-		unsigned char gain;
-		unsigned char envx;
-		unsigned char outx;
-	};
-
-	DSP_Ch_Reg ChannelRegs[8];
-
 	u16 InstPtr =		DATA_START;		//Pointer to instrument table
 	u16 OrderPtr =		DATA_START;		//Pointer to music orders
 	u16 SfxListPtr =	DATA_START;		//Pointer to SFX subtunes
@@ -88,21 +73,9 @@ public:
 	0x00, 0x00, 0xc0, 0xff
 	};
 	
-	spc_time_t timer;				//Running timer for SPC-700
-
 	u16 LastSamplePoint;
 
-	std::vector<u16> PitchTable;
-
 	EffectsHandler EffectHandle;
-
-	int8_t ChannelVolume_L[8];
-	int8_t ChannelVolume_R[8];
-
-	u8 KONState;
-	u8 KOFState;
-
-	u8 Handshake = 1;
 
 	u16 SPCPtr = DATA_START;
 
@@ -142,7 +115,7 @@ public:
 	//Read row values in for tracker and force into specific registers based on channel index
 	void APU_ReadRows(Row* rows, ChannelState* cs);
 
-	void APU_Start_Tune(int subind);
+	void APU_Start_Tune(int subind, ChannelState* cs);
 
 	void APU_Audio_Stop();
 	void APU_Audio_Start();

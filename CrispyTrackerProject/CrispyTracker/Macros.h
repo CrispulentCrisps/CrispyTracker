@@ -41,6 +41,7 @@
 #define DATA_START			(uint16_t)	0x0D00			//Where dynamic data starts for the driver to interpret
 
 #define DRIVER_TICK_VAL		(uint16_t)	0x000B			//Tick timer for tracker
+#define DRIVER_KON_STATE	(uint16_t)	0x000C			//KON State
 
 #define DRIVER_FLAG_VAL		(uint16_t)	0x000E			//Handshake byte for communication in driver RAM
 
@@ -80,10 +81,22 @@
 #define MASTERVOL_R			(uint8_t)	0x1C
 
 #define PMON_REG			(uint8_t)	0x2D
-#define EON_REG				(uint8_t)	0x3D
-#define NON_REG				(uint8_t)	0x4D
+#define NON_REG				(uint8_t)	0x3D
+#define EON_REG				(uint8_t)	0x4D
 #define KON_REG				(uint8_t)	0x4C
 #define KOFF_REG			(uint8_t)	0x5C
+#define FLG_REG				(uint8_t)	0x6C
+
+#define CHANNEL_VOL_L		(uint8_t)	0x00
+#define CHANNEL_VOL_R		(uint8_t)	0x01
+#define CHANNEL_PIT_L		(uint8_t)	0x02
+#define CHANNEL_PIT_H		(uint8_t)	0x03
+#define CHANNEL_SCRN		(uint8_t)	0x04
+#define CHANNEL_ADSR1		(uint8_t)	0x05
+#define CHANNEL_ADSR2		(uint8_t)	0x06
+#define CHANNEL_GAIN		(uint8_t)	0x07
+#define CHANNEL_ENVX		(uint8_t)	0x08
+#define CHANNEL_OUTX		(uint8_t)	0x09
 
 //Tracker command bytes for SPC export
 enum ComType

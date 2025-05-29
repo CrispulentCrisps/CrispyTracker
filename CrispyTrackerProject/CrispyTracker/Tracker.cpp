@@ -100,7 +100,6 @@ void Tracker::Run()
 	ImPlot::CreateContext();
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init();
-
 	glfwSetKeyCallback(window, keyCallback);
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
 
@@ -185,6 +184,7 @@ void Tracker::Run()
 			SDL_PauseAudioDevice(dev, false);
 		}
 		CheckInput();
+		Sleep(GetIO().DeltaTime);
 	}
 	SManager.CloseSettingsStream();
 	SG.DEBUG_Close_File();
@@ -2039,7 +2039,7 @@ void Tracker::ChannelInput(int CurPos, int x, int y)
 			}
 			else
 			{
-				SG.Emu_APU.APU_Start_Tune(CurrentTune);
+				SG.Emu_APU.APU_Start_Tune(CurrentTune, CState);
 				//cout << "\n	Playing tune :]";
 			}
 			EditingMode = false;
@@ -3247,6 +3247,69 @@ void Tracker::DSPDebugWindow()
 			Text("MVOL_R: ");
 			SameLine();
 			Text(ToHex(SG.Emu_APU.Spc->dsp.read(MASTERVOL_R), 0).data());
+		}
+		if (CollapsingHeader("Channel state", DebugShowChannelState))
+		{
+			if (BeginTable("##ChannelState", 11))
+			{
+				for (int x = 0; x < 8; x++)
+				{
+					TableNextColumn();
+					Text(ToHex(x, 0).data());
+					SameLine();
+					Text("VOL_L: ");
+					SameLine();
+					Text(ToHex(SG.Emu_APU.Spc->dsp.m.regs[CHANNEL_VOL_L + (x * 0x10)], 0).data());
+					TableNextColumn();
+
+					Text("VOL_R: ");
+					SameLine();
+					Text(ToHex(SG.Emu_APU.Spc->dsp.m.regs[CHANNEL_VOL_R + (x * 0x10)], 0).data());
+					TableNextColumn();
+
+					Text("PIT_L: ");
+					SameLine();
+					Text(ToHex(SG.Emu_APU.Spc->dsp.m.regs[CHANNEL_PIT_L + (x * 0x10)], 0).data());
+					TableNextColumn();
+
+					Text("PIT_H: ");
+					SameLine();
+					Text(ToHex(SG.Emu_APU.Spc->dsp.m.regs[CHANNEL_PIT_H + (x * 0x10)], 0).data());
+					TableNextColumn();
+
+					Text("SCRN: ");
+					SameLine();
+					Text(ToHex(SG.Emu_APU.Spc->dsp.m.regs[CHANNEL_SCRN + (x * 0x10)], 0).data());
+					TableNextColumn();
+
+					Text("ADSR1: ");
+					SameLine();
+					Text(ToHex(SG.Emu_APU.Spc->dsp.m.regs[CHANNEL_ADSR1 + (x * 0x10)], 0).data());
+					TableNextColumn();
+
+					Text("ADSR2: ");
+					SameLine();
+					Text(ToHex(SG.Emu_APU.Spc->dsp.m.regs[CHANNEL_ADSR2 + (x * 0x10)], 0).data());
+					TableNextColumn();
+
+					Text("GAIN: ");
+					SameLine();
+					Text(ToHex(SG.Emu_APU.Spc->dsp.m.regs[CHANNEL_GAIN + (x * 0x10)], 0).data());
+					TableNextColumn();
+
+					Text("ENVX: ");
+					SameLine();
+					Text(ToHex(SG.Emu_APU.Spc->dsp.m.regs[CHANNEL_ENVX + (x * 0x10)], 0).data());
+					TableNextColumn();
+
+					Text("OUTX: ");
+					SameLine();
+					Text(ToHex(SG.Emu_APU.Spc->dsp.m.regs[CHANNEL_OUTX + (x * 0x10)], 0).data());
+					TableNextColumn();
+					TableNextRow();
+				}
+				EndTable();
+			}
 		}
 		/*
 		if (BeginTable("Zeropage", 0x10))
