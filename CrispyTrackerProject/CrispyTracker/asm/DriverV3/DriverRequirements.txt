@@ -1,0 +1,27 @@
+What can absolutely be done
+    8 channels of music playback
+    3 channels of SFX playback
+
+What is questionably possible
+
+What we cannot do
+
+
+/-----------------------\
+|       Feasibility     |
+\-----------------------/
+
+Routine engine runs 4x a frame  [4266 cycles per frame]
+Music engine runs at 1x a frame [17066 cycles per frame]
+
+Effects:
+    Vibrato:
+        Ideas:
+            Idea 1 - Proper method
+                Fixed point multiplication by 16 constant sine tables with different amplitudes
+            Idea 2 - Additive method
+                Look up sine table value and add to current pitch value
+                Idea 2.1 - Pre-calculate vibrato value on tracker side and stream in command stream
+                Idea 2.2 - 
+    
+    VolSlide:
