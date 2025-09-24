@@ -28,7 +28,8 @@ struct ZP $0000
 .ChVibVal       skip !ChannelCount      ;Channel vibrato value [xy, x - depth, y - speed]
 .ChVibPhase     skip !ChannelCount      ;Channel vibrato sine phase
 .ChPortVal      skip !ChannelCount      ;Channel portamento
-.ChVolSlideVal  skip !ChannelCount      ;Channel volume slide
+.ChVolSlideVal  skip !ChannelCount      ;Channel volume slide [wait 0x frames before volume change]
+.ChVolSlideCnt  skip !ChannelCount      ;Timer to wait N frames before the volume slide
 
 .ChIndex        skip 1                  ;Current channel index
 .KON            skip 1                  ;KON state
@@ -43,6 +44,22 @@ struct ZP $0000
 .OutVol         skip 2                  ;Output volume in effects routine
 
 endstruct
+
+;
+;   Header information for a given tune
+;       Will be placed at the start of a given file, intended to be loaded before the start of order memory
+;
+struct Header $FF00
+.EchoOn         skip 1                  ;Echo enable flag
+.EchoDelay      skip 1                  ;Echo delay value
+.EchoFeedback   skip 1                  ;Echo feecback
+.EchoVol        skip 2                  ;Echo volume
+.EchoCoeff      skip 8                  ;Echo coeffecients
+.InitSpeed      skip 1                  ;Initial track speed
+.TuneOrderStart skip 2                  ;Pointer to start of order memory
+endstruct
+
+assert sizeof(ZP) < $F0
 
 ;Music commands
 !COM_SLEEP  =       $00     ;Sets a channel to wait N timer passes
@@ -78,6 +95,7 @@ endmacro
 ;                |Noise
 ;                Pitch mod
 ;
+!InstSize = $05
 macro WriteInstrument(Srcn, ADSR1, ADSR2, GAIN, Flags)
     db <Srcn>
     db <ADSR1>
@@ -85,7 +103,6 @@ macro WriteInstrument(Srcn, ADSR1, ADSR2, GAIN, Flags)
     db <GAIN>
     db <Flags>
 endmacro
-
 
 macro ReadSeqVal()
     mov.b A, ZP.ChIndex

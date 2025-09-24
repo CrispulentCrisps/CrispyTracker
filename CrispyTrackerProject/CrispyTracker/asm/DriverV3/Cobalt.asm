@@ -24,7 +24,7 @@ DriverStart:
 
     mov.b SPC_Test, #$0A
     mov.b SPC_Timer1, #$85  ;Set music timer to 60hz
-    mov.b SPC_Timer2, #$2C  ;Set effects timer to 60hz
+    mov.b SPC_Timer2, #$2C  ;Set effects timer to 180hz
     mov.b SPC_Control, #$7F ;Set timers on
 
     ;Reset DSP values
@@ -133,7 +133,7 @@ MusicRoutine:
     mov.b ZP.Ptr0, #(InstrumentTable)&$FF
     mov.b ZP.Ptr0+1, #(InstrumentTable>>8)&$FF
     mov.b A, ZP.ChInst+X
-    mov.b Y, #$05           ;Size of instrument structure
+    mov.b Y, #!InstSize           ;Size of instrument structure
     mul YA
     addw YA, ZP.Ptr0        ;Instrument pointer
     movw.b ZP.Ptr0, YA
@@ -414,9 +414,86 @@ EffectsRoutine:
     ;-----------------------;
     ;     Volume slides     ;
     ;-----------------------;
+    mov.b A, ZP.ChVolSlideCnt+X
+    beq +
+    dec A
+    +
+    mov.b ZP.ChVolSlideCnt+X, A
+    beq +
+    jmp .SkipVolSlide
+    +
+    mov.b A, ZP.ChVolSlideVal+X
+    and.b A, #$0F
+    mov.b ZP.ChVolSlideCnt+X, A
+
+    mov.b ZP.R4, #$00           ;Channel signs
     mov.b A, X
     asl A
     mov.b Y, A
+    mov.b A, ZP.ChVol+Y
+    bpl +
+    or.b ZP.R4, #$01
+    eor.b A, #$FF
+    inc A
+    +
+    mov.b ZP.R0, A
+    mov.b A, ZP.ChVol+1+Y
+    bpl +
+    or.b ZP.R4, #$02
+    eor.b A, #$FF
+    inc A
+    +
+    mov.b ZP.R1, A
+
+    mov.b ZP.R2, #$00
+    mov.b A, ZP.ChVolSlideVal+X
+    beq .SkipVolSlideDelta
+    mov.b ZP.R2, #$01
+    bpl .SkipVolSlideDelta
+    mov.b ZP.R2, #$FF
+    .SkipVolSlideDelta:
+
+    mov.b A, ZP.R0
+    clrc
+    adc.b A, ZP.R2
+    bpl .SkipClampL
+    bbs ZP.R2.7, ++
+    mov.b A, #$7F
+    bra .SkipClampL
+    ++
+    mov.b A, #$00
+    .SkipClampL:
+    mov.b ZP.R0, A
+    
+    mov.b A, ZP.R1
+    clrc
+    adc.b A, ZP.R2
+    bpl .SkipClampR
+    bbs ZP.R2.7, ++
+    mov.b A, #$7F
+    bra .SkipClampR
+    ++
+    mov.b A, #$00
+    .SkipClampR:
+    mov.b ZP.R1, A
+    
+    ;Set channel volume
+    bbc ZP.R4.0, +
+    eor.b ZP.R0, #$FF
+    inc.b ZP.R0
+    +
+    
+    bbc ZP.R4.1, +
+    eor.b ZP.R1, #$FF
+    inc.b ZP.R1
+    +
+    
+    mov.b A, ZP.R0
+    mov.b ZP.ChVol+Y, A
+    mov.b A, ZP.R1
+    mov.b ZP.ChVol+1+Y, A
+    .SkipVolSlide:
+
 
     ;Output processed pitch and volume into the corresponding channel
     mov.b A, ZP.ChIndex
@@ -488,8 +565,8 @@ db $B1, $E0, $BC, $AF, $78
 db $B8, $87, $1F, $00, $F1, $0F, $1F, $00, $00, $8F, $E1, $13, $12, $2D, $52, $14, $10, $F7
 
 InstrumentTable:
-    %WriteInstrument($00, $9F, $F2, $7F, $00)
-    %WriteInstrument($01, $FF, $EA, $60, $00)
+    %WriteInstrument($00, $9F, $F2, $007F, $00)
+    %WriteInstrument($01, $FF, $EA, $0060, $00)
 
 OrderTable:
     ;Order 0
@@ -517,28 +594,38 @@ PatternMem:
     .Pattern_0:
         %WriteComByte(!COM_VIBRATO, $00)
         %WriteComByte(!COM_SPEED, $06)
-        %WriteComWord(!COM_VOLUME, $4877)
+        %WriteComWord(!COM_VOLUME, $4040)
         %WriteComByte(!COM_INST, $00)
+        %WriteComWord(!COM_PITCH, $0200)
+        %WriteComByte(!COM_SLEEP, $08)
         %WriteComWord(!COM_PITCH, $0400)
         %WriteComByte(!COM_SLEEP, $08)
-        %WriteComWord(!COM_PITCH, $0500)
+        %WriteComWord(!COM_PITCH, $0C00)
         %WriteComByte(!COM_SLEEP, $08)
-        %WriteComWord(!COM_PITCH, $0600)
-        %WriteComByte(!COM_SLEEP, $08)
-        %WriteComWord(!COM_PITCH, $0700)
+        %WriteComWord(!COM_PITCH, $1000)
         %WriteComByte(!COM_SLEEP, $08)
         %WriteCom(!COM_BREAK)
     .Pattern_1:
         %WriteComByte(!COM_INST, $01)
-        %WriteComWord(!COM_PITCH, $0800)
+        %WriteComWord(!COM_PITCH, $1600)
+        %WriteComByte(!COM_SLEEP, $04)
+        %WriteComByte(!COM_VIBRATO, $48)
         %WriteComByte(!COM_SLEEP, $10)
-        %WriteComByte(!COM_VIBRATO, $2A)
-        %WriteComByte(!COM_SLEEP, $10)
+        %WriteComByte(!COM_VIBRATO, $FF)
+        %WriteComByte(!COM_SLEEP, $08)
         %WriteComWord(!COM_JUMP, OrderTable_Order0)
     .Pattern_2:
         %WriteComByte(!COM_INST, $00)
         %WriteComWord(!COM_VOLUME, $0000)
         %WriteComByte(!COM_SLEEP, $01)
+        %WriteComWord(!COM_JUMP, OrderTable_Order0)
+    .Pattern_3:
+        %WriteComByte(!COM_VOLSLIDE, $82)
+        %WriteComByte(!COM_SPEED, $06)
+        %WriteComByte(!COM_INST, $01)
+        %WriteComWord(!COM_VOLUME, $817F)
+        %WriteComWord(!COM_PITCH, $0C00)
+        %WriteComByte(!COM_SLEEP, $04)
         %WriteComWord(!COM_JUMP, OrderTable_Order0)
 
 DriverEnd:
