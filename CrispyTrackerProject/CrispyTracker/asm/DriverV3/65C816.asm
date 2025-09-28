@@ -25,11 +25,80 @@ MainCode:
 
     jsr LoadMusic
 
+    ldx.w #$001F
+    -
+    jml +
+    +
+    dex
+    bpl -
+
+    sep #$20
+    lda.b #$01      ;Load tune
+    sta.w HW_APUI00
+
+    jsr LoadTune
+
     -
     jmp -
 
 NMIHandler:
     rti
+
+LoadTune:
+    php
+    phb
+    sep #$20
+    lda.b #bank(TuneData)
+    pha
+    plb
+    rep #$10
+    rep #$20
+    lda.w #TuneDataEnd-TuneData
+    sta.l HW_APUI01
+    tay
+    ldx.w #$0000
+    sep #$20
+    lda.b #$FF
+    sta.l HW_APUI03
+    lda.b #$00
+    sta.b MZP.R0
+    -
+    lda.l HW_APUI03
+    inc
+    bne -
+
+    -
+    rep #$20
+    lda.w TuneData, X   ;6 cycles
+    sta.l HW_APUI00     ;4 cycles
+    inx
+    inx
+    lda.w TuneData, X   ;6 cycles
+    sta.l HW_APUI02     ;4 cycles
+    inx
+    inx
+    sep #$20
+    --
+    lda.l HW_APUI03
+    cmp.b MZP.R0
+    beq --
+    sta.b MZP.R0
+    rep #$20
+    tya
+    sec
+    sbc.w #$0004
+    tay
+    bcs -
+
+    plb
+    plp
+    rts
+
+TuneData:
+for i = 0..$1000
+    dw !i
+endfor
+TuneDataEnd:
 
 LoadMusic:
     php
@@ -101,7 +170,6 @@ LoadMusic:
     lda.b #$00
     sta.w HW_APUI01
 
-    rep #$20
     .WaitCheck:
     lda.w HW_APUI00             ;Make sure SPC has aknowledged finished transfer
     bne .WaitCheck

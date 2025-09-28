@@ -7,10 +7,15 @@ DriverStart:
     ;Setup CPU
     mov.b X, #$FF
     mov SP, X
-    mov.b SPC_APU3, #$00
-    mov.b SPC_APU2, #$00
-    mov.b SPC_APU1, #$00
+
+    mov.b SPC_Test, #$0A
+    mov.b SPC_Timer1, #$85  ;Set music timer to 60hz
+    mov.b SPC_Timer2, #$2C  ;Set effects timer to 180hz
+    mov.b SPC_Control, #$7F ;Set timers on
     mov.b SPC_APU0, #$00
+    mov.b SPC_APU1, #$00
+    mov.b SPC_APU2, #$00
+    mov.b SPC_APU3, #$00
 
     ;Clear ZP and stack
     mov.b ZP.Ptr0, #$EF
@@ -21,11 +26,6 @@ DriverStart:
     mov.b (ZP.Ptr0)+Y, A
     decw.b ZP.Ptr0
     bpl -
-
-    mov.b SPC_Test, #$0A
-    mov.b SPC_Timer1, #$85  ;Set music timer to 60hz
-    mov.b SPC_Timer2, #$2C  ;Set effects timer to 180hz
-    mov.b SPC_Control, #$7F ;Set timers on
 
     ;Reset DSP values
     %spc_write(DSP_MVOL_L, $7F)
@@ -41,6 +41,7 @@ DriverStart:
     %spc_write(DSP_NON, $00)
     %spc_write(DSP_FLG, $20)
 
+    
     ;TEST instrument
     ;%spc_write($00, $7F)
     ;%spc_write($01, $7F)
@@ -51,10 +52,23 @@ DriverStart:
     ;%spc_write($06, $00)
     ;%spc_write($07, $7F)
     ;%spc_write(DSP_KON, $01)
-
-    ;Set sequence pointers to first order in the table
-    mov.b ZP.Ptr0, #(OrderTable)&$FF
-    mov.b ZP.Ptr0+1, #(OrderTable>>8)&$FF
+    
+    if !TRACKER == 0
+        ;Set sequence pointers to first order in the table
+        nop
+        nop
+        nop
+        nop
+        mov.b ZP.Ptr0, #(OrderTable)&$FF
+        mov.b ZP.Ptr0+1, #(OrderTable>>8)&$FF
+        mov.b ZP.PauseFlag, #$00
+    else
+        mov.b TuneStart, #(OrderTable)&$FF
+        mov.b TuneStart+1, #(OrderTable>>8)&$FF
+        mov.b ZP.Ptr0, TuneStart
+        mov.b ZP.Ptr0+1, TuneStart+1
+        mov.b ZP.PauseFlag, #$01
+    endif
 
     mov.b Y, #(!ChannelCount*2)-1
     -
@@ -81,13 +95,20 @@ DriverStart:
 MainTimerLoop:
     mov.b A, SPC_Count1                 ;Music timer, set to update once a frame
     beq +
+    mov.b A, ZP.PauseFlag
+    bne +
     mov.b ZP.ChIndex, #!ChannelCount-1
     call MusicRoutine
     +
     mov.b A, SPC_Count2                 ;Effects timer, set to update 4 times a frame
-    beq MainTimerLoop
+    beq +
     mov.b ZP.ChIndex, #!ChannelCount-1
     call EffectsRoutine
+    +
+    mov.b A, SPC_APU0
+    beq +
+    call CommunicationRoutine
+    +
     bra MainTimerLoop
 
 
@@ -108,9 +129,15 @@ MusicRoutine:
     
     ;Do per-channel operations
     .ChLoop:
+
+    mov.b X, ZP.MusSpeedSel
+    mov.b A, ZP.MusSpeed1+X
+    mov.b ZP.MusTimer, A
+    eor.b ZP.MusSpeedSel, #$01
+
     mov.b X, ZP.ChIndex
 
-    mov.b ZP.MusTimer, ZP.MusSpeed
+
     ;Decrement current timer
     mov A, ZP.ChTimer+X
     beq +
@@ -182,16 +209,16 @@ MusicRoutine:
     bpl .InstWrite
 
     ;Apply changes to output
-    mov.b SPC_RegADDR, #$2D
+    mov.b SPC_RegADDR, #DSP_EON
     mov.b SPC_RegData, ZP.EON
-    mov.b SPC_RegADDR, #$3D
+    mov.b SPC_RegADDR, #DSP_NON
     mov.b SPC_RegData, ZP.NON
-    mov.b SPC_RegADDR, #$4D
+    mov.b SPC_RegADDR, #DSP_PMON
     mov.b SPC_RegData, ZP.PMON
     
-    mov.b SPC_RegADDR, #$4C
+    mov.b SPC_RegADDR, #DSP_KON
     mov.b SPC_RegData, ZP.KON
-    mov.b SPC_RegADDR, #$5C
+    mov.b SPC_RegADDR, #DSP_KOF
     mov.b SPC_RegData, ZP.KOFF
 
     .SkipChannelUpdates:
@@ -212,7 +239,8 @@ SequenceCommands:
     dw Com_Inst
     dw Com_Pitch
     dw Com_Volume
-    dw Com_Speed
+    dw Com_Speed1
+    dw Com_Speed2
     dw Com_Vibrato
     dw Com_Portamento
     dw Com_VolumeSlide
@@ -317,9 +345,14 @@ Com_Volume:
     mov.b ZP.ChVol+1+X, A
     jmp ReadSeqData
 
-Com_Speed:
+Com_Speed1:
     %ReadSeqVal()
-    mov.b ZP.MusSpeed, A
+    mov.b ZP.MusSpeed1, A
+    jmp ReadSeqData
+
+Com_Speed2:
+    %ReadSeqVal()
+    mov.b ZP.MusSpeed2, A
     jmp ReadSeqData
 
 Com_Vibrato:
@@ -341,6 +374,120 @@ Com_VolumeSlide:
     mov.b X, ZP.ChIndex
     mov.b ZP.ChVolSlideVal+X, A
     jmp ReadSeqData
+
+    ;
+    ;   Communication routine
+    ;       Non-zero command is sent via SPC_APU0
+    ;       Zero command send back to CPU
+    ;       Once command has been read in it will send back the same command value
+    ;       that was put into SPC_APU0
+    ;
+CommunicationRoutine:
+    mov.b SPC_APU0, #!PRoCom_NULL
+    mov.b ZP.R0, SPC_APU0
+    mov.b A, ZP.R0
+    dec.b A
+    asl A
+    mov.b X, A
+    jmp (ProComActions+X)
+ComReturn:
+    mov.b SPC_APU0, ZP.R0   ;Return non-zero value back to CPU
+    ret
+
+ProComActions:
+    dw ProCom_Load
+    dw ProCom_PlaySFX
+    dw ProCom_FadeTune
+    dw ProCom_SetMaster
+
+    ;
+    ;   Tune loader routine:
+    ;
+    ;       Setup:
+    ;           The driver will send $FF to APU03 to request a word of data from the
+    ;           main CPU, it will then send $00 back to wait while it transfer the word
+    ;
+ProCom_Load:
+    %spc_write(DSP_FLG, $E0)
+    mov.b SPC_Control, #$00
+    ;Initialise absolute moves with tune starting address
+    mov.b A, TuneStart
+    mov.b Y, TuneStart+1
+    movw.b ZP.R5, YA
+    mov.w .Mov0+1, A
+    mov.w .Mov0+2, Y
+    mov.w .Mov1+1, A
+    mov.w .Mov1+2, Y
+    mov.w .Mov2+1, A
+    mov.w .Mov2+2, Y
+    mov.w .Mov3+1, A
+    mov.w .Mov3+2, Y
+    
+    mov.b ZP.R2, #$00
+    mov.b ZP.R3, #$04
+    mov.b X, #$00
+
+    ;Make sure both sides are ready for transfer
+    mov.b ZP.R0, SPC_APU1
+    bne +
+    inc.b ZP.R0
+    +
+    mov.b ZP.R1, SPC_APU2
+    mov.b SPC_APU3, #$FF    ;Start transfer
+
+    -
+    mov.b A, SPC_APU0       ;3 cycles
+    .Mov0:
+    mov.w .Mov0+X, A          ;5 cycles
+    inc X
+
+    mov.b A, SPC_APU1       ;3 cycles
+    .Mov1:
+    mov.w .Mov1+X, A        ;5 cycles
+
+    mov.b A, SPC_APU2       ;3 cycles
+    .Mov2:
+    mov.w .Mov2+X, A          ;5 cycles
+    inc X
+
+    mov.b A, SPC_APU3       ;3 cycles
+    .Mov3:
+    mov.w .Mov3+X, A        ;5 cycles
+    inc X
+    mov.b SPC_APU3, X       ;4 cycles
+    
+    bne +
+    inc.w .Mov0+2           ;3 cycles
+    inc.w .Mov1+2           ;3 cycles
+    inc.w .Mov2+2           ;3 cycles
+    inc.w .Mov3+2           ;3 cycles
+    +
+        
+
+    dec.b ZP.R0             ;3 cycles
+    bne +                   ;2/4 cycl
+    setc                    ;1 cycle
+    sbc.b ZP.R1, #$01       ;6 cycles
+    bcs +                   ;2/4 cycles
+    bra .TransferFinished   ;4 cycles, Escape when top and byte is negative
+    +
+    bra -                   ;4 cyles
+    .TransferFinished:
+    ;Tune now loaded, read header information to setup tune
+
+    jmp ComReturn
+
+ProCom_PlaySFX:
+
+    jmp ComReturn
+
+ProCom_FadeTune:
+
+    jmp ComReturn
+
+ProCom_SetMaster:
+
+    jmp ComReturn
 
 EffectsRoutine:
     nop
@@ -593,7 +740,8 @@ OrderTable:
 PatternMem:
     .Pattern_0:
         %WriteComByte(!COM_VIBRATO, $00)
-        %WriteComByte(!COM_SPEED, $06)
+        %WriteComByte(!COM_SPEED1, $06)
+        %WriteComByte(!COM_SPEED2, $06)
         %WriteComWord(!COM_VOLUME, $4040)
         %WriteComByte(!COM_INST, $00)
         %WriteComWord(!COM_PITCH, $0200)
@@ -621,7 +769,8 @@ PatternMem:
         %WriteComWord(!COM_JUMP, OrderTable_Order0)
     .Pattern_3:
         %WriteComByte(!COM_VOLSLIDE, $82)
-        %WriteComByte(!COM_SPEED, $06)
+        %WriteComByte(!COM_SPEED1, $06)
+        %WriteComByte(!COM_SPEED2, $06)
         %WriteComByte(!COM_INST, $01)
         %WriteComWord(!COM_VOLUME, $817F)
         %WriteComWord(!COM_PITCH, $0C00)

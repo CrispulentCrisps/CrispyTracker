@@ -1,6 +1,8 @@
 incsrc "../spc700.asm"
 incsrc "../dsp.asm"
 
+!TRACKER =    $01
+
 !CodeBuffer = $0C00                 ;Section of bytes to fill
 
 !ChannelCount = 8
@@ -37,29 +39,34 @@ struct ZP $0000
 .EON            skip 1                  ;Echo status
 .NON            skip 1                  ;Noise status
 .PMON           skip 1                  ;Pitch modulation status
-.MusSpeed       skip 1                  ;Delay time for music track
+.MusSpeed1      skip 1                  ;Delay time for music track
+.MusSpeed2      skip 1                  ;Delay time for music track
+.MusSpeedSel    skip 1                  ;Which speed to use for music
 .MusTimer       skip 1                  ;Timer for frames to wait before next row
+
+.PauseFlag      skip 1                  ;Flag to pause music
 
 .OutPitch       skip 2                  ;Output pitch in effects routine
 .OutVol         skip 2                  ;Output volume in effects routine
 
 endstruct
 
+assert sizeof(ZP) < $F0
+
+InstTable =     $01EC                   ;Instrument table pointer
+TuneStart =     $00F8                   ;Pointer to start of tune in memory
+
 ;
 ;   Header information for a given tune
 ;       Will be placed at the start of a given file, intended to be loaded before the start of order memory
 ;
-struct Header $FF00
-.EchoOn         skip 1                  ;Echo enable flag
+struct Header $FFF0
 .EchoDelay      skip 1                  ;Echo delay value
 .EchoFeedback   skip 1                  ;Echo feecback
 .EchoVol        skip 2                  ;Echo volume
 .EchoCoeff      skip 8                  ;Echo coeffecients
-.InitSpeed      skip 1                  ;Initial track speed
-.TuneOrderStart skip 2                  ;Pointer to start of order memory
+.InitSpeed      skip 2                  ;Initial track speed
 endstruct
-
-assert sizeof(ZP) < $F0
 
 ;Music commands
 !COM_SLEEP  =       $00     ;Sets a channel to wait N timer passes
@@ -68,12 +75,19 @@ assert sizeof(ZP) < $F0
 !COM_INST =         $03     ;Sets the instrument values for a given channel
 !COM_PITCH =        $04     ;Plays an absolute pitch
 !COM_VOLUME =       $05     ;Sets the volume of a given channel
-!COM_SPEED =        $06     ;Sets the frame wait for every sleep decrement
-!COM_VIBRATO =      $07     ;Sets the vibrato for a given channel
-!COM_PORTAMENTO =   $08     ;Sets the portamento for a given channel
-!COM_VOLSLIDE =     $09     ;Sets the volume slide for a given channel
+!COM_SPEED1 =       $06     ;Sets the frame wait for every sleep decrement
+!COM_SPEED2 =       $07     ;Sets the frame wait for every sleep decrement
+!COM_VIBRATO =      $08     ;Sets the vibrato for a given channel
+!COM_PORTAMENTO =   $09     ;Sets the portamento for a given channel
+!COM_VOLSLIDE =     $0A     ;Sets the volume slide for a given channel
 
 !COM_NOTE =         $20     ;Any value $20 and above is interpreted as a note based off of note tables
+
+!PRoCom_NULL =      $00     ;Null value, any value that's 0 is ignored in the communication routine
+!PRoCom_LOAD =      $01     ;Sets the IPL loader up
+!PRoCom_PLAYSFX =   $02     ;Play SFX out of a specific channel
+!PRoCom_FADETUNE =  $03     ;Play SFX out of a specific channel
+!PRoCom_SETMASTER = $04     ;Sets the master volume for the     
 
 macro WriteCom(Com)
     db <Com>
